@@ -57,7 +57,7 @@ Plans:
 - [x] 02-03-PLAN.md — Sprints/Bugs/Dashboard backend modules
 - [x] 02-04-PLAN.md — Frontend infrastructure (shadcn, layout, routing, API client, stores, hooks, useTasks tests)
 - [x] 02-05-PLAN.md — Project Dashboard + Members pages
-- [ ] 02-06-PLAN.md — Backlog (TanStack Table + Kanban dnd-kit) + Task Detail page + KanbanBoard tests
+- [x] 02-06-PLAN.md — Backlog (TanStack Table + Kanban dnd-kit) + Task Detail page + KanbanBoard tests
 - [ ] 02-07-PLAN.md — Sprints + Bugs pages
 - [ ] 02-08-PLAN.md — Integration verification checkpoint (automated + human)
 **UI hint**: yes

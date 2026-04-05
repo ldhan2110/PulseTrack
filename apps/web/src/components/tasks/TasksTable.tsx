@@ -332,23 +332,11 @@ export function TasksTable({
         </Table>
       </div>
 
-      {/* Bulk action bar */}
-      {selectedRows.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <BulkActionBar
-            count={selectedRows.length}
-            sprints={sprints}
-            onMoveToSprint={(sprintId) => {
-              // Handled by parent
-            }}
-            onClear={() => table.resetRowSelection()}
-          />
-        </div>
-      )}
     </div>
   );
 }
 
+// Exported for use in BacklogPage bulk action bar
 interface BulkActionBarProps {
   count: number;
   sprints: Sprint[];
@@ -356,7 +344,7 @@ interface BulkActionBarProps {
   onClear: () => void;
 }
 
-function BulkActionBar({ count, sprints, onMoveToSprint, onClear }: BulkActionBarProps) {
+export function BulkActionBar({ count, sprints, onMoveToSprint, onClear }: BulkActionBarProps) {
   return (
     <div className="flex items-center gap-3 bg-card shadow-lg rounded-lg px-4 py-3 border">
       <span className="text-sm font-medium">{count} task{count !== 1 ? 's' : ''} selected</span>

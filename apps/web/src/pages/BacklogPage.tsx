@@ -11,7 +11,7 @@ import { useProjectRole } from '@/hooks/useProjectRole';
 import { useUiStore } from '@/store/uiStore';
 import { useUpdateTask } from '@/hooks/useTasks';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
-import { TasksTable } from '@/components/tasks/TasksTable';
+import { TasksTable, BulkActionBar } from '@/components/tasks/TasksTable';
 import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
 import type { Task } from '@/lib/types';
 
@@ -139,43 +139,12 @@ export function BacklogPage() {
       {/* Bulk action bar */}
       {selectedTasks.length > 0 && backlogView === 'table' && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <div className="flex items-center gap-3 bg-card shadow-lg rounded-lg px-4 py-3 border">
-            <span className="text-sm font-medium">
-              {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''} selected
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Move to:</span>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => handleBulkMoveToSprint(null)}
-                >
-                  Backlog
-                </Button>
-                {sprints.map((sprint) => (
-                  <Button
-                    key={sprint.id}
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs max-w-[120px] truncate"
-                    onClick={() => handleBulkMoveToSprint(sprint.id)}
-                  >
-                    {sprint.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={() => setSelectedTasks([])}
-            >
-              Clear
-            </Button>
-          </div>
+          <BulkActionBar
+            count={selectedTasks.length}
+            sprints={sprints}
+            onMoveToSprint={handleBulkMoveToSprint}
+            onClear={() => setSelectedTasks([])}
+          />
         </div>
       )}
 
