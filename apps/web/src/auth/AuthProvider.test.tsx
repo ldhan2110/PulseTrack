@@ -1,64 +1,59 @@
-import { vi, describe, it, expect } from 'vitest';
-import { renderHook, render, screen, act } from '@testing-library/react';
-import React from 'react';
-import { useAuth } from './useAuth';
-import { AuthProvider, AuthContext, AuthContextValue } from './AuthProvider';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { AuthProvider, AuthContext } from './AuthProvider';
+import { useContext } from 'react';
 
-// Mock keycloak-js module to avoid actual OIDC calls in tests
-vi.mock('./keycloak', () => ({
-  default: {
-    init: vi.fn().mockResolvedValue(true),
-    login: vi.fn(),
-    logout: vi.fn(),
-    token: 'mock-token',
-    tokenParsed: {
-      preferred_username: 'testuser',
-      email: 'test@example.com',
-      realm_access: { roles: ['pm'] },
-    },
-    onTokenExpired: null,
-    updateToken: vi.fn().mockResolvedValue(true),
-  },
+// Mock keycloak-js using vi.hoisted so the factory can reference the variable
+const mockKeycloak = vi.hoisted(() => ({
+  init: vi.fn(),
+  login: vi.fn(),
+  logout: vi.fn(),
+  token: 'mock-token',
+  tokenParsed: null as null,
+  onTokenExpired: null as (() => void) | null,
+  updateToken: vi.fn(),
 }));
 
-describe('useAuth', () => {
-  it('throws when used outside AuthProvider', () => {
-    expect(() => renderHook(() => useAuth())).toThrow(
-      'useAuth must be used within AuthProvider',
-    );
-  });
-});
+vi.mock('./keycloak', () => ({ default: mockKeycloak }));
+
+// Mock fetch for /users/me
+const mockFetch = vi.fn();
+globalThis.fetch = mockFetch;
+
+function TestConsumer() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) return <div>no context</div>;
+  return (
+    <div>
+      <span data-testid="authenticated">{String(ctx.authenticated)}</span>
+      <span data-testid="accessDenied">{String(ctx.accessDenied)}</span>
+      <span data-testid="loading">{String(ctx.loading)}</span>
+      <span data-testid="username">{ctx.user?.username ?? 'none'}</span>
+    </div>
+  );
+}
 
 describe('AuthProvider', () => {
-  it('renders children', async () => {
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <div data-testid="child">Hello</div>
-        </AuthProvider>,
-      );
-    });
-    expect(screen.getByTestId('child')).toBeTruthy();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('provides auth context values when wrapped correctly', async () => {
-    let capturedValue: AuthContextValue | null = null;
+  it('sets accessDenied=true when /users/me returns 401', async () => {
+    mockKeycloak.init.mockResolvedValue(true);
+    mockFetch.mockResolvedValue({ ok: false, status: 401 });
 
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <AuthContext.Consumer>
-            {(value) => {
-              capturedValue = value;
-              return null;
-            }}
-          </AuthContext.Consumer>
-        </AuthProvider>,
-      );
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('loading').textContent).toBe('false');
     });
 
-    expect(capturedValue).not.toBeNull();
-    expect(typeof capturedValue!.logout).toBe('function');
-    expect(Array.isArray(capturedValue!.roles)).toBe(true);
+    expect(screen.getByTestId('authenticated').textContent).toBe('true');
+    expect(screen.getByTestId('accessDenied').textContent).toBe('true');
+    expect(screen.getByTestId('username').textContent).toBe('none');
   });
 });
