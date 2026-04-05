@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-04-05T05:26:25.261Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-04-05T08:08:12.784Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-05)
 ## Current Position
 
 Phase: 01 (infrastructure-baseline) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-05
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 15 | 2 tasks | 31 files |
+| Phase 01 P03 | 5 | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Prisma 7 requires @prisma/adapter-pg driver adapter — binary engine removed in v7, PrismaPg adapter instantiated in PrismaService constructor
 - [Phase 01]: pnpm onlyBuiltDependencies in pnpm-workspace.yaml required to allow Prisma/esbuild/NestJS native build scripts
 - [Phase 01]: Homebrew PostgreSQL 16 used for local dev migration (Docker not available in execution environment — docker-compose.yml ready for production)
+- [Phase 01]: keycloak-js module singleton at module scope with initialized boolean guard prevents StrictMode double-init
+- [Phase 01]: check-sso with silentCheckSsoRedirectUri enables session persistence across browser refreshes without redirect loop
+- [Phase 01]: Roles extracted from tokenParsed.realm_access.roles (standard Keycloak realm roles claim)
 
 ### Pending Todos
 
@@ -83,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T05:26:25.259Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-04-05T08:08:12.782Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
