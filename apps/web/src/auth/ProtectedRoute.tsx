@@ -1,14 +1,14 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from './useAuth';
 import keycloak from './keycloak';
 
 interface Props {
   children: React.ReactNode;
-  requiredRole?: string;
 }
 
-export function ProtectedRoute({ children, requiredRole }: Props) {
-  const { authenticated, roles, loading } = useAuth();
+export function ProtectedRoute({ children }: Props) {
+  const { authenticated, accessDenied, loading } = useAuth();
 
   if (loading) return <div>Loading...</div>;
 
@@ -17,14 +17,8 @@ export function ProtectedRoute({ children, requiredRole }: Props) {
     return <div>Redirecting to login...</div>;
   }
 
-  if (requiredRole && !roles.includes(requiredRole)) {
-    return (
-      <div>
-        <h2>Access Denied</h2>
-        <p>Required role: {requiredRole}</p>
-        <p>Your roles: {roles.join(', ') || 'none'}</p>
-      </div>
-    );
+  if (accessDenied) {
+    return <Navigate to="/access-denied" replace />;
   }
 
   return <>{children}</>;
