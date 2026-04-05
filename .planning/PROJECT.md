@@ -14,9 +14,11 @@ End-to-end AI-assisted project management that reduces manual effort — from BA
 
 - [x] Keycloak SSO login for all users (PM, BA, Developer, Leadership) — Validated in Phase 1: Infrastructure Baseline
 - [x] Role-based access (PM, BA, Developer, Leadership views) — Validated in Phase 1: Infrastructure Baseline
+- [x] Multi-project support with project dashboards — Validated in Phase 2: Project & Task Management
+- [x] Task CRUD (create, read, update, delete) with status workflow — Validated in Phase 2: Project & Task Management
+- [x] Sprint/iteration management — Validated in Phase 2: Project & Task Management
 
 ### Active
-- [ ] Multi-project support with project dashboards
 - [ ] AI-powered user story generation from BA feature descriptions (with acceptance criteria & story points)
 - [ ] AI-driven task auto-assignment based on developer workload and availability
 - [ ] AI-generated daily/weekly status reports with risk flagging
@@ -25,11 +27,11 @@ End-to-end AI-assisted project management that reduces manual effort — from BA
 - [ ] Time logging per task
 - [ ] Developer workload visibility — see who has capacity, who's overloaded
 - [ ] Comments and communication threads between BA and developers on tasks
-- [ ] Task CRUD (create, read, update, delete) with status workflow
+
 - [ ] Weekly task sync to Blueprint via REST API
 - [ ] Daily report sync to Blueprint
 - [ ] Time log sync to Blueprint
-- [ ] Sprint/iteration management
+
 
 ### Out of Scope
 
@@ -83,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-05 after Phase 1 completion*
+*Last updated: 2026-04-05 after Phase 2 completion*
