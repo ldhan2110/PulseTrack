@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-04-PLAN.md (Frontend infrastructure, hooks, routing, sidebar)
-last_updated: "2026-04-05T12:43:17.201Z"
+stopped_at: Completed 02-05-PLAN.md (Dashboard page, Members page with table and add/remove)
+last_updated: "2026-04-05T12:48:38.830Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 12
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-05)
 ## Current Position
 
 Phase: 02 (project-task-management) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-04-05
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-project-task-management P02 | 2 | 1 tasks | 8 files |
 | Phase 02-project-task-management P03 | 3 | 2 tasks | 17 files |
 | Phase 02-project-task-management P04 | 6 | 2 tasks | 57 files |
+| Phase 02-project-task-management P05 | 4 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,8 @@ Recent decisions affecting current work:
 - [Phase 02-project-task-management]: AppSidebar wraps shadcn SidebarProvider synced to Zustand uiStore via open/onOpenChange props
 - [Phase 02-project-task-management]: useUpdateTaskStatus is a separate mutation hook from useUpdateTask for cleaner Kanban drag handlers
 - [Phase 02-project-task-management]: lib/types.ts separate from lib/api.ts to allow type imports without pulling in the fetch client
+- [Phase 02-project-task-management]: BurndownPoint API type carries only remaining — ideal line derived in ProjectDashboardPage via linear interpolation, passed as ideal/actual to BurndownChart
+- [Phase 02-project-task-management]: AlertDialog for member removal uses Cancel (not Discard) per UI-SPEC — no user-entered data in confirmation dialogs
 
 ### Pending Todos
 
@@ -115,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T12:43:17.199Z
-Stopped at: Completed 02-04-PLAN.md (Frontend infrastructure, hooks, routing, sidebar)
+Last session: 2026-04-05T12:48:38.828Z
+Stopped at: Completed 02-05-PLAN.md (Dashboard page, Members page with table and add/remove)
 Resume file: None
