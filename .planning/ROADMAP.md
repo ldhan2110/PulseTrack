@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Docker Compose brings up the full local dev stack (PostgreSQL, Redis, NestJS, React) with one command
 **Plans:** 4 plans
 Plans:
-- [ ] 01-01-PLAN.md — Monorepo scaffolding, dependencies, Docker Compose, Prisma schema, shared types
+- [x] 01-01-PLAN.md — Monorepo scaffolding, dependencies, Docker Compose, Prisma schema, shared types
 - [ ] 01-02-PLAN.md — Backend JWT auth strategy, RBAC guards, user sync, role-gated endpoints
 - [ ] 01-03-PLAN.md — Frontend keycloak-js auth, AuthProvider, ProtectedRoute, role-gated pages
 - [ ] 01-04-PLAN.md — Integration verification checkpoint (automated + human)

@@ -7,8 +7,8 @@
 
 ### Authentication & Access
 
-- [ ] **AUTH-01**: User can log in via Keycloak SSO using company credentials
-- [ ] **AUTH-02**: User session persists across browser refresh (JWT token refresh)
+- [x] **AUTH-01**: User can log in via Keycloak SSO using company credentials
+- [x] **AUTH-02**: User session persists across browser refresh (JWT token refresh)
 - [ ] **AUTH-03**: User can log out from any page
 - [ ] **RBAC-01**: PM role can create/manage projects, approve AI outputs, view all project data
 - [ ] **RBAC-02**: BA role can create feature descriptions, review/edit AI-generated stories, manage acceptance criteria
@@ -116,8 +116,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Pending |
 | RBAC-01 | Phase 1 | Pending |
 | RBAC-02 | Phase 1 | Pending |
