@@ -32,7 +32,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can log out from any page and is redirected to the Keycloak login screen
   4. A PM-role user accessing a BA-only endpoint receives a 403 response (RBAC enforced per role)
   5. Docker Compose brings up the full local dev stack (PostgreSQL, Redis, NestJS, React) with one command
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 01-01-PLAN.md — Monorepo scaffolding, dependencies, Docker Compose, Prisma schema, shared types
+- [ ] 01-02-PLAN.md — Backend JWT auth strategy, RBAC guards, user sync, role-gated endpoints
+- [ ] 01-03-PLAN.md — Frontend keycloak-js auth, AuthProvider, ProtectedRoute, role-gated pages
+- [ ] 01-04-PLAN.md — Integration verification checkpoint (automated + human)
 **UI hint**: yes
 
 ### Phase 2: Project & Task Management
@@ -114,7 +119,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Baseline | 0/? | Not started | - |
+| 1. Infrastructure Baseline | 0/4 | Planning complete | - |
 | 2. Project & Task Management | 0/? | Not started | - |
 | 3. Collaboration & Time Tracking | 0/? | Not started | - |
 | 4. Real-Time Layer | 0/? | Not started | - |
