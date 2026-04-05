@@ -73,6 +73,30 @@ function formatRelative(dateStr: string): string {
   }
 }
 
+function parseAcceptanceCriteria(raw: string | null | undefined): AcceptanceCriteria[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as AcceptanceCriteria[];
+    return [];
+  } catch {
+    // Legacy: plain string (possibly newline-delimited) — convert to array format
+    if (raw.trim()) {
+      return raw.split('\n').filter(Boolean).map((text, i) => ({
+        id: `legacy-${i}`,
+        text: text.trim(),
+        completed: false,
+        taskId: '',
+      }));
+    }
+    return [];
+  }
+}
+
+function serializeAcceptanceCriteria(criteria: AcceptanceCriteria[]): string {
+  return JSON.stringify(criteria);
+}
+
 export function TaskDetailPage() {
   const { projectId = '', taskId = '' } = useParams<{ projectId: string; taskId: string }>();
   const navigate = useNavigate();
@@ -144,74 +168,61 @@ export function TaskDetailPage() {
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
 
-  // Acceptance criteria mutations — use a dedicated endpoint
-  // API stores acceptanceCriteria as array, we manage add/update/delete via task update
-  // using the task-level updateTask mutation with the full criteria array
+  // Acceptance criteria — managed as JSON string in task.acceptanceCriteria via PATCH endpoint
   const addCriteria = useCallback(() => {
     if (!newCriteriaText.trim() || !task) return;
-    // We use a client-side call to a dedicated AC endpoint (via api.createSubTask pattern)
-    // Since the API has subtask endpoints but the AcceptanceCriteria is managed separately,
-    // we POST to the criteria endpoint
-    void fetch(`/api/projects/${projectId}/tasks/${taskId}/acceptance-criteria`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ text: newCriteriaText.trim() }),
-    }).then((res) => {
-      if (res.ok) {
-        void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
-        setNewCriteriaText('');
-        setAddingCriteria(false);
-      } else {
-        toast.error('Something went wrong. Please try again.');
-      }
-    });
-  }, [newCriteriaText, projectId, taskId, queryClient, task]);
+    const current = parseAcceptanceCriteria(task.acceptanceCriteria);
+    const newItem: AcceptanceCriteria = {
+      id: crypto.randomUUID(),
+      text: newCriteriaText.trim(),
+      completed: false,
+      taskId: task.id,
+    };
+    const updated = [...current, newItem];
+    updateTask.mutate(
+      { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
+      {
+        onSuccess: () => {
+          setNewCriteriaText('');
+          setAddingCriteria(false);
+        },
+        onError: () => toast.error('Something went wrong. Please try again.'),
+      },
+    );
+  }, [newCriteriaText, task, taskId, updateTask]);
 
   const toggleCriteria = useCallback(
     (ac: AcceptanceCriteria) => {
-      void fetch(`/api/projects/${projectId}/tasks/${taskId}/acceptance-criteria/${ac.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ completed: !ac.completed }),
-      }).then((res) => {
-        if (res.ok) {
-          void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
-        }
-      });
+      if (!task) return;
+      const current = parseAcceptanceCriteria(task.acceptanceCriteria);
+      const updated = current.map((item) =>
+        item.id === ac.id ? { ...item, completed: !item.completed } : item,
+      );
+      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
     },
-    [projectId, taskId, queryClient],
+    [task, taskId, updateTask],
   );
 
   const deleteCriteria = useCallback(
     (acId: string) => {
-      void fetch(`/api/projects/${projectId}/tasks/${taskId}/acceptance-criteria/${acId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      }).then((res) => {
-        if (res.ok) {
-          void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
-        }
-      });
+      if (!task) return;
+      const current = parseAcceptanceCriteria(task.acceptanceCriteria);
+      const updated = current.filter((item) => item.id !== acId);
+      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
     },
-    [projectId, taskId, queryClient],
+    [task, taskId, updateTask],
   );
 
   const updateCriteriaText = useCallback(
     (acId: string, text: string) => {
-      void fetch(`/api/projects/${projectId}/tasks/${taskId}/acceptance-criteria/${acId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ text }),
-      }).then((res) => {
-        if (res.ok) {
-          void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
-        }
-      });
+      if (!task) return;
+      const current = parseAcceptanceCriteria(task.acceptanceCriteria);
+      const updated = current.map((item) =>
+        item.id === acId ? { ...item, text } : item,
+      );
+      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
     },
-    [projectId, taskId, queryClient],
+    [task, taskId, updateTask],
   );
 
   const handleTitleSave = () => {
@@ -299,7 +310,7 @@ export function TaskDetailPage() {
     );
   }
 
-  const acceptanceCriteria = task.acceptanceCriteria ?? [];
+  const acceptanceCriteria = parseAcceptanceCriteria(task.acceptanceCriteria);
   const subTasks = task.subTasks ?? [];
 
   return (
