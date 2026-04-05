@@ -116,61 +116,61 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | TBD | Pending |
-| AUTH-02 | TBD | Pending |
-| AUTH-03 | TBD | Pending |
-| RBAC-01 | TBD | Pending |
-| RBAC-02 | TBD | Pending |
-| RBAC-03 | TBD | Pending |
-| RBAC-04 | TBD | Pending |
-| PROJ-01 | TBD | Pending |
-| PROJ-02 | TBD | Pending |
-| TASK-01 | TBD | Pending |
-| TASK-02 | TBD | Pending |
-| TASK-03 | TBD | Pending |
-| TASK-04 | TBD | Pending |
-| TASK-05 | TBD | Pending |
-| SPRT-01 | TBD | Pending |
-| SPRT-02 | TBD | Pending |
-| SPRT-03 | TBD | Pending |
-| COLB-01 | TBD | Pending |
-| COLB-02 | TBD | Pending |
-| TIME-01 | TBD | Pending |
-| TIME-02 | TBD | Pending |
-| WORK-01 | TBD | Pending |
-| WORK-02 | TBD | Pending |
-| AI-01 | TBD | Pending |
-| AI-02 | TBD | Pending |
-| AI-03 | TBD | Pending |
-| AI-04 | TBD | Pending |
-| AI-05 | TBD | Pending |
-| AI-06 | TBD | Pending |
-| AI-07 | TBD | Pending |
-| AI-08 | TBD | Pending |
-| AIINFRA-01 | TBD | Pending |
-| AIINFRA-02 | TBD | Pending |
-| AIINFRA-03 | TBD | Pending |
-| AIINFRA-04 | TBD | Pending |
-| AIINFRA-05 | TBD | Pending |
-| RT-01 | TBD | Pending |
-| RT-02 | TBD | Pending |
-| RT-03 | TBD | Pending |
-| BPINT-01 | TBD | Pending |
-| BPINT-02 | TBD | Pending |
-| BPINT-03 | TBD | Pending |
-| BPINT-04 | TBD | Pending |
-| BPINT-05 | TBD | Pending |
-| BPINT-06 | TBD | Pending |
-| REPT-01 | TBD | Pending |
-| REPT-02 | TBD | Pending |
-| REPT-03 | TBD | Pending |
-| REPT-04 | TBD | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| RBAC-01 | Phase 1 | Pending |
+| RBAC-02 | Phase 1 | Pending |
+| RBAC-03 | Phase 1 | Pending |
+| RBAC-04 | Phase 1 | Pending |
+| PROJ-01 | Phase 2 | Pending |
+| PROJ-02 | Phase 2 | Pending |
+| TASK-01 | Phase 2 | Pending |
+| TASK-02 | Phase 2 | Pending |
+| TASK-03 | Phase 2 | Pending |
+| TASK-04 | Phase 2 | Pending |
+| TASK-05 | Phase 2 | Pending |
+| SPRT-01 | Phase 2 | Pending |
+| SPRT-02 | Phase 2 | Pending |
+| SPRT-03 | Phase 2 | Pending |
+| COLB-01 | Phase 3 | Pending |
+| COLB-02 | Phase 3 | Pending |
+| TIME-01 | Phase 3 | Pending |
+| TIME-02 | Phase 3 | Pending |
+| WORK-01 | Phase 3 | Pending |
+| WORK-02 | Phase 3 | Pending |
+| AI-01 | Phase 5 | Pending |
+| AI-02 | Phase 5 | Pending |
+| AI-03 | Phase 5 | Pending |
+| AI-04 | Phase 5 | Pending |
+| AI-05 | Phase 5 | Pending |
+| AI-06 | Phase 5 | Pending |
+| AI-07 | Phase 5 | Pending |
+| AI-08 | Phase 5 | Pending |
+| AIINFRA-01 | Phase 5 | Pending |
+| AIINFRA-02 | Phase 5 | Pending |
+| AIINFRA-03 | Phase 5 | Pending |
+| AIINFRA-04 | Phase 5 | Pending |
+| AIINFRA-05 | Phase 5 | Pending |
+| RT-01 | Phase 4 | Pending |
+| RT-02 | Phase 4 | Pending |
+| RT-03 | Phase 4 | Pending |
+| BPINT-01 | Phase 6 | Pending |
+| BPINT-02 | Phase 6 | Pending |
+| BPINT-03 | Phase 6 | Pending |
+| BPINT-04 | Phase 6 | Pending |
+| BPINT-05 | Phase 6 | Pending |
+| BPINT-06 | Phase 6 | Pending |
+| REPT-01 | Phase 7 | Pending |
+| REPT-02 | Phase 7 | Pending |
+| REPT-03 | Phase 7 | Pending |
+| REPT-04 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 46 total
-- Mapped to phases: 0
-- Unmapped: 46 ⚠️
+- v1 requirements: 49 total
+- Mapped to phases: 49
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-05*
-*Last updated: 2026-04-05 after initial definition*
+*Last updated: 2026-04-05 after roadmap creation*
