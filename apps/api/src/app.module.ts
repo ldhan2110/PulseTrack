@@ -6,6 +6,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ProjectsModule } from './projects/projects.module';
+import { MembersModule } from './members/members.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { UsersModule } from './users/users.module';
     QueueModule,
     AuthModule,
     UsersModule,
+    ProjectsModule,
+    MembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
