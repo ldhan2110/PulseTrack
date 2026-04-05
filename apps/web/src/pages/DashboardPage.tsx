@@ -14,7 +14,7 @@ export function DashboardPage() {
           <strong>Email:</strong> {user?.email}
         </p>
         <p>
-          <strong>System Role:</strong> {user?.role}
+          <strong>ID:</strong> {user?.id}
         </p>
       </div>
       <button onClick={logout} style={{ marginTop: '1rem' }}>

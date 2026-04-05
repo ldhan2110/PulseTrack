@@ -30,8 +30,6 @@ export function SprintsPage() {
     return [...active, ...planned, ...closed];
   }, [sprints]);
 
-  const activeSprint = sprints?.find((s) => s.status === 'ACTIVE');
-
   // Count incomplete tasks per sprint (not DONE)
   const incompleteCountBySprint = useMemo(() => {
     const map: Record<string, number> = {};

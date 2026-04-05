@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
@@ -8,6 +8,7 @@ import {
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
+  type OnChangeFn,
   flexRender,
 } from '@tanstack/react-table';
 import {
@@ -142,9 +143,9 @@ interface BugsTableProps {
   projectId: string;
   isLoading?: boolean;
   sorting: SortingState;
-  onSortingChange: (sorting: SortingState) => void;
+  onSortingChange: OnChangeFn<SortingState>;
   columnFilters: ColumnFiltersState;
-  onColumnFiltersChange: (filters: ColumnFiltersState) => void;
+  onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
   globalFilter: string;
   onGlobalFilterChange: (val: string) => void;
 }

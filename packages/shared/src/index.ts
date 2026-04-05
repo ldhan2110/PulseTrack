@@ -1,58 +1,66 @@
-export enum ProjectRole {
-  PM = 'pm',
-  BA = 'ba',
-  QC = 'qc',
-  DEVELOPER = 'developer',
-}
+export const ProjectRole = {
+  PM: 'pm',
+  BA: 'ba',
+  QC: 'qc',
+  DEVELOPER: 'developer',
+} as const;
+export type ProjectRole = (typeof ProjectRole)[keyof typeof ProjectRole];
 
-export enum TaskStatus {
-  BACKLOG = 'BACKLOG',
-  IN_PROGRESS = 'IN_PROGRESS',
-  IN_REVIEW = 'IN_REVIEW',
-  DONE = 'DONE',
-  BLOCKED = 'BLOCKED',
-}
+export const TaskStatus = {
+  BACKLOG: 'BACKLOG',
+  IN_PROGRESS: 'IN_PROGRESS',
+  IN_REVIEW: 'IN_REVIEW',
+  DONE: 'DONE',
+  BLOCKED: 'BLOCKED',
+} as const;
+export type TaskStatus = (typeof TaskStatus)[keyof typeof TaskStatus];
 
-export enum BugSeverity {
-  CRITICAL = 'CRITICAL',
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
-}
+export const BugSeverity = {
+  CRITICAL: 'CRITICAL',
+  HIGH: 'HIGH',
+  MEDIUM: 'MEDIUM',
+  LOW: 'LOW',
+} as const;
+export type BugSeverity = (typeof BugSeverity)[keyof typeof BugSeverity];
 
-export enum BugStatus {
-  OPEN = 'OPEN',
-  IN_FIX = 'IN_FIX',
-  FIXED = 'FIXED',
-  VERIFIED = 'VERIFIED',
-  CLOSED = 'CLOSED',
-}
+export const BugStatus = {
+  OPEN: 'OPEN',
+  IN_FIX: 'IN_FIX',
+  FIXED: 'FIXED',
+  VERIFIED: 'VERIFIED',
+  CLOSED: 'CLOSED',
+} as const;
+export type BugStatus = (typeof BugStatus)[keyof typeof BugStatus];
 
-export enum SprintStatus {
-  PLANNED = 'PLANNED',
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
-}
+export const SprintStatus = {
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+} as const;
+export type SprintStatus = (typeof SprintStatus)[keyof typeof SprintStatus];
 
-export enum AiJobStatus {
-  PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-}
+export const AiJobStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+} as const;
+export type AiJobStatus = (typeof AiJobStatus)[keyof typeof AiJobStatus];
 
-export enum AiJobType {
-  STORY_GENERATION = 'STORY_GENERATION',
-  TASK_ASSIGNMENT = 'TASK_ASSIGNMENT',
-  DAILY_REPORT = 'DAILY_REPORT',
-  WEEKLY_REPORT = 'WEEKLY_REPORT',
-}
+export const AiJobType = {
+  STORY_GENERATION: 'STORY_GENERATION',
+  TASK_ASSIGNMENT: 'TASK_ASSIGNMENT',
+  DAILY_REPORT: 'DAILY_REPORT',
+  WEEKLY_REPORT: 'WEEKLY_REPORT',
+} as const;
+export type AiJobType = (typeof AiJobType)[keyof typeof AiJobType];
 
-export enum SyncStatus {
-  PENDING = 'PENDING',
-  SYNCED = 'SYNCED',
-  FAILED = 'FAILED',
-}
+export const SyncStatus = {
+  PENDING: 'PENDING',
+  SYNCED: 'SYNCED',
+  FAILED: 'FAILED',
+} as const;
+export type SyncStatus = (typeof SyncStatus)[keyof typeof SyncStatus];
 
 export interface UserProfile {
   id: string;

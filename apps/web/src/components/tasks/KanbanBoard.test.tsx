@@ -94,7 +94,7 @@ describe('KanbanBoard', () => {
     vi.mocked(tasksHooks.useUpdateTaskStatus).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
-    } as ReturnType<typeof tasksHooks.useUpdateTaskStatus>);
+    } as unknown as ReturnType<typeof tasksHooks.useUpdateTaskStatus>);
   });
 
   it('renders 5 columns, one per TaskStatus', () => {

@@ -95,7 +95,6 @@ export function BugDetailPage() {
   // Environment auto-save
   const [envValue, setEnvValue] = useState('');
   const [envSaving, setEnvSaving] = useState(false);
-  const envTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync bug data to local state when loaded
   useEffect(() => {

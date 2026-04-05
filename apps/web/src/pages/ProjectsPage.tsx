@@ -18,14 +18,9 @@ import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog';
 import { formatDistanceToNow } from 'date-fns';
 import type { Project } from '@/lib/types';
 
-// FieldGroup + Field composition per shadcn skill rules
+// FieldGroup composition per shadcn skill rules
 function FieldGroup({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-4">{children}</div>;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function Field({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1.5">{children}</div>;
 }
 
 function ProjectCard({ project }: { project: Project }) {

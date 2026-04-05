@@ -149,7 +149,6 @@ export function TaskDetailPage() {
   // using the task-level updateTask mutation with the full criteria array
   const addCriteria = useCallback(() => {
     if (!newCriteriaText.trim() || !task) return;
-    const existing = task.acceptanceCriteria ?? [];
     // We use a client-side call to a dedicated AC endpoint (via api.createSubTask pattern)
     // Since the API has subtask endpoints but the AcceptanceCriteria is managed separately,
     // we POST to the criteria endpoint

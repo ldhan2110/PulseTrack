@@ -271,8 +271,6 @@ export function TasksTable({
     );
   }
 
-  const selectedRows = table.getSelectedRowModel().rows.map((r) => r.original);
-
   return (
     <div className="flex flex-col gap-3">
       <TaskFilters
