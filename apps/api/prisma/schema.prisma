@@ -1,0 +1,225 @@
+// apps/api/prisma/schema.prisma
+// Full database schema for all 7 phases
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =====================
+// ENUMS
+// =====================
+
+enum UserRole {
+  pm
+  ba
+  developer
+  leadership
+}
+
+enum TaskStatus {
+  BACKLOG
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  BLOCKED
+}
+
+enum AiJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AiJobType {
+  STORY_GENERATION
+  TASK_ASSIGNMENT
+  DAILY_REPORT
+  WEEKLY_REPORT
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+}
+
+// =====================
+// CORE MODELS
+// =====================
+
+model User {
+  id                String    @id @default(cuid())
+  keycloakId        String    @unique // sub from JWT
+  email             String    @unique
+  username          String
+  role              UserRole
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  ownedProjects     Project[] @relation("ProjectOwner")
+  projectMembers    ProjectMember[]
+  assignedTasks     Task[]    @relation("TaskAssignee")
+  createdTasks      Task[]    @relation("TaskCreator")
+  comments          Comment[]
+  timeLogs          TimeLog[]
+  aiJobsRequested   AiJob[]
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  archived    Boolean   @default(false)
+  ownerId     String
+  owner       User      @relation("ProjectOwner", fields: [ownerId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  members        ProjectMember[]
+  sprints        Sprint[]
+  tasks          Task[]
+  aiJobs         AiJob[]
+  reports        Report[]
+  blueprintSyncs BlueprintSync[]
+}
+
+model ProjectMember {
+  id        String    @id @default(cuid())
+  projectId String
+  userId    String
+  role      UserRole
+  joinedAt  DateTime  @default(now())
+
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Sprint {
+  id          String    @id @default(cuid())
+  name        String
+  projectId   String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime  @default(now())
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+}
+
+model Task {
+  id                  String      @id @default(cuid())
+  title               String
+  description         String?
+  status              TaskStatus  @default(BACKLOG)
+  storyPoints         Int?
+  acceptanceCriteria  String?
+  isDraft             Boolean     @default(false) // AI-generated pending approval
+  blueprintId         String?     // External Blueprint task ID
+  projectId           String
+  sprintId            String?
+  assigneeId          String?
+  creatorId           String
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint         Sprint?   @relation(fields: [sprintId], references: [id])
+  assignee       User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator        User      @relation("TaskCreator", fields: [creatorId], references: [id])
+  comments       Comment[]
+  timeLogs       TimeLog[]
+  blueprintSyncs BlueprintSync[]
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String
+  taskId    String
+  authorId  String
+  parentId  String?   // Threaded comments
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
+  parent    Comment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   Comment[] @relation("CommentThread")
+}
+
+model TimeLog {
+  id          String    @id @default(cuid())
+  minutes     Int       // Duration in minutes
+  loggedAt    DateTime  @default(now())
+  taskId      String
+  userId      String
+  blueprintId String?   // Blueprint time log ID after sync
+
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+// =====================
+// AI INFRASTRUCTURE
+// =====================
+
+model AiJob {
+  id          String      @id @default(cuid())
+  type        AiJobType
+  status      AiJobStatus @default(PENDING)
+  input       Json        // Serialized context for Claude
+  output      Json?       // Structured result from Claude
+  error       String?
+  bullmqJobId String?     // BullMQ job ID for tracking
+  projectId   String
+  requestedBy String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  project     Project     @relation(fields: [projectId], references: [id])
+  user        User        @relation(fields: [requestedBy], references: [id])
+}
+
+// =====================
+// REPORTS
+// =====================
+
+model Report {
+  id          String    @id @default(cuid())
+  type        String    // 'daily' | 'weekly'
+  content     String    // AI-generated markdown
+  projectId   String
+  generatedAt DateTime  @default(now())
+  blueprintId String?
+
+  project     Project   @relation(fields: [projectId], references: [id])
+}
+
+// =====================
+// BLUEPRINT SYNC (transactional outbox)
+// =====================
+
+model BlueprintSync {
+  id          String      @id @default(cuid())
+  entityType  String      // 'task' | 'time_log' | 'report'
+  entityId    String
+  status      SyncStatus  @default(PENDING)
+  attempts    Int         @default(0)
+  lastError   String?
+  projectId   String
+  taskId      String?
+  syncedAt    DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  project     Project     @relation(fields: [projectId], references: [id])
+  task        Task?       @relation(fields: [taskId], references: [id])
+}
