@@ -80,10 +80,17 @@ Users can create and manage projects, tasks, user stories, and sprints — with 
 - **D-44:** Update `ProjectRole` enum: pm, ba, qc, developer (remove `leadership`)
 - **D-45:** Remove `SystemRole` enum and leadership-related code — no Leadership role in the system
 
+### Frontend Libraries
+- **D-46:** UI components: shadcn/ui (Radix UI primitives + Tailwind variants) — Table, Dialog, Badge, Dropdown, Tabs, Tooltip, etc. Not raw HTML/Tailwind
+- **D-47:** Data tables (backlog, bugs list): TanStack Table (`@tanstack/react-table`) for headless sorting/filtering/pagination logic + shadcn/ui DataTable as styled wrapper
+- **D-48:** Drag-and-drop for Kanban board: Claude's discretion (dnd-kit or @hello-pangea/dnd)
+- **D-49:** Charts (burndown): Recharts (already in stack spec)
+- **D-50:** Data fetching: TanStack Query (`@tanstack/react-query`) for all API calls with caching and invalidation
+- **D-51:** Client state: Zustand for UI state (current project, sidebar, filters)
+
 ### Claude's Discretion
 - Navigation layout style (sidebar vs top-nav) — pick what works best for multi-project PM tool
-- Exact component library choices from shadcn/ui (Table, Dialog, Badge, etc.)
-- Drag-and-drop library choice (dnd-kit, @hello-pangea/dnd, etc.)
+- Drag-and-drop library choice (dnd-kit vs @hello-pangea/dnd)
 - Loading states, empty states, error states
 - Exact API endpoint naming and DTO structure
 - Pagination strategy for tables (offset vs cursor)
