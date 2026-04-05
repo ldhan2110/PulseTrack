@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { JwtStrategy as JwtStrategyType } from './jwt.strategy';
 
 // We test the validate() method which is pure business logic (no JWKS network call needed)
 // JwtStrategy constructor calls super() which sets up passport-jwt — we mock that away
 vi.mock('@nestjs/passport', () => ({
-  PassportStrategy: (Strategy: any) => {
+  PassportStrategy: (_Strategy: any) => {
     return class MockPassportStrategy {
       constructor(_options: any) {}
     };
@@ -21,21 +22,21 @@ vi.mock('jwks-rsa', () => ({
   passportJwtSecret: vi.fn(() => vi.fn()),
 }));
 
-// Import after mocks
-const { JwtStrategy } = await import('./jwt.strategy');
+// Import after mocks are registered — Vitest hoists vi.mock calls automatically
+import { JwtStrategy } from './jwt.strategy';
+
+function createStrategy(): JwtStrategyType {
+  const mockConfigService = {
+    get: vi.fn((key: string) => {
+      if (key === 'KEYCLOAK_URL') return 'http://localhost:8080';
+      if (key === 'KEYCLOAK_REALM') return 'test';
+      return undefined;
+    }),
+  } as any;
+  return new JwtStrategy(mockConfigService);
+}
 
 describe('JwtStrategy', () => {
-  function createStrategy() {
-    const mockConfigService = {
-      get: vi.fn((key: string) => {
-        if (key === 'KEYCLOAK_URL') return 'http://localhost:8080';
-        if (key === 'KEYCLOAK_REALM') return 'test';
-        return undefined;
-      }),
-    } as any;
-    return new JwtStrategy(mockConfigService);
-  }
-
   describe('validate()', () => {
     it('extracts sub, email, preferred_username, and realm_access.roles from JWT payload', async () => {
       const strategy = createStrategy();
