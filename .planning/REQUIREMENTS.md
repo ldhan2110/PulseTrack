@@ -10,10 +10,10 @@
 - [x] **AUTH-01**: User can log in via Keycloak SSO using company credentials
 - [x] **AUTH-02**: User session persists across browser refresh (JWT token refresh)
 - [x] **AUTH-03**: User can log out from any page
-- [ ] **RBAC-01**: PM role can create/manage projects, approve AI outputs, view all project data
-- [ ] **RBAC-02**: BA role can create feature descriptions, review/edit AI-generated stories, manage acceptance criteria
-- [ ] **RBAC-03**: Developer role can view assigned tasks, log time, update task status, add comments
-- [ ] **RBAC-04**: Leadership role can view cross-project dashboards and reports (read-only)
+- [x] **RBAC-01**: PM role can create/manage projects, approve AI outputs, view all project data
+- [x] **RBAC-02**: BA role can create feature descriptions, review/edit AI-generated stories, manage acceptance criteria
+- [x] **RBAC-03**: Developer role can view assigned tasks, log time, update task status, add comments
+- [x] **RBAC-04**: Leadership role can view cross-project dashboards and reports (read-only)
 
 ### Project & Task Management
 
@@ -119,10 +119,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
-| RBAC-01 | Phase 1 | Pending |
-| RBAC-02 | Phase 1 | Pending |
-| RBAC-03 | Phase 1 | Pending |
-| RBAC-04 | Phase 1 | Pending |
+| RBAC-01 | Phase 1 | Complete |
+| RBAC-02 | Phase 1 | Complete |
+| RBAC-03 | Phase 1 | Complete |
+| RBAC-04 | Phase 1 | Complete |
 | PROJ-01 | Phase 2 | Pending |
 | PROJ-02 | Phase 2 | Pending |
 | TASK-01 | Phase 2 | Pending |

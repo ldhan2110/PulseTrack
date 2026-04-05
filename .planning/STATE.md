@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-04-05T08:08:12.784Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-04-05T08:08:58.897Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-05)
 ## Current Position
 
 Phase: 01 (infrastructure-baseline) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-04-05
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01 P01 | 15 | 2 tasks | 31 files |
 | Phase 01 P03 | 5 | 2 tasks | 12 files |
+| Phase 01 P02 | 2 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,8 @@ Recent decisions affecting current work:
 - [Phase 01]: keycloak-js module singleton at module scope with initialized boolean guard prevents StrictMode double-init
 - [Phase 01]: check-sso with silentCheckSsoRedirectUri enables session persistence across browser refreshes without redirect loop
 - [Phase 01]: Roles extracted from tokenParsed.realm_access.roles (standard Keycloak realm roles claim)
+- [Phase 01]: Import UserRole from @prisma/client in UsersService — Prisma generates the authoritative enum for ORM layer, not @pm/shared
+- [Phase 01]: Use static import + vi.mock hoisting in spec files instead of top-level dynamic await — required for tsconfig nodenext CommonJS compatibility
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T08:08:12.782Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-04-05T08:08:58.895Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
