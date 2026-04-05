@@ -50,9 +50,9 @@ Plans:
   3. User can assign a task to a team member, reassign it, and leave it unassigned
   4. BA can add acceptance criteria and story points to a user story
   5. PM can create a sprint with dates, add tasks to it, and view sprint progress with burndown and completed vs. remaining points
-**Plans:** 8 plans
+**Plans:** 1/8 plans executed
 Plans:
-- [ ] 02-01-PLAN.md — Schema migration (Bug, SubTask, enums, role updates) + Projects/Members backend modules
+- [x] 02-01-PLAN.md — Schema migration (Bug, SubTask, enums, role updates) + Projects/Members backend modules
 - [ ] 02-02-PLAN.md — Tasks backend module (CRUD, sub-tasks, status, assignment)
 - [ ] 02-03-PLAN.md — Sprints/Bugs/Dashboard backend modules
 - [ ] 02-04-PLAN.md — Frontend infrastructure (shadcn, layout, routing, API client, stores, hooks, useTasks tests)
@@ -129,7 +129,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Baseline | 4/4 | Complete   | 2026-04-05 |
-| 2. Project & Task Management | 0/8 | Planned | - |
+| 2. Project & Task Management | 1/8 | In Progress|  |
 | 3. Collaboration & Time Tracking | 0/? | Not started | - |
 | 4. Real-Time Layer | 0/? | Not started | - |
 | 5. AI Integration | 0/? | Not started | - |

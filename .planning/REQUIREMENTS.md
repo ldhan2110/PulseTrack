@@ -17,7 +17,7 @@
 
 ### Project & Task Management
 
-- [ ] **PROJ-01**: User can create, view, edit, and archive projects
+- [x] **PROJ-01**: User can create, view, edit, and archive projects
 - [ ] **PROJ-02**: User can view project dashboard with task status, blockers, and progress
 - [ ] **TASK-01**: User can create, view, edit, and delete tasks within a project
 - [ ] **TASK-02**: Task follows status workflow: Backlog → In Progress → In Review → Done → Blocked
@@ -123,7 +123,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RBAC-02 | Phase 1 | Complete |
 | RBAC-03 | Phase 1 | Complete |
 | RBAC-04 | Phase 1 | Complete |
-| PROJ-01 | Phase 2 | Pending |
+| PROJ-01 | Phase 2 | Complete |
 | PROJ-02 | Phase 2 | Pending |
 | TASK-01 | Phase 2 | Pending |
 | TASK-02 | Phase 2 | Pending |
