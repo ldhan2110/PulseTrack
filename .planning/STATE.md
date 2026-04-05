@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-05)
 Phase: 2
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-04-05 - Completed quick task 260405-n1u: Update JwtStrategy — DB Lookup in validate()
+Last activity: 2026-04-05 - Completed quick task 260405-n7z: Update frontend auth test for accessDenied flow
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -88,6 +88,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260405-n1u | Update JwtStrategy — DB Lookup in validate() | 2026-04-05 | 43c2c74 | [260405-n1u-update-jwtstrategy-db-lookup-in-validate](./quick/260405-n1u-update-jwtstrategy-db-lookup-in-validate/) |
+| 260405-n7z | Update frontend auth test for accessDenied flow | 2026-04-05 | 68670f7 | [260405-n7z-update-frontend-auth-test-for-accessdeni](./quick/260405-n7z-update-frontend-auth-test-for-accessdeni/) |
 
 ### Blockers/Concerns
 
