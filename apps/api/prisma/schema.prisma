@@ -14,16 +14,11 @@ datasource db {
 // ENUMS
 // =====================
 
-enum SystemRole {
-  admin
-  member
-}
-
 enum ProjectRole {
   pm
   ba
+  qc
   developer
-  leadership
 }
 
 enum TaskStatus {
@@ -32,6 +27,27 @@ enum TaskStatus {
   IN_REVIEW
   DONE
   BLOCKED
+}
+
+enum BugSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum BugStatus {
+  OPEN
+  IN_FIX
+  FIXED
+  VERIFIED
+  CLOSED
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
 }
 
 enum AiJobStatus {
@@ -63,7 +79,6 @@ model User {
   keycloakId        String    @unique // sub from JWT
   email             String    @unique
   username          String
-  role              SystemRole  @default(member)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -75,6 +90,9 @@ model User {
   comments          Comment[]
   timeLogs          TimeLog[]
   aiJobsRequested   AiJob[]
+  reportedBugs      Bug[]     @relation("BugReporter")
+  assignedBugs      Bug[]     @relation("BugAssignee")
+  assignedSubTasks  SubTask[] @relation("SubTaskAssignee")
 }
 
 model Project {
@@ -90,6 +108,7 @@ model Project {
   members        ProjectMember[]
   sprints        Sprint[]
   tasks          Task[]
+  bugs           Bug[]
   aiJobs         AiJob[]
   reports        Report[]
   blueprintSyncs BlueprintSync[]
@@ -109,12 +128,13 @@ model ProjectMember {
 }
 
 model Sprint {
-  id          String    @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
   projectId   String
   startDate   DateTime
   endDate     DateTime
-  createdAt   DateTime  @default(now())
+  status      SprintStatus @default(PLANNED)
+  createdAt   DateTime     @default(now())
 
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       Task[]
@@ -143,6 +163,7 @@ model Task {
   comments       Comment[]
   timeLogs       TimeLog[]
   blueprintSyncs BlueprintSync[]
+  subTasks       SubTask[]
 }
 
 model Comment {
@@ -227,4 +248,44 @@ model BlueprintSync {
 
   project     Project     @relation(fields: [projectId], references: [id])
   task        Task?       @relation(fields: [taskId], references: [id])
+}
+
+// =====================
+// BUG TRACKING
+// =====================
+
+model Bug {
+  id                String      @id @default(cuid())
+  title             String
+  description       String?
+  severity          BugSeverity
+  reproductionSteps String?
+  environment       String?
+  status            BugStatus   @default(OPEN)
+  projectId         String
+  reporterId        String
+  assigneeId        String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter  User     @relation("BugReporter", fields: [reporterId], references: [id])
+  assignee  User?    @relation("BugAssignee", fields: [assigneeId], references: [id])
+}
+
+// =====================
+// SUB-TASKS
+// =====================
+
+model SubTask {
+  id         String     @id @default(cuid())
+  title      String
+  status     TaskStatus @default(BACKLOG)
+  parentId   String
+  assigneeId String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  parent   Task  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  assignee User? @relation("SubTaskAssignee", fields: [assigneeId], references: [id])
 }
