@@ -19,13 +19,13 @@ export function SprintsPage() {
   const closeSprint = useCloseSprint(projectId);
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Sort: ACTIVE first, then PLANNED (most recent first), then CLOSED (most recent first)
+  // Sort: ACTIVE first, then PLANNED (most recent first), then COMPLETED (most recent first)
   const sortedSprints = useMemo(() => {
     if (!sprints) return [];
     const active = sprints.filter((s) => s.status === 'ACTIVE');
     const planned = sprints.filter((s) => s.status === 'PLANNED');
     const closed = sprints
-      .filter((s) => s.status === 'CLOSED')
+      .filter((s) => s.status === 'COMPLETED')
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     return [...active, ...planned, ...closed];
   }, [sprints]);

@@ -95,7 +95,7 @@ export function CreateSprintDialog({
         const end = new Date(endDate);
 
         const overlapping = existingSprints.find((s) => {
-          if (s.status === 'CLOSED' || !s.startDate || !s.endDate) return false;
+          if (s.status === 'COMPLETED' || !s.startDate || !s.endDate) return false;
           const sStart = new Date(s.startDate);
           const sEnd = new Date(s.endDate);
           return start < sEnd && end > sStart;

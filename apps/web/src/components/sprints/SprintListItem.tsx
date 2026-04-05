@@ -22,7 +22,7 @@ function getStatusVariant(status: SprintStatus): 'default' | 'outline' | 'second
       return 'default';
     case 'PLANNED':
       return 'outline';
-    case 'CLOSED':
+    case 'COMPLETED':
       return 'secondary';
     default:
       return 'outline';
@@ -59,7 +59,7 @@ export function SprintListItem({
 }: SprintListItemProps) {
   const navigate = useNavigate();
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
-  const isCompleted = sprint.status === 'CLOSED';
+  const isCompleted = sprint.status === 'COMPLETED';
 
   const handleRowClick = () => {
     if (isActive) {
@@ -90,7 +90,7 @@ export function SprintListItem({
               {sprint.name}
             </span>
             <Badge variant={getStatusVariant(sprint.status)} className="shrink-0 text-xs">
-              {sprint.status === 'CLOSED' ? 'Completed' : sprint.status === 'ACTIVE' ? 'Active' : 'Planned'}
+              {sprint.status === 'COMPLETED' ? 'Completed' : sprint.status === 'ACTIVE' ? 'Active' : 'Planned'}
             </Badge>
           </div>
           <span className="text-xs text-muted-foreground">

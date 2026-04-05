@@ -92,7 +92,7 @@ export function SprintBoardPage() {
     );
   }
 
-  const isCompleted = sprint.status === 'CLOSED';
+  const isCompleted = sprint.status === 'COMPLETED';
 
   return (
     <div className="flex flex-col gap-4 p-8">
@@ -110,7 +110,7 @@ export function SprintBoardPage() {
       <div className="flex items-center gap-3">
         <h1 className="text-xl font-semibold tracking-tight">{sprint.name}</h1>
         <Badge variant={sprint.status === 'ACTIVE' ? 'default' : sprint.status === 'PLANNED' ? 'outline' : 'secondary'}>
-          {sprint.status === 'CLOSED' ? 'Completed' : sprint.status === 'ACTIVE' ? 'Active' : 'Planned'}
+          {sprint.status === 'COMPLETED' ? 'Completed' : sprint.status === 'ACTIVE' ? 'Active' : 'Planned'}
         </Badge>
         <span className="text-sm text-muted-foreground">
           {formatDate(sprint.startDate)} — {formatDate(sprint.endDate)}
