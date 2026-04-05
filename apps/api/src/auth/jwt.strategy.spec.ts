@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
+import { UnauthorizedException } from '@nestjs/common';
 import type { JwtStrategy as JwtStrategyType } from './jwt.strategy';
 
-// We test the validate() method which is pure business logic (no JWKS network call needed)
-// JwtStrategy constructor calls super() which sets up passport-jwt — we mock that away
 vi.mock('@nestjs/passport', () => ({
   PassportStrategy: (_Strategy: any) => {
     return class MockPassportStrategy {
@@ -22,10 +21,9 @@ vi.mock('jwks-rsa', () => ({
   passportJwtSecret: vi.fn(() => vi.fn()),
 }));
 
-// Import after mocks are registered — Vitest hoists vi.mock calls automatically
 import { JwtStrategy } from './jwt.strategy';
 
-function createStrategy(): JwtStrategyType {
+function createStrategy(mockUser: any = null): JwtStrategyType {
   const mockConfigService = {
     get: vi.fn((key: string) => {
       if (key === 'KEYCLOAK_URL') return 'http://localhost:8080';
@@ -33,55 +31,54 @@ function createStrategy(): JwtStrategyType {
       return undefined;
     }),
   } as any;
-  return new JwtStrategy(mockConfigService);
+
+  const mockPrismaService = {
+    user: {
+      findUnique: vi.fn().mockResolvedValue(mockUser),
+    },
+  } as any;
+
+  return new JwtStrategy(mockConfigService, mockPrismaService);
 }
 
 describe('JwtStrategy', () => {
   describe('validate()', () => {
-    it('extracts sub, email, preferred_username, and realm_access.roles from JWT payload', async () => {
-      const strategy = createStrategy();
-      const payload = {
-        sub: 'user-123',
-        email: 'user@example.com',
-        preferred_username: 'testuser',
-        realm_access: { roles: ['pm', 'default-roles-realm'] },
-      };
-      const result = await strategy.validate(payload);
-      expect(result).toEqual({
-        sub: 'user-123',
+    it('returns the DB user when keycloakId exists in User table', async () => {
+      const dbUser = {
+        id: 'cuid-123',
+        keycloakId: 'kc-sub-123',
         email: 'user@example.com',
         username: 'testuser',
-        roles: ['pm', 'default-roles-realm'],
-      });
+        role: 'member',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const strategy = createStrategy(dbUser);
+
+      const payload = {
+        sub: 'kc-sub-123',
+        email: 'user@example.com',
+        preferred_username: 'testuser',
+        realm_access: { roles: ['pm'] },
+      };
+
+      const result = await strategy.validate(payload);
+      expect(result).toEqual(dbUser);
     });
 
-    it('returns empty roles array when realm_access is missing from JWT', async () => {
-      const strategy = createStrategy();
-      const payload = {
-        sub: 'user-456',
-        email: 'user2@example.com',
-        preferred_username: 'testuser2',
-        // realm_access intentionally absent
-      };
-      const result = await strategy.validate(payload);
-      expect(result).toEqual({
-        sub: 'user-456',
-        email: 'user2@example.com',
-        username: 'testuser2',
-        roles: [],
-      });
-    });
+    it('throws UnauthorizedException when keycloakId is not in User table', async () => {
+      const strategy = createStrategy(null);
 
-    it('returns empty roles array when realm_access has no roles property', async () => {
-      const strategy = createStrategy();
       const payload = {
-        sub: 'user-789',
-        email: 'user3@example.com',
-        preferred_username: 'testuser3',
-        realm_access: { roles: undefined as any },
+        sub: 'unknown-sub',
+        email: 'nobody@example.com',
+        preferred_username: 'nobody',
       };
-      const result = await strategy.validate(payload);
-      expect(result.roles).toEqual([]);
+
+      await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(payload)).rejects.toThrow(
+        'You are not allowed to access the app',
+      );
     });
   });
 });

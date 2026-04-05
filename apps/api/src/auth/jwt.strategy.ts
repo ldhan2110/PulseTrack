@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
 import { JwtPayload } from '@pm/shared';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private config: ConfigService) {
+  constructor(
+    private config: ConfigService,
+    private prisma: PrismaService,
+  ) {
     const keycloakUrl = config.get<string>('KEYCLOAK_URL');
     const realm = config.get<string>('KEYCLOAK_REALM');
 
@@ -26,11 +30,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    return {
-      sub: payload.sub,
-      email: payload.email,
-      username: payload.preferred_username,
-      roles: payload.realm_access?.roles ?? [],
-    };
+    const user = await this.prisma.user.findUnique({
+      where: { keycloakId: payload.sub },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('You are not allowed to access the app');
+    }
+
+    return user;
   }
 }
