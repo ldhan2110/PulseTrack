@@ -1,15 +1,15 @@
 import React, { createContext, useEffect, useState, useCallback } from 'react';
 import keycloak from './keycloak';
+import type { UserProfile } from '@pm/shared';
 
 export type AuthContextValue = {
   authenticated: boolean;
+  accessDenied: boolean;
   token: string | undefined;
-  roles: string[];
-  username: string | undefined;
-  email: string | undefined;
+  user: UserProfile | null;
   logout: () => void;
   loading: boolean;
-}
+};
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -17,6 +17,8 @@ let initialized = false;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,8 +32,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
         checkLoginIframe: false,
       })
-      .then((auth) => {
-        setAuthenticated(auth);
+      .then(async (auth) => {
+        if (!auth) {
+          setAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+
+        setAuthenticated(true);
+
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          const response = await fetch(`${apiUrl}/users/me`, {
+            headers: { Authorization: `Bearer ${keycloak.token}` },
+          });
+
+          if (response.ok) {
+            const profile: UserProfile = await response.json();
+            setUser(profile);
+          } else if (response.status === 401) {
+            setAccessDenied(true);
+          } else {
+            setAccessDenied(true);
+          }
+        } catch {
+          setAccessDenied(true);
+        }
+
         setLoading(false);
       })
       .catch((err) => {
@@ -48,18 +75,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     keycloak.logout({ redirectUri: window.location.origin });
   }, []);
 
-  const roles = keycloak.tokenParsed?.realm_access?.roles ?? [];
-  const username = keycloak.tokenParsed?.preferred_username;
-  const email = keycloak.tokenParsed?.email;
-
   return (
     <AuthContext.Provider
       value={{
         authenticated,
+        accessDenied,
         token: keycloak.token,
-        roles,
-        username,
-        email,
+        user,
         logout,
         loading,
       }}
