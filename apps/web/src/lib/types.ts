@@ -6,7 +6,7 @@ export type BugSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 export type BugStatus = 'OPEN' | 'IN_FIX' | 'FIXED' | 'VERIFIED' | 'CLOSED';
 
-export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'CLOSED';
+export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED';
 
 export type ProjectRole = 'PM' | 'BA' | 'QC' | 'DEVELOPER';
 
@@ -216,31 +216,49 @@ export interface UpdateBugPayload {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
-export interface DashboardStatCard {
+export interface TaskCounts {
   total: number;
+  backlog: number;
   inProgress: number;
+  inReview: number;
   done: number;
   blocked: number;
 }
 
 export interface BurndownPoint {
   date: string;
-  remaining: number;
+  ideal: number;
+  actual: number;
 }
 
 export interface ActivityItem {
   id: string;
   type: string;
-  description: string;
-  userId: string;
-  createdAt: string;
-  user?: User;
+  title: string;
+  actor: string;
+  timestamp: string;
+}
+
+export interface ActiveSprintData {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  totalPoints: number;
+  completedPoints: number;
+  remainingPoints: number;
+}
+
+export interface BugCounts {
+  total: number;
+  open: number;
+  critical: number;
 }
 
 export interface DashboardData {
-  taskStats: DashboardStatCard;
-  activeSprint: Sprint | null;
-  sprintStats: SprintStats | null;
-  burndown: BurndownPoint[];
+  taskCounts: TaskCounts;
+  activeSprint: ActiveSprintData | null;
   recentActivity: ActivityItem[];
+  burndown: BurndownPoint[];
+  bugCounts: BugCounts;
 }
