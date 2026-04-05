@@ -101,7 +101,7 @@ export interface Task {
   createdBy?: User;
   sprint?: Sprint | null;
   subTasks?: SubTask[];
-  acceptanceCriteria?: AcceptanceCriteria[];
+  acceptanceCriteria?: string | null;  // JSON string — parsed client-side into AcceptanceCriteria[]
 }
 
 export interface AcceptanceCriteria {
@@ -127,6 +127,7 @@ export interface UpdateTaskPayload {
   storyPoints?: number;
   assigneeId?: string | null;
   sprintId?: string | null;
+  acceptanceCriteria?: string;  // JSON string of AcceptanceCriteria[]
 }
 
 export interface CreateSubTaskPayload {
