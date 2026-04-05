@@ -1,7 +1,7 @@
 import React, { createContext, useEffect, useState, useCallback } from 'react';
 import keycloak from './keycloak';
 
-export interface AuthContextValue {
+export type AuthContextValue = {
   authenticated: boolean;
   token: string | undefined;
   roles: string[];
