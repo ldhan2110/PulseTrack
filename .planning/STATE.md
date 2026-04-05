@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md (Projects/Members modules)
-last_updated: "2026-04-05T12:24:52.343Z"
+stopped_at: Completed 02-02-PLAN.md (Tasks module)
+last_updated: "2026-04-05T12:28:39.207Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 12
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-05)
 ## Current Position
 
 Phase: 02 (project-task-management) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-04-05
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 2 | 2 tasks | 11 files |
 | Phase 01 P04 | 2 | 2 tasks | 3 files |
 | Phase 02-project-task-management P01 | 15 | 2 tasks | 16 files |
+| Phase 02-project-task-management P02 | 2 | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase 02-project-task-management]: Direct service instantiation (new Service(mockPrisma)) for unit tests — PrismaService extends PrismaClient causes DI issues in NestJS test harness with Prisma 7 adapter
 - [Phase 02-project-task-management]: Manual migration SQL + prisma migrate deploy instead of migrate dev — execution environment is non-interactive (same pattern as Phase 1)
 - [Phase 02-project-task-management]: SystemRole enum removed from schema and shared types; system-roles guard remains but User.role field no longer exists — acceptable for POC scope
+- [Phase 02-project-task-management]: Free status transitions (no state machine) for TaskStatus per D-12 — any status to any status in update()
+- [Phase 02-project-task-management]: PATCH /:taskId open to developer role for POC — fine-grained assigned-only check deferred per D-34
 
 ### Pending Todos
 
@@ -104,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T12:24:52.341Z
-Stopped at: Completed 02-01-PLAN.md (Projects/Members modules)
+Last session: 2026-04-05T12:28:39.205Z
+Stopped at: Completed 02-02-PLAN.md (Tasks module)
 Resume file: None
