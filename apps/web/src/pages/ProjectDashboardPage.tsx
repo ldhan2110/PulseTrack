@@ -7,28 +7,6 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { BurndownChart } from '@/components/dashboard/BurndownChart';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { useDashboard } from '@/hooks/useDashboard';
-import type { ActivityItem, BurndownPoint } from '@/lib/types';
-
-function buildBurndownChartData(burndown: BurndownPoint[]) {
-  if (burndown.length === 0) return [];
-  const startPoints = burndown[0].remaining;
-  const n = burndown.length;
-  return burndown.map((point, i) => ({
-    date: point.date,
-    actual: point.remaining,
-    ideal: Math.round(startPoints * (1 - i / (n - 1 || 1))),
-  }));
-}
-
-function mapActivity(activity: ActivityItem) {
-  return {
-    id: activity.id,
-    type: activity.type,
-    title: activity.description,
-    actor: activity.user?.name ?? 'Unknown',
-    timestamp: activity.createdAt,
-  };
-}
 
 function DashboardSkeleton() {
   return (
@@ -63,15 +41,14 @@ export function ProjectDashboardPage() {
     );
   }
 
-  const taskCounts = data?.taskStats ?? { total: 0, inProgress: 0, done: 0, blocked: 0 };
+  const taskCounts = data?.taskCounts ?? { total: 0, backlog: 0, inProgress: 0, inReview: 0, done: 0, blocked: 0 };
   const activeSprint = data?.activeSprint ?? null;
-  const sprintStats = data?.sprintStats ?? null;
-  const burndownChartData = buildBurndownChartData(data?.burndown ?? []);
-  const activities = (data?.recentActivity ?? []).map(mapActivity);
+  const burndownData = data?.burndown ?? [];
+  const activities = data?.recentActivity ?? [];
 
   const sprintProgress =
-    sprintStats && sprintStats.totalPoints > 0
-      ? Math.round((sprintStats.completedPoints / sprintStats.totalPoints) * 100)
+    activeSprint && activeSprint.totalPoints > 0
+      ? Math.round((activeSprint.completedPoints / activeSprint.totalPoints) * 100)
       : 0;
 
   return (
@@ -93,7 +70,7 @@ export function ProjectDashboardPage() {
             <CardTitle>Burndown Chart</CardTitle>
           </CardHeader>
           <CardContent>
-            <BurndownChart data={burndownChartData} />
+            <BurndownChart data={burndownData} />
           </CardContent>
         </Card>
 
@@ -102,12 +79,12 @@ export function ProjectDashboardPage() {
             <CardTitle>Active Sprint</CardTitle>
           </CardHeader>
           <CardContent>
-            {activeSprint && sprintStats ? (
+            {activeSprint ? (
               <div className="flex flex-col gap-4">
                 <p className="text-sm font-medium">{activeSprint.name}</p>
                 <Progress value={sprintProgress} className="h-2" />
                 <p className="text-sm text-muted-foreground">
-                  {sprintStats.completedPoints} / {sprintStats.totalPoints} points completed
+                  {activeSprint.completedPoints} / {activeSprint.totalPoints} points completed
                 </p>
               </div>
             ) : (
