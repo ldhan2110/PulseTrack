@@ -10,6 +10,7 @@ import { SprintBoardPage } from './pages/SprintBoardPage';
 import { BugsPage } from './pages/BugsPage';
 import { MembersPage } from './pages/MembersPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
+import { BugDetailPage } from './pages/BugDetailPage';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/projects/:projectId/bugs" element={<BugsPage />} />
         <Route path="/projects/:projectId/members" element={<MembersPage />} />
         <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetailPage />} />
+        <Route path="/projects/:projectId/bugs/:bugId" element={<BugDetailPage />} />
       </Route>
     </Routes>
   );
