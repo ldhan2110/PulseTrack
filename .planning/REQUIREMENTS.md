@@ -18,15 +18,15 @@
 ### Project & Task Management
 
 - [x] **PROJ-01**: User can create, view, edit, and archive projects
-- [ ] **PROJ-02**: User can view project dashboard with task status, blockers, and progress
-- [ ] **TASK-01**: User can create, view, edit, and delete tasks within a project
-- [ ] **TASK-02**: Task follows status workflow: Backlog → In Progress → In Review → Done → Blocked
-- [ ] **TASK-03**: User can assign tasks to team members (includes unassigned state and reassignment)
-- [ ] **TASK-04**: User can add acceptance criteria to user stories
-- [ ] **TASK-05**: User can set or edit story points on user stories
-- [ ] **SPRT-01**: User can create sprints with start/end dates within a project
-- [ ] **SPRT-02**: User can add/remove tasks to/from sprints
-- [ ] **SPRT-03**: User can view sprint progress (burndown, completed vs remaining points)
+- [x] **PROJ-02**: User can view project dashboard with task status, blockers, and progress
+- [x] **TASK-01**: User can create, view, edit, and delete tasks within a project
+- [x] **TASK-02**: Task follows status workflow: Backlog → In Progress → In Review → Done → Blocked
+- [x] **TASK-03**: User can assign tasks to team members (includes unassigned state and reassignment)
+- [x] **TASK-04**: User can add acceptance criteria to user stories
+- [x] **TASK-05**: User can set or edit story points on user stories
+- [x] **SPRT-01**: User can create sprints with start/end dates within a project
+- [x] **SPRT-02**: User can add/remove tasks to/from sprints
+- [x] **SPRT-03**: User can view sprint progress (burndown, completed vs remaining points)
 
 ### Collaboration
 
@@ -124,15 +124,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RBAC-03 | Phase 1 | Complete |
 | RBAC-04 | Phase 1 | Complete |
 | PROJ-01 | Phase 2 | Complete |
-| PROJ-02 | Phase 2 | Pending |
-| TASK-01 | Phase 2 | Pending |
-| TASK-02 | Phase 2 | Pending |
-| TASK-03 | Phase 2 | Pending |
-| TASK-04 | Phase 2 | Pending |
-| TASK-05 | Phase 2 | Pending |
-| SPRT-01 | Phase 2 | Pending |
-| SPRT-02 | Phase 2 | Pending |
-| SPRT-03 | Phase 2 | Pending |
+| PROJ-02 | Phase 2 | Complete |
+| TASK-01 | Phase 2 | Complete |
+| TASK-02 | Phase 2 | Complete |
+| TASK-03 | Phase 2 | Complete |
+| TASK-04 | Phase 2 | Complete |
+| TASK-05 | Phase 2 | Complete |
+| SPRT-01 | Phase 2 | Complete |
+| SPRT-02 | Phase 2 | Complete |
+| SPRT-03 | Phase 2 | Complete |
 | COLB-01 | Phase 3 | Pending |
 | COLB-02 | Phase 3 | Pending |
 | TIME-01 | Phase 3 | Pending |

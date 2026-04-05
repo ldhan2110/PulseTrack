@@ -54,7 +54,7 @@ Plans:
 Plans:
 - [x] 02-01-PLAN.md — Schema migration (Bug, SubTask, enums, role updates) + Projects/Members backend modules
 - [x] 02-02-PLAN.md — Tasks backend module (CRUD, sub-tasks, status, assignment)
-- [ ] 02-03-PLAN.md — Sprints/Bugs/Dashboard backend modules
+- [x] 02-03-PLAN.md — Sprints/Bugs/Dashboard backend modules
 - [ ] 02-04-PLAN.md — Frontend infrastructure (shadcn, layout, routing, API client, stores, hooks, useTasks tests)
 - [ ] 02-05-PLAN.md — Project Dashboard + Members pages
 - [ ] 02-06-PLAN.md — Backlog (TanStack Table + Kanban dnd-kit) + Task Detail page + KanbanBoard tests
