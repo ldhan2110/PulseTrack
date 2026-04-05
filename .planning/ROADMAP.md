@@ -50,7 +50,7 @@ Plans:
   3. User can assign a task to a team member, reassign it, and leave it unassigned
   4. BA can add acceptance criteria and story points to a user story
   5. PM can create a sprint with dates, add tasks to it, and view sprint progress with burndown and completed vs. remaining points
-**Plans:** 10 plans (8 executed + 2 gap closure)
+**Plans:** 9/10 plans executed
 Plans:
 - [x] 02-01-PLAN.md — Schema migration (Bug, SubTask, enums, role updates) + Projects/Members backend modules
 - [x] 02-02-PLAN.md — Tasks backend module (CRUD, sub-tasks, status, assignment)
@@ -60,7 +60,7 @@ Plans:
 - [x] 02-06-PLAN.md — Backlog (TanStack Table + Kanban dnd-kit) + Task Detail page + KanbanBoard tests
 - [x] 02-07-PLAN.md — Sprints + Bugs pages
 - [x] 02-08-PLAN.md — Integration verification checkpoint (automated + human)
-- [ ] 02-09-PLAN.md — Gap closure: fix dashboard/sprint type mismatches (DashboardData, BurndownPoint, ActivityItem, SprintStatus)
+- [x] 02-09-PLAN.md — Gap closure: fix dashboard/sprint type mismatches (DashboardData, BurndownPoint, ActivityItem, SprintStatus)
 - [ ] 02-10-PLAN.md — Gap closure: fix acceptance criteria persistence (replace non-existent endpoints with JSON string via task update)
 **UI hint**: yes
 
@@ -131,7 +131,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Baseline | 4/4 | Complete   | 2026-04-05 |
-| 2. Project & Task Management | 8/10 | Gap closure |  |
+| 2. Project & Task Management | 9/10 | In Progress|  |
 | 3. Collaboration & Time Tracking | 0/? | Not started | - |
 | 4. Real-Time Layer | 0/? | Not started | - |
 | 5. AI Integration | 0/? | Not started | - |
