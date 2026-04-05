@@ -12,7 +12,7 @@ Seven phases, each a hard prerequisite for the one after it. The build order fol
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure Baseline** - Auth, RBAC, schema, and queue foundation — nothing else is possible without this
+- [x] **Phase 1: Infrastructure Baseline** - Auth, RBAC, schema, and queue foundation — nothing else is possible without this (completed 2026-04-05)
 - [ ] **Phase 2: Project & Task Management** - End-to-end project creation, task CRUD, sprint management, and status workflow
 - [ ] **Phase 3: Collaboration & Time Tracking** - Threaded comments, time logging, and developer workload visibility
 - [ ] **Phase 4: Real-Time Layer** - Live dashboard updates, in-app push notifications, and AI job progress via WebSocket
@@ -32,12 +32,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can log out from any page and is redirected to the Keycloak login screen
   4. A PM-role user accessing a BA-only endpoint receives a 403 response (RBAC enforced per role)
   5. Docker Compose brings up the full local dev stack (PostgreSQL, Redis, NestJS, React) with one command
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
 - [x] 01-01-PLAN.md — Monorepo scaffolding, dependencies, Docker Compose, Prisma schema, shared types
 - [x] 01-02-PLAN.md — Backend JWT auth strategy, RBAC guards, user sync, role-gated endpoints
 - [x] 01-03-PLAN.md — Frontend keycloak-js auth, AuthProvider, ProtectedRoute, role-gated pages
-- [ ] 01-04-PLAN.md — Integration verification checkpoint (automated + human)
+- [x] 01-04-PLAN.md — Integration verification checkpoint (automated + human)
 **UI hint**: yes
 
 ### Phase 2: Project & Task Management
@@ -119,7 +119,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Baseline | 3/4 | In Progress|  |
+| 1. Infrastructure Baseline | 4/4 | Complete   | 2026-04-05 |
 | 2. Project & Task Management | 0/? | Not started | - |
 | 3. Collaboration & Time Tracking | 0/? | Not started | - |
 | 4. Real-Time Layer | 0/? | Not started | - |
