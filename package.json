@@ -1,0 +1,16 @@
+{
+  "name": "pm-app",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @pm/api start:dev",
+    "dev:web": "pnpm --filter @pm/web dev",
+    "migrate": "pnpm --filter @pm/api exec prisma migrate dev",
+    "migrate:deploy": "pnpm --filter @pm/api exec prisma migrate deploy",
+    "generate": "pnpm --filter @pm/api exec prisma generate",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test --run",
+    "test:api": "pnpm --filter @pm/api test --run",
+    "test:web": "pnpm --filter @pm/web test --run"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
