@@ -11,6 +11,7 @@ import { MembersModule } from './members/members.module';
 import { TasksModule } from './tasks/tasks.module';
 import { SprintsModule } from './sprints/sprints.module';
 import { BugsModule } from './bugs/bugs.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { BugsModule } from './bugs/bugs.module';
     TasksModule,
     SprintsModule,
     BugsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
