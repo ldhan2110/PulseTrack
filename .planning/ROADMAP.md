@@ -61,7 +61,7 @@ Plans:
 - [x] 02-07-PLAN.md — Sprints + Bugs pages
 - [x] 02-08-PLAN.md — Integration verification checkpoint (automated + human)
 - [x] 02-09-PLAN.md — Gap closure: fix dashboard/sprint type mismatches (DashboardData, BurndownPoint, ActivityItem, SprintStatus)
-- [ ] 02-10-PLAN.md — Gap closure: fix acceptance criteria persistence (replace non-existent endpoints with JSON string via task update)
+- [x] 02-10-PLAN.md — Gap closure: fix acceptance criteria persistence (replace non-existent endpoints with JSON string via task update)
 **UI hint**: yes
 
 ### Phase 3: Collaboration & Time Tracking

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 02-09-PLAN.md (gap closure — frontend type alignment fixes)
-last_updated: "2026-04-05T13:32:59.971Z"
+stopped_at: Completed 02-10-PLAN.md (gap closure — acceptance criteria persistence fix)
+last_updated: "2026-04-05T13:37:36.491Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-project-task-management P07 | 7 | 2 tasks | 10 files |
 | Phase 02-project-task-management P08 | 525312 | 2 tasks | 13 files |
 | Phase 02-project-task-management P09 | 19 | 3 tasks | 6 files |
+| Phase 02-project-task-management P10 | 3 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Recent decisions affecting current work:
 - [Phase 02-project-task-management]: OnChangeFn<T> used for TanStack Table controlled sort/filter props — plain (value: T) => void is incompatible with internal Updater<T> pattern in useReactTable
 - [Phase 02-project-task-management]: SprintStats interface retained in types.ts — still used in api.ts for sprint stats endpoint despite being removed from DashboardData
 - [Phase 02-project-task-management]: buildBurndownChartData and mapActivity transformation functions removed — backend already returns correctly shaped data matching component props
+- [Phase 02-project-task-management]: Path B chosen for AC storage: JSON string in task.acceptanceCriteria field via PATCH, not dedicated AC endpoints
+- [Phase 02-project-task-management]: parseAcceptanceCriteria() handles legacy plain-string values by splitting on newlines for graceful migration
 
 ### Pending Todos
 
@@ -130,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T13:32:59.969Z
-Stopped at: Completed 02-09-PLAN.md (gap closure — frontend type alignment fixes)
+Last session: 2026-04-05T13:37:36.489Z
+Stopped at: Completed 02-10-PLAN.md (gap closure — acceptance criteria persistence fix)
 Resume file: None
