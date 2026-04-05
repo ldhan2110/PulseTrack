@@ -1,4 +1,9 @@
-export enum UserRole {
+export enum SystemRole {
+  ADMIN = 'admin',
+  MEMBER = 'member',
+}
+
+export enum ProjectRole {
   PM = 'pm',
   BA = 'ba',
   DEVELOPER = 'developer',
@@ -38,7 +43,15 @@ export interface UserProfile {
   keycloakId: string;
   email: string;
   username: string;
-  role: UserRole;
+  role: SystemRole;
+}
+
+export interface ProjectMemberProfile {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: ProjectRole;
+  joinedAt: string;
 }
 
 export interface JwtPayload {
