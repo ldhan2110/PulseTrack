@@ -20,17 +20,19 @@ import type {
   UpdateBugPayload,
   DashboardData,
 } from './types';
+import keycloak from '../auth/keycloak';
 
 const API_BASE = '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = keycloak.token;
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
-    credentials: 'include',
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

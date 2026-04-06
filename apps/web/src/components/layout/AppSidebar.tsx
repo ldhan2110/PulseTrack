@@ -19,7 +19,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -30,10 +29,6 @@ import { useProjects } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { useUiStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
-
-// 256px expanded, 48px collapsed — per UI-SPEC
-const SIDEBAR_WIDTH = '256px';
-const SIDEBAR_WIDTH_COLLAPSED = '48px';
 
 const PROJECT_NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
@@ -84,18 +79,11 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const { user } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
 
-  const userInitials = user
-    ? (user as { name?: string }).name
-      ? ((user as { name?: string }).name as string)
-          .split(' ')
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2)
-      : user.email.slice(0, 2).toUpperCase()
-    : 'U';
+  const userInitials = user?.username
+    ? user.username.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : user?.email?.slice(0, 2).toUpperCase() ?? 'U';
 
-  const userName = (user as { name?: string } | null)?.name ?? user?.email ?? 'User';
+  const userName = user?.username ?? user?.email ?? 'User';
 
   return (
     <Sidebar collapsible="icon">
@@ -248,22 +236,5 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ onCreateProject = () => {} }: AppSidebarProps) {
-  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
-  const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
-
-  return (
-    <SidebarProvider
-      defaultOpen={!sidebarCollapsed}
-      open={!sidebarCollapsed}
-      onOpenChange={(open) => setSidebarCollapsed(!open)}
-      style={
-        {
-          '--sidebar-width': SIDEBAR_WIDTH,
-          '--sidebar-width-icon': SIDEBAR_WIDTH_COLLAPSED,
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebarInner onCreateProject={onCreateProject} />
-    </SidebarProvider>
-  );
+  return <AppSidebarInner onCreateProject={onCreateProject} />;
 }

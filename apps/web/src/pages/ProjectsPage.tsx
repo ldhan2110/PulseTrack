@@ -58,9 +58,11 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
       </CardContent>
       <CardFooter>
-        <p className="text-xs text-muted-foreground">
-          Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
-        </p>
+        {project.updatedAt && (
+          <p className="text-xs text-muted-foreground">
+            Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
+          </p>
+        )}
       </CardFooter>
     </Card>
   );

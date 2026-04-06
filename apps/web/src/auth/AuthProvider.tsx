@@ -27,9 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     keycloak
       .init({
-        onLoad: 'check-sso',
+        onLoad: 'login-required',
         pkceMethod: 'S256',
-        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
         checkLoginIframe: false,
       })
       .then(async (auth) => {
@@ -42,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthenticated(true);
 
         try {
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          const apiUrl = import.meta.env.VITE_API_URL || '/api';
           const response = await fetch(`${apiUrl}/users/me`, {
             headers: { Authorization: `Bearer ${keycloak.token}` },
           });
@@ -55,7 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             setAccessDenied(true);
           }
-        } catch {
+        } catch (err) {
+          console.error('Failed to fetch user profile:', err);
           setAccessDenied(true);
         }
 

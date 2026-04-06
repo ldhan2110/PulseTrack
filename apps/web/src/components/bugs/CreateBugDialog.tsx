@@ -100,7 +100,7 @@ export function CreateBugDialog({
   const assigneeLabel = useMemo(() => {
     if (!assigneeId) return 'Unassigned';
     const member = members.find((m) => m.userId === assigneeId);
-    return member?.user.name ?? 'Unassigned';
+    return member?.user.username ?? 'Unassigned';
   }, [assigneeId, members]);
 
   const resetForm = () => {
@@ -262,7 +262,7 @@ export function CreateBugDialog({
                         {members.map((member) => (
                           <CommandItem
                             key={member.userId}
-                            value={member.user.name}
+                            value={member.user.username}
                             onSelect={() => {
                               setAssigneeId(member.userId);
                               setAssigneeOpen(false);
@@ -276,10 +276,10 @@ export function CreateBugDialog({
                             />
                             <Avatar className="size-5 mr-1.5">
                               <AvatarFallback className="text-[9px]">
-                                {getInitials(member.user.name)}
+                                {getInitials(member.user.username)}
                               </AvatarFallback>
                             </Avatar>
-                            {member.user.name}
+                            {member.user.username}
                           </CommandItem>
                         ))}
                       </CommandGroup>

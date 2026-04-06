@@ -416,10 +416,10 @@ export function TaskDetailPage() {
                   <div className="flex items-center gap-2">
                     <Avatar className="size-5">
                       <AvatarFallback className="text-[9px]">
-                        {getInitials(m.user.name)}
+                        {getInitials(m.user.username)}
                       </AvatarFallback>
                     </Avatar>
-                    {m.user.name}
+                    {m.user.username}
                   </div>
                 </SelectItem>
               ))}
@@ -671,10 +671,10 @@ export function TaskDetailPage() {
                 <div className="flex items-center gap-2">
                   <Avatar className="size-6">
                     <AvatarFallback className="text-[10px]">
-                      {getInitials(task.createdBy.name)}
+                      {getInitials(task.createdBy.username)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{task.createdBy.name}</span>
+                  <span className="text-sm">{task.createdBy.username}</span>
                 </div>
               </div>
             )}
@@ -911,10 +911,10 @@ function SubTaskRow({ subTask, members, canEdit, onUpdate, onDelete }: SubTaskRo
                 <div className="flex items-center gap-1.5">
                   <Avatar className="size-4">
                     <AvatarFallback className="text-[8px]">
-                      {getInitials(m.user.name)}
+                      {getInitials(m.user.username)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{m.user.name}</span>
+                  <span className="text-sm">{m.user.username}</span>
                 </div>
               </SelectItem>
             ))}

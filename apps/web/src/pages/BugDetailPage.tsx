@@ -344,10 +344,10 @@ export function BugDetailPage() {
                   <div className="flex items-center gap-2">
                     <Avatar className="size-5">
                       <AvatarFallback className="text-[9px]">
-                        {getInitials(m.user.name)}
+                        {getInitials(m.user.username)}
                       </AvatarFallback>
                     </Avatar>
-                    {m.user.name}
+                    {m.user.username}
                   </div>
                 </SelectItem>
               ))}
@@ -435,10 +435,10 @@ export function BugDetailPage() {
                 <div className="flex items-center gap-2">
                   <Avatar className="size-6">
                     <AvatarFallback className="text-[10px]">
-                      {getInitials(bug.reporter.name)}
+                      {getInitials(bug.reporter.username)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{bug.reporter.name}</span>
+                  <span className="text-sm">{bug.reporter.username}</span>
                 </div>
               </div>
             )}

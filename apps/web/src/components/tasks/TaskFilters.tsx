@@ -194,10 +194,10 @@ export function TaskFilters({
                 />
                 <Avatar className="size-5">
                   <AvatarFallback className="text-[9px]">
-                    {getInitials(member.user.name)}
+                    {getInitials(member.user.username)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate">{member.user.name}</span>
+                <span className="truncate">{member.user.username}</span>
               </label>
             ))}
           </div>

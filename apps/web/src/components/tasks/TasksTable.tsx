@@ -192,9 +192,9 @@ export function TasksTable({
           return (
             <div className="flex items-center gap-2">
               <Avatar className="size-6">
-                <AvatarFallback className="text-[10px]">{getInitials(assignee.name)}</AvatarFallback>
+                <AvatarFallback className="text-[10px]">{getInitials(assignee.username)}</AvatarFallback>
               </Avatar>
-              <span className="text-sm truncate">{assignee.name}</span>
+              <span className="text-sm truncate">{assignee.username}</span>
             </div>
           );
         },

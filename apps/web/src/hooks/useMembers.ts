@@ -25,7 +25,7 @@ export function useAddMember(projectId: string) {
     mutationFn: (data: AddMemberPayload) => api.addMember(projectId, data),
     onSuccess: (member) => {
       void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
-      toast.success(`${member.user.name} added to project`);
+      toast.success(`${member.user.username} added to project`);
     },
     onError: () => {
       toast.error('Something went wrong. Please try again.');

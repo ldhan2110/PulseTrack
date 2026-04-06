@@ -2,12 +2,18 @@ import { useEffect, useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { useUiStore } from '@/store/uiStore';
-import { SidebarInset } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { CreateProjectDialog } from '../projects/CreateProjectDialog';
+
+// 256px expanded, 48px collapsed — per UI-SPEC
+const SIDEBAR_WIDTH = '256px';
+const SIDEBAR_WIDTH_COLLAPSED = '48px';
 
 export function ProjectLayout() {
   const { projectId } = useParams<{ projectId: string }>();
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
   useEffect(() => {
@@ -18,9 +24,19 @@ export function ProjectLayout() {
   }, [projectId, setActiveProjectId]);
 
   return (
-    <div className="flex min-h-screen w-full">
+    <SidebarProvider
+      defaultOpen={!sidebarCollapsed}
+      open={!sidebarCollapsed}
+      onOpenChange={(open) => setSidebarCollapsed(!open)}
+      style={
+        {
+          '--sidebar-width': SIDEBAR_WIDTH,
+          '--sidebar-width-icon': SIDEBAR_WIDTH_COLLAPSED,
+        } as React.CSSProperties
+      }
+    >
       <AppSidebar onCreateProject={() => setCreateProjectOpen(true)} />
-      <SidebarInset className="flex-1 min-w-0">
+      <SidebarInset>
         <main className="px-8 pt-6 pb-8 max-w-[1280px] w-full mx-auto">
           <Outlet />
         </main>
@@ -29,6 +45,6 @@ export function ProjectLayout() {
         open={createProjectOpen}
         onOpenChange={setCreateProjectOpen}
       />
-    </div>
+    </SidebarProvider>
   );
 }

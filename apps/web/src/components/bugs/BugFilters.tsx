@@ -25,7 +25,8 @@ const STATUS_OPTIONS: { value: BugStatus; label: string }[] = [
   { value: 'CLOSED', label: 'Closed' },
 ];
 
-function getInitials(name: string): string {
+function getInitials(name: string | undefined | null): string {
+  if (!name) return '?';
   return name
     .split(' ')
     .map((n) => n[0])
@@ -243,10 +244,10 @@ export function BugFilters({
                 />
                 <Avatar className="size-5">
                   <AvatarFallback className="text-[9px]">
-                    {getInitials(member.user.name)}
+                    {getInitials(member.user.username)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate">{member.user.name}</span>
+                <span className="truncate">{member.user.username}</span>
               </label>
             ))}
           </div>

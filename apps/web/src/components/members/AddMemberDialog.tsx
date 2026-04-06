@@ -45,10 +45,10 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.R
 }
 
 const ROLES: { value: ProjectRole; label: string }[] = [
-  { value: 'PM', label: 'PM' },
-  { value: 'BA', label: 'BA' },
-  { value: 'QC', label: 'QC' },
-  { value: 'DEVELOPER', label: 'Developer' },
+  { value: 'pm', label: 'PM' },
+  { value: 'ba', label: 'BA' },
+  { value: 'qc', label: 'QC' },
+  { value: 'developer', label: 'Developer' },
 ];
 
 function getInitials(name: string): string {
@@ -69,7 +69,7 @@ interface AddMemberDialogProps {
 export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
-  const [selectedRole, setSelectedRole] = useState<ProjectRole>('DEVELOPER');
+  const [selectedRole, setSelectedRole] = useState<ProjectRole>('developer');
 
   const { data: searchResults = [], isFetching } = useSearchUsers(projectId, searchQuery);
   const addMember = useAddMember(projectId);
@@ -89,7 +89,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
   const handleClose = useCallback(() => {
     setSearchQuery('');
     setSelectedUser(null);
-    setSelectedRole('DEVELOPER');
+    setSelectedRole('developer');
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -135,10 +135,10 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                           data-checked={selectedUser?.id === user.id}
                         >
                           <Avatar size="sm">
-                            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                            <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{user.name}</p>
+                            <p className="truncate text-sm font-medium">{user.username}</p>
                             <p className="truncate text-xs text-muted-foreground">
                               {user.email}
                             </p>

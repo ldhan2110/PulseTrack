@@ -34,16 +34,17 @@ import {
 import { useChangeMemberRole, useRemoveMember } from '@/hooks/useMembers';
 import type { Member, ProjectRole } from '@/lib/types';
 
-const ROLES: ProjectRole[] = ['PM', 'BA', 'QC', 'DEVELOPER'];
+const ROLES: ProjectRole[] = ['pm', 'ba', 'qc', 'developer'];
 
 const ROLE_LABELS: Record<ProjectRole, string> = {
-  PM: 'PM',
-  BA: 'BA',
-  QC: 'QC',
-  DEVELOPER: 'Developer',
+  pm: 'PM',
+  ba: 'BA',
+  qc: 'QC',
+  developer: 'Developer',
 };
 
-function getInitials(name: string): string {
+function getInitials(name: string | undefined | null): string {
+  if (!name) return '?';
   return name
     .split(' ')
     .map((part) => part[0])
@@ -66,7 +67,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
   const handleRemoveConfirm = () => {
     if (!removingMember) return;
     removeMember.mutate(
-      { memberId: removingMember.id, name: removingMember.user.name },
+      { memberId: removingMember.id, name: removingMember.user.username },
       { onSettled: () => setRemovingMember(null) },
     );
   };
@@ -89,9 +90,9 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Avatar size="sm">
-                    <AvatarFallback>{getInitials(member.user.name)}</AvatarFallback>
+                    <AvatarFallback>{getInitials(member.user.username)}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">{member.user.name}</span>
+                  <span className="text-sm font-medium">{member.user.username}</span>
                 </div>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
@@ -155,7 +156,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Member</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove {removingMember?.user.name} from this project? They will lose access to
+              Remove {removingMember?.user.username} from this project? They will lose access to
               all project data.
             </AlertDialogDescription>
           </AlertDialogHeader>

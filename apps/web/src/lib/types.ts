@@ -8,7 +8,7 @@ export type BugStatus = 'OPEN' | 'IN_FIX' | 'FIXED' | 'VERIFIED' | 'CLOSED';
 
 export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED';
 
-export type ProjectRole = 'PM' | 'BA' | 'QC' | 'DEVELOPER';
+export type ProjectRole = 'pm' | 'ba' | 'qc' | 'developer';
 
 // ─── User ─────────────────────────────────────────────────────────────────────
 
@@ -16,7 +16,7 @@ export interface User {
   id: string;
   keycloakId: string;
   email: string;
-  name: string;
+  username: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,7 +24,7 @@ export interface User {
 export interface UserSearchResult {
   id: string;
   email: string;
-  name: string;
+  username: string;
 }
 
 // ─── Project ──────────────────────────────────────────────────────────────────

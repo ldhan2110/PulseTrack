@@ -67,7 +67,7 @@ export function KanbanCard({ task, projectId }: KanbanCardProps) {
             {task.assignee ? (
               <Avatar className="size-6">
                 <AvatarFallback className="text-[10px]">
-                  {getInitials(task.assignee.name)}
+                  {getInitials(task.assignee.username)}
                 </AvatarFallback>
               </Avatar>
             ) : (
