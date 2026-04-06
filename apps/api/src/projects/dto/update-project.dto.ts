@@ -11,4 +11,10 @@ export class UpdateProjectDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(10)
+  prefix?: string;
 }

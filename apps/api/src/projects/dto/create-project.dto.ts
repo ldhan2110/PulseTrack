@@ -10,7 +10,7 @@ export class CreateProjectDto {
   @IsString()
   @MinLength(3)
   @MaxLength(100)
-  name: string;
+  name?: string;
 
   @IsOptional()
   @IsString()
@@ -21,5 +21,5 @@ export class CreateProjectDto {
   @MinLength(2)
   @MaxLength(10)
   @Matches(/^[A-Z]{2,10}$/, { message: 'Prefix must be 2-10 uppercase letters' })
-  prefix: string;
+  prefix?: string;
 }
