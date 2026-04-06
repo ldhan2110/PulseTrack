@@ -44,16 +44,25 @@ export function useUpdateTask(projectId: string) {
       queryClient.setQueryData<Task[]>(['tasks', projectId], (old) =>
         old?.map((t) => (t.id === taskId ? { ...t, ...data } : t)) ?? [],
       );
-      return { previousTasks };
+      const previousTask = queryClient.getQueryData(['task', projectId, taskId]);
+      queryClient.setQueryData(['task', projectId, taskId], (old: Task | undefined) =>
+        old ? { ...old, ...data } : old,
+      );
+      return { previousTasks, previousTask };
     },
-    onError: (_err, _vars, context) => {
+    onError: (_err, { taskId }, context) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks', projectId], context.previousTasks);
       }
+      if (context?.previousTask) {
+        queryClient.setQueryData(['task', projectId, taskId], context.previousTask);
+      }
       toast.error('Something went wrong. Please try again.');
     },
-    onSettled: () => {
+    onSettled: (_data, _error, { taskId }) => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
     },
     onSuccess: () => {
       toast.success('Task updated');
@@ -94,16 +103,25 @@ export function useUpdateTaskStatus(projectId: string) {
       queryClient.setQueryData<Task[]>(['tasks', projectId], (old) =>
         old?.map((t) => (t.id === taskId ? { ...t, status } : t)) ?? [],
       );
-      return { previousTasks };
+      const previousTask = queryClient.getQueryData(['task', projectId, taskId]);
+      queryClient.setQueryData(['task', projectId, taskId], (old: Task | undefined) =>
+        old ? { ...old, status } : old,
+      );
+      return { previousTasks, previousTask };
     },
-    onError: (_err, _vars, context) => {
+    onError: (_err, { taskId }, context) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks', projectId], context.previousTasks);
       }
+      if (context?.previousTask) {
+        queryClient.setQueryData(['task', projectId, taskId], context.previousTask);
+      }
       toast.error('Something went wrong. Please try again.');
     },
-    onSettled: () => {
+    onSettled: (_data, _error, { taskId }) => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
     },
     onSuccess: (_data, { status }) => {
       toast.success(`Moved to ${STATUS_LABELS[status]}`);
