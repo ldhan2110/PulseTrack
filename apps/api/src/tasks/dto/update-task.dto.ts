@@ -7,6 +7,7 @@ import {
   Min,
   Max,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { TaskStatus, Priority } from '@prisma/client';
 
@@ -45,22 +46,27 @@ export class UpdateTaskDto {
   acceptanceCriteria?: string;
 
   @IsOptional()
+  @ValidateIf(o => o.priority !== null)
   @IsEnum(Priority)
   priority?: Priority | null;
 
   @IsOptional()
+  @ValidateIf(o => o.plannedStartDate !== null)
   @IsDateString()
   plannedStartDate?: string | null;
 
   @IsOptional()
+  @ValidateIf(o => o.plannedEndDate !== null)
   @IsDateString()
   plannedEndDate?: string | null;
 
   @IsOptional()
+  @ValidateIf(o => o.actualStartDate !== null)
   @IsDateString()
   actualStartDate?: string | null;
 
   @IsOptional()
+  @ValidateIf(o => o.actualEndDate !== null)
   @IsDateString()
   actualEndDate?: string | null;
 }
