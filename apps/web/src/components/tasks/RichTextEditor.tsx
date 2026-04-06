@@ -130,6 +130,7 @@ export function RichTextEditor({
   const [isEditing, setIsEditing] = useState(alwaysEditing);
   const initialContentRef = useRef(initialContent);
   const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<Editor | null>(null);
 
   // Keep initialContentRef in sync for read-mode rendering
   useEffect(() => {
@@ -156,12 +157,9 @@ export function RichTextEditor({
     content: initialContentRef.current,
     editable: true,
     editorProps: {
-      handlePaste: (view, event) => {
-        if (view.state.tr) {
-          const tiptapEditor = editor;
-          if (tiptapEditor) {
-            return handleImagePaste(tiptapEditor, event as unknown as ClipboardEvent);
-          }
+      handlePaste: (_view, event) => {
+        if (editorRef.current) {
+          return handleImagePaste(editorRef.current, event as unknown as ClipboardEvent);
         }
         return false;
       },
@@ -174,6 +172,9 @@ export function RichTextEditor({
       },
     },
   });
+
+  // Keep editorRef in sync so paste handler can access the editor instance
+  editorRef.current = editor;
 
   // Update editor content when initialContent changes (e.g. after refetch)
   useEffect(() => {
