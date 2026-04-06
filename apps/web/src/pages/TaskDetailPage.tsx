@@ -34,7 +34,8 @@ import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import { CommentThread } from '@/components/tasks/CommentThread';
 import { AttachmentList } from '@/components/tasks/AttachmentList';
 import { ActivityLog } from '@/components/tasks/ActivityLog';
-import { useTask, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
+import { useTaskByKey, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
+import { useUiStore } from '@/store/uiStore';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
 import { useProjectRole } from '@/hooks/useProjectRole';
@@ -162,12 +163,14 @@ function DatePickerField({ label, value, onChange, disabled }: DatePickerFieldPr
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export function TaskDetailPage() {
-  const { projectId = '', taskId = '' } = useParams<{ projectId: string; taskId: string }>();
+  const { taskKey = '' } = useParams<{ taskKey: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: task, isLoading, isError } = useTask(projectId, taskId);
+  const { data: task, isLoading, isError } = useTaskByKey(projectId, taskKey);
+  const taskId = task?.id ?? '';
   const { data: members = [] } = useMembers(projectId);
   const { data: sprints = [] } = useSprints(projectId);
   const { canManage, canEdit } = useProjectRole(projectId);
@@ -192,7 +195,7 @@ export function TaskDetailPage() {
   const createSubTask = useMutation({
     mutationFn: (title: string) => api.createSubTask(projectId, taskId, { title }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
       setNewSubTaskTitle('');
       setAddingSubTask(false);
     },
@@ -208,7 +211,7 @@ export function TaskDetailPage() {
       data: { status?: TaskStatus; assigneeId?: string | null; title?: string };
     }) => api.updateSubTask(projectId, taskId, subTaskId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
     },
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
@@ -216,7 +219,7 @@ export function TaskDetailPage() {
   const deleteSubTask = useMutation({
     mutationFn: (subTaskId: string) => api.deleteSubTask(projectId, taskId, subTaskId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
     },
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
@@ -240,6 +243,7 @@ export function TaskDetailPage() {
           setAddingCriteria(false);
         },
         onError: () => toast.error('Something went wrong. Please try again.'),
+        onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }),
       },
     );
   }, [newCriteriaText, task, taskId, updateTask]);
@@ -251,9 +255,12 @@ export function TaskDetailPage() {
       const updated = current.map((item) =>
         item.id === ac.id ? { ...item, completed: !item.completed } : item,
       );
-      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
+      updateTask.mutate(
+        { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
+        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+      );
     },
-    [task, taskId, updateTask],
+    [task, taskId, updateTask, queryClient, projectId, taskKey],
   );
 
   const deleteCriteria = useCallback(
@@ -261,9 +268,12 @@ export function TaskDetailPage() {
       if (!task) return;
       const current = parseAcceptanceCriteria(task.acceptanceCriteria);
       const updated = current.filter((item) => item.id !== acId);
-      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
+      updateTask.mutate(
+        { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
+        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+      );
     },
-    [task, taskId, updateTask],
+    [task, taskId, updateTask, queryClient, projectId, taskKey],
   );
 
   const updateCriteriaText = useCallback(
@@ -273,9 +283,12 @@ export function TaskDetailPage() {
       const updated = current.map((item) =>
         item.id === acId ? { ...item, text } : item,
       );
-      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
+      updateTask.mutate(
+        { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
+        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+      );
     },
-    [task, taskId, updateTask],
+    [task, taskId, updateTask, queryClient, projectId, taskKey],
   );
 
   const handleTitleSave = () => {
@@ -285,7 +298,12 @@ export function TaskDetailPage() {
     }
     updateTask.mutate(
       { taskId, data: { title: titleValue.trim() } },
-      { onSettled: () => setEditingTitle(false) },
+      {
+        onSettled: () => {
+          setEditingTitle(false);
+          void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
+        },
+      },
     );
   };
 
@@ -429,7 +447,10 @@ export function TaskDetailPage() {
               <RichTextEditor
                 initialContent={task.description ?? ''}
                 onSave={(html) =>
-                  updateTask.mutate({ taskId, data: { description: html } })
+                  updateTask.mutate(
+                    { taskId, data: { description: html } },
+                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                  )
                 }
                 editable={canEdit}
               />
@@ -565,7 +586,10 @@ export function TaskDetailPage() {
                 <Select
                   value={task.status}
                   onValueChange={(val) =>
-                    updateTask.mutate({ taskId, data: { status: val as TaskStatus } })
+                    updateTask.mutate(
+                      { taskId, data: { status: val as TaskStatus } },
+                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                    )
                   }
                   disabled={!canEdit}
                 >
@@ -592,10 +616,10 @@ export function TaskDetailPage() {
                 <Select
                   value={task.assigneeId ?? 'unassigned'}
                   onValueChange={(val) =>
-                    updateTask.mutate({
-                      taskId,
-                      data: { assigneeId: val === 'unassigned' ? null : val },
-                    })
+                    updateTask.mutate(
+                      { taskId, data: { assigneeId: val === 'unassigned' ? null : val } },
+                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                    )
                   }
                   disabled={!canEdit}
                 >
@@ -628,10 +652,10 @@ export function TaskDetailPage() {
                 <Select
                   value={task.sprintId ?? 'none'}
                   onValueChange={(val) =>
-                    updateTask.mutate({
-                      taskId,
-                      data: { sprintId: val === 'none' ? null : val },
-                    })
+                    updateTask.mutate(
+                      { taskId, data: { sprintId: val === 'none' ? null : val } },
+                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                    )
                   }
                   disabled={!canEdit}
                 >
@@ -665,10 +689,10 @@ export function TaskDetailPage() {
                     const val = e.target.value;
                     const num = val === '' ? null : Number(val);
                     if (num === task.storyPoints) return;
-                    updateTask.mutate({
-                      taskId,
-                      data: { storyPoints: num === null ? undefined : num },
-                    });
+                    updateTask.mutate(
+                      { taskId, data: { storyPoints: num === null ? undefined : num } },
+                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                    );
                   }}
                 />
               </div>
@@ -681,7 +705,10 @@ export function TaskDetailPage() {
                     value={task.priority ?? 'none'}
                     onValueChange={(val) => {
                       const newPriority = val === 'none' ? null : (val as Priority);
-                      updateTask.mutate({ taskId, data: { priority: newPriority } });
+                      updateTask.mutate(
+                        { taskId, data: { priority: newPriority } },
+                        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                      );
                     }}
                     disabled={!canEdit}
                   >
@@ -714,13 +741,19 @@ export function TaskDetailPage() {
                 <DatePickerField
                   label="Start"
                   value={task.plannedStartDate}
-                  onChange={(iso) => updateTask.mutate({ taskId, data: { plannedStartDate: iso } })}
+                  onChange={(iso) => updateTask.mutate(
+                    { taskId, data: { plannedStartDate: iso } },
+                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                  )}
                   disabled={!canEdit}
                 />
                 <DatePickerField
                   label="End"
                   value={task.plannedEndDate}
-                  onChange={(iso) => updateTask.mutate({ taskId, data: { plannedEndDate: iso } })}
+                  onChange={(iso) => updateTask.mutate(
+                    { taskId, data: { plannedEndDate: iso } },
+                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                  )}
                   disabled={!canEdit}
                 />
               </div>
@@ -731,13 +764,19 @@ export function TaskDetailPage() {
                 <DatePickerField
                   label="Start"
                   value={task.actualStartDate}
-                  onChange={(iso) => updateTask.mutate({ taskId, data: { actualStartDate: iso } })}
+                  onChange={(iso) => updateTask.mutate(
+                    { taskId, data: { actualStartDate: iso } },
+                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                  )}
                   disabled={!canEdit}
                 />
                 <DatePickerField
                   label="End"
                   value={task.actualEndDate}
-                  onChange={(iso) => updateTask.mutate({ taskId, data: { actualEndDate: iso } })}
+                  onChange={(iso) => updateTask.mutate(
+                    { taskId, data: { actualEndDate: iso } },
+                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                  )}
                   disabled={!canEdit}
                 />
               </div>
