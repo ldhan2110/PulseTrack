@@ -106,6 +106,8 @@ export const api = {
     request<Task>(`/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify(data) }),
   getTask: (projectId: string, taskId: string) =>
     request<Task>(`/projects/${projectId}/tasks/${taskId}`),
+  getTaskByKey: (projectId: string, taskKey: string) =>
+    request<Task>(`/projects/${projectId}/tasks/by-key/${taskKey}`),
   updateTask: (projectId: string, taskId: string, data: UpdateTaskPayload) =>
     request<Task>(`/projects/${projectId}/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteTask: (projectId: string, taskId: string) =>

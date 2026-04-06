@@ -19,6 +19,14 @@ export function useTask(projectId: string, taskId: string) {
   });
 }
 
+export function useTaskByKey(projectId: string, taskKey: string) {
+  return useQuery({
+    queryKey: ['task-by-key', projectId, taskKey],
+    queryFn: () => api.getTaskByKey(projectId, taskKey),
+    enabled: !!projectId && !!taskKey,
+  });
+}
+
 export function useCreateTask(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
