@@ -1,8 +1,8 @@
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import {
   ArrowRight, UserCheck, Milestone, Star, Pencil,
   MessageSquare, MessageSquareDiff, MessageSquareX,
-  FileText, ListChecks, Paperclip,
+  FileText, ListChecks, Paperclip, CalendarDays, Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TaskHistoryEntry, Member, Sprint } from '@/lib/types';
@@ -34,6 +34,11 @@ const FIELD_CONFIG: Record<string, FieldConfig> = {
   acceptanceCriteria: { icon: ListChecks, color: 'text-teal-600', bg: 'bg-teal-100 dark:bg-teal-900/40' },
   attachment_added: { icon: Paperclip, color: 'text-sky-600', bg: 'bg-sky-100 dark:bg-sky-900/40' },
   attachment_deleted: { icon: Paperclip, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/40' },
+  priority:         { icon: Tag,           color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/40' },
+  plannedStartDate: { icon: CalendarDays,  color: 'text-cyan-600',   bg: 'bg-cyan-100 dark:bg-cyan-900/40' },
+  plannedEndDate:   { icon: CalendarDays,  color: 'text-amber-600',  bg: 'bg-amber-100 dark:bg-amber-900/40' },
+  actualStartDate:  { icon: CalendarDays,  color: 'text-green-600',  bg: 'bg-green-100 dark:bg-green-900/40' },
+  actualEndDate:    { icon: CalendarDays,  color: 'text-emerald-600',bg: 'bg-emerald-100 dark:bg-emerald-900/40' },
 };
 
 const DEFAULT_CONFIG: FieldConfig = {
@@ -79,6 +84,25 @@ function buildDescription(
       return `uploaded ${newValue}`;
     case 'attachment_deleted':
       return `removed ${oldValue}`;
+    case 'priority': {
+      if (!newValue) return 'cleared priority';
+      const priorityLabels: Record<string, string> = {
+        LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', CRITICAL: 'Critical', BLOCKER: 'Blocker',
+      };
+      return `set priority to ${priorityLabels[newValue] ?? newValue}`;
+    }
+    case 'plannedStartDate':
+      if (!newValue) return 'cleared planned start date';
+      try { return `set planned start to ${format(new Date(newValue), 'MMM d, yyyy')}`; } catch { return 'set planned start date'; }
+    case 'plannedEndDate':
+      if (!newValue) return 'cleared planned end date';
+      try { return `set planned end to ${format(new Date(newValue), 'MMM d, yyyy')}`; } catch { return 'set planned end date'; }
+    case 'actualStartDate':
+      if (!newValue) return 'cleared actual start date';
+      try { return `set actual start to ${format(new Date(newValue), 'MMM d, yyyy')}`; } catch { return 'set actual start date'; }
+    case 'actualEndDate':
+      if (!newValue) return 'cleared actual end date';
+      try { return `set actual end to ${format(new Date(newValue), 'MMM d, yyyy')}`; } catch { return 'set actual end date'; }
     default:
       return `changed ${field}`;
   }
