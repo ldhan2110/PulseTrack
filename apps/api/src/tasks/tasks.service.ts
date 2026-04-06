@@ -31,6 +31,11 @@ export class TasksService {
           storyPoints: dto.storyPoints,
           sprintId: dto.sprintId,
           acceptanceCriteria: dto.acceptanceCriteria,
+          priority: dto.priority,
+          plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : undefined,
+          plannedEndDate: dto.plannedEndDate ? new Date(dto.plannedEndDate) : undefined,
+          actualStartDate: dto.actualStartDate ? new Date(dto.actualStartDate) : undefined,
+          actualEndDate: dto.actualEndDate ? new Date(dto.actualEndDate) : undefined,
         },
         include: {
           assignee: { select: { id: true, username: true, email: true } },
@@ -91,7 +96,7 @@ export class TasksService {
     const current = await this.prisma.task.findUniqueOrThrow({ where: { id: taskId } });
 
     // Build history entries for tracked fields only
-    const trackedFields = ['status', 'assigneeId', 'sprintId', 'storyPoints', 'title'] as const;
+    const trackedFields = ['status', 'assigneeId', 'sprintId', 'storyPoints', 'title', 'priority'] as const;
     const historyEntries: { taskId: string; actorId: string; field: string; oldValue: string | null; newValue: string | null }[] = trackedFields
       .filter(f => dto[f] !== undefined && String(dto[f] ?? '') !== String(current[f] ?? ''))
       .map(f => ({
@@ -124,6 +129,24 @@ export class TasksService {
       });
     }
 
+    // Track date field changes
+    const dateFields = ['plannedStartDate', 'plannedEndDate', 'actualStartDate', 'actualEndDate'] as const;
+    for (const f of dateFields) {
+      if (dto[f] !== undefined) {
+        const oldRaw = current[f] ? (current[f] as Date).toISOString() : null;
+        const newRaw = dto[f] ? new Date(dto[f] as string).toISOString() : null;
+        if (oldRaw !== newRaw) {
+          historyEntries.push({
+            taskId,
+            actorId,
+            field: f,
+            oldValue: oldRaw,
+            newValue: newRaw,
+          });
+        }
+      }
+    }
+
     // Execute update + history inserts in a single transaction
     const [updatedTask] = await this.prisma.$transaction([
       this.prisma.task.update({
@@ -137,6 +160,19 @@ export class TasksService {
           ...(dto.sprintId !== undefined && { sprintId: dto.sprintId }),
           ...(dto.acceptanceCriteria !== undefined && {
             acceptanceCriteria: dto.acceptanceCriteria,
+          }),
+          ...(dto.priority !== undefined && { priority: dto.priority }),
+          ...(dto.plannedStartDate !== undefined && {
+            plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : null,
+          }),
+          ...(dto.plannedEndDate !== undefined && {
+            plannedEndDate: dto.plannedEndDate ? new Date(dto.plannedEndDate) : null,
+          }),
+          ...(dto.actualStartDate !== undefined && {
+            actualStartDate: dto.actualStartDate ? new Date(dto.actualStartDate) : null,
+          }),
+          ...(dto.actualEndDate !== undefined && {
+            actualEndDate: dto.actualEndDate ? new Date(dto.actualEndDate) : null,
           }),
         },
         include: {
