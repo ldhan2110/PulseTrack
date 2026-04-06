@@ -263,3 +263,48 @@ export interface DashboardData {
   burndown: BurndownPoint[];
   bugCounts: BugCounts;
 }
+
+// ─── Comment ─────────────────────────────────────────────────────────────────
+
+export interface Comment {
+  id: string;
+  content: string;
+  taskId: string;
+  authorId: string;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author: Pick<User, 'id' | 'username' | 'email'>;
+  replies?: Comment[];
+}
+
+export interface CreateCommentPayload {
+  content: string;
+}
+
+// ─── Attachment ──────────────────────────────────────────────────────────────
+
+export interface Attachment {
+  id: string;
+  filename: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  taskId: string;
+  uploaderId: string;
+  createdAt: string;
+  uploader: Pick<User, 'id' | 'username' | 'email'>;
+}
+
+// ─── Task History ────────────────────────────────────────────────────────────
+
+export interface TaskHistoryEntry {
+  id: string;
+  taskId: string;
+  actorId: string;
+  field: string;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+  actor: Pick<User, 'id' | 'username' | 'email'>;
+}

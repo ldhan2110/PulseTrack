@@ -37,11 +37,6 @@ export class TasksController {
     return this.tasksService.create(projectId, req.user.id, dto);
   }
 
-  @Get(':taskId/history')
-  getHistory(@Param('taskId') taskId: string) {
-    return this.tasksService.getHistory(taskId);
-  }
-
   @Get(':taskId')
   findOne(@Param('taskId') taskId: string) {
     return this.tasksService.findOne(taskId);
@@ -49,12 +44,8 @@ export class TasksController {
 
   @Patch(':taskId')
   @ProjectRoles('pm', 'ba', 'developer')
-  update(
-    @Param('taskId') taskId: string,
-    @Req() req: any,
-    @Body() dto: UpdateTaskDto,
-  ) {
-    return this.tasksService.update(taskId, dto, req.user.id);
+  update(@Param('taskId') taskId: string, @Body() dto: UpdateTaskDto) {
+    return this.tasksService.update(taskId, dto);
   }
 
   @Delete(':taskId')

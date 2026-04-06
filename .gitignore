@@ -9,6 +9,3 @@ coverage/
 .DS_Store
 .planning
 .remember
-
-# File uploads (local disk storage)
-uploads/

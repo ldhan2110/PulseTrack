@@ -9,7 +9,6 @@ describe('TasksService', () => {
       create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
-      findUniqueOrThrow: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -18,11 +17,6 @@ describe('TasksService', () => {
       update: vi.fn(),
       delete: vi.fn(),
     },
-    taskHistory: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-    },
-    $transaction: vi.fn(),
   };
 
   beforeEach(() => {
@@ -59,24 +53,65 @@ describe('TasksService', () => {
     });
   });
 
-  describe('update() history recording', () => {
-    it('should create a TaskHistory entry when status changes', async () => {
-      // TODO: wire up after Task 2 modifies tasks.service.ts to accept actorId
-      expect(true).toBe(true); // placeholder — Plan 01 Task 2 fills this in
+  describe('update()', () => {
+    it('updates task status from BACKLOG to IN_PROGRESS', async () => {
+      const taskId = 'task-1';
+      const dto = { status: 'IN_PROGRESS' as any };
+      const updatedTask = { id: taskId, status: 'IN_PROGRESS', assignee: null, sprint: null };
+
+      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+
+      const result = await service.update(taskId, dto);
+
+      expect(result.status).toBe('IN_PROGRESS');
+      expect(mockPrismaService.task.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: taskId },
+          data: expect.objectContaining({ status: 'IN_PROGRESS' }),
+        }),
+      );
     });
 
-    it('should NOT create history when non-tracked field changes (e.g. description)', async () => {
-      expect(true).toBe(true); // placeholder
+    it('sets assigneeId on a task', async () => {
+      const taskId = 'task-1';
+      const dto = { assigneeId: 'user-2' };
+      const updatedTask = { id: taskId, assigneeId: 'user-2', assignee: { id: 'user-2', username: 'dev', email: 'dev@test.com' }, sprint: null };
+
+      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+
+      const result = await service.update(taskId, dto);
+
+      expect(result.assigneeId).toBe('user-2');
     });
 
-    it('should create multiple history entries when multiple tracked fields change', async () => {
-      expect(true).toBe(true); // placeholder
-    });
-  });
+    it('clears assigneeId by setting it to null', async () => {
+      const taskId = 'task-1';
+      const dto = { assigneeId: null as any };
+      const updatedTask = { id: taskId, assigneeId: null, assignee: null, sprint: null };
 
-  describe('getHistory()', () => {
-    it('should return history entries ordered by createdAt desc', async () => {
-      expect(true).toBe(true); // placeholder — Plan 01 Task 2 fills this in
+      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+
+      const result = await service.update(taskId, dto);
+
+      expect(result.assigneeId).toBeNull();
+      expect(mockPrismaService.task.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ assigneeId: null }),
+        }),
+      );
+    });
+
+    it('updates storyPoints and acceptanceCriteria', async () => {
+      const taskId = 'task-1';
+      const dto = { storyPoints: 5, acceptanceCriteria: 'Given X when Y then Z' };
+      const updatedTask = { id: taskId, storyPoints: 5, acceptanceCriteria: 'Given X when Y then Z', assignee: null, sprint: null };
+
+      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+
+      const result = await service.update(taskId, dto);
+
+      expect(result.storyPoints).toBe(5);
+      expect(result.acceptanceCriteria).toBe('Given X when Y then Z');
     });
   });
 
