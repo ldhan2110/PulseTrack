@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useUiStore } from '@/store/uiStore';
 import { Users, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,10 +26,10 @@ function MembersTableSkeleton() {
 }
 
 export function MembersPage() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const { data: members, isLoading } = useMembers(projectId ?? '');
-  const { canManage } = useProjectRole(projectId ?? '');
+  const { data: members, isLoading } = useMembers(projectId);
+  const { canManage } = useProjectRole(projectId);
 
   return (
     <div className="flex flex-col gap-6 px-8 py-6">

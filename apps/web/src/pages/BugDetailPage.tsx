@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useUiStore } from '@/store/uiStore';
 import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,7 +69,8 @@ function formatRelative(dateStr: string): string {
 }
 
 export function BugDetailPage() {
-  const { projectId = '', bugId = '' } = useParams<{ projectId: string; bugId: string }>();
+  const { bugId = '' } = useParams<{ bugId: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
 
   const { data: bug, isLoading, isError } = useBug(projectId, bugId);

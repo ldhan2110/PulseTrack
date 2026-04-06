@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useUiStore } from '@/store/uiStore';
 import { Settings, Upload, X } from 'lucide-react';
 import { useProject, useUpdateProjectSettings, useUploadProjectAvatar, useRemoveProjectAvatar } from '@/hooks/useProjects';
 import { useProjectRole } from '@/hooks/useProjectRole';
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function ProjectSettingsPage() {
-  const { projectId = '' } = useParams<{ projectId: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: project, isLoading } = useProject(projectId);
   const { canManage } = useProjectRole(projectId);
   const updateSettings = useUpdateProjectSettings(projectId);

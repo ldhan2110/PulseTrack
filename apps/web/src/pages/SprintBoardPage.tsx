@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useUiStore } from '@/store/uiStore';
 import { Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,8 @@ function formatDate(dateStr: string | null): string {
 }
 
 export function SprintBoardPage() {
-  const { projectId = '', sprintId = '', projectPrefix = '' } = useParams<{ projectId: string; sprintId: string; projectPrefix: string }>();
+  const { sprintId = '', projectPrefix = '' } = useParams<{ sprintId: string; projectPrefix: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
   const { data: sprint, isLoading: sprintLoading, isError: sprintError } = useSprint(projectId, sprintId);
   const { data: allTasks, isLoading: tasksLoading } = useTasks(projectId);

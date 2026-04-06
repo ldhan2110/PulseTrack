@@ -16,7 +16,8 @@ import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
 import type { Task } from '@/lib/types';
 
 export function BacklogPage() {
-  const { projectId = '', projectPrefix = '' } = useParams<{ projectId: string; projectPrefix: string }>();
+  const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
   const { data: sprints = [] } = useSprints(projectId);
   const { data: members = [] } = useMembers(projectId);
