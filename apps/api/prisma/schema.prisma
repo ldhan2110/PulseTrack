@@ -92,7 +92,9 @@ model User {
   aiJobsRequested   AiJob[]
   reportedBugs      Bug[]     @relation("BugReporter")
   assignedBugs      Bug[]     @relation("BugAssignee")
-  assignedSubTasks  SubTask[] @relation("SubTaskAssignee")
+  assignedSubTasks        SubTask[]     @relation("SubTaskAssignee")
+  uploadedAttachments     Attachment[]  @relation("AttachmentUploader")
+  taskHistories           TaskHistory[] @relation("TaskHistoryActor")
 }
 
 model Project {
@@ -164,6 +166,8 @@ model Task {
   timeLogs       TimeLog[]
   blueprintSyncs BlueprintSync[]
   subTasks       SubTask[]
+  attachments    Attachment[]
+  history        TaskHistory[]
 }
 
 model Comment {
@@ -288,4 +292,39 @@ model SubTask {
 
   parent   Task  @relation(fields: [parentId], references: [id], onDelete: Cascade)
   assignee User? @relation("SubTaskAssignee", fields: [assigneeId], references: [id])
+}
+
+// =====================
+// ATTACHMENTS
+// =====================
+
+model Attachment {
+  id          String   @id @default(cuid())
+  filename    String
+  storedName  String
+  mimeType    String
+  size        Int
+  taskId      String
+  uploaderId  String
+  createdAt   DateTime @default(now())
+
+  task     Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploader User @relation("AttachmentUploader", fields: [uploaderId], references: [id])
+}
+
+// =====================
+// TASK HISTORY
+// =====================
+
+model TaskHistory {
+  id        String   @id @default(cuid())
+  taskId    String
+  actorId   String
+  field     String
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+
+  task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor User @relation("TaskHistoryActor", fields: [actorId], references: [id])
 }
