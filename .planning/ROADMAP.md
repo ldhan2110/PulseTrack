@@ -147,6 +147,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 Plans:
 - [x] 08-01-PLAN.md — Schema migration (Attachment + TaskHistory), deps install, history recording in TasksService, history endpoint
-- [ ] 08-02-PLAN.md — CommentsModule + AttachmentsModule backend (CRUD, threading, file upload/download/delete)
-- [ ] 08-03-PLAN.md — Frontend infrastructure (Tiptap RichTextEditor, types, API methods, React Query hooks)
-- [ ] 08-04-PLAN.md — TaskDetailPage full replacement with two-panel layout, all sections, human verification
+- [x] 08-02-PLAN.md — CommentsModule + AttachmentsModule backend (CRUD, threading, file upload/download/delete)
+- [x] 08-03-PLAN.md — Frontend infrastructure (Tiptap RichTextEditor, types, API methods, React Query hooks)
+- [x] 08-04-PLAN.md — TaskDetailPage full replacement with two-panel layout, all sections, human verification
