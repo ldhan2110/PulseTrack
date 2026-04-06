@@ -16,7 +16,7 @@ import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
 import type { Task } from '@/lib/types';
 
 export function BacklogPage() {
-  const { projectId = '' } = useParams<{ projectId: string }>();
+  const { projectId = '', projectPrefix = '' } = useParams<{ projectId: string; projectPrefix: string }>();
   const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
   const { data: sprints = [] } = useSprints(projectId);
   const { data: members = [] } = useMembers(projectId);
@@ -126,6 +126,7 @@ export function BacklogPage() {
           <TasksTable
             tasks={taskList}
             projectId={projectId}
+            projectPrefix={projectPrefix}
             members={members}
             sprints={sprints}
             onRowSelectionChange={setSelectedTasks}
@@ -133,7 +134,7 @@ export function BacklogPage() {
         </TabsContent>
 
         <TabsContent value="board" className="mt-4 flex-1 min-h-0">
-          <KanbanBoard tasks={taskList} projectId={projectId} />
+          <KanbanBoard tasks={taskList} projectId={projectId} projectPrefix={projectPrefix} />
         </TabsContent>
       </Tabs>
 

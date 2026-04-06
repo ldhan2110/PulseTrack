@@ -24,7 +24,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 export function SprintBoardPage() {
-  const { projectId = '', sprintId = '' } = useParams<{ projectId: string; sprintId: string }>();
+  const { projectId = '', sprintId = '', projectPrefix = '' } = useParams<{ projectId: string; sprintId: string; projectPrefix: string }>();
   const navigate = useNavigate();
   const { data: sprint, isLoading: sprintLoading, isError: sprintError } = useSprint(projectId, sprintId);
   const { data: allTasks, isLoading: tasksLoading } = useTasks(projectId);
@@ -165,13 +165,14 @@ export function SprintBoardPage() {
                 This sprint is closed — board is read-only.
               </div>
             ) : null}
-            <KanbanBoard tasks={sprintTasks} projectId={projectId} />
+            <KanbanBoard tasks={sprintTasks} projectId={projectId} projectPrefix={projectPrefix} />
           </TabsContent>
 
           <TabsContent value="table" className="mt-4">
             <TasksTable
               tasks={sprintTasks}
               projectId={projectId}
+              projectPrefix={projectPrefix}
               members={members}
               sprints={sprints}
             />

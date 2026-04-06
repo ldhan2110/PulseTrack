@@ -12,6 +12,7 @@ import type { Task, Priority } from '@/lib/types';
 interface KanbanCardProps {
   task: Task;
   projectId: string;
+  projectPrefix: string;
 }
 
 const PRIORITY_CONFIG: Record<Priority, { color: string; glow: string; label: string }> = {
@@ -44,7 +45,7 @@ function isOverdue(plannedEndDate: string | null | undefined, status: string): b
   return new Date(plannedEndDate) < new Date();
 }
 
-export function KanbanCard({ task, projectId }: KanbanCardProps) {
+export function KanbanCard({ task, projectId, projectPrefix }: KanbanCardProps) {
   const navigate = useNavigate();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -56,7 +57,7 @@ export function KanbanCard({ task, projectId }: KanbanCardProps) {
 
   const handleClick = (e: React.MouseEvent) => {
     if (!isDragging) {
-      navigate(`/projects/${projectId}/tasks/${task.id}`);
+      navigate(`/projects/${projectPrefix}/tasks/${task.taskKey ?? task.id}`);
     }
     e.stopPropagation();
   };

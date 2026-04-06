@@ -17,9 +17,10 @@ interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
   projectId: string;
+  projectPrefix: string;
 }
 
-export function KanbanColumn({ status, tasks, projectId }: KanbanColumnProps) {
+export function KanbanColumn({ status, tasks, projectId, projectPrefix }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -40,7 +41,7 @@ export function KanbanColumn({ status, tasks, projectId }: KanbanColumnProps) {
         <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-2 pr-2">
             {tasks.map((task) => (
-              <KanbanCard key={task.id} task={task} projectId={projectId} />
+              <KanbanCard key={task.id} task={task} projectId={projectId} projectPrefix={projectPrefix} />
             ))}
           </div>
         </ScrollArea>

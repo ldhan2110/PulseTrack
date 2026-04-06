@@ -95,6 +95,7 @@ function SortHeader({ label, column }: SortHeaderProps) {
 interface TasksTableProps {
   tasks: Task[];
   projectId: string;
+  projectPrefix: string;
   members: Member[];
   sprints: Sprint[];
   isLoading?: boolean;
@@ -104,6 +105,7 @@ interface TasksTableProps {
 export function TasksTable({
   tasks,
   projectId,
+  projectPrefix,
   members,
   sprints,
   isLoading,
@@ -391,7 +393,7 @@ export function TasksTable({
                     'h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100',
                     row.getIsSelected() && 'bg-muted/30',
                   )}
-                  onClick={() => navigate(`/projects/${projectId}/tasks/${row.original.id}`)}
+                  onClick={() => navigate(`/projects/${projectPrefix}/tasks/${row.original.taskKey ?? row.original.id}`)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="py-0">
