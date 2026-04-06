@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, Reply } from 'lucide-react';
@@ -53,7 +54,7 @@ export function CommentItem({
   })();
 
   return (
-    <div className="flex gap-2 group/comment">
+    <div className={cn("flex gap-2 group/comment", isReply && "rounded-md bg-muted/30 p-2")}>
       <Avatar className="size-6 shrink-0 mt-0.5">
         <AvatarFallback className="text-[10px]">
           {getInitials(comment.author.username)}

@@ -59,7 +59,7 @@ export function CommentThread({
       ) : (
         <div className="flex flex-col gap-4">
           {topLevelComments.map((comment) => (
-            <div key={comment.id} className="flex flex-col gap-2">
+            <div key={comment.id} className="rounded-lg border p-3 flex flex-col gap-2">
               <CommentItem
                 comment={comment}
                 currentUserId={currentUserId}
@@ -70,7 +70,7 @@ export function CommentThread({
 
               {/* Replies */}
               {comment.replies && comment.replies.length > 0 && (
-                <div className="pl-8 flex flex-col gap-2">
+                <div className="ml-5 border-l-2 border-border pl-4 flex flex-col gap-2">
                   {comment.replies.map((reply) => (
                     <CommentItem
                       key={reply.id}
@@ -87,7 +87,7 @@ export function CommentThread({
 
               {/* Inline reply composer */}
               {replyingTo === comment.id && (
-                <div className="pl-8">
+                <div className="ml-5 border-l-2 border-border pl-4">
                   <CommentComposer
                     onSubmit={(content) => handlePostReply(comment.id, content)}
                     isPending={createReply.isPending}
