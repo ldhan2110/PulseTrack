@@ -24,10 +24,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useSearchUsers, useAddMember } from '@/hooks/useMembers';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
+import { useSearchUsers, useAddMembers } from '@/hooks/useMembers';
 import type { ProjectRole, UserSearchResult } from '@/lib/types';
 
-// FieldGroup + Field composition per shadcn skill rules
 function FieldGroup({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-4">{children}</div>;
 }
@@ -51,6 +52,13 @@ const ROLES: { value: ProjectRole; label: string }[] = [
   { value: 'developer', label: 'Developer' },
 ];
 
+const ROLE_LABELS: Record<ProjectRole, string> = {
+  pm: 'PM',
+  ba: 'BA',
+  qc: 'QC',
+  developer: 'Developer',
+};
+
 function getInitials(name: string): string {
   return name
     .split(' ')
@@ -58,6 +66,11 @@ function getInitials(name: string): string {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+}
+
+interface QueueEntry {
+  user: UserSearchResult;
+  role: ProjectRole;
 }
 
 interface AddMemberDialogProps {
@@ -70,19 +83,32 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
   const [selectedRole, setSelectedRole] = useState<ProjectRole>('developer');
+  const [queue, setQueue] = useState<QueueEntry[]>([]);
 
   const { data: searchResults = [], isFetching } = useSearchUsers(projectId, searchQuery);
-  const addMember = useAddMember(projectId);
+  const addMembers = useAddMembers(projectId);
 
-  const handleAdd = () => {
+  // Exclude users already in queue from search results
+  const queuedUserIds = new Set(queue.map((e) => e.user.id));
+  const filteredResults = searchResults.filter((u) => !queuedUserIds.has(u.id));
+
+  const handleAddToQueue = () => {
     if (!selectedUser) return;
-    addMember.mutate(
-      { userId: selectedUser.id, role: selectedRole },
-      {
-        onSuccess: () => {
-          handleClose();
-        },
-      },
+    setQueue((prev) => [...prev, { user: selectedUser, role: selectedRole }]);
+    setSearchQuery('');
+    setSelectedUser(null);
+    setSelectedRole('developer');
+  };
+
+  const handleRemoveFromQueue = (userId: string) => {
+    setQueue((prev) => prev.filter((e) => e.user.id !== userId));
+  };
+
+  const handleSubmit = () => {
+    if (queue.length === 0) return;
+    addMembers.mutate(
+      { members: queue.map((e) => ({ userId: e.user.id, role: e.role })) },
+      { onSuccess: () => handleClose() },
     );
   };
 
@@ -90,6 +116,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
     setSearchQuery('');
     setSelectedUser(null);
     setSelectedRole('developer');
+    setQueue([]);
     onOpenChange(false);
   }, [onOpenChange]);
 
@@ -102,7 +129,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-[520px] max-w-full">
         <DialogHeader>
-          <DialogTitle>Add Member</DialogTitle>
+          <DialogTitle>Add Members</DialogTitle>
         </DialogHeader>
 
         <FieldGroup>
@@ -127,7 +154,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                   <>
                     <CommandEmpty>No users found</CommandEmpty>
                     <CommandGroup>
-                      {searchResults.map((user) => (
+                      {filteredResults.map((user) => (
                         <CommandItem
                           key={user.id}
                           value={user.id}
@@ -139,9 +166,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{user.username}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {user.email}
-                            </p>
+                            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                           </div>
                         </CommandItem>
                       ))}
@@ -150,33 +175,72 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                 )}
               </CommandList>
             </Command>
-            {selectedUser && (
-              <p className="text-xs text-muted-foreground">
-                Selected: <span className="font-medium text-foreground">{selectedUser.name}</span>
-              </p>
-            )}
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="member-role">Role</FieldLabel>
-            <Select
-              value={selectedRole}
-              onValueChange={(v) => setSelectedRole(v as ProjectRole)}
+          <div className="flex items-end gap-2">
+            <div className="flex flex-1 flex-col gap-1.5">
+              <FieldLabel htmlFor="member-role">Role</FieldLabel>
+              <Select
+                value={selectedRole}
+                onValueChange={(v) => setSelectedRole(v as ProjectRole)}
+              >
+                <SelectTrigger id="member-role" className="w-full">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {ROLES.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleAddToQueue}
+              disabled={!selectedUser}
+              className="shrink-0"
             >
-              <SelectTrigger id="member-role" className="w-full">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {ROLES.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
+              Add to list
+            </Button>
+          </div>
+
+          {queue.length > 0 && (
+            <Field>
+              <FieldLabel>Members to add ({queue.length})</FieldLabel>
+              <div className="flex flex-col gap-2 rounded-lg border border-input p-2">
+                {queue.map(({ user, role }) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5"
+                  >
+                    <Avatar size="sm">
+                      <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{user.username}</p>
+                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 text-xs">
+                      {ROLE_LABELS[role]}
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFromQueue(user.id)}
+                      className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
+                      aria-label={`Remove ${user.username} from list`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </Field>
+          )}
         </FieldGroup>
 
         <DialogFooter className="mt-2">
@@ -184,16 +248,20 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
             type="button"
             variant="ghost"
             onClick={handleClose}
-            disabled={addMember.isPending}
+            disabled={addMembers.isPending}
           >
             Discard
           </Button>
           <Button
             type="button"
-            onClick={handleAdd}
-            disabled={!selectedUser || addMember.isPending}
+            onClick={handleSubmit}
+            disabled={queue.length === 0 || addMembers.isPending}
           >
-            {addMember.isPending ? 'Adding...' : 'Add'}
+            {addMembers.isPending
+              ? 'Adding...'
+              : queue.length === 0
+                ? 'Add Members'
+                : `Add ${queue.length} Member${queue.length === 1 ? '' : 's'}`}
           </Button>
         </DialogFooter>
       </DialogContent>
