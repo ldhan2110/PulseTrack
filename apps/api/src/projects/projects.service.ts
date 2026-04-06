@@ -12,9 +12,9 @@ export class ProjectsService {
     return this.prisma.$transaction(async (tx) => {
       const project = await tx.project.create({
         data: {
-          name: dto.name,
+          name: dto.name?.trim() || 'Untitled Project',
           description: dto.description,
-          prefix: dto.prefix,
+          prefix: dto.prefix?.trim() || 'US',
           ownerId: userId,
         },
       });
@@ -106,6 +106,7 @@ export class ProjectsService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.prefix !== undefined && { prefix: dto.prefix }),
       },
     });
   }
