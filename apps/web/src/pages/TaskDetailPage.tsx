@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Trash2, Plus, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -41,8 +41,10 @@ import { useProjectRole } from '@/hooks/useProjectRole';
 import { useProject } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { api } from '@/lib/api';
-import { formatDistanceToNow } from 'date-fns';
-import type { TaskStatus, AcceptanceCriteria, SubTask } from '@/lib/types';
+import { formatDistanceToNow, format, parseISO } from 'date-fns';
+import type { TaskStatus, AcceptanceCriteria, SubTask, Priority } from '@/lib/types';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -95,6 +97,65 @@ function SidebarLabel({ children }: { children: React.ReactNode }) {
     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
     </span>
+  );
+}
+
+const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
+  { value: 'LOW',      label: 'Low',      color: '#6b7280' },
+  { value: 'MEDIUM',   label: 'Medium',   color: '#3b82f6' },
+  { value: 'HIGH',     label: 'High',     color: '#f59e0b' },
+  { value: 'CRITICAL', label: 'Critical', color: '#ef4444' },
+  { value: 'BLOCKER',  label: 'Blocker',  color: '#7c3aed' },
+];
+
+interface DatePickerFieldProps {
+  label: string;
+  value: string | null | undefined;
+  onChange: (iso: string | null) => void;
+  disabled?: boolean;
+}
+
+function DatePickerField({ label, value, onChange, disabled }: DatePickerFieldProps) {
+  const selected = value ? parseISO(value) : undefined;
+  const displayLabel = selected ? format(selected, 'MMM d, yyyy') : 'Pick a date';
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <SidebarLabel>{label}</SidebarLabel>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn('h-7 gap-1.5 text-xs font-normal', !value && 'text-muted-foreground')}
+            disabled={disabled}
+          >
+            <CalendarIcon className="size-3" />
+            {displayLabel}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <CalendarComponent
+            mode="single"
+            selected={selected}
+            onSelect={(day) => onChange(day ? day.toISOString() : null)}
+            initialFocus
+          />
+          {value && (
+            <div className="border-t p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground"
+                onClick={() => onChange(null)}
+              >
+                Clear date
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
@@ -609,6 +670,75 @@ export function TaskDetailPage() {
                       data: { storyPoints: num === null ? undefined : num },
                     });
                   }}
+                />
+              </div>
+
+              {/* Priority */}
+              <div className="flex items-center justify-between">
+                <SidebarLabel>Priority</SidebarLabel>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={task.priority ?? 'none'}
+                    onValueChange={(val) => {
+                      const newPriority = val === 'none' ? null : (val as Priority);
+                      updateTask.mutate({ taskId, data: { priority: newPriority } });
+                    }}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="h-7 w-[110px] text-xs">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground text-xs">None</span>
+                      </SelectItem>
+                      {PRIORITY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="inline-block size-2 rounded-full"
+                              style={{ backgroundColor: opt.color }}
+                            />
+                            <span className="text-xs" style={{ color: opt.color }}>{opt.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Planned dates */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Planned</SidebarLabel>
+                <DatePickerField
+                  label="Start"
+                  value={task.plannedStartDate}
+                  onChange={(iso) => updateTask.mutate({ taskId, data: { plannedStartDate: iso } })}
+                  disabled={!canEdit}
+                />
+                <DatePickerField
+                  label="End"
+                  value={task.plannedEndDate}
+                  onChange={(iso) => updateTask.mutate({ taskId, data: { plannedEndDate: iso } })}
+                  disabled={!canEdit}
+                />
+              </div>
+
+              {/* Actual dates */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Actual</SidebarLabel>
+                <DatePickerField
+                  label="Start"
+                  value={task.actualStartDate}
+                  onChange={(iso) => updateTask.mutate({ taskId, data: { actualStartDate: iso } })}
+                  disabled={!canEdit}
+                />
+                <DatePickerField
+                  label="End"
+                  value={task.actualEndDate}
+                  onChange={(iso) => updateTask.mutate({ taskId, data: { actualEndDate: iso } })}
+                  disabled={!canEdit}
                 />
               </div>
 
