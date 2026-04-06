@@ -12,3 +12,10 @@ coverage/
 
 # File uploads (local disk storage)
 uploads/
+
+.remember
+.planning
+.agents
+.claude
+.superpowers
+skills-lock.json

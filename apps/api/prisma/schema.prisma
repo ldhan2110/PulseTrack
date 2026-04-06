@@ -29,6 +29,14 @@ enum TaskStatus {
   BLOCKED
 }
 
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  BLOCKER
+}
+
 enum BugSeverity {
   CRITICAL
   HIGH
@@ -153,6 +161,11 @@ model Task {
   status              TaskStatus  @default(BACKLOG)
   storyPoints         Int?
   acceptanceCriteria  String?
+  priority            Priority?
+  plannedStartDate    DateTime?
+  plannedEndDate      DateTime?
+  actualStartDate     DateTime?
+  actualEndDate       DateTime?
   isDraft             Boolean     @default(false) // AI-generated pending approval
   blueprintId         String?     // External Blueprint task ID
   projectId           String
