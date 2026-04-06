@@ -238,12 +238,12 @@ export function TaskDetailPage() {
     updateTask.mutate(
       { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
       {
-        onSuccess: () => {
+        onSettled: () => {
           setNewCriteriaText('');
           setAddingCriteria(false);
+          void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
         },
         onError: () => toast.error('Something went wrong. Please try again.'),
-        onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }),
       },
     );
   }, [newCriteriaText, task, taskId, updateTask]);
