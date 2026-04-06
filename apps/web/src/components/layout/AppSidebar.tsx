@@ -91,7 +91,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
     <Sidebar collapsible="icon">
       {/* Header: PM logo */}
       <SidebarHeader className="h-12 flex items-center px-3">
-        <div className={cn('flex items-center gap-2 py-1', isCollapsed && 'justify-center')}>
+        <div className={cn('flex items-center gap-2 py-1', isCollapsed && 'justify-center')} onClick={() => navigate('/')}>
           <img src="/favicon.svg" alt="Logo" className="size-6" />
           {!isCollapsed && (
             <span className="font-semibold text-base tracking-tight">PulseTrack</span>
