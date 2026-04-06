@@ -1,14 +1,15 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowLeft, Trash2, Plus, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Select,
@@ -29,32 +30,22 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { StatusBadge } from '@/components/tasks/StatusBadge';
+import { RichTextEditor } from '@/components/tasks/RichTextEditor';
+import { CommentThread } from '@/components/tasks/CommentThread';
+import { AttachmentList } from '@/components/tasks/AttachmentList';
+import { ActivityLog } from '@/components/tasks/ActivityLog';
 import { useTask, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
 import { useProjectRole } from '@/hooks/useProjectRole';
 import { useProject } from '@/hooks/useProjects';
+import { useAuth } from '@/auth/useAuth';
 import { api } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
 import type { TaskStatus, AcceptanceCriteria, SubTask } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-// FieldGroup + Field composition per shadcn skill rules
-function FieldGroup({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('flex flex-col gap-4', className)}>{children}</div>;
-}
-
-function Field({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('flex flex-col gap-1.5', className)}>{children}</div>;
-}
-
-function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) {
-  return (
-    <label htmlFor={htmlFor} className="text-[13px] font-semibold text-muted-foreground leading-none">
-      {children}
-    </label>
-  );
-}
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function getInitials(name: string): string {
   return name
@@ -97,10 +88,23 @@ function serializeAcceptanceCriteria(criteria: AcceptanceCriteria[]): string {
   return JSON.stringify(criteria);
 }
 
+// ── Sidebar label component ────────────────────────────────────────────────────
+
+function SidebarLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
+
 export function TaskDetailPage() {
   const { projectId = '', taskId = '' } = useParams<{ projectId: string; taskId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: task, isLoading, isError } = useTask(projectId, taskId);
   const { data: members = [] } = useMembers(projectId);
@@ -115,11 +119,6 @@ export function TaskDetailPage() {
   const [titleValue, setTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Description auto-save
-  const [descValue, setDescValue] = useState('');
-  const [descSaving, setDescSaving] = useState(false);
-  const descSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Sub-task add form
   const [addingSubTask, setAddingSubTask] = useState(false);
   const [newSubTaskTitle, setNewSubTaskTitle] = useState('');
@@ -127,13 +126,6 @@ export function TaskDetailPage() {
   // Acceptance criteria add
   const [addingCriteria, setAddingCriteria] = useState(false);
   const [newCriteriaText, setNewCriteriaText] = useState('');
-
-  // Sync task data to local state when loaded
-  useEffect(() => {
-    if (task) {
-      setDescValue(task.description ?? '');
-    }
-  }, [task?.id]); // Only reset when task changes, not on every update
 
   // Sub-task mutations
   const createSubTask = useMutation({
@@ -168,7 +160,7 @@ export function TaskDetailPage() {
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
 
-  // Acceptance criteria — managed as JSON string in task.acceptanceCriteria via PATCH endpoint
+  // Acceptance criteria callbacks
   const addCriteria = useCallback(() => {
     if (!newCriteriaText.trim() || !task) return;
     const current = parseAcceptanceCriteria(task.acceptanceCriteria);
@@ -244,20 +236,6 @@ export function TaskDetailPage() {
     }
   };
 
-  const handleDescChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDescValue(e.target.value);
-    if (descSaveTimerRef.current) clearTimeout(descSaveTimerRef.current);
-    descSaveTimerRef.current = setTimeout(() => {
-      setDescSaving(true);
-      updateTask.mutate(
-        { taskId, data: { description: e.target.value } },
-        {
-          onSettled: () => setTimeout(() => setDescSaving(false), 800),
-        },
-      );
-    }, 500);
-  };
-
   const handleDelete = () => {
     deleteTask.mutate(taskId, {
       onSuccess: () => navigate(`/projects/${projectId}/backlog`),
@@ -267,24 +245,25 @@ export function TaskDetailPage() {
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="p-8 max-w-[1280px] flex flex-col gap-6">
+      <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-8 w-2/3" />
-        <div className="flex gap-4">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-8 w-32" />
-        </div>
+        <Separator />
         <div className="flex gap-8">
-          <div className="flex-1 flex flex-col gap-4">
-            <Skeleton className="h-32 w-full" />
+          <div className="flex-1 flex flex-col gap-6">
+            <Skeleton className="h-40 w-full" />
             <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-32 w-full" />
             <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-24 w-full" />
           </div>
-          <div className="w-56 flex flex-col gap-3">
+          <div className="w-60 shrink-0 flex flex-col gap-3">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
             <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-3/4" />
           </div>
         </div>
       </div>
@@ -312,10 +291,13 @@ export function TaskDetailPage() {
 
   const acceptanceCriteria = parseAcceptanceCriteria(task.acceptanceCriteria);
   const subTasks = task.subTasks ?? [];
+  const acChecked = acceptanceCriteria.filter((ac) => ac.completed).length;
+  const acTotal = acceptanceCriteria.length;
+  const currentUserId = user?.id ?? '';
 
   return (
     <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
-      {/* Top bar */}
+      {/* Breadcrumb nav */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Button
           variant="ghost"
@@ -349,8 +331,8 @@ export function TaskDetailPage() {
         ) : (
           <h1
             className={cn(
-              'text-xl font-semibold tracking-tight cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors',
-              canEdit && 'hover:bg-muted/50',
+              'text-xl font-semibold tracking-tight rounded px-1 -mx-1 transition-colors',
+              canEdit && 'cursor-pointer hover:bg-muted/50',
             )}
             onClick={() => {
               if (!canEdit) return;
@@ -364,382 +346,413 @@ export function TaskDetailPage() {
         )}
       </div>
 
-      {/* Metadata bar */}
-      <FieldGroup className="flex-row flex-wrap gap-6">
-        <Field>
-          <FieldLabel>Status</FieldLabel>
-          <Select
-            value={task.status}
-            onValueChange={(val) =>
-              updateTask.mutate({ taskId, data: { status: val as TaskStatus } })
-            }
-            disabled={!canEdit}
-          >
-            <SelectTrigger className="h-8 w-auto gap-2">
-              <SelectValue>
-                <StatusBadge status={task.status} />
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as TaskStatus[]).map(
-                (s) => (
-                  <SelectItem key={s} value={s}>
-                    <StatusBadge status={s} />
-                  </SelectItem>
-                ),
-              )}
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <Field>
-          <FieldLabel>Assignee</FieldLabel>
-          <Select
-            value={task.assigneeId ?? 'unassigned'}
-            onValueChange={(val) =>
-              updateTask.mutate({
-                taskId,
-                data: { assigneeId: val === 'unassigned' ? null : val },
-              })
-            }
-            disabled={!canEdit}
-          >
-            <SelectTrigger className="h-8 w-[160px]">
-              <SelectValue placeholder="Unassigned" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unassigned">
-                <span className="text-muted-foreground">Unassigned</span>
-              </SelectItem>
-              {members.map((m) => (
-                <SelectItem key={m.userId} value={m.userId}>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="size-5">
-                      <AvatarFallback className="text-[9px]">
-                        {getInitials(m.user.username)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {m.user.username}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <Field>
-          <FieldLabel>Sprint</FieldLabel>
-          <Select
-            value={task.sprintId ?? 'none'}
-            onValueChange={(val) =>
-              updateTask.mutate({
-                taskId,
-                data: { sprintId: val === 'none' ? null : val },
-              })
-            }
-            disabled={!canEdit}
-          >
-            <SelectTrigger className="h-8 w-[160px]">
-              <SelectValue placeholder="None" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">
-                <span className="text-muted-foreground">None</span>
-              </SelectItem>
-              {sprints.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="story-points">Story Points</FieldLabel>
-          <Input
-            id="story-points"
-            type="number"
-            min={1}
-            max={100}
-            className="h-8 w-20"
-            defaultValue={task.storyPoints ?? ''}
-            disabled={!canEdit}
-            onBlur={(e) => {
-              const val = e.target.value;
-              const num = val === '' ? null : Number(val);
-              if (num === task.storyPoints) return;
-              updateTask.mutate({
-                taskId,
-                data: { storyPoints: num === null ? undefined : num },
-              });
-            }}
-          />
-        </Field>
-      </FieldGroup>
-
       <Separator />
 
-      {/* Content split: 65% / 35% */}
+      {/* Two-panel layout */}
       <div className="flex gap-8">
-        {/* Left: description, acceptance criteria, sub-tasks */}
-        <div className="flex-1 flex flex-col gap-6">
-          {/* Description */}
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[13px] font-semibold text-muted-foreground">Description</h2>
-            <div className="relative">
-              <Textarea
-                placeholder="Add a description..."
-                value={descValue}
-                onChange={handleDescChange}
-                rows={4}
-                disabled={!canEdit}
-                className="resize-y"
+        {/* LEFT PANEL */}
+        <div className="flex-1 flex flex-col gap-6 min-w-0">
+
+          {/* CARD 1: Task Content */}
+          <div className="rounded-lg border p-5 flex flex-col gap-5">
+            {/* 1. Description */}
+            <section>
+              <h2 className="text-[13px] font-semibold text-muted-foreground mb-2">Description</h2>
+              <RichTextEditor
+                initialContent={task.description ?? ''}
+                onSave={(html) =>
+                  updateTask.mutate({ taskId, data: { description: html } })
+                }
+                editable={canEdit}
               />
-              {descSaving && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              {updateTask.isPending && (
+                <div className="flex items-center gap-1 mt-1">
                   <Loader2 className="size-3 animate-spin" />
-                  Saving...
+                  <span className="text-xs text-muted-foreground">Saving...</span>
                 </div>
               )}
-            </div>
-          </div>
+            </section>
 
-          {/* Acceptance Criteria */}
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[13px] font-semibold text-muted-foreground">
-              Acceptance Criteria
-            </h2>
-            <div className="flex flex-col gap-1">
-              {acceptanceCriteria.map((ac) => (
-                <AcceptanceCriteriaItem
-                  key={ac.id}
-                  ac={ac}
-                  canEdit={canEdit}
-                  onToggle={() => toggleCriteria(ac)}
-                  onDelete={() => deleteCriteria(ac.id)}
-                  onSaveText={(text) => updateCriteriaText(ac.id, text)}
-                />
-              ))}
-            </div>
-            {addingCriteria ? (
-              <div className="flex items-center gap-2 mt-1">
-                <div className="size-4 shrink-0" />
-                <Input
-                  placeholder="Add criterion..."
-                  value={newCriteriaText}
-                  onChange={(e) => setNewCriteriaText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') addCriteria();
-                    if (e.key === 'Escape') {
+            {/* 2. Acceptance Criteria */}
+            <section>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-[13px] font-semibold text-muted-foreground">
+                  Acceptance Criteria
+                </h2>
+                {acTotal > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {acChecked}/{acTotal} done
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                {acceptanceCriteria.length === 0 && !addingCriteria && (
+                  <p className="text-sm text-muted-foreground">
+                    No acceptance criteria. Add the first one.
+                  </p>
+                )}
+                {acceptanceCriteria.map((ac) => (
+                  <AcceptanceCriteriaItem
+                    key={ac.id}
+                    ac={ac}
+                    canEdit={canEdit}
+                    onToggle={() => toggleCriteria(ac)}
+                    onDelete={() => deleteCriteria(ac.id)}
+                    onSaveText={(text) => updateCriteriaText(ac.id, text)}
+                  />
+                ))}
+              </div>
+              {addingCriteria ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="size-4 shrink-0" />
+                  <Input
+                    placeholder="Add criterion..."
+                    value={newCriteriaText}
+                    onChange={(e) => setNewCriteriaText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') addCriteria();
+                      if (e.key === 'Escape') {
+                        setAddingCriteria(false);
+                        setNewCriteriaText('');
+                      }
+                    }}
+                    autoFocus
+                    className="h-7 text-sm"
+                  />
+                  <Button size="sm" className="h-7" onClick={addCriteria}>
+                    Add
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7"
+                    onClick={() => {
                       setAddingCriteria(false);
                       setNewCriteriaText('');
-                    }
-                  }}
-                  autoFocus
-                  className="h-7 text-sm"
-                />
-                <Button size="sm" className="h-7" onClick={addCriteria}>
-                  Add
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7"
-                  onClick={() => {
-                    setAddingCriteria(false);
-                    setNewCriteriaText('');
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              canEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-fit gap-1 text-muted-foreground -ml-2 mt-1"
-                  onClick={() => setAddingCriteria(true)}
-                >
-                  <Plus className="size-3.5" />
-                  Add criteria
-                </Button>
-              )
-            )}
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                canEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-fit gap-1 text-muted-foreground -ml-2 mt-1"
+                    onClick={() => setAddingCriteria(true)}
+                  >
+                    <Plus className="size-3.5" />
+                    Add criteria
+                  </Button>
+                )
+              )}
+            </section>
+
+            {/* 3. Attachments (moved here from below comments) */}
+            <section>
+              <AttachmentList
+                projectId={projectId}
+                taskId={taskId}
+                currentUserId={currentUserId}
+                canManage={canManage}
+              />
+            </section>
           </div>
 
-          {/* Sub-Tasks */}
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[13px] font-semibold text-muted-foreground">Sub-Tasks</h2>
-            {subTasks.length > 0 && (
-              <div className="rounded-lg border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-muted/50 border-b">
-                      <th className="text-left px-3 py-2 text-[13px] font-semibold text-muted-foreground">
-                        Title
-                      </th>
-                      <th className="text-left px-3 py-2 text-[13px] font-semibold text-muted-foreground w-[130px]">
-                        Status
-                      </th>
-                      <th className="text-left px-3 py-2 text-[13px] font-semibold text-muted-foreground w-[150px]">
-                        Assignee
-                      </th>
-                      <th className="w-8" />
-                    </tr>
-                  </thead>
-                  <tbody>
+          {/* CARD 2: Discussion (Comments / Activity tabs) */}
+          <div className="rounded-lg border p-5">
+            <Tabs defaultValue="comments">
+              <TabsList variant="line" className="mb-4">
+                <TabsTrigger value="comments">Comments</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+              </TabsList>
+              <TabsContent value="comments">
+                <CommentThread
+                  projectId={projectId}
+                  taskId={taskId}
+                  currentUserId={currentUserId}
+                  canManage={canManage}
+                />
+              </TabsContent>
+              <TabsContent value="activity">
+                <ActivityLog
+                  projectId={projectId}
+                  taskId={taskId}
+                  members={members}
+                  sprints={sprints}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* RIGHT SIDEBAR — sticky */}
+        <div className="w-60 shrink-0">
+          <div className="sticky top-8 flex flex-col gap-4">
+            <div className="rounded-lg border p-4 flex flex-col gap-4">
+              {/* Status */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Status</SidebarLabel>
+                <Select
+                  value={task.status}
+                  onValueChange={(val) =>
+                    updateTask.mutate({ taskId, data: { status: val as TaskStatus } })
+                  }
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue>
+                      <StatusBadge status={task.status} />
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as TaskStatus[]).map(
+                      (s) => (
+                        <SelectItem key={s} value={s}>
+                          <StatusBadge status={s} />
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Assignee */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Assignee</SidebarLabel>
+                <Select
+                  value={task.assigneeId ?? 'unassigned'}
+                  onValueChange={(val) =>
+                    updateTask.mutate({
+                      taskId,
+                      data: { assigneeId: val === 'unassigned' ? null : val },
+                    })
+                  }
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">
+                      <span className="text-muted-foreground">Unassigned</span>
+                    </SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.userId} value={m.userId}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="size-5">
+                            <AvatarFallback className="text-[9px]">
+                              {getInitials(m.user.username)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {m.user.username}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sprint */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Sprint</SidebarLabel>
+                <Select
+                  value={task.sprintId ?? 'none'}
+                  onValueChange={(val) =>
+                    updateTask.mutate({
+                      taskId,
+                      data: { sprintId: val === 'none' ? null : val },
+                    })
+                  }
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-muted-foreground">None</span>
+                    </SelectItem>
+                    {sprints.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Story Points */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Story Points</SidebarLabel>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  className="h-8"
+                  defaultValue={task.storyPoints ?? ''}
+                  disabled={!canEdit}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    const num = val === '' ? null : Number(val);
+                    if (num === task.storyPoints) return;
+                    updateTask.mutate({
+                      taskId,
+                      data: { storyPoints: num === null ? undefined : num },
+                    });
+                  }}
+                />
+              </div>
+
+              <Separator />
+
+              {/* Sub-tasks */}
+              <div className="flex flex-col gap-2">
+                <SidebarLabel>Sub-Tasks</SidebarLabel>
+                {subTasks.length > 0 && (
+                  <div className="flex flex-col gap-1">
                     {subTasks.map((subTask) => (
-                      <SubTaskRow
+                      <SubTaskMiniRow
                         key={subTask.id}
                         subTask={subTask}
                         members={members}
                         canEdit={canEdit}
-                        onUpdate={(data) => updateSubTask.mutate({ subTaskId: subTask.id, data })}
+                        onUpdate={(data) =>
+                          updateSubTask.mutate({ subTaskId: subTask.id, data })
+                        }
                         onDelete={() => deleteSubTask.mutate(subTask.id)}
                       />
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                )}
+                {addingSubTask ? (
+                  <div className="flex flex-col gap-1">
+                    <Input
+                      placeholder="Sub-task title..."
+                      value={newSubTaskTitle}
+                      onChange={(e) => setNewSubTaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newSubTaskTitle.trim()) {
+                          createSubTask.mutate(newSubTaskTitle.trim());
+                        }
+                        if (e.key === 'Escape') {
+                          setAddingSubTask(false);
+                          setNewSubTaskTitle('');
+                        }
+                      }}
+                      autoFocus
+                      className="h-7 text-sm"
+                    />
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        className="h-7 flex-1"
+                        onClick={() => {
+                          if (newSubTaskTitle.trim()) createSubTask.mutate(newSubTaskTitle.trim());
+                        }}
+                        disabled={!newSubTaskTitle.trim() || createSubTask.isPending}
+                      >
+                        Add
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7"
+                        onClick={() => {
+                          setAddingSubTask(false);
+                          setNewSubTaskTitle('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-fit gap-1 text-muted-foreground -ml-2"
+                      onClick={() => setAddingSubTask(true)}
+                    >
+                      <Plus className="size-3.5" />
+                      Add sub-task
+                    </Button>
+                  )
+                )}
               </div>
-            )}
-            {addingSubTask ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Sub-task title..."
-                  value={newSubTaskTitle}
-                  onChange={(e) => setNewSubTaskTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newSubTaskTitle.trim()) {
-                      createSubTask.mutate(newSubTaskTitle.trim());
-                    }
-                    if (e.key === 'Escape') {
-                      setAddingSubTask(false);
-                      setNewSubTaskTitle('');
-                    }
-                  }}
-                  autoFocus
-                  className="h-7 text-sm flex-1"
-                />
-                <Button
-                  size="sm"
-                  className="h-7"
-                  onClick={() => {
-                    if (newSubTaskTitle.trim()) createSubTask.mutate(newSubTaskTitle.trim());
-                  }}
-                  disabled={!newSubTaskTitle.trim() || createSubTask.isPending}
-                >
-                  Add
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7"
-                  onClick={() => {
-                    setAddingSubTask(false);
-                    setNewSubTaskTitle('');
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              canEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-fit gap-1 text-muted-foreground -ml-2"
-                  onClick={() => setAddingSubTask(true)}
-                >
-                  <Plus className="size-3.5" />
-                  Add sub-task
-                </Button>
-              )
-            )}
-          </div>
-        </div>
 
-        {/* Right: sidebar metadata */}
-        <div className="w-56 shrink-0 flex flex-col gap-4">
-          <div className="rounded-lg border p-4 flex flex-col gap-3">
-            {task.createdBy && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Created by
-                </span>
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-6">
-                    <AvatarFallback className="text-[10px]">
-                      {getInitials(task.createdBy.username)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm">{task.createdBy.username}</span>
-                </div>
-              </div>
-            )}
-            <Separator />
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Created
-              </span>
-              <span className="text-sm text-muted-foreground">{formatRelative(task.createdAt)}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Updated
-              </span>
-              <span className="text-sm text-muted-foreground">{formatRelative(task.updatedAt)}</span>
-            </div>
-            {task.sprint && (
-              <>
-                <Separator />
+              <Separator />
+
+              {/* Meta info */}
+              {task.createdBy && (
                 <div className="flex flex-col gap-1">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Sprint
-                  </span>
+                  <SidebarLabel>Created by</SidebarLabel>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="size-5">
+                      <AvatarFallback className="text-[9px]">
+                        {getInitials(task.createdBy.username)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">{task.createdBy.username}</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-col gap-1">
+                <SidebarLabel>Created</SidebarLabel>
+                <span className="text-xs text-muted-foreground">
+                  {formatRelative(task.createdAt)}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <SidebarLabel>Updated</SidebarLabel>
+                <span className="text-xs text-muted-foreground">
+                  {formatRelative(task.updatedAt)}
+                </span>
+              </div>
+              {task.sprint && (
+                <div className="flex flex-col gap-1">
+                  <SidebarLabel>Sprint</SidebarLabel>
                   <span className="text-sm">{task.sprint.name}</span>
                 </div>
-              </>
+              )}
+            </div>
+
+            {/* Delete Task */}
+            {canManage && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="w-full gap-2">
+                    <Trash2 className="size-4" />
+                    Delete Task
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this task and all its sub-tasks. This action
+                      cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction variant="destructive" onClick={handleDelete}>
+                      Delete Task
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
-
-          {/* Delete action */}
-          {canManage && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="w-full gap-2">
-                  <Trash2 className="size-4" />
-                  Delete Task
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete this task and all its sub-tasks. This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    onClick={handleDelete}
-                  >
-                    Delete Task
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
         </div>
       </div>
     </div>
   );
 }
 
-// ── Acceptance Criteria Item ───────────────────────────────────────────────
+// ── Acceptance Criteria Item ───────────────────────────────────────────────────
 
 interface AcceptanceCriteriaItemProps {
   ac: AcceptanceCriteria;
@@ -794,7 +807,8 @@ function AcceptanceCriteriaItem({
       ) : (
         <span
           className={cn(
-            'flex-1 text-sm cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1',
+            'flex-1 text-sm rounded px-1 -mx-1',
+            canEdit && 'cursor-pointer hover:bg-muted/50',
             ac.completed && 'line-through text-muted-foreground',
           )}
           onClick={() => canEdit && setEditing(true)}
@@ -816,9 +830,9 @@ function AcceptanceCriteriaItem({
   );
 }
 
-// ── Sub-Task Row ──────────────────────────────────────────────────────────
+// ── Sub-Task Mini Row (sidebar compact version) ────────────────────────────────
 
-interface SubTaskRowProps {
+interface SubTaskMiniRowProps {
   subTask: SubTask;
   members: ReturnType<typeof useMembers>['data'] extends (infer T)[] | undefined ? T[] : never[];
   canEdit: boolean;
@@ -826,113 +840,38 @@ interface SubTaskRowProps {
   onDelete: () => void;
 }
 
-function SubTaskRow({ subTask, members, canEdit, onUpdate, onDelete }: SubTaskRowProps) {
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleVal, setTitleVal] = useState(subTask.title);
-
-  const handleTitleBlur = () => {
-    setEditingTitle(false);
-    if (titleVal.trim() && titleVal !== subTask.title) {
-      onUpdate({ title: titleVal.trim() });
-    } else {
-      setTitleVal(subTask.title);
-    }
-  };
-
+function SubTaskMiniRow({ subTask, canEdit, onUpdate, onDelete }: SubTaskMiniRowProps) {
   return (
-    <tr className="border-b last:border-b-0 group/row hover:bg-muted/30">
-      <td className="px-3 py-2">
-        {editingTitle ? (
-          <Input
-            value={titleVal}
-            onChange={(e) => setTitleVal(e.target.value)}
-            onBlur={handleTitleBlur}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleTitleBlur();
-              if (e.key === 'Escape') {
-                setEditingTitle(false);
-                setTitleVal(subTask.title);
-              }
-            }}
-            autoFocus
-            className="h-6 text-sm py-0"
-          />
-        ) : (
-          <span
-            className={cn(
-              'text-sm truncate block',
-              canEdit && 'cursor-pointer hover:underline',
-            )}
-            onClick={() => canEdit && setEditingTitle(true)}
-          >
-            {subTask.title}
-          </span>
-        )}
-      </td>
-      <td className="px-3 py-2">
-        <Select
-          value={subTask.status}
-          onValueChange={(val) => onUpdate({ status: val as TaskStatus })}
-          disabled={!canEdit}
+    <div className="flex items-center gap-1.5 group/subtask py-0.5">
+      <StatusBadge status={subTask.status} />
+      <span className="text-xs flex-1 truncate">{subTask.title}</span>
+      {canEdit && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-5 opacity-0 group-hover/subtask:opacity-100 shrink-0"
+          onClick={onDelete}
         >
-          <SelectTrigger className="h-7 border-transparent bg-transparent shadow-none p-0 focus:ring-0 w-auto">
-            <SelectValue>
-              <StatusBadge status={subTask.status} />
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {(['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as TaskStatus[]).map(
-              (s) => (
-                <SelectItem key={s} value={s}>
-                  <StatusBadge status={s} />
-                </SelectItem>
-              ),
-            )}
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="px-3 py-2">
-        <Select
-          value={subTask.assigneeId ?? 'unassigned'}
-          onValueChange={(val) =>
-            onUpdate({ assigneeId: val === 'unassigned' ? null : val })
-          }
-          disabled={!canEdit}
-        >
-          <SelectTrigger className="h-7 w-[130px]">
-            <SelectValue placeholder="Unassigned" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="unassigned">
-              <span className="text-muted-foreground text-sm">Unassigned</span>
+          <X className="size-3" />
+        </Button>
+      )}
+      {/* Status update via select */}
+      <Select
+        value={subTask.status}
+        onValueChange={(val) => onUpdate({ status: val as TaskStatus })}
+        disabled={!canEdit}
+      >
+        <SelectTrigger className="h-6 w-6 p-0 border-0 shadow-none opacity-0 group-hover/subtask:opacity-100 [&>svg]:hidden">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {(['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as TaskStatus[]).map((s) => (
+            <SelectItem key={s} value={s}>
+              <StatusBadge status={s} />
             </SelectItem>
-            {members.map((m) => (
-              <SelectItem key={m.userId} value={m.userId}>
-                <div className="flex items-center gap-1.5">
-                  <Avatar className="size-4">
-                    <AvatarFallback className="text-[8px]">
-                      {getInitials(m.user.username)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm">{m.user.username}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="pr-2 py-2">
-        {canEdit && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 opacity-0 group-hover/row:opacity-100"
-            onClick={onDelete}
-          >
-            <X className="size-3" />
-          </Button>
-        )}
-      </td>
-    </tr>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

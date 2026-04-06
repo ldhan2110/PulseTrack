@@ -137,3 +137,16 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 5. AI Integration | 0/? | Not started | - |
 | 6. Blueprint Sync | 0/? | Not started | - |
 | 7. Reporting & Analytics | 0/? | Not started | - |
+
+### Phase 8: Jira-style backlog ticket page with rich editor, AC tracking, and comment threads
+
+**Goal:** Upgrade the TaskDetailPage into a full Jira-style two-panel ticket view with Tiptap rich editor, threaded comments (backend + frontend), file attachments, polished AC tracking with inline editing, and a task history/activity log
+**Requirements**: COLB-01, COLB-02, REQ-AC, REQ-RTE, REQ-ATTACH, REQ-HIST
+**Depends on:** Phase 2
+**Plans:** 4 plans
+
+Plans:
+- [x] 08-01-PLAN.md — Schema migration (Attachment + TaskHistory), deps install, history recording in TasksService, history endpoint
+- [x] 08-02-PLAN.md — CommentsModule + AttachmentsModule backend (CRUD, threading, file upload/download/delete)
+- [x] 08-03-PLAN.md — Frontend infrastructure (Tiptap RichTextEditor, types, API methods, React Query hooks)
+- [x] 08-04-PLAN.md — TaskDetailPage full replacement with two-panel layout, all sections, human verification

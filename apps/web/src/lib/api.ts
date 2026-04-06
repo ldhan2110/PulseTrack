@@ -19,6 +19,10 @@ import type {
   CreateBugPayload,
   UpdateBugPayload,
   DashboardData,
+  Comment,
+  CreateCommentPayload,
+  Attachment,
+  TaskHistoryEntry,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -115,4 +119,62 @@ export const api = {
   // ─── Dashboard ─────────────────────────────────────────────────────────────
   getDashboard: (projectId: string) =>
     request<DashboardData>(`/projects/${projectId}/dashboard`),
+
+  // ─── Comments ──────────────────────────────────────────────────────────────
+  getComments: (projectId: string, taskId: string) =>
+    request<Comment[]>(`/projects/${projectId}/tasks/${taskId}/comments`),
+  createComment: (projectId: string, taskId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  createReply: (projectId: string, taskId: string, commentId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}/replies`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteComment: (projectId: string, taskId: string, commentId: string) =>
+    request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, {
+      method: 'DELETE',
+    }),
+
+  // ─── Attachments ───────────────────────────────────────────────────────────
+  getAttachments: (projectId: string, taskId: string) =>
+    request<Attachment[]>(`/projects/${projectId}/tasks/${taskId}/attachments`),
+  uploadAttachment: async (projectId: string, taskId: string, file: File): Promise<Attachment> => {
+    const token = keycloak.token;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Upload failed: ${res.status}`);
+    }
+    return res.json() as Promise<Attachment>;
+  },
+  getAttachmentDownloadUrl: (projectId: string, taskId: string, attachmentId: string) =>
+    `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}/download`,
+  downloadAttachment: async (projectId: string, taskId: string, attachmentId: string): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(
+      `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}/download`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    return res.blob();
+  },
+  deleteAttachment: (projectId: string, taskId: string, attachmentId: string) =>
+    request<Attachment>(`/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    }),
+
+  // ─── Task History ──────────────────────────────────────────────────────────
+  getTaskHistory: (projectId: string, taskId: string) =>
+    request<TaskHistoryEntry[]>(`/projects/${projectId}/tasks/${taskId}/history`),
 };

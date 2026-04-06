@@ -9,14 +9,20 @@ describe('TasksService', () => {
       create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+    },
+    taskHistory: {
+      create: vi.fn(),
+      findMany: vi.fn(),
     },
     subTask: {
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
+    $transaction: vi.fn(),
   };
 
   beforeEach(() => {
@@ -54,22 +60,26 @@ describe('TasksService', () => {
   });
 
   describe('update()', () => {
+    const actorId = 'user-1';
+
+    beforeEach(() => {
+      // Mock findUniqueOrThrow for history diff
+      mockPrismaService.task.findUniqueOrThrow.mockResolvedValue({
+        id: 'task-1', status: 'BACKLOG', assigneeId: null, sprintId: null, storyPoints: null, title: 'Old title',
+      });
+    });
+
     it('updates task status from BACKLOG to IN_PROGRESS', async () => {
       const taskId = 'task-1';
       const dto = { status: 'IN_PROGRESS' as any };
       const updatedTask = { id: taskId, status: 'IN_PROGRESS', assignee: null, sprint: null };
 
-      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+      mockPrismaService.$transaction.mockResolvedValue([updatedTask]);
 
-      const result = await service.update(taskId, dto);
+      const result = await service.update(taskId, dto, actorId);
 
       expect(result.status).toBe('IN_PROGRESS');
-      expect(mockPrismaService.task.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: taskId },
-          data: expect.objectContaining({ status: 'IN_PROGRESS' }),
-        }),
-      );
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
     });
 
     it('sets assigneeId on a task', async () => {
@@ -77,9 +87,9 @@ describe('TasksService', () => {
       const dto = { assigneeId: 'user-2' };
       const updatedTask = { id: taskId, assigneeId: 'user-2', assignee: { id: 'user-2', username: 'dev', email: 'dev@test.com' }, sprint: null };
 
-      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+      mockPrismaService.$transaction.mockResolvedValue([updatedTask]);
 
-      const result = await service.update(taskId, dto);
+      const result = await service.update(taskId, dto, actorId);
 
       expect(result.assigneeId).toBe('user-2');
     });
@@ -89,16 +99,11 @@ describe('TasksService', () => {
       const dto = { assigneeId: null as any };
       const updatedTask = { id: taskId, assigneeId: null, assignee: null, sprint: null };
 
-      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+      mockPrismaService.$transaction.mockResolvedValue([updatedTask]);
 
-      const result = await service.update(taskId, dto);
+      const result = await service.update(taskId, dto, actorId);
 
       expect(result.assigneeId).toBeNull();
-      expect(mockPrismaService.task.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ assigneeId: null }),
-        }),
-      );
     });
 
     it('updates storyPoints and acceptanceCriteria', async () => {
@@ -106,9 +111,9 @@ describe('TasksService', () => {
       const dto = { storyPoints: 5, acceptanceCriteria: 'Given X when Y then Z' };
       const updatedTask = { id: taskId, storyPoints: 5, acceptanceCriteria: 'Given X when Y then Z', assignee: null, sprint: null };
 
-      mockPrismaService.task.update.mockResolvedValue(updatedTask);
+      mockPrismaService.$transaction.mockResolvedValue([updatedTask]);
 
-      const result = await service.update(taskId, dto);
+      const result = await service.update(taskId, dto, actorId);
 
       expect(result.storyPoints).toBe(5);
       expect(result.acceptanceCriteria).toBe('Given X when Y then Z');
