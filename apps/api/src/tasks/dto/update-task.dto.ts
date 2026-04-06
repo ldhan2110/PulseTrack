@@ -3,11 +3,12 @@ import {
   IsOptional,
   IsEnum,
   IsInt,
+  IsDateString,
   Min,
   Max,
   MaxLength,
 } from 'class-validator';
-import { TaskStatus } from '@prisma/client';
+import { TaskStatus, Priority } from '@prisma/client';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -42,4 +43,24 @@ export class UpdateTaskDto {
   @IsString()
   @MaxLength(5000)
   acceptanceCriteria?: string;
+
+  @IsOptional()
+  @IsEnum(Priority)
+  priority?: Priority | null;
+
+  @IsOptional()
+  @IsDateString()
+  plannedStartDate?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  plannedEndDate?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  actualStartDate?: string | null;
+
+  @IsOptional()
+  @IsDateString()
+  actualEndDate?: string | null;
 }
