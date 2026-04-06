@@ -91,10 +91,10 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
     <Sidebar collapsible="icon">
       {/* Header: PM logo */}
       <SidebarHeader className="h-12 flex items-center px-3">
-        <div className={cn('flex items-center gap-2', isCollapsed && 'justify-center')}>
-          <FolderKanban className="size-5 text-primary shrink-0" />
+        <div className={cn('flex items-center gap-2 py-1', isCollapsed && 'justify-center')}>
+          <img src="/favicon.svg" alt="Logo" className="size-6" />
           {!isCollapsed && (
-            <span className="font-semibold text-base tracking-tight">PM</span>
+            <span className="font-semibold text-base tracking-tight">PulseTrack</span>
           )}
         </div>
       </SidebarHeader>
