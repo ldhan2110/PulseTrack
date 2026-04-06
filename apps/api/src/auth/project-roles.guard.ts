@@ -23,6 +23,9 @@ export class ProjectRolesGuard implements CanActivate {
       throw new ForbiddenException('Not a member of this project');
     }
 
+    // Attach project role to request user so services can check it (e.g., comment/attachment delete)
+    request.user.projectRole = member.role;
+
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(PROJECT_ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
