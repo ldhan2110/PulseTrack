@@ -146,7 +146,7 @@ export function CreateTaskDialog({
         status,
         assigneeId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined,
         storyPoints: storyPoints !== '' ? Number(storyPoints) : undefined,
-        sprintId: sprintId || undefined,
+        sprintId: sprintId && sprintId !== 'none' ? sprintId : undefined,
       },
       {
         onSuccess: () => {
@@ -296,12 +296,12 @@ export function CreateTaskDialog({
 
               <Field>
                 <FieldLabel>Sprint</FieldLabel>
-                <Select value={sprintId} onValueChange={setSprintId}>
+                <Select value={sprintId || 'none'} onValueChange={setSprintId}>
                   <SelectTrigger className="h-8">
                     <SelectValue placeholder="None (backlog)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (backlog)</SelectItem>
+                    <SelectItem value="none">None (backlog)</SelectItem>
                     {sprints.map((sprint) => (
                       <SelectItem key={sprint.id} value={sprint.id}>
                         {sprint.name}

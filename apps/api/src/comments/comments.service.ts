@@ -14,10 +14,10 @@ export class CommentsService {
           include: {
             author: { select: { id: true, username: true, email: true } },
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: 'desc' },
         },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
