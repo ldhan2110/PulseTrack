@@ -27,8 +27,11 @@ export class MembersController {
   }
 
   @Get('search')
-  searchUsers(@Query('q') query: string) {
-    return this.membersService.searchUsers(query ?? '');
+  searchUsers(
+    @Param('projectId') projectId: string,
+    @Query('q') query: string,
+  ) {
+    return this.membersService.searchUsers(projectId, query ?? '');
   }
 
   @Post()

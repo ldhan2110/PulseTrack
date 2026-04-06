@@ -95,9 +95,16 @@ export class MembersService {
     await this.prisma.projectMember.delete({ where: { id: memberId } });
   }
 
-  async searchUsers(query: string) {
+  async searchUsers(projectId: string, query: string) {
+    const existing = await this.prisma.projectMember.findMany({
+      where: { projectId },
+      select: { userId: true },
+    });
+    const excludedIds = existing.map((m) => m.userId);
+
     return this.prisma.user.findMany({
       where: {
+        ...(excludedIds.length > 0 ? { id: { notIn: excludedIds } } : {}),
         OR: [
           { username: { contains: query, mode: 'insensitive' } },
           { email: { contains: query, mode: 'insensitive' } },
