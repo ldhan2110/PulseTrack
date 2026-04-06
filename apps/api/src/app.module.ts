@@ -12,6 +12,8 @@ import { TasksModule } from './tasks/tasks.module';
 import { SprintsModule } from './sprints/sprints.module';
 import { BugsModule } from './bugs/bugs.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { CommentsModule } from './comments/comments.module';
+import { AttachmentsModule } from './attachments/attachments.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     SprintsModule,
     BugsModule,
     DashboardModule,
+    CommentsModule,
+    AttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
