@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddMemberDto } from './dto/add-member.dto';
+import { AddMembersDto } from './dto/add-members.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
 
 @Injectable()
@@ -44,6 +45,38 @@ export class MembersService {
         },
       },
     });
+  }
+
+  async addMembers(projectId: string, dto: AddMembersDto) {
+    const userIds = dto.members.map((m) => m.userId);
+    const existing = await this.prisma.projectMember.findMany({
+      where: { projectId, userId: { in: userIds } },
+      select: { userId: true },
+    });
+
+    if (existing.length > 0) {
+      const existingIds = existing.map((m) => m.userId);
+      throw new ConflictException(
+        `Some users are already members of this project: ${existingIds.join(', ')}`,
+      );
+    }
+
+    return this.prisma.$transaction(
+      dto.members.map((entry) =>
+        this.prisma.projectMember.create({
+          data: {
+            projectId,
+            userId: entry.userId,
+            role: entry.role,
+          },
+          include: {
+            user: {
+              select: { id: true, email: true, username: true },
+            },
+          },
+        }),
+      ),
+    );
   }
 
   async changeMemberRole(

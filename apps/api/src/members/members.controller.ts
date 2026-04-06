@@ -14,6 +14,7 @@ import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { ProjectRoles } from '../auth/project-roles.decorator';
 import { MembersService } from './members.service';
 import { AddMemberDto } from './dto/add-member.dto';
+import { AddMembersDto } from './dto/add-members.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
 
 @Controller('projects/:projectId/members')
@@ -41,6 +42,15 @@ export class MembersController {
     @Body() dto: AddMemberDto,
   ) {
     return this.membersService.addMember(projectId, dto);
+  }
+
+  @Post('batch')
+  @ProjectRoles('pm')
+  addMembers(
+    @Param('projectId') projectId: string,
+    @Body() dto: AddMembersDto,
+  ) {
+    return this.membersService.addMembers(projectId, dto);
   }
 
   @Patch(':memberId/role')
