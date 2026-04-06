@@ -57,55 +57,24 @@ export class TasksService {
     });
   }
 
-  async update(taskId: string, dto: UpdateTaskDto, actorId: string) {
-    // Fetch current task to detect changes for history recording
-    const current = await this.prisma.task.findUniqueOrThrow({ where: { id: taskId } });
-
-    // Build history entries for tracked fields only
-    const trackedFields = ['status', 'assigneeId', 'sprintId', 'storyPoints', 'title'] as const;
-    const historyEntries = trackedFields
-      .filter(f => dto[f] !== undefined && String(dto[f] ?? '') !== String(current[f] ?? ''))
-      .map(f => ({
-        taskId,
-        actorId,
-        field: f,
-        oldValue: current[f] != null ? String(current[f]) : null,
-        newValue: dto[f] != null ? String(dto[f]) : null,
-      }));
-
-    // Execute update + history inserts in a single transaction
-    const [updatedTask] = await this.prisma.$transaction([
-      this.prisma.task.update({
-        where: { id: taskId },
-        data: {
-          ...(dto.title !== undefined && { title: dto.title }),
-          ...(dto.description !== undefined && { description: dto.description }),
-          ...(dto.status !== undefined && { status: dto.status }),
-          ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
-          ...(dto.storyPoints !== undefined && { storyPoints: dto.storyPoints }),
-          ...(dto.sprintId !== undefined && { sprintId: dto.sprintId }),
-          ...(dto.acceptanceCriteria !== undefined && {
-            acceptanceCriteria: dto.acceptanceCriteria,
-          }),
-        },
-        include: {
-          assignee: { select: { id: true, username: true, email: true } },
-          sprint: { select: { id: true, name: true } },
-        },
-      }),
-      ...historyEntries.map(e => this.prisma.taskHistory.create({ data: e })),
-    ]);
-
-    return updatedTask;
-  }
-
-  async getHistory(taskId: string) {
-    return this.prisma.taskHistory.findMany({
-      where: { taskId },
-      include: {
-        actor: { select: { id: true, username: true, email: true } },
+  async update(taskId: string, dto: UpdateTaskDto) {
+    return this.prisma.task.update({
+      where: { id: taskId },
+      data: {
+        ...(dto.title !== undefined && { title: dto.title }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
+        ...(dto.storyPoints !== undefined && { storyPoints: dto.storyPoints }),
+        ...(dto.sprintId !== undefined && { sprintId: dto.sprintId }),
+        ...(dto.acceptanceCriteria !== undefined && {
+          acceptanceCriteria: dto.acceptanceCriteria,
+        }),
       },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        assignee: { select: { id: true, username: true, email: true } },
+        sprint: { select: { id: true, name: true } },
+      },
     });
   }
 
