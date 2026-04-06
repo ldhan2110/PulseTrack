@@ -52,12 +52,7 @@ const ROLES: { value: ProjectRole; label: string }[] = [
   { value: 'developer', label: 'Developer' },
 ];
 
-const ROLE_LABELS: Record<ProjectRole, string> = {
-  pm: 'PM',
-  ba: 'BA',
-  qc: 'QC',
-  developer: 'Developer',
-};
+const ROLE_LABELS = Object.fromEntries(ROLES.map((r) => [r.value, r.label])) as Record<ProjectRole, string>;
 
 function getInitials(name: string): string {
   return name
@@ -142,13 +137,13 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                 onValueChange={setSearchQuery}
               />
               <CommandList>
-                {isFetching ? (
-                  <div className="py-6 text-center text-sm text-muted-foreground">
-                    Searching...
-                  </div>
-                ) : searchQuery.length < 2 ? (
+                {searchQuery.length < 2 ? (
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     Type at least 2 characters to search
+                  </div>
+                ) : isFetching ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    Searching...
                   </div>
                 ) : (
                   <>
