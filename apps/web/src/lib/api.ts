@@ -4,6 +4,7 @@ import type {
   UpdateProjectPayload,
   Member,
   AddMemberPayload,
+  AddMembersPayload,
   ChangeRolePayload,
   UserSearchResult,
   Task,
@@ -86,6 +87,11 @@ export const api = {
     request<Member[]>(`/projects/${projectId}/members`),
   addMember: (projectId: string, data: AddMemberPayload) =>
     request<Member>(`/projects/${projectId}/members`, { method: 'POST', body: JSON.stringify(data) }),
+  addMembers: (projectId: string, data: AddMembersPayload) =>
+    request<Member[]>(`/projects/${projectId}/members/batch`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   searchUsers: (projectId: string, query: string) =>
     request<UserSearchResult[]>(`/projects/${projectId}/members/search?q=${encodeURIComponent(query)}`),
   changeMemberRole: (projectId: string, memberId: string, data: ChangeRolePayload) =>

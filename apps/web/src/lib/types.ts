@@ -77,6 +77,10 @@ export interface AddMemberPayload {
   role: ProjectRole;
 }
 
+export interface AddMembersPayload {
+  members: AddMemberPayload[];
+}
+
 export interface ChangeRolePayload {
   role: ProjectRole;
 }
