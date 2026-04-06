@@ -77,7 +77,11 @@ export function ProjectSettingsPage() {
         </CardHeader>
         <CardContent className="flex items-center gap-6">
           <Avatar className="size-20">
-            <AvatarImage src={project.avatarUrl ?? undefined} />
+            <AvatarImage 
+              className="object-cover w-full h-full"
+              src={project.avatarUrl ?? undefined} 
+              alt="Project Avatar"
+            />
             <AvatarFallback className="text-2xl">
               {project.prefix?.slice(0, 2) ?? project.name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -86,7 +90,7 @@ export function ProjectSettingsPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"
               className="hidden"
               onChange={handleAvatarUpload}
             />

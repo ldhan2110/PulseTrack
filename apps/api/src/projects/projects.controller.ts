@@ -100,7 +100,7 @@ export class ProjectsController {
       }),
       limits: { fileSize: 2 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        if (!file.mimetype.match(/^image\/(jpeg|png|gif|webp)$/)) {
+        if (!file.mimetype.match(/^image\/(jpeg|png|gif|webp|svg\+xml)$/)) {
           cb(new BadRequestException('Only image files are allowed'), false);
         } else {
           cb(null, true);

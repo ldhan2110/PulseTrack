@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -78,6 +78,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const { data: projects } = useProjects();
+  const { toggleSidebar} = useSidebar();
   const { user } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
 
@@ -91,7 +92,10 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
     <Sidebar collapsible="icon">
       {/* Header: PM logo */}
       <SidebarHeader className="h-12 flex items-center px-3">
-        <div className={cn('flex items-center gap-2 py-1', isCollapsed && 'justify-center')} onClick={() => navigate('/')}>
+        <div className={cn('flex items-center gap-2 py-1', isCollapsed && 'justify-center')} onClick={() => {
+            if (isCollapsed) toggleSidebar();
+            else navigate('/')
+          }}>
           <img src="/favicon.svg" alt="Logo" className="size-6" />
           {!isCollapsed && (
             <span className="font-semibold text-base tracking-tight">PulseTrack</span>
@@ -100,6 +104,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
       </SidebarHeader>
 
       <Separator />
+
 
       <SidebarContent className="overflow-hidden">
         {/* Projects section */}
@@ -122,7 +127,11 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                         onClick={() => navigate(`/projects/${project.id}/dashboard`)}
                         className="cursor-pointer"
                       >
-                        <FolderKanban />
+                        {project.avatarUrl ? (
+                          <img src={project.avatarUrl} alt={`${project.name} avatar`} className="size-4 rounded" />
+                        ) : (
+                          <FolderKanban className="size-4" />
+                        )}
                         <span className="truncate">{project.name}</span>
                       </SidebarMenuButton>
                     </TooltipTrigger>
