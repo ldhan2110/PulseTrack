@@ -63,7 +63,22 @@ function AttachmentRow({
 }: AttachmentRowProps) {
   const canDelete = attachment.uploaderId === currentUserId || canManage;
   const FileIcon = getFileIcon(attachment.mimeType);
-  const downloadUrl = api.getAttachmentDownloadUrl(projectId, taskId, attachment.id);
+
+  const handleDownload = async () => {
+    try {
+      const blob = await api.downloadAttachment(projectId, taskId, attachment.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download file.');
+    }
+  };
 
   const relativeTime = (() => {
     try {
@@ -91,17 +106,15 @@ function AttachmentRow({
         <span className="text-xs text-muted-foreground">{attachment.uploader.username}</span>
       </div>
       <span className="text-xs text-muted-foreground shrink-0">{relativeTime}</span>
-      <a
-        href={downloadUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-7 shrink-0"
+        onClick={handleDownload}
       >
-        <Button variant="ghost" size="icon" className="size-7" asChild={false}>
-          <Download className="size-3.5" />
-          <span className="sr-only">Download {attachment.filename}</span>
-        </Button>
-      </a>
+        <Download className="size-3.5" />
+        <span className="sr-only">Download {attachment.filename}</span>
+      </Button>
       {canDelete && (
         <AlertDialog>
           <AlertDialogTrigger asChild>

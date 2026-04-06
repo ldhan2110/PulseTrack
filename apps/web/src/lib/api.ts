@@ -160,6 +160,15 @@ export const api = {
   },
   getAttachmentDownloadUrl: (projectId: string, taskId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}/download`,
+  downloadAttachment: async (projectId: string, taskId: string, attachmentId: string): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(
+      `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}/download`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    return res.blob();
+  },
   deleteAttachment: (projectId: string, taskId: string, attachmentId: string) =>
     request<Attachment>(`/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}`, {
       method: 'DELETE',
