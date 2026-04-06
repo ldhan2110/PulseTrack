@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -77,6 +77,7 @@ export function CommentComposer({
 }: CommentComposerProps) {
   const editorRef = useRef<Editor | null>(null);
   const handleSubmitRef = useRef<() => void>(() => {});
+  const [isContentEmpty, setIsContentEmpty] = useState(true);
 
   const editor = useEditor({
     extensions: [
@@ -85,6 +86,9 @@ export function CommentComposer({
       Image.configure({ inline: true, allowBase64: true }),
     ],
     content: '',
+    onUpdate: ({ editor: e }) => {
+      setIsContentEmpty(e.isEmpty);
+    },
     editorProps: {
       handlePaste: (view, event) => {
         if (editorRef.current) {
@@ -106,7 +110,7 @@ export function CommentComposer({
   // Keep refs in sync
   editorRef.current = editor;
 
-  const isEmpty = !editor || editor.isEmpty;
+  const isEmpty = !editor || isContentEmpty;
 
   const handleSubmit = useCallback(() => {
     if (!editor || editor.isEmpty || isPending) return;
