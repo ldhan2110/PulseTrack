@@ -23,6 +23,7 @@ import type {
   CreateCommentPayload,
   Attachment,
   TaskHistoryEntry,
+  UpdateSettingsPayload,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -57,6 +58,28 @@ export const api = {
     request<void>(`/projects/${id}/archive`, { method: 'POST' }),
   unarchiveProject: (id: string) =>
     request<void>(`/projects/${id}/unarchive`, { method: 'POST' }),
+  getProjectByPrefix: (prefix: string) => request<Project>(`/projects/by-prefix/${prefix}`),
+  updateProjectSettings: (id: string, data: UpdateSettingsPayload) =>
+    request<Project>(`/projects/${id}/settings`, { method: 'PATCH', body: JSON.stringify(data) }),
+  uploadProjectAvatar: async (id: string, file: File): Promise<Project> => {
+    const token = keycloak.token;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/projects/${id}/avatar`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Upload failed: ${res.status}`);
+    }
+    return res.json() as Promise<Project>;
+  },
+  removeProjectAvatar: (id: string) =>
+    request<Project>(`/projects/${id}/avatar`, { method: 'DELETE' }),
 
   // ─── Members ───────────────────────────────────────────────────────────────
   getMembers: (projectId: string) =>
@@ -136,6 +159,11 @@ export const api = {
   deleteComment: (projectId: string, taskId: string, commentId: string) =>
     request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, {
       method: 'DELETE',
+    }),
+  updateComment: (projectId: string, taskId: string, commentId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     }),
 
   // ─── Attachments ───────────────────────────────────────────────────────────

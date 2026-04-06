@@ -41,17 +41,21 @@ interface CreateProjectDialogProps {
 
 export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogProps) {
   const [name, setName] = useState('');
+  const [prefix, setPrefix] = useState('');
+  const [prefixError, setPrefixError] = useState('');
   const [description, setDescription] = useState('');
   const createProject = useCreateProject();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !prefix.trim() || prefixError) return;
     createProject.mutate(
-      { name: name.trim(), description: description.trim() || undefined },
+      { name: name.trim(), prefix: prefix.trim(), description: description.trim() || undefined },
       {
         onSuccess: () => {
           setName('');
+          setPrefix('');
+          setPrefixError('');
           setDescription('');
           onOpenChange(false);
         },
@@ -62,6 +66,8 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setName('');
+      setPrefix('');
+      setPrefixError('');
       setDescription('');
     }
     onOpenChange(open);
@@ -87,6 +93,29 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
               />
             </Field>
             <Field>
+              <FieldLabel htmlFor="project-prefix">Task Key Prefix *</FieldLabel>
+              <Input
+                id="project-prefix"
+                placeholder="e.g. PM, ACME"
+                value={prefix}
+                onChange={(e) => {
+                  const upper = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                  setPrefix(upper);
+                  if (upper && !/^[A-Z]{2,10}$/.test(upper)) {
+                    setPrefixError('Must be 2-10 uppercase letters');
+                  } else {
+                    setPrefixError('');
+                  }
+                }}
+              />
+              {prefixError && <p className="text-xs text-destructive">{prefixError}</p>}
+              {prefix && !prefixError && (
+                <p className="text-xs text-muted-foreground">
+                  Tasks will be: {prefix}-1, {prefix}-2, ...
+                </p>
+              )}
+            </Field>
+            <Field>
               <FieldLabel htmlFor="project-description">Description</FieldLabel>
               <Textarea
                 id="project-description"
@@ -106,7 +135,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
             >
               Discard
             </Button>
-            <Button type="submit" disabled={!name.trim() || createProject.isPending}>
+            <Button type="submit" disabled={!name.trim() || !prefix.trim() || !!prefixError || createProject.isPending}>
               {createProject.isPending ? 'Creating...' : 'Create Project'}
             </Button>
           </DialogFooter>

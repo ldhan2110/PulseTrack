@@ -316,6 +316,13 @@ export function TaskDetailPage() {
         <span className="text-foreground truncate max-w-[200px]">{task.title}</span>
       </div>
 
+      {/* Task key badge */}
+      {task.taskKey && (
+        <span className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded w-fit">
+          {task.taskKey}
+        </span>
+      )}
+
       {/* Title — inline editable */}
       <div>
         {editingTitle ? (

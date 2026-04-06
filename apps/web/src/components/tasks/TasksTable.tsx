@@ -142,6 +142,9 @@ export function TasksTable({
         header: ({ column }) => <SortHeader label="Title" column={column} />,
         cell: ({ row }) => (
           <span className="text-sm font-medium truncate block max-w-[400px]" title={row.original.title}>
+            {row.original.taskKey && (
+              <span className="font-mono text-xs text-muted-foreground mr-2">{row.original.taskKey}</span>
+            )}
             {row.original.title}
           </span>
         ),

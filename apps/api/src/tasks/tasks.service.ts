@@ -9,21 +9,50 @@ export class TasksService {
   constructor(private prisma: PrismaService) {}
 
   async create(projectId: string, creatorId: string, dto: CreateTaskDto) {
-    return this.prisma.task.create({
-      data: {
-        projectId,
-        creatorId,
-        title: dto.title,
-        description: dto.description,
-        status: dto.status,
-        assigneeId: dto.assigneeId,
-        storyPoints: dto.storyPoints,
-        sprintId: dto.sprintId,
-        acceptanceCriteria: dto.acceptanceCriteria,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      // Atomically increment the project's task sequence
+      const project = await tx.project.update({
+        where: { id: projectId },
+        data: { taskSeq: { increment: 1 } },
+        select: { prefix: true, taskSeq: true },
+      });
+
+      const taskKey = project.prefix ? `${project.prefix}-${project.taskSeq}` : null;
+
+      return tx.task.create({
+        data: {
+          projectId,
+          creatorId,
+          title: dto.title,
+          taskKey,
+          description: dto.description,
+          status: dto.status,
+          assigneeId: dto.assigneeId,
+          storyPoints: dto.storyPoints,
+          sprintId: dto.sprintId,
+          acceptanceCriteria: dto.acceptanceCriteria,
+        },
+        include: {
+          assignee: { select: { id: true, username: true, email: true } },
+          sprint: { select: { id: true, name: true } },
+        },
+      });
+    });
+  }
+
+  async findByTaskKey(taskKey: string) {
+    return this.prisma.task.findUnique({
+      where: { taskKey },
       include: {
         assignee: { select: { id: true, username: true, email: true } },
         sprint: { select: { id: true, name: true } },
+        creator: { select: { id: true, username: true, email: true } },
+        subTasks: {
+          include: {
+            assignee: { select: { id: true, username: true, email: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   }
@@ -63,15 +92,37 @@ export class TasksService {
 
     // Build history entries for tracked fields only
     const trackedFields = ['status', 'assigneeId', 'sprintId', 'storyPoints', 'title'] as const;
-    const historyEntries = trackedFields
+    const historyEntries: { taskId: string; actorId: string; field: string; oldValue: string | null; newValue: string | null }[] = trackedFields
       .filter(f => dto[f] !== undefined && String(dto[f] ?? '') !== String(current[f] ?? ''))
       .map(f => ({
         taskId,
         actorId,
-        field: f,
+        field: f as string,
         oldValue: current[f] != null ? String(current[f]) : null,
         newValue: dto[f] != null ? String(dto[f]) : null,
       }));
+
+    // Track description changes
+    if (dto.description !== undefined && dto.description !== current.description) {
+      historyEntries.push({
+        taskId,
+        actorId,
+        field: 'description',
+        oldValue: current.description ? current.description.replace(/<[^>]*>/g, '').slice(0, 500) : null,
+        newValue: dto.description ? dto.description.replace(/<[^>]*>/g, '').slice(0, 500) : null,
+      });
+    }
+
+    // Track acceptance criteria changes
+    if (dto.acceptanceCriteria !== undefined && dto.acceptanceCriteria !== current.acceptanceCriteria) {
+      historyEntries.push({
+        taskId,
+        actorId,
+        field: 'acceptanceCriteria',
+        oldValue: current.acceptanceCriteria ?? null,
+        newValue: dto.acceptanceCriteria ?? null,
+      });
+    }
 
     // Execute update + history inserts in a single transaction
     const [updatedTask] = await this.prisma.$transaction([

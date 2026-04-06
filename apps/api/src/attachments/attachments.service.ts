@@ -18,19 +18,30 @@ export class AttachmentsService {
   }
 
   async create(taskId: string, uploaderId: string, file: Express.Multer.File) {
-    return this.prisma.attachment.create({
-      data: {
-        taskId,
-        uploaderId,
-        filename: file.originalname,
-        storedName: file.filename,
-        mimeType: file.mimetype,
-        size: file.size,
-      },
-      include: {
-        uploader: { select: { id: true, username: true, email: true } },
-      },
-    });
+    const [attachment] = await this.prisma.$transaction([
+      this.prisma.attachment.create({
+        data: {
+          taskId,
+          uploaderId,
+          filename: file.originalname,
+          storedName: file.filename,
+          mimeType: file.mimetype,
+          size: file.size,
+        },
+        include: {
+          uploader: { select: { id: true, username: true, email: true } },
+        },
+      }),
+      this.prisma.taskHistory.create({
+        data: {
+          taskId,
+          actorId: uploaderId,
+          field: 'attachment_added',
+          newValue: file.originalname,
+        },
+      }),
+    ]);
+    return attachment;
   }
 
   async findOne(attachmentId: string) {
@@ -57,6 +68,17 @@ export class AttachmentsService {
     } catch {
       // File may already be missing — proceed with DB deletion
     }
-    return this.prisma.attachment.delete({ where: { id: attachmentId } });
+    const [deleted] = await this.prisma.$transaction([
+      this.prisma.attachment.delete({ where: { id: attachmentId } }),
+      this.prisma.taskHistory.create({
+        data: {
+          taskId: attachment.taskId,
+          actorId: userId,
+          field: 'attachment_deleted',
+          oldValue: attachment.filename,
+        },
+      }),
+    ]);
+    return deleted;
   }
 }

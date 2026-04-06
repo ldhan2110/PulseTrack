@@ -4,6 +4,7 @@ import {
   useCreateComment,
   useCreateReply,
   useDeleteComment,
+  useUpdateComment,
 } from '@/hooks/useComments';
 import { CommentItem } from './CommentItem';
 import { CommentComposer } from './CommentComposer';
@@ -25,6 +26,7 @@ export function CommentThread({
   const createComment = useCreateComment(projectId, taskId);
   const createReply = useCreateReply(projectId, taskId);
   const deleteComment = useDeleteComment(projectId, taskId);
+  const updateComment = useUpdateComment(projectId, taskId);
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
@@ -37,6 +39,10 @@ export function CommentThread({
 
   const handleDelete = (commentId: string) => {
     deleteComment.mutate(commentId);
+  };
+
+  const handleEdit = (commentId: string, content: string) => {
+    updateComment.mutate({ commentId, content });
   };
 
   const handlePostComment = (content: string) => {
@@ -66,6 +72,7 @@ export function CommentThread({
                 canManage={canManage}
                 onReply={handleReply}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
               />
 
               {/* Replies */}
@@ -79,6 +86,7 @@ export function CommentThread({
                       canManage={canManage}
                       onReply={handleReply}
                       onDelete={handleDelete}
+                      onEdit={handleEdit}
                       isReply
                     />
                   ))}

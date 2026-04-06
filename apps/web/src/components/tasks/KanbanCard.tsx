@@ -62,6 +62,9 @@ export function KanbanCard({ task, projectId }: KanbanCardProps) {
         )}
       >
         <CardContent className="p-3">
+          {task.taskKey && (
+            <span className="text-xs font-mono text-muted-foreground">{task.taskKey}</span>
+          )}
           <p className="text-sm font-medium line-clamp-2 mb-2">{task.title}</p>
           <div className="flex items-center gap-2">
             {task.assignee ? (

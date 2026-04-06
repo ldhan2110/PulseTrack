@@ -8,6 +8,7 @@ import {
   FolderKanban,
   ChevronLeft,
   ChevronRight,
+  Settings,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const PROJECT_NAV_ITEMS = [
   { label: 'Sprints', icon: Zap, path: 'sprints' },
   { label: 'Bugs', icon: Bug, path: 'bugs' },
   { label: 'Members', icon: Users, path: 'members' },
+  { label: 'Settings', icon: Settings, path: 'settings' },
 ];
 
 function SidebarCollapseButton() {

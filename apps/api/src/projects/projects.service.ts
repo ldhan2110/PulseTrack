@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdateSettingsDto } from './dto/update-settings.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -13,6 +14,7 @@ export class ProjectsService {
         data: {
           name: dto.name,
           description: dto.description,
+          prefix: dto.prefix,
           ownerId: userId,
         },
       });
@@ -63,6 +65,8 @@ export class ProjectsService {
           id: m.project.id,
           name: m.project.name,
           description: m.project.description,
+          prefix: m.project.prefix,
+          avatarUrl: m.project.avatarUrl,
           archived: m.project.archived,
           createdAt: m.project.createdAt,
           userRole: m.role,
@@ -117,6 +121,45 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id: projectId },
       data: { archived: false },
+    });
+  }
+
+  async findByPrefix(prefix: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { prefix },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: { id: true, email: true, username: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with prefix ${prefix} not found`);
+    }
+
+    return project;
+  }
+
+  async updateSettings(projectId: string, dto: UpdateSettingsDto) {
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.prefix !== undefined && { prefix: dto.prefix }),
+      },
+    });
+  }
+
+  async updateAvatar(projectId: string, avatarUrl: string | null) {
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: { avatarUrl },
     });
   }
 }

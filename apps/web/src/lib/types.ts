@@ -33,6 +33,8 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
+  prefix: string | null;
+  avatarUrl: string | null;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -45,11 +47,18 @@ export interface Project {
 export interface CreateProjectPayload {
   name: string;
   description?: string;
+  prefix: string;
 }
 
 export interface UpdateProjectPayload {
   name?: string;
   description?: string;
+}
+
+export interface UpdateSettingsPayload {
+  name?: string;
+  description?: string;
+  prefix?: string;
 }
 
 // ─── Member ───────────────────────────────────────────────────────────────────
@@ -87,6 +96,7 @@ export interface SubTask {
 
 export interface Task {
   id: string;
+  taskKey: string | null;
   title: string;
   description: string | null;
   status: TaskStatus;
@@ -272,6 +282,7 @@ export interface Comment {
   taskId: string;
   authorId: string;
   parentId: string | null;
+  isEdited: boolean;
   createdAt: string;
   updatedAt: string;
   author: Pick<User, 'id' | 'username' | 'email'>;

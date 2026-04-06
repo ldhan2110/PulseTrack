@@ -104,6 +104,9 @@ model Project {
   archived    Boolean   @default(false)
   ownerId     String
   owner       User      @relation("ProjectOwner", fields: [ownerId], references: [id])
+  prefix      String?   @unique   // 2-10 uppercase letters, URL slug + task key prefix
+  taskSeq     Int       @default(0) // Auto-incrementing counter for task keys
+  avatarUrl   String?   // Path to uploaded avatar image
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -145,6 +148,7 @@ model Sprint {
 model Task {
   id                  String      @id @default(cuid())
   title               String
+  taskKey             String?   @unique   // e.g. "PM-1", "ACME-42"
   description         String?
   status              TaskStatus  @default(BACKLOG)
   storyPoints         Int?
@@ -176,6 +180,7 @@ model Comment {
   taskId    String
   authorId  String
   parentId  String?   // Threaded comments
+  isEdited  Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
