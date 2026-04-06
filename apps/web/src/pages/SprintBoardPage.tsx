@@ -84,7 +84,7 @@ export function SprintBoardPage() {
             This sprint doesn't exist or has been deleted.
           </p>
           <Link
-            to={`/projects/${projectId}/sprints`}
+            to={`/projects/${projectPrefix}/sprints`}
             className="text-sm font-medium underline underline-offset-4"
           >
             Go to Sprints
@@ -103,7 +103,7 @@ export function SprintBoardPage() {
         variant="ghost"
         size="sm"
         className="h-7 gap-1 -ml-2 w-fit"
-        onClick={() => navigate(`/projects/${projectId}/sprints`)}
+        onClick={() => navigate(`/projects/${projectPrefix}/sprints`)}
       >
         ← Back to Sprints
       </Button>
@@ -147,7 +147,7 @@ export function SprintBoardPage() {
               variant="outline"
               asChild
             >
-              <Link to={`/projects/${projectId}/backlog`}>Go to Backlog</Link>
+              <Link to={`/projects/${projectPrefix}/backlog`}>Go to Backlog</Link>
             </Button>
           </div>
         </div>

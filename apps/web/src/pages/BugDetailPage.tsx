@@ -69,7 +69,7 @@ function formatRelative(dateStr: string): string {
 }
 
 export function BugDetailPage() {
-  const { bugId = '' } = useParams<{ bugId: string }>();
+  const { bugId = '', projectPrefix = '' } = useParams<{ bugId: string; projectPrefix: string }>();
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
 
@@ -184,7 +184,7 @@ export function BugDetailPage() {
 
   const handleDelete = () => {
     deleteBug.mutate(bugId, {
-      onSuccess: () => navigate(`/projects/${projectId}/bugs`),
+      onSuccess: () => navigate(`/projects/${projectPrefix}/bugs`),
     });
   };
 
@@ -224,7 +224,7 @@ export function BugDetailPage() {
             This bug doesn't exist or has been deleted.
           </p>
           <Link
-            to={`/projects/${projectId}/bugs`}
+            to={`/projects/${projectPrefix}/bugs`}
             className="text-sm font-medium underline underline-offset-4"
           >
             Go to Bugs
@@ -242,7 +242,7 @@ export function BugDetailPage() {
           variant="ghost"
           size="sm"
           className="h-7 gap-1 -ml-2"
-          onClick={() => navigate(`/projects/${projectId}/bugs`)}
+          onClick={() => navigate(`/projects/${projectPrefix}/bugs`)}
         >
           <ArrowLeft className="size-4" />
           Back

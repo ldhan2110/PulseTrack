@@ -163,7 +163,7 @@ function DatePickerField({ label, value, onChange, disabled }: DatePickerFieldPr
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export function TaskDetailPage() {
-  const { taskKey = '' } = useParams<{ taskKey: string }>();
+  const { taskKey = '', projectPrefix = '' } = useParams<{ taskKey: string; projectPrefix: string }>();
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -317,7 +317,7 @@ export function TaskDetailPage() {
 
   const handleDelete = () => {
     deleteTask.mutate(taskId, {
-      onSuccess: () => navigate(`/projects/${projectId}/backlog`),
+      onSuccess: () => navigate(`/projects/${projectPrefix}/backlog`),
     });
   };
 
@@ -358,7 +358,7 @@ export function TaskDetailPage() {
             This task doesn't exist or has been deleted.
           </p>
           <Link
-            to={`/projects/${projectId}/backlog`}
+            to={`/projects/${projectPrefix}/backlog`}
             className="text-sm font-medium underline underline-offset-4"
           >
             Go to Backlog
@@ -382,7 +382,7 @@ export function TaskDetailPage() {
           variant="ghost"
           size="sm"
           className="h-7 gap-1 -ml-2"
-          onClick={() => navigate(`/projects/${projectId}/backlog`)}
+          onClick={() => navigate(`/projects/${projectPrefix}/backlog`)}
         >
           <ArrowLeft className="size-4" />
           Back

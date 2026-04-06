@@ -131,6 +131,7 @@ export function useUpdateTaskStatus(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
     },
     onSuccess: (_data, { status }) => {
       toast.success(`Moved to ${STATUS_LABELS[status]}`);
