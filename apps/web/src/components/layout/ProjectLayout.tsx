@@ -4,24 +4,28 @@ import { AppSidebar } from './AppSidebar';
 import { useUiStore } from '@/store/uiStore';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { CreateProjectDialog } from '../projects/CreateProjectDialog';
+import { useProjectByPrefix } from '@/hooks/useProjects';
 
 // 256px expanded, 48px collapsed — per UI-SPEC
 const SIDEBAR_WIDTH = '256px';
 const SIDEBAR_WIDTH_COLLAPSED = '48px';
 
 export function ProjectLayout() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const { projectPrefix } = useParams<{ projectPrefix: string }>();
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
+  // Resolve human-readable prefix to project UUID
+  const { data: project } = useProjectByPrefix(projectPrefix ?? '');
+
   useEffect(() => {
-    setActiveProjectId(projectId ?? null);
+    setActiveProjectId(project?.id ?? null);
     return () => {
       // Don't clear on unmount — sidebar should retain project context
     };
-  }, [projectId, setActiveProjectId]);
+  }, [project?.id, setActiveProjectId]);
 
   return (
     <SidebarProvider
