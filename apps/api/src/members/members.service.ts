@@ -49,6 +49,10 @@ export class MembersService {
 
   async addMembers(projectId: string, dto: AddMembersDto) {
     const userIds = dto.members.map((m) => m.userId);
+    const uniqueUserIds = [...new Set(userIds)];
+    if (uniqueUserIds.length !== userIds.length) {
+      throw new BadRequestException('Duplicate user IDs in request');
+    }
     const existing = await this.prisma.projectMember.findMany({
       where: { projectId, userId: { in: userIds } },
       select: { userId: true },

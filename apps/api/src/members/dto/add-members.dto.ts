@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsString, ValidateNested } from 'class-validator';
+import { ArrayMinSize, IsArray, IsEnum, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProjectRole } from '@prisma/client';
 
@@ -12,6 +12,7 @@ export class MemberEntryDto {
 
 export class AddMembersDto {
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => MemberEntryDto)
   members: MemberEntryDto[];
