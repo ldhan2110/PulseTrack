@@ -33,11 +33,11 @@ export function KanbanColumn({ status, tasks, projectId }: KanbanColumnProps) {
       <div
         ref={setNodeRef}
         className={cn(
-          'flex-1 rounded-lg p-2 min-h-[200px] transition-colors duration-100',
+          'flex flex-col flex-1 rounded-lg p-2 min-h-[200px] transition-colors duration-100',
           isOver ? 'bg-muted' : 'bg-muted/30',
         )}
       >
-        <ScrollArea className="h-full max-h-[calc(100vh-280px)]">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-2 pr-2">
             {tasks.map((task) => (
               <KanbanCard key={task.id} task={task} projectId={projectId} />
