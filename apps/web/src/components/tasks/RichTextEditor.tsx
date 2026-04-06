@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 
 interface RichTextEditorProps {
@@ -230,7 +231,7 @@ export function RichTextEditor({
         ) : (
           <div
             className="prose prose-sm max-w-none p-3 text-sm leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: initialContent }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(initialContent) }}
           />
         )}
         {editable && !isEmpty && (

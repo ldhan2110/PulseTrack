@@ -76,6 +76,7 @@ export function CommentComposer({
   onCancel,
 }: CommentComposerProps) {
   const editorRef = useRef<Editor | null>(null);
+  const handleSubmitRef = useRef<() => void>(() => {});
 
   const editor = useEditor({
     extensions: [
@@ -94,7 +95,7 @@ export function CommentComposer({
       handleKeyDown: (_view, event) => {
         // Ctrl/Cmd+Enter to submit
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-          handleSubmit();
+          handleSubmitRef.current();
           return true;
         }
         return false;
@@ -102,7 +103,7 @@ export function CommentComposer({
     },
   });
 
-  // Keep ref in sync
+  // Keep refs in sync
   editorRef.current = editor;
 
   const isEmpty = !editor || editor.isEmpty;
@@ -113,6 +114,8 @@ export function CommentComposer({
     onSubmit(html);
     editor.commands.clearContent();
   }, [editor, isPending, onSubmit]);
+
+  handleSubmitRef.current = handleSubmit;
 
   if (!editor) return null;
 

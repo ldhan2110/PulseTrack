@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,7 @@ export function CommentItem({
         </div>
         <div
           className="prose prose-sm max-w-none mt-0.5 break-words text-sm [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-2 [&_p]:my-0.5"
-          dangerouslySetInnerHTML={{ __html: comment.content }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content) }}
         />
         <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">
           {!isReply && (
