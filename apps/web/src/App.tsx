@@ -26,15 +26,15 @@ function App() {
       >
         <Route path="/" element={<ProjectsPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/projects/:projectId/dashboard" element={<ProjectDashboardPage />} />
-        <Route path="/projects/:projectId/backlog" element={<BacklogPage />} />
-        <Route path="/projects/:projectId/sprints" element={<SprintsPage />} />
-        <Route path="/projects/:projectId/sprints/:sprintId" element={<SprintBoardPage />} />
-        <Route path="/projects/:projectId/bugs" element={<BugsPage />} />
-        <Route path="/projects/:projectId/members" element={<MembersPage />} />
-        <Route path="/projects/:projectId/settings" element={<ProjectSettingsPage />} />
-        <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetailPage />} />
-        <Route path="/projects/:projectId/bugs/:bugId" element={<BugDetailPage />} />
+        <Route path="/projects/:projectPrefix/dashboard" element={<ProjectDashboardPage />} />
+        <Route path="/projects/:projectPrefix/backlog" element={<BacklogPage />} />
+        <Route path="/projects/:projectPrefix/sprints" element={<SprintsPage />} />
+        <Route path="/projects/:projectPrefix/sprints/:sprintId" element={<SprintBoardPage />} />
+        <Route path="/projects/:projectPrefix/bugs" element={<BugsPage />} />
+        <Route path="/projects/:projectPrefix/members" element={<MembersPage />} />
+        <Route path="/projects/:projectPrefix/settings" element={<ProjectSettingsPage />} />
+        <Route path="/projects/:projectPrefix/tasks/:taskKey" element={<TaskDetailPage />} />
+        <Route path="/projects/:projectPrefix/bugs/:bugId" element={<BugDetailPage />} />
       </Route>
     </Routes>
   );
