@@ -17,8 +17,6 @@ export function ActivityLog({ projectId, taskId, members, sprints }: ActivityLog
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-[13px] font-semibold text-muted-foreground">Activity</h2>
-
       {isError ? (
         <p className="text-sm text-muted-foreground">
           Could not load activity. Refresh to try again.

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -352,129 +353,138 @@ export function TaskDetailPage() {
         {/* LEFT PANEL */}
         <div className="flex-1 flex flex-col gap-6 min-w-0">
 
-          {/* 1. Description */}
-          <section>
-            <h2 className="text-[13px] font-semibold text-muted-foreground mb-2">Description</h2>
-            <RichTextEditor
-              initialContent={task.description ?? ''}
-              onSave={(html) =>
-                updateTask.mutate({ taskId, data: { description: html } })
-              }
-              editable={canEdit}
-            />
-            {updateTask.isPending && (
-              <div className="flex items-center gap-1 mt-1">
-                <Loader2 className="size-3 animate-spin" />
-                <span className="text-xs text-muted-foreground">Saving...</span>
-              </div>
-            )}
-          </section>
+          {/* CARD 1: Task Content */}
+          <div className="rounded-lg border p-5 flex flex-col gap-5">
+            {/* 1. Description */}
+            <section>
+              <h2 className="text-[13px] font-semibold text-muted-foreground mb-2">Description</h2>
+              <RichTextEditor
+                initialContent={task.description ?? ''}
+                onSave={(html) =>
+                  updateTask.mutate({ taskId, data: { description: html } })
+                }
+                editable={canEdit}
+              />
+              {updateTask.isPending && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Loader2 className="size-3 animate-spin" />
+                  <span className="text-xs text-muted-foreground">Saving...</span>
+                </div>
+              )}
+            </section>
 
-          {/* 2. Acceptance Criteria */}
-          <section>
-            <div className="flex items-center gap-2 mb-2">
-              <h2 className="text-[13px] font-semibold text-muted-foreground">
-                Acceptance Criteria
-              </h2>
-              {acTotal > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {acChecked}/{acTotal} done
-                </Badge>
-              )}
-            </div>
-            <div className="flex flex-col gap-1">
-              {acceptanceCriteria.length === 0 && !addingCriteria && (
-                <p className="text-sm text-muted-foreground">
-                  No acceptance criteria. Add the first one.
-                </p>
-              )}
-              {acceptanceCriteria.map((ac) => (
-                <AcceptanceCriteriaItem
-                  key={ac.id}
-                  ac={ac}
-                  canEdit={canEdit}
-                  onToggle={() => toggleCriteria(ac)}
-                  onDelete={() => deleteCriteria(ac.id)}
-                  onSaveText={(text) => updateCriteriaText(ac.id, text)}
-                />
-              ))}
-            </div>
-            {addingCriteria ? (
-              <div className="flex items-center gap-2 mt-1">
-                <div className="size-4 shrink-0" />
-                <Input
-                  placeholder="Add criterion..."
-                  value={newCriteriaText}
-                  onChange={(e) => setNewCriteriaText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') addCriteria();
-                    if (e.key === 'Escape') {
+            {/* 2. Acceptance Criteria */}
+            <section>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-[13px] font-semibold text-muted-foreground">
+                  Acceptance Criteria
+                </h2>
+                {acTotal > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {acChecked}/{acTotal} done
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                {acceptanceCriteria.length === 0 && !addingCriteria && (
+                  <p className="text-sm text-muted-foreground">
+                    No acceptance criteria. Add the first one.
+                  </p>
+                )}
+                {acceptanceCriteria.map((ac) => (
+                  <AcceptanceCriteriaItem
+                    key={ac.id}
+                    ac={ac}
+                    canEdit={canEdit}
+                    onToggle={() => toggleCriteria(ac)}
+                    onDelete={() => deleteCriteria(ac.id)}
+                    onSaveText={(text) => updateCriteriaText(ac.id, text)}
+                  />
+                ))}
+              </div>
+              {addingCriteria ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="size-4 shrink-0" />
+                  <Input
+                    placeholder="Add criterion..."
+                    value={newCriteriaText}
+                    onChange={(e) => setNewCriteriaText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') addCriteria();
+                      if (e.key === 'Escape') {
+                        setAddingCriteria(false);
+                        setNewCriteriaText('');
+                      }
+                    }}
+                    autoFocus
+                    className="h-7 text-sm"
+                  />
+                  <Button size="sm" className="h-7" onClick={addCriteria}>
+                    Add
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7"
+                    onClick={() => {
                       setAddingCriteria(false);
                       setNewCriteriaText('');
-                    }
-                  }}
-                  autoFocus
-                  className="h-7 text-sm"
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                canEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-fit gap-1 text-muted-foreground -ml-2 mt-1"
+                    onClick={() => setAddingCriteria(true)}
+                  >
+                    <Plus className="size-3.5" />
+                    Add criteria
+                  </Button>
+                )
+              )}
+            </section>
+
+            {/* 3. Attachments (moved here from below comments) */}
+            <section>
+              <AttachmentList
+                projectId={projectId}
+                taskId={taskId}
+                currentUserId={currentUserId}
+                canManage={canManage}
+              />
+            </section>
+          </div>
+
+          {/* CARD 2: Discussion (Comments / Activity tabs) */}
+          <div className="rounded-lg border p-5">
+            <Tabs defaultValue="comments">
+              <TabsList variant="line" className="mb-4">
+                <TabsTrigger value="comments">Comments</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+              </TabsList>
+              <TabsContent value="comments">
+                <CommentThread
+                  projectId={projectId}
+                  taskId={taskId}
+                  currentUserId={currentUserId}
+                  canManage={canManage}
                 />
-                <Button size="sm" className="h-7" onClick={addCriteria}>
-                  Add
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7"
-                  onClick={() => {
-                    setAddingCriteria(false);
-                    setNewCriteriaText('');
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              canEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-fit gap-1 text-muted-foreground -ml-2 mt-1"
-                  onClick={() => setAddingCriteria(true)}
-                >
-                  <Plus className="size-3.5" />
-                  Add criteria
-                </Button>
-              )
-            )}
-          </section>
-
-          {/* 3. Comments */}
-          <section>
-            <CommentThread
-              projectId={projectId}
-              taskId={taskId}
-              currentUserId={currentUserId}
-              canManage={canManage}
-            />
-          </section>
-
-          {/* 4. Attachments */}
-          <section>
-            <AttachmentList
-              projectId={projectId}
-              taskId={taskId}
-              currentUserId={currentUserId}
-              canManage={canManage}
-            />
-          </section>
-
-          {/* 5. Activity Log */}
-          <section>
-            <ActivityLog
-              projectId={projectId}
-              taskId={taskId}
-              members={members}
-              sprints={sprints}
-            />
-          </section>
+              </TabsContent>
+              <TabsContent value="activity">
+                <ActivityLog
+                  projectId={projectId}
+                  taskId={taskId}
+                  members={members}
+                  sprints={sprints}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
 
         {/* RIGHT SIDEBAR — sticky */}

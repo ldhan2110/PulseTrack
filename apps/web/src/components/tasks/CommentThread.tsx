@@ -52,8 +52,6 @@ export function CommentThread({
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-[13px] font-semibold text-muted-foreground">Comments</h2>
-
       {topLevelComments.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-2">
           No comments yet. Start the conversation.
