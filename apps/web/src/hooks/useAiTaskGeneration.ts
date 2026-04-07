@@ -6,7 +6,6 @@ import { api } from '../lib/api';
 import { useSocket } from '../socket/useSocket';
 import type {
   AiGenerationStep,
-  AiGenerationJobResult,
 } from '../lib/types';
 
 export function useAiTaskGeneration(projectId: string) {

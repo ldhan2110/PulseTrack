@@ -213,7 +213,6 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
   };
 
   // Counts
-  const approved = flatTasks.filter((t) => t.status === 'approved').length;
   const skipped = flatTasks.filter((t) => t.status === 'skipped').length;
   const parentApproved = flatTasks.filter((t) => t.status === 'approved' && t.parentIndex === null).length;
   const subApproved = flatTasks.filter((t) => t.status === 'approved' && t.parentIndex !== null).length;
