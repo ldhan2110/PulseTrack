@@ -10,8 +10,8 @@ import type {
   Task,
   CreateTaskPayload,
   UpdateTaskPayload,
-  CreateSubTaskPayload,
-  UpdateSubTaskPayload,
+  TimeLog,
+  CreateTimeLogPayload,
   Sprint,
   CreateSprintPayload,
   UpdateSprintPayload,
@@ -124,13 +124,22 @@ export const api = {
     request<Task>(`/projects/${projectId}/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteTask: (projectId: string, taskId: string) =>
     request<void>(`/projects/${projectId}/tasks/${taskId}`, { method: 'DELETE' }),
-  createSubTask: (projectId: string, taskId: string, data: CreateSubTaskPayload) =>
-    request<void>(`/projects/${projectId}/tasks/${taskId}/subtasks`, { method: 'POST', body: JSON.stringify(data) }),
-  updateSubTask: (projectId: string, taskId: string, subTaskId: string, data: UpdateSubTaskPayload) =>
-    request<void>(`/projects/${projectId}/tasks/${taskId}/subtasks/${subTaskId}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  deleteSubTask: (projectId: string, taskId: string, subTaskId: string) =>
-    request<void>(`/projects/${projectId}/tasks/${taskId}/subtasks/${subTaskId}`, { method: 'DELETE' }),
   getMyTasks: () => request<Task[]>('/tasks/my-tasks'),
+
+  // ─── Time Logs ─────────────────────────────────────────────────────────────
+  getTimeLogs: (projectId: string, taskId: string) =>
+    request<TimeLog[]>(`/projects/${projectId}/tasks/${taskId}/time-logs`),
+
+  createTimeLog: (projectId: string, taskId: string, data: CreateTimeLogPayload) =>
+    request<TimeLog>(`/projects/${projectId}/tasks/${taskId}/time-logs`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteTimeLog: (projectId: string, taskId: string, timeLogId: string) =>
+    request<void>(`/projects/${projectId}/tasks/${taskId}/time-logs/${timeLogId}`, {
+      method: 'DELETE',
+    }),
 
   // ─── Sprints ───────────────────────────────────────────────────────────────
   getSprints: (projectId: string) =>

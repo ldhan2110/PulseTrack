@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { Task, CreateTaskPayload, UpdateTaskPayload } from '../lib/types';
+import type { Task, CreateTaskPayload, UpdateTaskPayload, CreateTimeLogPayload } from '../lib/types';
 
 export function useTasks(projectId: string) {
   return useQuery({
@@ -130,5 +130,44 @@ export function useUpdateTaskStatus(projectId: string) {
     onSuccess: () => {
       toast.success('Status updated');
     },
+  });
+}
+
+export function useTimeLogs(projectId: string, taskId: string) {
+  return useQuery({
+    queryKey: ['time-logs', projectId, taskId],
+    queryFn: () => api.getTimeLogs(projectId, taskId),
+    enabled: !!projectId && !!taskId,
+  });
+}
+
+export function useCreateTimeLog(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, data }: { taskId: string; data: CreateTimeLogPayload }) =>
+      api.createTimeLog(projectId, taskId, data),
+    onSuccess: (_data, { taskId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['time-logs', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
+      toast.success('Time logged');
+    },
+    onError: () => toast.error('Failed to log time'),
+  });
+}
+
+export function useDeleteTimeLog(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, timeLogId }: { taskId: string; timeLogId: string }) =>
+      api.deleteTimeLog(projectId, taskId, timeLogId),
+    onSuccess: (_data, { taskId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['time-logs', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      toast.success('Time log deleted');
+    },
+    onError: () => toast.error('Failed to delete time log'),
   });
 }

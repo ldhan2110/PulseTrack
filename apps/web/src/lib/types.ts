@@ -148,16 +148,14 @@ export interface ChangeRolePayload {
 
 // ─── Task ─────────────────────────────────────────────────────────────────────
 
-export interface SubTask {
+export interface TimeLog {
   id: string;
-  title: string;
-  workflowStatusId: string | null;
-  workflowStatus?: WorkflowStatus | null;
-  assigneeId: string | null;
+  minutes: number;
+  loggedAt: string;
+  comment: string | null;
   taskId: string;
-  createdAt: string;
-  updatedAt: string;
-  assignee?: User | null;
+  userId: string;
+  user?: Pick<User, 'id' | 'username' | 'email'>;
 }
 
 export interface Task {
@@ -178,7 +176,11 @@ export interface Task {
   createdBy?: User;
   sprint?: Sprint | null;
   project?: Pick<Project, 'id' | 'name' | 'prefix'>;
-  subTasks?: SubTask[];
+  children?: Task[];
+  parent?: Pick<Task, 'id' | 'taskKey' | 'title'> | null;
+  parentId?: string | null;
+  estimatedMinutes?: number | null;
+  timeLogs?: TimeLog[];
   acceptanceCriteria?: string | null;  // JSON string — parsed client-side into AcceptanceCriteria[]
   priority?: Priority | null;
   plannedStartDate?: string | null;
@@ -206,6 +208,8 @@ export interface CreateTaskPayload {
   plannedEndDate?: string;
   actualStartDate?: string;
   actualEndDate?: string;
+  parentId?: string;
+  estimatedMinutes?: number;
 }
 
 export interface UpdateTaskPayload {
@@ -221,17 +225,13 @@ export interface UpdateTaskPayload {
   plannedEndDate?: string | null;
   actualStartDate?: string | null;
   actualEndDate?: string | null;
+  estimatedMinutes?: number | null;
 }
 
-export interface CreateSubTaskPayload {
-  title: string;
-  assigneeId?: string;
-}
-
-export interface UpdateSubTaskPayload {
-  title?: string;
-  workflowStatusId?: string;
-  assigneeId?: string | null;
+export interface CreateTimeLogPayload {
+  minutes: number;
+  comment?: string;
+  loggedAt?: string;
 }
 
 // ─── Sprint ───────────────────────────────────────────────────────────────────
