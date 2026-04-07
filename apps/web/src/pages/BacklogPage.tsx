@@ -3,7 +3,12 @@ import { useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ListTodo } from 'lucide-react';
+import { ListTodo, Sparkles } from 'lucide-react';
+import { useAiConfig } from '@/hooks/useAiConfig';
+import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
+import { useAiTaskGeneration } from '@/hooks/useAiTaskGeneration';
+import { GenerateTasksModal } from '@/components/tasks/GenerateTasksModal';
+import { TaskGenerationWizard } from '@/components/tasks/TaskGenerationWizard';
 import { useTasks } from '@/hooks/useTasks';
 import { useSprints } from '@/hooks/useSprints';
 import { useMembers } from '@/hooks/useMembers';
@@ -26,6 +31,26 @@ export function BacklogPage() {
   const setBacklogView = useUiStore((s) => s.setBacklogView);
   const setFullWidth = useUiStore((s) => s.setFullWidth);
   const [createOpen, setCreateOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const { data: aiConfig } = useAiConfig(projectId);
+  const { data: repoConfig } = useRepositoryConfig(projectId);
+  const aiGeneration = useAiTaskGeneration(projectId);
+
+  const canGenerate = !!aiConfig && repoConfig?.cloneStatus === 'cloned';
+
+  // Open wizard when generation completes
+  const handleGenerateSubmit = (formData: FormData) => {
+    aiGeneration.generate.mutate(formData);
+  };
+
+  // Open wizard when generation completes
+  useEffect(() => {
+    if (aiGeneration.isCompleted && aiGeneration.tasks.length > 0 && !wizardOpen) {
+      setGenerateOpen(false);
+      setWizardOpen(true);
+    }
+  }, [aiGeneration.isCompleted, aiGeneration.tasks.length, wizardOpen]);
 
   useEffect(() => {
     setFullWidth(backlogView === 'board');
@@ -82,7 +107,18 @@ export function BacklogPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
           {canEdit && (
-            <Button onClick={() => setCreateOpen(true)}>Create Task</Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setGenerateOpen(true)}
+                disabled={!canGenerate}
+                title={!canGenerate ? 'Configure AI settings and clone repository first' : 'Generate tasks with AI'}
+              >
+                <Sparkles className="size-4 mr-1" />
+                Generate with AI
+              </Button>
+              <Button onClick={() => setCreateOpen(true)}>Create Task</Button>
+            </div>
           )}
         </div>
         <div className="flex items-center justify-center py-24">
@@ -95,10 +131,43 @@ export function BacklogPage() {
               </p>
             </div>
             {canEdit && (
-              <Button onClick={() => setCreateOpen(true)}>Create Task</Button>
+              <div className="flex flex-col gap-2 items-center">
+                <Button onClick={() => setCreateOpen(true)}>Create Task</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setGenerateOpen(true)}
+                  disabled={!canGenerate}
+                >
+                  <Sparkles className="size-4 mr-1" />
+                  Generate with AI
+                </Button>
+              </div>
             )}
           </div>
         </div>
+        <GenerateTasksModal
+          open={generateOpen}
+          onOpenChange={setGenerateOpen}
+          onSubmit={handleGenerateSubmit}
+          isProcessing={aiGeneration.isLoading}
+          step={aiGeneration.step}
+        />
+
+        {wizardOpen && aiGeneration.tasks.length > 0 && (
+          <TaskGenerationWizard
+            open={wizardOpen}
+            onOpenChange={(open) => {
+              setWizardOpen(open);
+              if (!open) aiGeneration.reset();
+            }}
+            tasks={aiGeneration.tasks}
+            projectId={projectId}
+            onComplete={() => {
+              setWizardOpen(false);
+              aiGeneration.reset();
+            }}
+          />
+        )}
         <CreateTaskDialog
           open={createOpen}
           onOpenChange={setCreateOpen}
@@ -115,7 +184,18 @@ export function BacklogPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
         {canEdit && (
-          <Button onClick={() => setCreateOpen(true)}>Create Task</Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setGenerateOpen(true)}
+              disabled={!canGenerate}
+              title={!canGenerate ? 'Configure AI settings and clone repository first' : 'Generate tasks with AI'}
+            >
+              <Sparkles className="size-4 mr-1" />
+              Generate with AI
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>Create Task</Button>
+          </div>
         )}
       </div>
 
@@ -164,6 +244,30 @@ export function BacklogPage() {
         members={members}
         sprints={sprints}
       />
+
+      <GenerateTasksModal
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        onSubmit={handleGenerateSubmit}
+        isProcessing={aiGeneration.isLoading}
+        step={aiGeneration.step}
+      />
+
+      {wizardOpen && aiGeneration.tasks.length > 0 && (
+        <TaskGenerationWizard
+          open={wizardOpen}
+          onOpenChange={(open) => {
+            setWizardOpen(open);
+            if (!open) aiGeneration.reset();
+          }}
+          tasks={aiGeneration.tasks}
+          projectId={projectId}
+          onComplete={() => {
+            setWizardOpen(false);
+            aiGeneration.reset();
+          }}
+        />
+      )}
     </div>
   );
 }
