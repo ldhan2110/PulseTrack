@@ -15,16 +15,22 @@ export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
   const swapSrcInEditor = useCallback(
     (editor: Editor, oldSrc: string, newSrc: string) => {
       const { state, dispatch } = editor.view;
-      state.doc.descendants((node, pos) => {
+      let foundPos = -1;
+      let foundNode: Parameters<Parameters<typeof state.doc.nodesBetween>[2]>[0] | null = null;
+      state.doc.nodesBetween(0, state.doc.content.size, (node, pos) => {
         if (node.type.name === 'image' && (node.attrs as Record<string, unknown>).src === oldSrc) {
-          const tr = state.tr.setNodeMarkup(pos, undefined, {
-            ...(node.attrs as Record<string, unknown>),
-            src: newSrc,
-          });
-          dispatch(tr);
-          return false; // stop after first match
+          foundPos = pos;
+          foundNode = node;
+          return false; // stop traversal
         }
       });
+      if (foundPos >= 0 && foundNode !== null) {
+        const tr = state.tr.setNodeMarkup(foundPos, undefined, {
+          ...(foundNode.attrs as Record<string, unknown>),
+          src: newSrc,
+        });
+        dispatch(tr);
+      }
     },
     [],
   );
@@ -32,13 +38,19 @@ export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
   const removeImageFromEditor = useCallback(
     (editor: Editor, src: string) => {
       const { state, dispatch } = editor.view;
-      state.doc.descendants((node, pos) => {
+      let foundPos = -1;
+      let foundNodeSize = 0;
+      state.doc.nodesBetween(0, state.doc.content.size, (node, pos) => {
         if (node.type.name === 'image' && (node.attrs as Record<string, unknown>).src === src) {
-          const tr = state.tr.delete(pos, pos + node.nodeSize);
-          dispatch(tr);
-          return false;
+          foundPos = pos;
+          foundNodeSize = node.nodeSize;
+          return false; // stop traversal
         }
       });
+      if (foundPos >= 0) {
+        const tr = state.tr.delete(foundPos, foundPos + foundNodeSize);
+        dispatch(tr);
+      }
     },
     [],
   );

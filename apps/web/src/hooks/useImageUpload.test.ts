@@ -14,16 +14,23 @@ function makeEditorMock(imageSrc: string) {
     setNodeMarkup: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
   };
+  const nodesBetween = (
+    _from: number,
+    _to: number,
+    fn: (node: unknown, pos: number) => boolean | void,
+  ) => {
+    for (const node of nodes) {
+      const result = fn(node, 0);
+      if (result === false) break;
+    }
+  };
   return {
     view: {
       state: {
         tr: mockTr,
         doc: {
-          descendants: (fn: (node: unknown, pos: number) => boolean | void) => {
-            for (const node of nodes) {
-              fn(node, 0);
-            }
-          },
+          nodesBetween,
+          content: { size: 100 },
         },
       },
       dispatch: vi.fn((tr: unknown) => { dispatchedTrs.push(tr); }),
