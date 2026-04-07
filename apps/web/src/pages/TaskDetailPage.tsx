@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import { CommentThread } from '@/components/tasks/CommentThread';
 import { AttachmentList } from '@/components/tasks/AttachmentList';
 import { ActivityLog } from '@/components/tasks/ActivityLog';
-import { useTaskByKey, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
+import { useTaskByKey, useUpdateTask, useDeleteTask, useCreateTask, useCreateTimeLog, useDeleteTimeLog } from '@/hooks/useTasks';
 import { useUiStore } from '@/store/uiStore';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
@@ -42,9 +42,12 @@ import { useProjectRole } from '@/hooks/useProjectRole';
 import { useProject } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
-import { api } from '@/lib/api';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
-import type { AcceptanceCriteria, SubTask, Priority } from '@/lib/types';
+import { TimeTrackingCard } from '@/components/tasks/TimeTrackingCard';
+import { LogTimeCard } from '@/components/tasks/LogTimeCard';
+import { TimeLogsList } from '@/components/tasks/TimeLogsList';
+import { SubTaskCard } from '@/components/tasks/SubTaskCard';
+import type { AcceptanceCriteria, Priority } from '@/lib/types';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -180,6 +183,9 @@ export function TaskDetailPage() {
   const updateTask = useUpdateTask(projectId);
   const descriptionUpdate = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
+  const createTask = useCreateTask(projectId);
+  const createTimeLog = useCreateTimeLog(projectId);
+  const deleteTimeLog = useDeleteTimeLog(projectId);
 
   const { data: workflow } = useWorkflow(projectId);
   const validNextStatuses = useValidTransitions(workflow, task?.workflowStatusId ?? null);
@@ -207,46 +213,9 @@ export function TaskDetailPage() {
   const [titleValue, setTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Sub-task add form
-  const [addingSubTask, setAddingSubTask] = useState(false);
-  const [newSubTaskTitle, setNewSubTaskTitle] = useState('');
-
   // Acceptance criteria add
   const [addingCriteria, setAddingCriteria] = useState(false);
   const [newCriteriaText, setNewCriteriaText] = useState('');
-
-  // Sub-task mutations
-  const createSubTask = useMutation({
-    mutationFn: (title: string) => api.createSubTask(projectId, taskId, { title }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
-      setNewSubTaskTitle('');
-      setAddingSubTask(false);
-    },
-    onError: () => toast.error('Something went wrong. Please try again.'),
-  });
-
-  const updateSubTask = useMutation({
-    mutationFn: ({
-      subTaskId,
-      data,
-    }: {
-      subTaskId: string;
-      data: { workflowStatusId?: string; assigneeId?: string | null; title?: string };
-    }) => api.updateSubTask(projectId, taskId, subTaskId, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
-    },
-    onError: () => toast.error('Something went wrong. Please try again.'),
-  });
-
-  const deleteSubTask = useMutation({
-    mutationFn: (subTaskId: string) => api.deleteSubTask(projectId, taskId, subTaskId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
-    },
-    onError: () => toast.error('Something went wrong. Please try again.'),
-  });
 
   // Acceptance criteria callbacks
   const addCriteria = useCallback(() => {
@@ -386,10 +355,11 @@ export function TaskDetailPage() {
   }
 
   const acceptanceCriteria = parseAcceptanceCriteria(task.acceptanceCriteria);
-  const subTasks = task.subTasks ?? [];
   const acChecked = acceptanceCriteria.filter((ac) => ac.completed).length;
   const acTotal = acceptanceCriteria.length;
   const currentUserId = user?.id ?? '';
+  const isParent = (task.children?.length ?? 0) > 0;
+  const hasParent = !!task.parentId;
 
   return (
     <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
@@ -408,6 +378,17 @@ export function TaskDetailPage() {
         <span>{project?.name ?? 'Project'}</span>
         <span>/</span>
         <span>Backlog</span>
+        {task.parent && (
+          <>
+            <span>/</span>
+            <button
+              onClick={() => navigate(`/projects/${projectPrefix}/tasks/${task.parent!.taskKey}`)}
+              className="hover:text-foreground truncate max-w-40"
+            >
+              {task.parent.taskKey}: {task.parent.title}
+            </button>
+          </>
+        )}
         <span>/</span>
         <span className="text-foreground truncate max-w-50">{task.title}</span>
       </div>
@@ -569,6 +550,51 @@ export function TaskDetailPage() {
               />
             </section>
           </div>
+
+          {/* Time Logs Section */}
+          <div className="rounded-lg border p-5">
+            <TimeLogsList
+              timeLogs={task.timeLogs ?? []}
+              currentUserId={currentUserId}
+              userRole={canManage ? 'pm' : ''}
+              onDelete={(timeLogId) => deleteTimeLog.mutate({ taskId: task.id, timeLogId })}
+              isDeleting={deleteTimeLog.isPending}
+            />
+          </div>
+
+          {/* Sub-tasks Section */}
+          {!hasParent && (
+            <div className="rounded-lg border p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Sub-tasks ({task.children?.length ?? 0})</h3>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1"
+                    onClick={() => {
+                      const title = prompt('Sub-task title:');
+                      if (title?.trim()) {
+                        createTask.mutate({ title: title.trim(), parentId: task.id });
+                      }
+                    }}
+                  >
+                    <Plus className="size-3.5" />
+                    Add
+                  </Button>
+                )}
+              </div>
+              {task.children && task.children.length > 0 ? (
+                <div className="space-y-2">
+                  {task.children.map((child) => (
+                    <SubTaskCard key={child.id} subTask={child} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No sub-tasks</p>
+              )}
+            </div>
+          )}
 
           {/* CARD 2: Discussion (Comments / Activity tabs) */}
           <div className="rounded-lg border p-5">
@@ -783,6 +809,26 @@ export function TaskDetailPage() {
                 </div>
               </div>
 
+              {/* Time Tracking */}
+              <TimeTrackingCard
+                task={task}
+                isParent={isParent}
+                onEstimateChange={!isParent ? (minutes) => {
+                  updateTask.mutate({
+                    taskId: task.id,
+                    data: { estimatedMinutes: minutes },
+                  });
+                } : undefined}
+              />
+
+              {/* Log Time — only for leaf tasks */}
+              {!isParent && (
+                <LogTimeCard
+                  onSubmit={(data) => createTimeLog.mutate({ taskId: task.id, data })}
+                  isLoading={createTimeLog.isPending}
+                />
+              )}
+
               <Separator/>
 
               {/* Planned dates */}
@@ -817,84 +863,6 @@ export function TaskDetailPage() {
                   onChange={(iso) => optimisticMutate({ actualEndDate: iso }, { taskId, data: { actualEndDate: iso } })}
                   disabled={!canEdit}
                 />
-              </div>
-
-              <Separator />
-
-              {/* Sub-tasks */}
-              <div className="flex flex-col gap-2">
-                <SidebarLabel>Sub-Tasks</SidebarLabel>
-                {subTasks.length > 0 && (
-                  <div className="flex flex-col gap-1">
-                    {subTasks.map((subTask) => (
-                      <SubTaskMiniRow
-                        key={subTask.id}
-                        subTask={subTask}
-                        members={members}
-                        canEdit={canEdit}
-                        onUpdate={(data) =>
-                          updateSubTask.mutate({ subTaskId: subTask.id, data })
-                        }
-                        onDelete={() => deleteSubTask.mutate(subTask.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-                {addingSubTask ? (
-                  <div className="flex flex-col gap-1">
-                    <Input
-                      placeholder="Sub-task title..."
-                      value={newSubTaskTitle}
-                      onChange={(e) => setNewSubTaskTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newSubTaskTitle.trim()) {
-                          createSubTask.mutate(newSubTaskTitle.trim());
-                        }
-                        if (e.key === 'Escape') {
-                          setAddingSubTask(false);
-                          setNewSubTaskTitle('');
-                        }
-                      }}
-                      autoFocus
-                      className="h-7 text-sm"
-                    />
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        className="h-7 flex-1"
-                        onClick={() => {
-                          if (newSubTaskTitle.trim()) createSubTask.mutate(newSubTaskTitle.trim());
-                        }}
-                        disabled={!newSubTaskTitle.trim() || createSubTask.isPending}
-                      >
-                        Add
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7"
-                        onClick={() => {
-                          setAddingSubTask(false);
-                          setNewSubTaskTitle('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  canEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-fit gap-1 text-muted-foreground -ml-2"
-                      onClick={() => setAddingSubTask(true)}
-                    >
-                      <Plus className="size-3.5" />
-                      Add sub-task
-                    </Button>
-                  )
-                )}
               </div>
 
               <Separator />
@@ -1044,31 +1012,3 @@ function AcceptanceCriteriaItem({
   );
 }
 
-// ── Sub-Task Mini Row (sidebar compact version) ────────────────────────────────
-
-interface SubTaskMiniRowProps {
-  subTask: SubTask;
-  members: ReturnType<typeof useMembers>['data'] extends (infer T)[] | undefined ? T[] : never[];
-  canEdit: boolean;
-  onUpdate: (data: { workflowStatusId?: string; assigneeId?: string | null; title?: string }) => void;
-  onDelete: () => void;
-}
-
-function SubTaskMiniRow({ subTask, canEdit, onDelete }: SubTaskMiniRowProps) {
-  return (
-    <div className="flex items-center gap-1.5 group/subtask py-0.5">
-      <StatusBadge status={subTask.workflowStatus ?? null} />
-      <span className="text-xs flex-1 truncate">{subTask.title}</span>
-      {canEdit && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-5 opacity-0 group-hover/subtask:opacity-100 shrink-0"
-          onClick={onDelete}
-        >
-          <X className="size-3" />
-        </Button>
-      )}
-    </div>
-  );
-}

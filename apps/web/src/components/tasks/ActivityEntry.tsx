@@ -2,7 +2,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import {
   ArrowRight, UserCheck, Milestone, Star, Pencil,
   MessageSquare, MessageSquareDiff, MessageSquareX,
-  FileText, ListChecks, Paperclip, CalendarDays, Tag,
+  FileText, ListChecks, Paperclip, CalendarDays, Tag, Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TaskHistoryEntry, Member, Sprint } from '@/lib/types';
@@ -39,6 +39,8 @@ const FIELD_CONFIG: Record<string, FieldConfig> = {
   plannedEndDate:   { icon: CalendarDays,  color: 'text-amber-600',  bg: 'bg-amber-100 dark:bg-amber-900/40' },
   actualStartDate:  { icon: CalendarDays,  color: 'text-green-600',  bg: 'bg-green-100 dark:bg-green-900/40' },
   actualEndDate:    { icon: CalendarDays,  color: 'text-emerald-600',bg: 'bg-emerald-100 dark:bg-emerald-900/40' },
+  timeLog:          { icon: Clock,         color: 'text-emerald-600',bg: 'bg-emerald-100 dark:bg-emerald-900/40' },
+  estimatedMinutes: { icon: Clock,         color: 'text-blue-600',   bg: 'bg-blue-100 dark:bg-blue-900/40' },
 };
 
 const DEFAULT_CONFIG: FieldConfig = {
@@ -103,6 +105,12 @@ function buildDescription(
     case 'actualEndDate':
       if (!newValue) return 'cleared actual end date';
       try { return `set actual end to ${format(new Date(newValue), 'MMM d, yyyy')}`; } catch { return 'set actual end date'; }
+    case 'timeLog':
+      return `logged ${newValue}`;
+    case 'estimatedMinutes':
+      if (oldValue && newValue) return `changed estimate from ${oldValue} to ${newValue}`;
+      if (newValue) return `set estimate to ${newValue}`;
+      return 'removed estimate';
     default:
       return `changed ${field}`;
   }

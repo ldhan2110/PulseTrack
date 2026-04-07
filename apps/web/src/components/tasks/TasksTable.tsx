@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
@@ -28,12 +28,13 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
 import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
+import { formatMinutes } from '@/lib/time-utils';
 import { format } from 'date-fns';
 import type { Task, Member, Sprint, Priority } from '@/lib/types';
 
@@ -109,6 +110,16 @@ export function TasksTable({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (taskId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
 
   const sprintMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -120,6 +131,26 @@ export function TasksTable({
 
   const columns = useMemo<ColumnDef<Task>[]>(
     () => [
+      {
+        id: 'expand',
+        header: () => null,
+        cell: ({ row }: { row: { original: Task } }) => {
+          const hasChildren = (row.original.children?.length ?? 0) > 0;
+          if (!hasChildren) return null;
+          const isExpanded = expandedRows.has(row.original.id);
+          return (
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleExpand(row.original.id); }}
+              className="p-1 hover:bg-muted rounded"
+            >
+              {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+            </button>
+          );
+        },
+        enableSorting: false,
+        enableColumnFilter: false,
+        size: 32,
+      },
       {
         id: 'select',
         header: ({ table }) => (
@@ -147,14 +178,17 @@ export function TasksTable({
       {
         accessorKey: 'title',
         header: ({ column }) => <SortHeader label="Title" column={column} />,
-        cell: ({ row }) => (
-          <span className="text-sm font-medium truncate block max-w-[400px]" title={row.original.title}>
-            {row.original.taskKey && (
-              <span className="font-mono text-xs text-muted-foreground mr-2">{row.original.taskKey}</span>
-            )}
-            {row.original.title}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const hasChildren = (row.original.children?.length ?? 0) > 0;
+          return (
+            <span className={cn('text-sm truncate block max-w-[400px]', hasChildren ? 'font-semibold' : 'font-medium')} title={row.original.title}>
+              {row.original.taskKey && (
+                <span className="font-mono text-xs text-muted-foreground mr-2">{row.original.taskKey}</span>
+              )}
+              {row.original.title}
+            </span>
+          );
+        },
         minSize: 200,
         enableColumnFilter: true,
       },
@@ -280,8 +314,50 @@ export function TasksTable({
         enableSorting: true,
         size: 110,
       },
+      {
+        id: 'estimated',
+        header: 'Est.',
+        accessorFn: (row: Task) => {
+          if ((row.children?.length ?? 0) > 0) {
+            return row.children!.reduce((sum, c) => sum + (c.estimatedMinutes ?? 0), 0);
+          }
+          return row.estimatedMinutes ?? 0;
+        },
+        cell: ({ getValue }: { getValue: () => number }) => {
+          const val = getValue();
+          return <span className="text-xs">{val > 0 ? formatMinutes(val) : '—'}</span>;
+        },
+        size: 70,
+      },
+      {
+        id: 'logged',
+        header: 'Logged',
+        accessorFn: (row: Task) => {
+          if ((row.children?.length ?? 0) > 0) {
+            return row.children!.reduce((sum, c) => {
+              return sum + (c.timeLogs?.reduce((s, tl) => s + tl.minutes, 0) ?? 0);
+            }, 0);
+          }
+          return row.timeLogs?.reduce((s, tl) => s + tl.minutes, 0) ?? 0;
+        },
+        cell: ({ getValue, row }: { getValue: () => number; row: { original: Task } }) => {
+          const logged = getValue();
+          const task = row.original;
+          const estimated = (task.children?.length ?? 0) > 0
+            ? task.children!.reduce((sum, c) => sum + (c.estimatedMinutes ?? 0), 0)
+            : (task.estimatedMinutes ?? 0);
+          const isOverBudget = estimated > 0 && logged > estimated;
+          return (
+            <span className={cn('text-xs', isOverBudget && 'text-red-500 font-semibold')}>
+              {logged > 0 ? formatMinutes(logged) : '—'}
+              {isOverBudget && ' ⚠️'}
+            </span>
+          );
+        },
+        size: 80,
+      },
     ],
-    [sprintMap, updateTaskStatus],
+    [sprintMap, updateTaskStatus, expandedRows],
   );
 
   const table = useReactTable({
@@ -360,21 +436,63 @@ export function TasksTable({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  className={cn(
-                    'h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100',
-                    row.getIsSelected() && 'bg-muted/30',
-                  )}
-                  onClick={() => navigate(`/projects/${projectPrefix}/tasks/${row.original.taskKey ?? row.original.id}`)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-0">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                <React.Fragment key={row.id}>
+                  <TableRow
+                    data-state={row.getIsSelected() && 'selected'}
+                    className={cn(
+                      'h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100',
+                      row.getIsSelected() && 'bg-muted/30',
+                    )}
+                    onClick={() => navigate(`/projects/${projectPrefix}/tasks/${row.original.taskKey ?? row.original.id}`)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-0">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {expandedRows.has(row.original.id) && row.original.children?.map((child) => (
+                    <TableRow
+                      key={child.id}
+                      className="h-9 bg-muted/30 cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/projects/${projectPrefix}/tasks/${child.taskKey ?? child.id}`)}
+                    >
+                      <TableCell />
+                      <TableCell />
+                      <TableCell>
+                        <div className="flex items-center gap-2 pl-4">
+                          <span className="text-muted-foreground">└</span>
+                          <span className="text-xs text-muted-foreground font-mono">{child.taskKey}</span>
+                          <span className="text-sm">{child.title}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {child.workflowStatus && <StatusBadge status={child.workflowStatus} />}
+                      </TableCell>
+                      <TableCell className="text-xs">—</TableCell>
+                      <TableCell className="text-xs">
+                        {child.assignee?.username ?? <span className="text-muted-foreground">Unassigned</span>}
+                      </TableCell>
+                      <TableCell className="text-xs">—</TableCell>
+                      <TableCell className="text-xs">—</TableCell>
+                      <TableCell className="text-xs">—</TableCell>
+                      <TableCell className="text-xs">
+                        {child.estimatedMinutes ? formatMinutes(child.estimatedMinutes) : '—'}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {(() => {
+                          const logged = child.timeLogs?.reduce((s, tl) => s + tl.minutes, 0) ?? 0;
+                          const isOver = (child.estimatedMinutes ?? 0) > 0 && logged > (child.estimatedMinutes ?? 0);
+                          return logged > 0 ? (
+                            <span className={isOver ? 'text-red-500 font-semibold' : ''}>
+                              {formatMinutes(logged)}{isOver && ' ⚠️'}
+                            </span>
+                          ) : '—';
+                        })()}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </TableRow>
+                </React.Fragment>
               ))
             )}
           </TableBody>

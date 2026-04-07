@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { Calendar } from 'lucide-react';
+import { Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { formatMinutes } from '@/lib/time-utils';
 import type { Task, Priority } from '@/lib/types';
 
 // ─── Column Definitions ────────────────────────────────────────────────────────
@@ -132,6 +133,16 @@ function MyTaskCard({ task }: { task: Task }) {
                   <span className="text-[9px] bg-destructive/20 text-destructive px-1 rounded">OVERDUE</span>
                 )}
               </div>
+            </div>
+          )}
+          {task.estimatedMinutes && task.estimatedMinutes > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+              <Clock className="size-3" />
+              <span>
+                {formatMinutes(task.timeLogs?.reduce((s, tl) => s + tl.minutes, 0) ?? 0)}
+                {' / '}
+                {formatMinutes(task.estimatedMinutes)}
+              </span>
             </div>
           )}
         </CardContent>
