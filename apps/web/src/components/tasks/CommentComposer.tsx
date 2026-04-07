@@ -124,11 +124,14 @@ export function CommentComposer({
   const handleSubmit = useCallback(async () => {
     if (!editor || editor.isEmpty || isPending) return;
     setIsSaving(true);
-    await awaitPendingUploads();
-    const html = editor.getHTML();
-    setIsSaving(false);
-    onSubmit(html);
-    editor.commands.clearContent();
+    try {
+      await awaitPendingUploads();
+      const html = editor.getHTML();
+      onSubmit(html);
+      editor.commands.clearContent();
+    } finally {
+      setIsSaving(false);
+    }
   }, [editor, isPending, onSubmit, awaitPendingUploads]);
 
   handleSubmitRef.current = () => { void handleSubmit(); };
@@ -203,7 +206,10 @@ export function CommentComposer({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onCancel}
+            onClick={() => {
+              editor.commands.clearContent();
+              onCancel();
+            }}
             disabled={isPending || isSaving}
           >
             Cancel
