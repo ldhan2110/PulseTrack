@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 
@@ -6,6 +6,13 @@ function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps)
   const imageRef = useRef<HTMLImageElement>(null);
   const startX = useRef(0);
   const startWidth = useRef(0);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -26,6 +33,12 @@ function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps)
         const delta = upEvent.clientX - startX.current;
         const newWidth = Math.max(50, startWidth.current + delta);
         updateAttributes({ width: newWidth });
+        cleanupRef.current = null;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      cleanupRef.current = () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
