@@ -7,11 +7,11 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { toast } from 'sonner';
 import { KanbanColumn } from './KanbanColumn';
-import { useUpdateTaskStatus } from '@/hooks/useTasks';
-import type { Task, TaskStatus } from '@/lib/types';
-
-const TASK_STATUSES: TaskStatus[] = ['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'];
+import { useUpdateTask } from '@/hooks/useTasks';
+import { useWorkflow } from '@/hooks/useWorkflow';
+import type { Task, WorkflowStatus } from '@/lib/types';
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -19,34 +19,33 @@ interface KanbanBoardProps {
   projectPrefix: string;
 }
 
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  BACKLOG: 'Backlog',
-  IN_PROGRESS: 'In Progress',
-  IN_REVIEW: 'In Review',
-  DONE: 'Done',
-  BLOCKED: 'Blocked',
-};
-
 export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProps) {
-  const updateTaskStatus = useUpdateTaskStatus(projectId);
+  const updateTask = useUpdateTask(projectId);
+  const { data: workflow } = useWorkflow(projectId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+      activationConstraint: { distance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
 
-  const tasksByStatus = TASK_STATUSES.reduce<Record<TaskStatus, Task[]>>(
+  const statuses = workflow?.statuses ?? [];
+
+  const tasksByStatus = statuses.reduce<Record<string, Task[]>>(
     (acc, status) => {
-      acc[status] = tasks.filter((t) => t.status === status);
+      acc[status.id] = tasks.filter((t) => t.workflowStatusId === status.id);
       return acc;
     },
-    { BACKLOG: [], IN_PROGRESS: [], IN_REVIEW: [], DONE: [], BLOCKED: [] },
+    {},
+  );
+
+  const orphanedTasks = tasks.filter((t) => !t.workflowStatusId);
+
+  const validTransitions = new Set(
+    (workflow?.transitions ?? []).map((t) => `${t.fromStatusId}→${t.toStatusId}`),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -54,15 +53,23 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
     if (!over) return;
 
     const taskId = active.id as string;
-    const newStatus = over.id as TaskStatus;
-
-    if (!TASK_STATUSES.includes(newStatus)) return;
+    const newStatusId = over.id as string;
 
     const task = tasks.find((t) => t.id === taskId);
-    if (!task || task.status === newStatus) return;
+    if (!task || task.workflowStatusId === newStatusId) return;
 
-    updateTaskStatus.mutate({ taskId, status: newStatus });
+    if (task.workflowStatusId) {
+      const transKey = `${task.workflowStatusId}→${newStatusId}`;
+      if (!validTransitions.has(transKey)) {
+        toast.error('This status transition is not allowed');
+        return;
+      }
+    }
+
+    updateTask.mutate({ taskId, data: { workflowStatusId: newStatusId } });
   };
+
+  const getStatusName = (id: string) => statuses.find((s) => s.id === id)?.name ?? id;
 
   const announcements = {
     onDragStart: ({ active }: { active: { id: string | number } }) => {
@@ -78,8 +85,7 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
     }) => {
       const task = tasks.find((t) => t.id === active.id);
       if (!task || !over) return '';
-      const statusLabel = STATUS_LABELS[over.id as TaskStatus] ?? String(over.id);
-      return `Task ${task.title} is over ${statusLabel} column`;
+      return `Task ${task.title} is over ${getStatusName(over.id as string)} column`;
     },
     onDragEnd: ({
       active,
@@ -90,8 +96,7 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
     }) => {
       const task = tasks.find((t) => t.id === active.id);
       if (!task || !over) return 'Drag cancelled';
-      const statusLabel = STATUS_LABELS[over.id as TaskStatus] ?? String(over.id);
-      return `Moved ${task.title} to ${statusLabel}`;
+      return `Moved ${task.title} to ${getStatusName(over.id as string)}`;
     },
     onDragCancel: () => 'Drag cancelled',
   };
@@ -99,15 +104,24 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
       <div className="flex gap-3 overflow-x-clip h-full pb-4">
-        {TASK_STATUSES.map((status) => (
+        {statuses.map((status) => (
           <KanbanColumn
-            key={status}
+            key={status.id}
             status={status}
-            tasks={tasksByStatus[status]}
+            tasks={tasksByStatus[status.id] ?? []}
             projectId={projectId}
             projectPrefix={projectPrefix}
           />
         ))}
+        {orphanedTasks.length > 0 && (
+          <KanbanColumn
+            key="__orphan__"
+            status={{ id: '__orphan__', name: 'No Status', key: '__ORPHAN__', color: '#ef4444', position: 999, isDefault: false, isClosed: false, projectId }}
+            tasks={orphanedTasks}
+            projectId={projectId}
+            projectPrefix={projectPrefix}
+          />
+        )}
       </div>
     </DndContext>
   );
