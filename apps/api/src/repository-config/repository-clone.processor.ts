@@ -4,7 +4,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { existsSync } from 'fs';
 import { rm, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve, isAbsolute } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ConfigService } from '@nestjs/config';
@@ -24,7 +24,8 @@ export class RepositoryCloneProcessor extends WorkerHost {
 
   async process(job: Job<{ projectId: string }>): Promise<void> {
     const { projectId } = job.data;
-    const baseDir = this.config.get<string>('WORKSPACE_DIR', 'workspaces');
+    const configDir = this.config.get<string>('WORKSPACE_DIR', 'workspaces');
+    const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), '..', '..', configDir);
     const workspacePath = join(baseDir, projectId);
 
     try {
