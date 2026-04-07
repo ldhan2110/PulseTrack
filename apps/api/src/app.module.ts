@@ -16,6 +16,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { CommentsModule } from './comments/comments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WorkflowModule } from './workflow/workflow.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     CommentsModule,
     AttachmentsModule,
     NotificationsModule,
+    WorkflowModule,
   ],
   controllers: [AppController],
   providers: [AppService],
