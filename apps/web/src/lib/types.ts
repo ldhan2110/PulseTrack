@@ -450,3 +450,46 @@ export interface UpsertAiConfigPayload {
 export interface UpdateProjectContextPayload {
   projectContext: string;
 }
+
+// ─── AI Task Generation ─────────────────────────────────────────────────────
+
+export interface GeneratedTask {
+  title: string;
+  description: string;
+  acceptanceCriteria: string;
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  storyPoints: number;
+  subTasks?: GeneratedTask[];
+}
+
+export interface GenerateTasksPayload {
+  prompt: string;
+  scanCodebase?: boolean;
+  breakIntoSubTasks?: boolean;
+  documents?: File[];
+}
+
+export type AiGenerationStatus = 'waiting' | 'active' | 'completed' | 'failed';
+
+export interface AiGenerationJobResult {
+  status: AiGenerationStatus;
+  tasks?: GeneratedTask[];
+  error?: string;
+}
+
+export type AiGenerationStep = 'pulling' | 'scanning' | 'generating' | 'parsing';
+
+export interface AiGenerationProgressEvent {
+  jobId: string;
+  step: AiGenerationStep;
+}
+
+export interface AiGenerationCompletedEvent {
+  jobId: string;
+  taskCount: number;
+}
+
+export interface AiGenerationFailedEvent {
+  jobId: string;
+  error: string;
+}

@@ -34,6 +34,7 @@ import type {
   AiConfig,
   UpsertAiConfigPayload,
   UpdateProjectContextPayload,
+  AiGenerationJobResult,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -212,6 +213,25 @@ export const api = {
     request<{ projectContext: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
       method: 'POST',
     }),
+
+  // ─── AI Task Generation ────────────────────────────────────────────────────
+  generateTasks: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {
+    const token = keycloak.token;
+    const res = await fetch(`${API_BASE}/projects/${projectId}/ai/generate-tasks`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: data,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Generation failed: ${res.status}`);
+    }
+    return res.json() as Promise<{ jobId: string }>;
+  },
+  getGenerationJobResult: (projectId: string, jobId: string) =>
+    request<AiGenerationJobResult>(`/projects/${projectId}/ai/generate-tasks/${jobId}`),
 
   // ─── Comments ──────────────────────────────────────────────────────────────
   getComments: (projectId: string, taskId: string) =>
