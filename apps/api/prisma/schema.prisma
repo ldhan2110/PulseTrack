@@ -165,6 +165,8 @@ model Project {
   workflowLayout      Json?
   workflowStatuses    WorkflowStatus[]
   workflowTransitions WorkflowTransition[]
+  repositoryConfig    RepositoryConfig?
+  aiConfig            AiConfig?
 }
 
 model ProjectMember {
@@ -389,4 +391,35 @@ model TaskHistory {
 
   task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   actor User @relation("TaskHistoryActor", fields: [actorId], references: [id])
+}
+
+// =====================
+// REPOSITORY & AI CONFIG
+// =====================
+
+model RepositoryConfig {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  repoUrl       String
+  accessToken   String   // AES-256-GCM encrypted
+  cloneStatus   String   @default("pending") // pending | cloning | cloned | failed
+  cloneError    String?
+  workspacePath String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AiConfig {
+  id             String   @id @default(cuid())
+  projectId      String   @unique
+  provider       String   // claude | gemini | codex
+  model          String
+  apiKey         String   // AES-256-GCM encrypted
+  projectContext String?  @db.VarChar(2000)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
