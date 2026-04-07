@@ -324,6 +324,7 @@ model Attachment {
   size        Int
   taskId      String
   uploaderId  String
+  isInline    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   task     Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
