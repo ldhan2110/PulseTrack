@@ -61,7 +61,7 @@ export function CreateSprintDialog({
   const createSprint = useCreateSprint(projectId);
 
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
   const [endDate, setEndDate] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -132,7 +132,7 @@ export function CreateSprintDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-110">
         <DialogHeader>
           <DialogTitle>Create Sprint</DialogTitle>
         </DialogHeader>

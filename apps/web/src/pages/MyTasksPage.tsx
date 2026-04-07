@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import { CheckSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyTasks } from '@/hooks/useMyTasks';
+import { useMyTaskSync } from '@/hooks/useTaskSync';
 import { useUiStore } from '@/store/uiStore';
 import { MyTasksBoard } from '@/components/tasks/MyTasksBoard';
 
 export function MyTasksPage() {
   const { data: tasks, isLoading } = useMyTasks();
+  useMyTaskSync();
   const setFullWidth = useUiStore((s) => s.setFullWidth);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function MyTasksPage() {
       <div className="flex flex-col gap-4">
         <h1 className="text-xl font-semibold tracking-tight">My Tasks</h1>
         <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-4 max-w-[360px] text-center">
+          <div className="flex flex-col items-center gap-4 max-w-90 text-center">
             <CheckSquare className="size-12 text-muted-foreground" />
             <div>
               <h2 className="text-[20px] font-semibold">No tasks assigned to you</h2>

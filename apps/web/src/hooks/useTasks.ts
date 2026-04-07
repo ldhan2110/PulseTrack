@@ -72,6 +72,7 @@ export function useUpdateTask(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
     },
     onSuccess: () => {
       toast.success('Task updated');
@@ -132,6 +133,7 @@ export function useUpdateTaskStatus(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
     },
     onSuccess: (_data, { status }) => {
       toast.success(`Moved to ${STATUS_LABELS[status]}`);

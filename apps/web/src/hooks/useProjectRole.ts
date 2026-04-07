@@ -19,7 +19,7 @@ export function useProjectRole(projectId: string): ProjectRoleResult {
   return {
     role,
     isLoading,
-    canEdit: role === 'pm' || role === 'ba',
+    canEdit: role !== null,
     canManage: role === 'pm',
   };
 }
