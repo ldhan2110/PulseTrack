@@ -10,6 +10,22 @@ export function useMyTasks() {
   });
 }
 
+export function useDeleteMyTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ projectId, taskId }: { projectId: string; taskId: string }) =>
+      api.deleteTask(projectId, taskId),
+    onSuccess: (_data, { projectId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      toast.success('Task deleted');
+    },
+    onError: () => {
+      toast.error('Something went wrong. Please try again.');
+    },
+  });
+}
+
 export function useUpdateMyTaskStatus() {
   const queryClient = useQueryClient();
   return useMutation({

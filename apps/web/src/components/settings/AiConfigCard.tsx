@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { useAiConfig, useUpsertAiConfig, useGenerateProjectContext } from '@/hooks/useAiConfig';
+import { useAiConfig, useUpsertAiConfig, useUpdateProjectContext, useGenerateProjectContext } from '@/hooks/useAiConfig';
 import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import type { AiProvider } from '@/lib/types';
 
@@ -23,7 +23,7 @@ const PROVIDER_MODELS: Record<AiProvider, string[]> = {
   codex: ['o3', 'o4-mini', 'gpt-4.1'],
 };
 
-const CONTEXT_MAX_LENGTH = 2000;
+const CONTEXT_MAX_LENGTH = 10000;
 
 interface Props {
   projectId: string;
@@ -34,6 +34,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   const { data: config } = useAiConfig(projectId);
   const { data: repoConfig } = useRepositoryConfig(projectId);
   const upsert = useUpsertAiConfig(projectId);
+  const updateContext = useUpdateProjectContext(projectId);
   const generateContext = useGenerateProjectContext(projectId);
 
   const [provider, setProvider] = useState<AiProvider>('claude');
@@ -64,9 +65,12 @@ export function AiConfigCard({ projectId, canManage }: Props) {
       provider,
       model,
       apiKey: apiKey || (config?.apiKey ?? ''),
-      projectContext: projectContext || undefined,
     });
     setInitialized(false);
+  };
+
+  const handleSaveContext = () => {
+    updateContext.mutate({ projectContext });
   };
 
   const handleGenerate = () => {
@@ -203,6 +207,15 @@ export function AiConfigCard({ projectId, canManage }: Props) {
             <span>Provide context about your codebase for better AI results</span>
             <span>{projectContext.length} / {CONTEXT_MAX_LENGTH}</span>
           </div>
+          {canManage && (
+            <Button
+              onClick={handleSaveContext}
+              disabled={updateContext.isPending}
+              size="sm"
+            >
+              {updateContext.isPending ? 'Saving...' : 'Save Context'}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

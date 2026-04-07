@@ -77,12 +77,12 @@ export function TimeTrackingCard({
 
       {/* Action buttons — only for leaf tasks */}
       {!isParent && (
-        <div className="flex gap-2 border-t border-border pt-2">
+        <div className="flex flex-col gap-1.5 border-t border-border pt-2">
           {onEstimateChange && (
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 gap-1.5 h-7 text-xs"
+              className="w-full gap-1.5 h-7 text-xs"
               onClick={() => setEstimateModalOpen(true)}
             >
               <Pencil className="size-3" />
@@ -92,7 +92,7 @@ export function TimeTrackingCard({
           {onLogTime && (
             <Button
               size="sm"
-              className="flex-1 gap-1.5 h-7 text-xs"
+              className="w-full gap-1.5 h-7 text-xs"
               onClick={() => setLogTimeModalOpen(true)}
             >
               <Clock className="size-3" />

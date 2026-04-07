@@ -41,7 +41,23 @@ export class AiContextGeneratorService {
     const apiKey = decrypt(aiConfig.apiKey, encryptionKey);
     const cli = CLI_COMMANDS[aiConfig.provider] ?? aiConfig.provider;
 
-    const prompt = `Scan this codebase and generate a concise project summary (under 2000 characters). Include: tech stack, architecture patterns, main modules, key conventions. Be factual and specific.`;
+    const prompt = `
+      Scan this codebase and build a concise but structured understanding of the system. It should as short as possible while covering the following aspects:
+      Focus on:
+      - System purpose: what problem it solves and for whom
+      - Core business capabilities (key features and user-facing behavior)
+
+      Avoid:
+      - Listing technologies or frameworks unless essential
+      - Describing folder structure or low-level implementation
+      - Generic or vague statements
+
+      Write the summary so it can later be used to:
+      - Generate product backlogs and user stories
+      - Analyze feature gaps or inconsistencies
+      - Detect and explain bugs or unexpected behaviors
+      - Propose fixes aligned with intended system behavior
+  `;
 
     const args = this.buildCliArgs(aiConfig.provider, aiConfig.model, prompt);
     const env = this.buildCliEnv(aiConfig.provider, apiKey);
@@ -53,14 +69,8 @@ export class AiContextGeneratorService {
       env: { ...process.env, ...env },
     });
 
-    // Truncate to 2000 chars at last complete sentence
+    // Truncate to 10000 chars at last complete sentence
     let context = stdout.trim();
-    if (context.length > 2000) {
-      const truncated = context.slice(0, 2000);
-      const lastPeriod = truncated.lastIndexOf('.');
-      context = lastPeriod > 1500 ? truncated.slice(0, lastPeriod + 1) : truncated;
-    }
-
     const updated = await this.aiConfigService.updateContext(projectId, context);
     return { projectContext: updated.projectContext };
   }

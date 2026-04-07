@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-05)
 Phase: 08
 Plan: Not started
 Status: Executing Phase 08
-Last activity: 2026-04-06
+Last activity: 2026-04-07 - Completed quick task 260407-rjw: Replace browser prompt with AddSubTaskModal and fix createTask cache invalidation
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -126,6 +126,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260405-n1u | Update JwtStrategy — DB Lookup in validate() | 2026-04-05 | 43c2c74 | [260405-n1u-update-jwtstrategy-db-lookup-in-validate](./quick/260405-n1u-update-jwtstrategy-db-lookup-in-validate/) |
 | 260405-n7z | Update frontend auth test for accessDenied flow | 2026-04-05 | 68670f7 | [260405-n7z-update-frontend-auth-test-for-accessdeni](./quick/260405-n7z-update-frontend-auth-test-for-accessdeni/) |
+| 260407-rjw | Replace browser prompt with AddSubTaskModal and fix createTask cache invalidation | 2026-04-07 | a930d1d | [260407-rjw-replace-browser-prompt-with-addsubtaskmo](./quick/260407-rjw-replace-browser-prompt-with-addsubtaskmo/) |
 
 ### Blockers/Concerns
 

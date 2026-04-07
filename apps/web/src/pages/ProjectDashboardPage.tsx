@@ -1,9 +1,8 @@
-import { ListTodo, Clock, CheckCircle } from 'lucide-react';
 import { useUiStore } from '@/store/uiStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/dashboard/StatCard';
+import { DashboardStatusStrip } from '@/components/dashboard/DashboardStatusStrip';
 import { BurndownChart } from '@/components/dashboard/BurndownChart';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -11,10 +10,10 @@ import { useDashboard } from '@/hooks/useDashboard';
 function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
-      {/* Row 1: 4 stat cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[96px] rounded-xl" />
+      {/* Row 1: scrollable stat cards */}
+      <div className="flex gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-[96px] min-w-[160px] rounded-xl shrink-0" />
         ))}
       </div>
       {/* Row 2: burndown + sprint */}
@@ -55,21 +54,8 @@ export function ProjectDashboardPage() {
     <div className="flex flex-col gap-6 px-8 py-6">
       <h1 className="text-xl font-semibold">Dashboard</h1>
 
-      {/* Row 1: Stat cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Tasks" value={taskCounts.total} icon={ListTodo} />
-        {taskCounts.byStatus
-          .filter((s) => !s.isClosed)
-          .slice(0, 2)
-          .map((s) => (
-            <StatCard key={s.statusId} title={s.name} value={s.count} icon={Clock} />
-          ))}
-        <StatCard
-          title="Done"
-          value={taskCounts.byStatus.filter((s) => s.isClosed).reduce((sum, s) => sum + s.count, 0)}
-          icon={CheckCircle}
-        />
-      </div>
+      {/* Row 1: Dynamic status cards with horizontal scroll */}
+      <DashboardStatusStrip total={taskCounts.total} byStatus={taskCounts.byStatus} />
 
       {/* Row 2: Burndown (60%) + Sprint progress (40%) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">

@@ -7,11 +7,12 @@ interface StatCardProps {
   value: number;
   icon: LucideIcon;
   variant?: 'default' | 'warning' | 'danger';
+  accentColor?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, variant = 'default' }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, variant = 'default', accentColor }: StatCardProps) {
   return (
-    <Card>
+    <Card className="min-w-[160px]" style={accentColor ? { borderTopColor: accentColor, borderTopWidth: 3 } : undefined}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[13px] font-semibold tracking-[0.01em]">
@@ -19,10 +20,12 @@ export function StatCard({ title, value, icon: Icon, variant = 'default' }: Stat
           </CardTitle>
           <Icon
             className={cn(
-              'size-4 text-muted-foreground',
+              'size-4',
+              !accentColor && variant === 'default' && 'text-muted-foreground',
               variant === 'danger' && 'text-[var(--status-blocked)]',
               variant === 'warning' && 'text-[var(--status-in-review)]',
             )}
+            style={accentColor ? { color: accentColor } : undefined}
           />
         </div>
       </CardHeader>

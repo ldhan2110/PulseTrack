@@ -467,6 +467,8 @@ export function TaskDetailPage() {
               )}
             </section>
 
+            <hr className="border-border" />
+
             {/* 2. Acceptance Criteria */}
             <section>
               <div className="flex items-center gap-2 mb-2">
@@ -542,6 +544,8 @@ export function TaskDetailPage() {
                 )
               )}
             </section>
+
+            <hr className="border-border" />
 
             {/* 3. Attachments (moved here from below comments) */}
             <section>

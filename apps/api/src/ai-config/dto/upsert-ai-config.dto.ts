@@ -16,6 +16,6 @@ export class UpsertAiConfigDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(10000)
   projectContext?: string;
 }
