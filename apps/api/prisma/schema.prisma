@@ -57,9 +57,11 @@ model WorkflowStatus {
   key       String
   color     String
   position  Int
-  isDefault Boolean  @default(false)
-  isClosed  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isDefault      Boolean  @default(false)
+  isClosed       Boolean  @default(false)
+  autoDateField  String?
+  autoDateAction String?
+  createdAt      DateTime @default(now())
 
   project         Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
   transitionsFrom WorkflowTransition[] @relation("TransitionFrom")

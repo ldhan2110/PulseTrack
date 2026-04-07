@@ -4,7 +4,9 @@ import {
   IsInt,
   IsOptional,
   IsArray,
+  IsIn,
   ValidateNested,
+  ValidateIf,
   Min,
   MaxLength,
   ArrayMinSize,
@@ -39,6 +41,16 @@ export class WorkflowStatusDto {
 
   @IsBoolean()
   isClosed: boolean;
+
+  @IsOptional()
+  @ValidateIf((o) => o.autoDateField !== null)
+  @IsIn(['actualStartDate', 'actualEndDate', 'plannedStartDate', 'plannedEndDate'])
+  autoDateField?: string | null;
+
+  @IsOptional()
+  @ValidateIf((o) => o.autoDateAction !== null)
+  @IsIn(['set', 'clear'])
+  autoDateAction?: string | null;
 }
 
 export class WorkflowTransitionDto {

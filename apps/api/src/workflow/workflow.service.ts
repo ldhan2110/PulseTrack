@@ -112,6 +112,16 @@ export class WorkflowService {
       }
     }
 
+    for (const s of dto.statuses) {
+      const hasField = s.autoDateField != null;
+      const hasAction = s.autoDateAction != null;
+      if (hasField !== hasAction) {
+        throw new BadRequestException(
+          `Status "${s.name}": autoDateField and autoDateAction must both be set or both be null`,
+        );
+      }
+    }
+
     const allMemberIds = dto.assigneeRules.flatMap((r) => r.memberIds);
     if (allMemberIds.length > 0) {
       const validMembers = await this.prisma.projectMember.findMany({
@@ -162,6 +172,8 @@ export class WorkflowService {
             position: s.position,
             isDefault: s.isDefault,
             isClosed: s.isClosed,
+            autoDateField: s.autoDateField ?? null,
+            autoDateAction: s.autoDateAction ?? null,
           },
         });
         statusMap[s.key] = created.id;

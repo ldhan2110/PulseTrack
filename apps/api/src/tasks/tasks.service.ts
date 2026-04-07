@@ -135,6 +135,23 @@ export class TasksService {
       }
     }
 
+    // Apply date automation rule if status is changing
+    const autoDateUpdates: Partial<Record<'actualStartDate' | 'actualEndDate' | 'plannedStartDate' | 'plannedEndDate', Date | null>> = {};
+    if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== current.workflowStatusId && dto.workflowStatusId) {
+      const targetStatus = await this.prisma.workflowStatus.findUnique({
+        where: { id: dto.workflowStatusId },
+        select: { autoDateField: true, autoDateAction: true },
+      });
+      if (targetStatus?.autoDateField && targetStatus?.autoDateAction) {
+        const field = targetStatus.autoDateField as keyof typeof autoDateUpdates;
+        if (targetStatus.autoDateAction === 'set' && current[field] == null) {
+          autoDateUpdates[field] = new Date();
+        } else if (targetStatus.autoDateAction === 'clear') {
+          autoDateUpdates[field] = null;
+        }
+      }
+    }
+
     // Build history entries for tracked fields only
     const trackedFields = ['assigneeId', 'sprintId', 'storyPoints', 'title', 'priority'] as const;
     const historyEntries: { taskId: string; actorId: string; field: string; oldValue: string | null; newValue: string | null }[] = trackedFields
@@ -188,12 +205,17 @@ export class TasksService {
       });
     }
 
-    // Track date field changes
+    // Track date field changes (manual + auto)
     const dateFields = ['plannedStartDate', 'plannedEndDate', 'actualStartDate', 'actualEndDate'] as const;
     for (const f of dateFields) {
-      if (dto[f] !== undefined) {
+      const autoValue = autoDateUpdates[f];
+      const manualValue = dto[f];
+      if (manualValue !== undefined || autoValue !== undefined) {
         const oldRaw = current[f] ? (current[f] as Date).toISOString() : null;
-        const newRaw = dto[f] ? new Date(dto[f] as string).toISOString() : null;
+        // Manual DTO value takes precedence; auto-date only applies if not manually set
+        const newRaw = manualValue !== undefined
+          ? (manualValue ? new Date(manualValue as string).toISOString() : null)
+          : (autoValue ? autoValue.toISOString() : null);
         if (oldRaw !== newRaw) {
           historyEntries.push({
             taskId,
@@ -221,6 +243,7 @@ export class TasksService {
             acceptanceCriteria: dto.acceptanceCriteria,
           }),
           ...(dto.priority !== undefined && { priority: dto.priority }),
+          ...autoDateUpdates,
           ...(dto.plannedStartDate !== undefined && {
             plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : null,
           }),
