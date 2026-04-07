@@ -99,6 +99,8 @@ export function CommentThread({
                   <CommentComposer
                     onSubmit={(content) => handlePostReply(comment.id, content)}
                     isPending={createReply.isPending}
+                    projectId={projectId}
+                    taskId={taskId}
                     placeholder="Write a reply..."
                     onCancel={() => setReplyingTo(null)}
                   />
@@ -113,6 +115,8 @@ export function CommentThread({
       <CommentComposer
         onSubmit={handlePostComment}
         isPending={createComment.isPending}
+        projectId={projectId}
+        taskId={taskId}
         placeholder="Add a comment..."
       />
     </div>

@@ -1,8 +1,8 @@
+// apps/web/src/components/tasks/CommentComposer.tsx
 import { useState, useRef, useCallback } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import Image from '@tiptap/extension-image';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
@@ -12,10 +12,14 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ResizableImage } from '@/components/editor/ResizableImage';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface CommentComposerProps {
   onSubmit: (content: string) => void;
   isPending: boolean;
+  projectId: string;
+  taskId: string;
   placeholder?: string;
   onCancel?: () => void;
 }
@@ -53,41 +57,26 @@ function ToolbarButton({
   );
 }
 
-function handleImagePaste(editor: Editor, event: ClipboardEvent): boolean {
-  const items = event.clipboardData?.items;
-  if (!items) return false;
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      event.preventDefault();
-      const file = item.getAsFile();
-      if (!file) continue;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        editor.chain().focus().setImage({ src: base64 }).run();
-      };
-      reader.readAsDataURL(file);
-      return true;
-    }
-  }
-  return false;
-}
-
 export function CommentComposer({
   onSubmit,
   isPending,
+  projectId,
+  taskId,
   placeholder = 'Add a comment...',
   onCancel,
 }: CommentComposerProps) {
   const editorRef = useRef<Editor | null>(null);
   const handleSubmitRef = useRef<() => void>(() => {});
   const [isContentEmpty, setIsContentEmpty] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId, taskId });
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false }),
       Placeholder.configure({ placeholder }),
-      Image.configure({ inline: true, allowBase64: true }),
+      ResizableImage,
       Table.configure({ resizable: false }),
       TableRow,
       TableCell,
@@ -98,14 +87,27 @@ export function CommentComposer({
       setIsContentEmpty(e.isEmpty);
     },
     editorProps: {
-      handlePaste: (view, event) => {
-        if (editorRef.current) {
-          return handleImagePaste(editorRef.current, event as unknown as ClipboardEvent);
+      handlePaste: (_view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items || !editorRef.current) return false;
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (!file) continue;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result as string;
+              editorRef.current!.chain().focus().setImage({ src: base64 }).run();
+              handleImagePaste(file, editorRef.current!, base64);
+            };
+            reader.readAsDataURL(file);
+            return true;
+          }
         }
         return false;
       },
       handleKeyDown: (_view, event) => {
-        // Ctrl/Cmd+Enter to submit
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
           handleSubmitRef.current();
           return true;
@@ -115,19 +117,21 @@ export function CommentComposer({
     },
   });
 
-  // Keep refs in sync
   editorRef.current = editor;
 
   const isEmpty = !editor || isContentEmpty;
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!editor || editor.isEmpty || isPending) return;
+    setIsSaving(true);
+    await awaitPendingUploads();
     const html = editor.getHTML();
+    setIsSaving(false);
     onSubmit(html);
     editor.commands.clearContent();
-  }, [editor, isPending, onSubmit]);
+  }, [editor, isPending, onSubmit, awaitPendingUploads]);
 
-  handleSubmitRef.current = handleSubmit;
+  handleSubmitRef.current = () => { void handleSubmit(); };
 
   if (!editor) return null;
 
@@ -190,17 +194,17 @@ export function CommentComposer({
       <div className="flex items-center gap-2">
         <Button
           size="sm"
-          onClick={handleSubmit}
-          disabled={isEmpty || isPending}
+          onClick={() => { void handleSubmit(); }}
+          disabled={isEmpty || isPending || isSaving}
         >
-          Post Comment
+          {isSaving ? 'Uploading…' : 'Post Comment'}
         </Button>
         {onCancel && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onCancel}
-            disabled={isPending}
+            disabled={isPending || isSaving}
           >
             Cancel
           </Button>
