@@ -44,7 +44,6 @@ import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { TimeTrackingCard } from '@/components/tasks/TimeTrackingCard';
-import { LogTimeCard } from '@/components/tasks/LogTimeCard';
 import { TimeLogsList } from '@/components/tasks/TimeLogsList';
 import { SubTaskCard } from '@/components/tasks/SubTaskCard';
 import type { AcceptanceCriteria, Priority } from '@/lib/types';
@@ -551,16 +550,6 @@ export function TaskDetailPage() {
             </section>
           </div>
 
-          {/* Time Logs Section */}
-          <div className="rounded-lg border p-5">
-            <TimeLogsList
-              timeLogs={task.timeLogs ?? []}
-              currentUserId={currentUserId}
-              userRole={canManage ? 'pm' : ''}
-              onDelete={(timeLogId) => deleteTimeLog.mutate({ taskId: task.id, timeLogId })}
-              isDeleting={deleteTimeLog.isPending}
-            />
-          </div>
 
           {/* Sub-tasks Section */}
           {!hasParent && (
@@ -601,6 +590,7 @@ export function TaskDetailPage() {
             <Tabs defaultValue="comments">
               <TabsList variant="line" className="mb-4">
                 <TabsTrigger value="comments">Comments</TabsTrigger>
+                <TabsTrigger value="timelogs">Time Logs</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
               </TabsList>
               <TabsContent value="comments">
@@ -609,6 +599,15 @@ export function TaskDetailPage() {
                   taskId={taskId}
                   currentUserId={currentUserId}
                   canManage={canManage}
+                />
+              </TabsContent>
+              <TabsContent value="timelogs">
+                <TimeLogsList
+                  timeLogs={task.timeLogs ?? []}
+                  currentUserId={currentUserId}
+                  userRole={canManage ? 'pm' : ''}
+                  onDelete={(timeLogId) => deleteTimeLog.mutate({ taskId: task.id, timeLogId })}
+                  isDeleting={deleteTimeLog.isPending}
                 />
               </TabsContent>
               <TabsContent value="activity">
@@ -819,15 +818,11 @@ export function TaskDetailPage() {
                     data: { estimatedMinutes: minutes },
                   });
                 } : undefined}
+                onLogTime={!isParent ? (data) => {
+                  createTimeLog.mutate({ taskId: task.id, data });
+                } : undefined}
+                isLogTimeLoading={createTimeLog.isPending}
               />
-
-              {/* Log Time — only for leaf tasks */}
-              {!isParent && (
-                <LogTimeCard
-                  onSubmit={(data) => createTimeLog.mutate({ taskId: task.id, data })}
-                  isLoading={createTimeLog.isPending}
-                />
-              )}
 
               <Separator/>
 
