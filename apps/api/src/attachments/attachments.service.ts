@@ -9,7 +9,7 @@ export class AttachmentsService {
 
   async findAll(taskId: string) {
     return this.prisma.attachment.findMany({
-      where: { taskId },
+      where: { taskId, isInline: false },
       include: {
         uploader: { select: { id: true, username: true, email: true } },
       },
@@ -17,7 +17,7 @@ export class AttachmentsService {
     });
   }
 
-  async create(taskId: string, uploaderId: string, file: Express.Multer.File) {
+  async create(taskId: string, uploaderId: string, file: Express.Multer.File, isInline = false) {
     const [attachment] = await this.prisma.$transaction([
       this.prisma.attachment.create({
         data: {
@@ -27,19 +27,25 @@ export class AttachmentsService {
           storedName: file.filename,
           mimeType: file.mimetype,
           size: file.size,
+          isInline,
         },
         include: {
           uploader: { select: { id: true, username: true, email: true } },
         },
       }),
-      this.prisma.taskHistory.create({
-        data: {
-          taskId,
-          actorId: uploaderId,
-          field: 'attachment_added',
-          newValue: file.originalname,
-        },
-      }),
+      // Only log to task history for explicit (non-inline) attachments
+      ...(isInline
+        ? []
+        : [
+            this.prisma.taskHistory.create({
+              data: {
+                taskId,
+                actorId: uploaderId,
+                field: 'attachment_added',
+                newValue: file.originalname,
+              },
+            }),
+          ]),
     ]);
     return attachment;
   }
@@ -57,11 +63,9 @@ export class AttachmentsService {
       where: { id: attachmentId },
     });
     if (!attachment) throw new NotFoundException('Attachment not found');
-    // Only uploader or PM can delete (per D-19 — same pattern as comment deletion D-10)
     if (attachment.uploaderId !== userId && userRole !== 'pm') {
       throw new ForbiddenException('Only the uploader or a PM can delete this attachment');
     }
-    // Delete file from disk
     try {
       const filePath = join(process.cwd(), 'uploads', 'tasks', attachment.taskId, attachment.storedName);
       unlinkSync(filePath);
