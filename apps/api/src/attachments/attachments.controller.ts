@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Delete, Param, Req, Res,
+  Controller, Get, Post, Delete, Param, Query, Req, Res,
   UseGuards, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -44,9 +44,11 @@ export class AttachmentsController {
   async upload(
     @Param('taskId') taskId: string,
     @UploadedFile() file: Express.Multer.File,
+    @Query('inline') inline: string | undefined,
     @Req() req: any,
   ) {
-    return this.attachmentsService.create(taskId, req.user.id, file);
+    const isInline = inline === 'true';
+    return this.attachmentsService.create(taskId, req.user.id, file, isInline);
   }
 
   @Get(':attachmentId/download')
