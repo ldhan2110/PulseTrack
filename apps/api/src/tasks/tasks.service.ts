@@ -196,6 +196,22 @@ export class TasksService {
     });
   }
 
+  async findByAssignee(userId: string) {
+    return this.prisma.task.findMany({
+      where: { assigneeId: userId },
+      include: {
+        assignee: { select: { id: true, username: true, email: true } },
+        sprint: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, prefix: true } },
+        _count: { select: { subTasks: true } },
+      },
+      orderBy: [
+        { plannedEndDate: { sort: 'asc', nulls: 'last' } },
+        { priority: 'desc' },
+      ],
+    });
+  }
+
   async delete(taskId: string) {
     return this.prisma.task.delete({
       where: { id: taskId },
