@@ -1,16 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WorkflowService } from '../workflow/workflow.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private workflowService: WorkflowService,
+  ) {}
 
   async create(userId: string, dto: CreateProjectDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const project = await tx.project.create({
+    const project = await this.prisma.$transaction(async (tx) => {
+      const p = await tx.project.create({
         data: {
           name: dto.name?.trim() || 'Untitled Project',
           description: dto.description,
@@ -21,14 +25,18 @@ export class ProjectsService {
 
       await tx.projectMember.create({
         data: {
-          projectId: project.id,
+          projectId: p.id,
           userId,
           role: 'pm',
         },
       });
 
-      return project;
+      return p;
     });
+
+    await this.workflowService.seedDefaultWorkflow(project.id);
+
+    return project;
   }
 
   async findAllForUser(userId: string) {
