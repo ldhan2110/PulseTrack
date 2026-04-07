@@ -41,6 +41,7 @@ import { useSprints } from '@/hooks/useSprints';
 import { useProjectRole } from '@/hooks/useProjectRole';
 import { useProject } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
+import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
 import { api } from '@/lib/api';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import type { TaskStatus, AcceptanceCriteria, SubTask, Priority } from '@/lib/types';
@@ -179,6 +180,10 @@ export function TaskDetailPage() {
   const updateTask = useUpdateTask(projectId);
   const descriptionUpdate = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
+
+  const { data: workflow } = useWorkflow(projectId);
+  const validNextStatuses = useValidTransitions(workflow, task?.workflowStatusId ?? null);
+  const { data: allowedAssignees } = useAllowedAssignees(projectId, task?.workflowStatusId ?? null);
 
   const taskQueryKey = ['task-by-key', projectId, taskKey] as const;
 
@@ -599,26 +604,38 @@ export function TaskDetailPage() {
               {/* Status */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Status</SidebarLabel>
-                <Select
-                  value={task.status}
-                  onValueChange={(val) => optimisticMutate({ status: val as TaskStatus }, { taskId, data: { status: val as TaskStatus } })}
-                  disabled={!canEdit}
-                >
-                  <SelectTrigger className="h-8 w-full">
-                    <SelectValue>
-                      <StatusBadge status={task.status} />
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as TaskStatus[]).map(
-                      (s) => (
-                        <SelectItem key={s} value={s}>
+                {task.workflowStatus ? (
+                  <Select
+                    value={task.workflowStatusId ?? ''}
+                    onValueChange={(val) =>
+                      optimisticMutate(
+                        { workflowStatusId: val },
+                        { taskId, data: { workflowStatusId: val } },
+                      )
+                    }
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="h-8 w-full">
+                      <SelectValue>
+                        <StatusBadge status={task.workflowStatus} />
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Current status */}
+                      <SelectItem value={task.workflowStatusId!}>
+                        <StatusBadge status={task.workflowStatus} />
+                      </SelectItem>
+                      {/* Valid transitions */}
+                      {validNextStatuses.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
                           <StatusBadge status={s} />
                         </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <StatusBadge status={null} />
+                )}
               </div>
 
               {/* Assignee */}
@@ -639,15 +656,20 @@ export function TaskDetailPage() {
                     <SelectItem value="unassigned">
                       <span className="text-muted-foreground">Unassigned</span>
                     </SelectItem>
-                    {members.map((m) => (
-                      <SelectItem key={m.userId} value={m.userId}>
+                    {(allowedAssignees ?? members.map((m) => ({
+                      userId: m.userId,
+                      username: m.user.username,
+                      memberId: m.id,
+                      email: m.user.email,
+                    }))).map((a) => (
+                      <SelectItem key={a.userId} value={a.userId}>
                         <div className="flex items-center gap-2">
                           <Avatar className="size-5">
                             <AvatarFallback className="text-[9px]">
-                              {getInitials(m.user.username)}
+                              {getInitials(a.username)}
                             </AvatarFallback>
                           </Avatar>
-                          {m.user.username}
+                          {a.username}
                         </div>
                       </SelectItem>
                     ))}
