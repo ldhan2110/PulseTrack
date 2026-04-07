@@ -9,7 +9,7 @@ import {
   MinLength,
   MaxLength,
 } from 'class-validator';
-import { TaskStatus, Priority } from '@prisma/client';
+import { Priority } from '@prisma/client';
 
 export class CreateTaskDto {
   @IsString()
@@ -21,10 +21,6 @@ export class CreateTaskDto {
   @IsString()
   @MaxLength(5000)
   description?: string;
-
-  @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
 
   @IsOptional()
   @IsString()

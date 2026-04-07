@@ -9,7 +9,7 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
-import { TaskStatus, Priority } from '@prisma/client';
+import { Priority } from '@prisma/client';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -23,8 +23,8 @@ export class UpdateTaskDto {
   description?: string;
 
   @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
+  @IsString()
+  workflowStatusId?: string;
 
   @IsOptional()
   @IsString()

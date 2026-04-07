@@ -22,6 +22,10 @@ describe('TasksService', () => {
       update: vi.fn(),
       delete: vi.fn(),
     },
+    workflowStatus: {
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+    },
     $transaction: vi.fn(),
   };
 
@@ -30,9 +34,17 @@ describe('TasksService', () => {
     notifyUser: vi.fn(),
   };
 
+  const mockWorkflowService = {
+    getValidTransitions: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new TasksService(mockPrismaService as any, mockNotificationsService as any);
+    service = new TasksService(
+      mockPrismaService as any,
+      mockNotificationsService as any,
+      mockWorkflowService as any,
+    );
   });
 
   describe('create()', () => {
@@ -46,7 +58,7 @@ describe('TasksService', () => {
         creatorId,
         title: dto.title,
         description: dto.description,
-        status: 'BACKLOG',
+        workflowStatus: { id: 'ws-1', name: 'Backlog' },
         assignee: null,
         sprint: null,
       };
@@ -70,20 +82,31 @@ describe('TasksService', () => {
     beforeEach(() => {
       // Mock findUniqueOrThrow for history diff
       mockPrismaService.task.findUniqueOrThrow.mockResolvedValue({
-        id: 'task-1', status: 'BACKLOG', assigneeId: null, sprintId: null, storyPoints: null, title: 'Old title',
+        id: 'task-1',
+        workflowStatusId: 'ws-backlog',
+        workflowStatus: { id: 'ws-backlog', name: 'Backlog' },
+        assigneeId: null,
+        sprintId: null,
+        storyPoints: null,
+        title: 'Old title',
+        projectId: 'proj-1',
       });
     });
 
-    it('updates task status from BACKLOG to IN_PROGRESS', async () => {
+    it('updates task workflowStatusId', async () => {
       const taskId = 'task-1';
-      const dto = { status: 'IN_PROGRESS' as any };
-      const updatedTask = { id: taskId, status: 'IN_PROGRESS', assignee: null, sprint: null };
+      const dto = { workflowStatusId: 'ws-inprogress' };
+      const updatedTask = { id: taskId, workflowStatusId: 'ws-inprogress', workflowStatus: { id: 'ws-inprogress', name: 'In Progress' }, assignee: null, sprint: null };
 
+      mockWorkflowService.getValidTransitions.mockResolvedValue([
+        { id: 'ws-inprogress', name: 'In Progress' },
+      ]);
+      mockPrismaService.workflowStatus.findUnique.mockResolvedValue({ name: 'In Progress' });
       mockPrismaService.$transaction.mockResolvedValue([updatedTask]);
 
       const result = await service.update(taskId, dto, actorId);
 
-      expect(result.status).toBe('IN_PROGRESS');
+      expect(result.workflowStatusId).toBe('ws-inprogress');
       expect(mockPrismaService.$transaction).toHaveBeenCalled();
     });
 
@@ -142,12 +165,12 @@ describe('TasksService', () => {
   describe('createSubTask()', () => {
     it('creates a sub-task linked to the parent task', async () => {
       const taskId = 'task-1';
-      const dto = { title: 'Write unit tests', status: 'BACKLOG' as any };
+      const dto = { title: 'Write unit tests', workflowStatusId: 'ws-backlog' };
       const createdSubTask = {
         id: 'subtask-1',
         parentId: taskId,
         title: dto.title,
-        status: 'BACKLOG',
+        workflowStatus: { id: 'ws-backlog', name: 'Backlog' },
         assignee: null,
       };
 
@@ -165,16 +188,16 @@ describe('TasksService', () => {
   });
 
   describe('updateSubTask()', () => {
-    it('updates sub-task status', async () => {
+    it('updates sub-task workflowStatusId', async () => {
       const subTaskId = 'subtask-1';
-      const dto = { status: 'DONE' as any };
-      const updated = { id: subTaskId, status: 'DONE', assignee: null };
+      const dto = { workflowStatusId: 'ws-done' };
+      const updated = { id: subTaskId, workflowStatus: { id: 'ws-done', name: 'Done' }, assignee: null };
 
       mockPrismaService.subTask.update.mockResolvedValue(updated);
 
       const result = await service.updateSubTask(subTaskId, dto);
 
-      expect(result.status).toBe('DONE');
+      expect(result.workflowStatus?.name).toBe('Done');
     });
   });
 

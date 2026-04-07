@@ -1,5 +1,4 @@
-import { IsString, IsOptional, IsEnum, MinLength, MaxLength } from 'class-validator';
-import { TaskStatus } from '@prisma/client';
+import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
 
 export class CreateSubTaskDto {
   @IsString()
@@ -8,8 +7,8 @@ export class CreateSubTaskDto {
   title: string;
 
   @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
+  @IsString()
+  workflowStatusId?: string;
 
   @IsOptional()
   @IsString()

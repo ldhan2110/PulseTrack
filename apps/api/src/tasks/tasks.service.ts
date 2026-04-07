@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WorkflowService } from '../workflow/workflow.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateSubTaskDto } from './dto/create-subtask.dto';
@@ -10,6 +11,7 @@ export class TasksService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private workflowService: WorkflowService,
   ) {}
 
   async create(projectId: string, creatorId: string, dto: CreateTaskDto) {
@@ -23,6 +25,11 @@ export class TasksService {
 
       const taskKey = project.prefix ? `${project.prefix}-${project.taskSeq}` : null;
 
+      // Find default workflow status for this project
+      const defaultStatus = await tx.workflowStatus.findFirst({
+        where: { projectId, isDefault: true },
+      });
+
       return tx.task.create({
         data: {
           projectId,
@@ -30,7 +37,7 @@ export class TasksService {
           title: dto.title,
           taskKey,
           description: dto.description,
-          status: dto.status,
+          workflowStatusId: defaultStatus?.id ?? null,
           assigneeId: dto.assigneeId,
           storyPoints: dto.storyPoints,
           sprintId: dto.sprintId,
@@ -44,6 +51,7 @@ export class TasksService {
         include: {
           assignee: { select: { id: true, username: true, email: true } },
           sprint: { select: { id: true, name: true } },
+          workflowStatus: true,
         },
       });
     });
@@ -59,9 +67,11 @@ export class TasksService {
         assignee: { select: { id: true, username: true, email: true } },
         sprint: { select: { id: true, name: true } },
         creator: { select: { id: true, username: true, email: true } },
+        workflowStatus: true,
         subTasks: {
           include: {
             assignee: { select: { id: true, username: true, email: true } },
+            workflowStatus: true,
           },
           orderBy: { createdAt: 'asc' },
         },
@@ -75,6 +85,7 @@ export class TasksService {
       include: {
         assignee: { select: { id: true, username: true, email: true } },
         sprint: { select: { id: true, name: true } },
+        workflowStatus: true,
         _count: { select: { subTasks: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -88,9 +99,11 @@ export class TasksService {
         assignee: { select: { id: true, username: true, email: true } },
         sprint: { select: { id: true, name: true } },
         creator: { select: { id: true, username: true, email: true } },
+        workflowStatus: true,
         subTasks: {
           include: {
             assignee: { select: { id: true, username: true, email: true } },
+            workflowStatus: true,
           },
           orderBy: { createdAt: 'asc' },
         },
@@ -100,10 +113,30 @@ export class TasksService {
 
   async update(taskId: string, dto: UpdateTaskDto, actorId: string) {
     // Fetch current task to detect changes for history recording
-    const current = await this.prisma.task.findUniqueOrThrow({ where: { id: taskId } });
+    const current = await this.prisma.task.findUniqueOrThrow({
+      where: { id: taskId },
+      include: { workflowStatus: true },
+    });
+
+    // Validate workflow status transition if changing workflowStatusId
+    if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== current.workflowStatusId) {
+      if (current.workflowStatusId) {
+        const validTransitions = await this.workflowService.getValidTransitions(
+          current.projectId,
+          current.workflowStatusId,
+        );
+        const isValid = validTransitions.some((t) => t.id === dto.workflowStatusId);
+        if (!isValid) {
+          const validNames = validTransitions.map((t) => t.name).join(', ');
+          throw new BadRequestException(
+            `Invalid status transition. Valid transitions from "${current.workflowStatus?.name}" are: ${validNames || 'none'}`,
+          );
+        }
+      }
+    }
 
     // Build history entries for tracked fields only
-    const trackedFields = ['status', 'assigneeId', 'sprintId', 'storyPoints', 'title', 'priority'] as const;
+    const trackedFields = ['assigneeId', 'sprintId', 'storyPoints', 'title', 'priority'] as const;
     const historyEntries: { taskId: string; actorId: string; field: string; oldValue: string | null; newValue: string | null }[] = trackedFields
       .filter(f => dto[f] !== undefined && String(dto[f] ?? '') !== String(current[f] ?? ''))
       .map(f => ({
@@ -113,6 +146,25 @@ export class TasksService {
         oldValue: current[f] != null ? String(current[f]) : null,
         newValue: dto[f] != null ? String(dto[f]) : null,
       }));
+
+    // Track workflowStatus changes by name for readability
+    if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== current.workflowStatusId) {
+      let newStatusName: string | null = null;
+      if (dto.workflowStatusId) {
+        const newStatus = await this.prisma.workflowStatus.findUnique({
+          where: { id: dto.workflowStatusId },
+          select: { name: true },
+        });
+        newStatusName = newStatus?.name ?? dto.workflowStatusId;
+      }
+      historyEntries.push({
+        taskId,
+        actorId,
+        field: 'status',
+        oldValue: current.workflowStatus?.name ?? null,
+        newValue: newStatusName,
+      });
+    }
 
     // Track description changes
     if (dto.description !== undefined && dto.description !== current.description) {
@@ -161,7 +213,7 @@ export class TasksService {
         data: {
           ...(dto.title !== undefined && { title: dto.title }),
           ...(dto.description !== undefined && { description: dto.description }),
-          ...(dto.status !== undefined && { status: dto.status }),
+          ...(dto.workflowStatusId !== undefined && { workflowStatusId: dto.workflowStatusId }),
           ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
           ...(dto.storyPoints !== undefined && { storyPoints: dto.storyPoints }),
           ...(dto.sprintId !== undefined && { sprintId: dto.sprintId }),
@@ -185,6 +237,7 @@ export class TasksService {
         include: {
           assignee: { select: { id: true, username: true, email: true } },
           sprint: { select: { id: true, name: true } },
+          workflowStatus: true,
         },
       }),
       ...historyEntries.map(e => this.prisma.taskHistory.create({ data: e })),
@@ -232,6 +285,7 @@ export class TasksService {
         assignee: { select: { id: true, username: true, email: true } },
         sprint: { select: { id: true, name: true } },
         project: { select: { id: true, name: true, prefix: true } },
+        workflowStatus: true,
         _count: { select: { subTasks: true } },
       },
       orderBy: [
@@ -257,11 +311,12 @@ export class TasksService {
       data: {
         parentId: taskId,
         title: dto.title,
-        status: dto.status,
+        workflowStatusId: dto.workflowStatusId,
         assigneeId: dto.assigneeId,
       },
       include: {
         assignee: { select: { id: true, username: true, email: true } },
+        workflowStatus: true,
       },
     });
   }
@@ -271,11 +326,12 @@ export class TasksService {
       where: { id: subTaskId },
       data: {
         ...(dto.title !== undefined && { title: dto.title }),
-        ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.workflowStatusId !== undefined && { workflowStatusId: dto.workflowStatusId }),
         ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
       },
       include: {
         assignee: { select: { id: true, username: true, email: true } },
+        workflowStatus: true,
       },
     });
   }
