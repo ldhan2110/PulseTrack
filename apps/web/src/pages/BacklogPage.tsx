@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,13 @@ export function BacklogPage() {
   const { canEdit } = useProjectRole(projectId);
   const backlogView = useUiStore((s) => s.backlogView);
   const setBacklogView = useUiStore((s) => s.setBacklogView);
+  const setFullWidth = useUiStore((s) => s.setFullWidth);
   const [createOpen, setCreateOpen] = useState(false);
+
+  useEffect(() => {
+    setFullWidth(backlogView === 'board');
+    return () => setFullWidth(false);
+  }, [backlogView, setFullWidth]);
   const [selectedTasks, setSelectedTasks] = useState<Task[]>([]);
   const updateTask = useUpdateTask(projectId);
 
@@ -37,7 +43,7 @@ export function BacklogPage() {
 
   if (tasksLoading) {
     return (
-      <div className="flex flex-col gap-4 p-8">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Skeleton className="h-7 w-24" />
           <Skeleton className="h-9 w-28" />
@@ -72,7 +78,7 @@ export function BacklogPage() {
 
   if (taskList.length === 0 && !tasksLoading) {
     return (
-      <div className="flex flex-col gap-4 p-8">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
           {canEdit && (
@@ -105,7 +111,7 @@ export function BacklogPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-8 h-full min-h-0">
+    <div className="flex flex-col gap-4 h-full min-h-0">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
         {canEdit && (
