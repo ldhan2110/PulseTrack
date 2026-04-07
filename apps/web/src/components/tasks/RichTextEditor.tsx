@@ -177,7 +177,7 @@ export function RichTextEditor({
             const reader = new FileReader();
             reader.onload = () => {
               const base64 = reader.result as string;
-              editorRef.current!.chain().focus().setImage({ src: base64 }).run();
+              editorRef.current!.chain().focus().insertContent({ type: 'image', attrs: { src: base64 } }).run();
               handleImagePaste(file, editorRef.current!, base64);
             };
             reader.readAsDataURL(file);
