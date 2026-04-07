@@ -1,4 +1,4 @@
-import { ListTodo, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ListTodo, Clock, CheckCircle } from 'lucide-react';
 import { useUiStore } from '@/store/uiStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -41,7 +41,7 @@ export function ProjectDashboardPage() {
     );
   }
 
-  const taskCounts = data?.taskCounts ?? { total: 0, backlog: 0, inProgress: 0, inReview: 0, done: 0, blocked: 0 };
+  const taskCounts = data?.taskCounts ?? { total: 0, byStatus: [], orphaned: 0 };
   const activeSprint = data?.activeSprint ?? null;
   const burndownData = data?.burndown ?? [];
   const activities = data?.recentActivity ?? [];
@@ -58,9 +58,17 @@ export function ProjectDashboardPage() {
       {/* Row 1: Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Tasks" value={taskCounts.total} icon={ListTodo} />
-        <StatCard title="In Progress" value={taskCounts.inProgress} icon={Clock} />
-        <StatCard title="Done" value={taskCounts.done} icon={CheckCircle} />
-        <StatCard title="Blocked" value={taskCounts.blocked} icon={AlertTriangle} variant="danger" />
+        {taskCounts.byStatus
+          .filter((s) => !s.isClosed)
+          .slice(0, 2)
+          .map((s) => (
+            <StatCard key={s.statusId} title={s.name} value={s.count} icon={Clock} />
+          ))}
+        <StatCard
+          title="Done"
+          value={taskCounts.byStatus.filter((s) => s.isClosed).reduce((sum, s) => sum + s.count, 0)}
+          icon={CheckCircle}
+        />
       </div>
 
       {/* Row 2: Burndown (60%) + Sprint progress (40%) */}
