@@ -1,14 +1,3 @@
-import {
-  DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useDroppable, useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
 import { Calendar } from 'lucide-react';
 import { format } from 'date-fns';
@@ -16,24 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { useUpdateMyTaskStatus } from '@/hooks/useMyTasks';
-import type { Task, TaskStatus, Priority } from '@/lib/types';
+import type { Task, Priority } from '@/lib/types';
 
 // ─── Column Definitions ────────────────────────────────────────────────────────
 
-type MyTaskColumn = 'BACKLOG' | 'IN_PROGRESS' | 'DONE';
+type MyTaskColumn = 'ACTIVE' | 'DONE';
 
-const COLUMNS: { id: MyTaskColumn; label: string; color: string; statuses: TaskStatus[] }[] = [
-  { id: 'BACKLOG', label: 'Backlog', color: '#6b7280', statuses: ['BACKLOG'] },
-  { id: 'IN_PROGRESS', label: 'In Progress', color: '#3b82f6', statuses: ['IN_PROGRESS', 'IN_REVIEW', 'BLOCKED'] },
-  { id: 'DONE', label: 'Done', color: '#22c55e', statuses: ['DONE'] },
+const COLUMNS: { id: MyTaskColumn; label: string; color: string }[] = [
+  { id: 'ACTIVE', label: 'Active', color: '#3b82f6' },
+  { id: 'DONE', label: 'Done', color: '#22c55e' },
 ];
-
-const COLUMN_DROP_STATUS: Record<MyTaskColumn, TaskStatus> = {
-  BACKLOG: 'BACKLOG',
-  IN_PROGRESS: 'IN_PROGRESS',
-  DONE: 'DONE',
-};
 
 // ─── Priority Config ───────────────────────────────────────────────────────────
 
@@ -95,50 +76,24 @@ function getProjectColor(projectId: string): string {
 
 function MyTaskCard({ task }: { task: Task }) {
   const navigate = useNavigate();
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: task.id,
-  });
 
-  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (!isDragging) {
-      const prefix = task.project?.prefix ?? task.projectId;
-      navigate(`/projects/${prefix}/tasks/${task.taskKey ?? task.id}`);
-    }
-    e.stopPropagation();
+  const handleClick = () => {
+    const prefix = task.project?.prefix ?? task.projectId;
+    navigate(`/projects/${prefix}/tasks/${task.taskKey ?? task.id}`);
   };
 
-  const overdue = isOverdue(task.plannedEndDate, task.status);
+  const overdue = isOverdue(task.plannedEndDate, task.workflowStatus?.isClosed ? 'DONE' : '');
   const priority = task.priority ? PRIORITY_CONFIG[task.priority] : null;
   const projectColor = getProjectColor(task.projectId);
-  const isDone = task.status === 'DONE';
+  const isDone = task.workflowStatus?.isClosed === true;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      onClick={handleClick}
-      className={cn(
-        'cursor-grab active:cursor-grabbing touch-none',
-        isDragging && 'opacity-50',
-      )}
-    >
-      <Card
-        className={cn(
-          'min-h-[80px] transition-all duration-150 overflow-hidden',
-          isDragging && '-translate-y-1 scale-105 shadow-lg',
-          overdue && 'shadow-md',
-          isDone && 'opacity-50',
-        )}
-      >
+    <div onClick={handleClick} className="cursor-pointer">
+      <Card className={cn('min-h-[80px] transition-all duration-150 overflow-hidden', isDone && 'opacity-50')}>
         {overdue && (
           <div className="h-[3px] w-full bg-gradient-to-r from-red-500 via-red-400 to-red-500" />
         )}
         <CardContent className="p-3 flex flex-col gap-2">
-          {/* Top row: task key + project badge */}
           <div className="flex items-center gap-2">
             {task.taskKey && (
               <span className="text-xs font-mono text-muted-foreground">{task.taskKey}</span>
@@ -165,13 +120,9 @@ function MyTaskCard({ task }: { task: Task }) {
               )}
             </div>
           </div>
-
-          {/* Title */}
           <p className={cn('text-sm font-medium line-clamp-2', isDone && 'line-through')}>
             {task.title}
           </p>
-
-          {/* Footer: due date */}
           {task.plannedEndDate && (
             <div className="flex items-center justify-end border-t border-border/40 pt-2 mt-auto">
               <div className={cn('flex items-center gap-1', overdue ? 'text-destructive' : 'text-amber-500')}>
@@ -192,8 +143,6 @@ function MyTaskCard({ task }: { task: Task }) {
 // ─── MyTaskColumn ──────────────────────────────────────────────────────────────
 
 function MyTaskColumn({ column, tasks }: { column: typeof COLUMNS[number]; tasks: Task[] }) {
-  const { setNodeRef, isOver } = useDroppable({ id: column.id });
-
   return (
     <div className="flex flex-col flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-3 px-1">
@@ -203,13 +152,7 @@ function MyTaskColumn({ column, tasks }: { column: typeof COLUMNS[number]; tasks
           {tasks.length}
         </Badge>
       </div>
-      <div
-        ref={setNodeRef}
-        className={cn(
-          'flex flex-col flex-1 rounded-lg p-2 min-h-[200px] transition-colors duration-100',
-          isOver ? 'bg-muted' : 'bg-muted/30',
-        )}
-      >
+      <div className="flex flex-col flex-1 rounded-lg p-2 min-h-[200px] bg-muted/30">
         <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-2 pr-2">
             {tasks.map((task) => (
@@ -229,46 +172,16 @@ interface MyTasksBoardProps {
 }
 
 export function MyTasksBoard({ tasks }: MyTasksBoardProps) {
-  const updateStatus = useUpdateMyTaskStatus();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
-  const tasksByColumn = COLUMNS.reduce<Record<MyTaskColumn, Task[]>>(
-    (acc, col) => {
-      acc[col.id] = sortTasks(tasks.filter((t) => col.statuses.includes(t.status)));
-      return acc;
-    },
-    { BACKLOG: [], IN_PROGRESS: [], DONE: [] },
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const taskId = active.id as string;
-    const columnId = over.id as MyTaskColumn;
-    if (!COLUMN_DROP_STATUS[columnId]) return;
-
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    const newStatus = COLUMN_DROP_STATUS[columnId];
-    const currentColumn = COLUMNS.find((c) => c.statuses.includes(task.status));
-    if (currentColumn?.id === columnId) return;
-
-    updateStatus.mutate({ task, status: newStatus });
+  const tasksByColumn = {
+    ACTIVE: sortTasks(tasks.filter((t) => !t.workflowStatus?.isClosed)),
+    DONE: sortTasks(tasks.filter((t) => t.workflowStatus?.isClosed === true)),
   };
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-hidden h-full pb-4">
-        {COLUMNS.map((col) => (
-          <MyTaskColumn key={col.id} column={col} tasks={tasksByColumn[col.id]} />
-        ))}
-      </div>
-    </DndContext>
+    <div className="flex gap-3 overflow-hidden h-full pb-4">
+      {COLUMNS.map((col) => (
+        <MyTaskColumn key={col.id} column={col} tasks={tasksByColumn[col.id]} />
+      ))}
+    </div>
   );
 }
