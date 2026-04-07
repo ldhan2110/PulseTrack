@@ -12,6 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WorkflowEditor } from '@/components/workflow/WorkflowEditor';
+import { RepositorySettingsCard } from '@/components/settings/RepositorySettingsCard';
+import { AiConfigCard } from '@/components/settings/AiConfigCard';
 
 export function ProjectSettingsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
@@ -85,6 +87,7 @@ export function ProjectSettingsPage() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-6 mt-6">
+          {/* Avatar Card */}
           <Card>
             <CardHeader>
               <CardTitle>Project Avatar</CardTitle>
@@ -133,32 +136,7 @@ export function ProjectSettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Key Prefix</CardTitle>
-              <CardDescription>
-                Tasks will be numbered {prefix || 'XX'}-1, {prefix || 'XX'}-2, etc.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Label htmlFor="prefix">Prefix</Label>
-              <Input
-                id="prefix"
-                value={prefix}
-                onChange={(e) => validatePrefix(e.target.value)}
-                placeholder="e.g. PM, ACME"
-                className="max-w-xs"
-                disabled={!canManage}
-              />
-              {prefixError && <p className="text-xs text-destructive">{prefixError}</p>}
-              {prefix && !prefixError && (
-                <p className="text-xs text-muted-foreground">
-                  Preview: {prefix}-1, {prefix}-2, {prefix}-3...
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
+          {/* General Card (now includes Task Key Prefix) */}
           <Card>
             <CardHeader>
               <CardTitle>General</CardTitle>
@@ -185,6 +163,25 @@ export function ProjectSettingsPage() {
                   disabled={!canManage}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="prefix">Task Key Prefix</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="prefix"
+                    value={prefix}
+                    onChange={(e) => validatePrefix(e.target.value)}
+                    placeholder="e.g. PM, ACME"
+                    className="max-w-[120px]"
+                    disabled={!canManage}
+                  />
+                  {prefix && !prefixError && (
+                    <span className="text-xs text-muted-foreground">
+                      Preview: {prefix}-1, {prefix}-2, {prefix}-3...
+                    </span>
+                  )}
+                </div>
+                {prefixError && <p className="text-xs text-destructive">{prefixError}</p>}
+              </div>
             </CardContent>
           </Card>
 
@@ -196,6 +193,12 @@ export function ProjectSettingsPage() {
               Save Changes
             </Button>
           )}
+
+          {/* Repository Settings Card */}
+          <RepositorySettingsCard projectId={projectId} canManage={canManage} />
+
+          {/* AI Configuration Card */}
+          <AiConfigCard projectId={projectId} canManage={canManage} />
         </TabsContent>
 
         {canManage && (
