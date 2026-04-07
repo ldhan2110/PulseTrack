@@ -123,7 +123,7 @@ function DatePickerField({ label, value, onChange, disabled }: DatePickerFieldPr
 
   return (
     <div className="flex items-center justify-between gap-2">
-      <Label className='text-sm font-normal'>{label}</Label>
+      <Label className='text-sm font-normal text-muted-foreground'>{label}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -177,7 +177,25 @@ export function TaskDetailPage() {
   const { canManage, canEdit } = useProjectRole(projectId);
   const { data: project } = useProject(projectId);
   const updateTask = useUpdateTask(projectId);
+  const descriptionUpdate = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
+
+  const taskQueryKey = ['task-by-key', projectId, taskKey] as const;
+
+  const optimisticMutate = useCallback(
+    (patch: Record<string, unknown>, payload: { taskId: string; data: Record<string, unknown> }) => {
+      const prev = queryClient.getQueryData(taskQueryKey);
+      queryClient.setQueryData(taskQueryKey, (old: typeof task | undefined) =>
+        old ? { ...old, ...patch } : old,
+      );
+      updateTask.mutate(payload, {
+        onError: () => queryClient.setQueryData(taskQueryKey, prev),
+        onSuccess: () => void queryClient.invalidateQueries({ queryKey: taskQueryKey }),
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, projectId, taskKey, updateTask],
+  );
 
   // Inline title editing
   const [editingTitle, setEditingTitle] = useState(false);
@@ -236,18 +254,14 @@ export function TaskDetailPage() {
       taskId: task.id,
     };
     const updated = [...current, newItem];
-    updateTask.mutate(
-      { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
-      {
-        onSettled: () => {
-          setNewCriteriaText('');
-          setAddingCriteria(false);
-          void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
-        },
-        onError: () => toast.error('Something went wrong. Please try again.'),
-      },
+    const serialized = serializeAcceptanceCriteria(updated);
+    setNewCriteriaText('');
+    setAddingCriteria(false);
+    optimisticMutate(
+      { acceptanceCriteria: serialized },
+      { taskId, data: { acceptanceCriteria: serialized } },
     );
-  }, [newCriteriaText, task, taskId, updateTask]);
+  }, [newCriteriaText, task, taskId, optimisticMutate]);
 
   const toggleCriteria = useCallback(
     (ac: AcceptanceCriteria) => {
@@ -256,12 +270,13 @@ export function TaskDetailPage() {
       const updated = current.map((item) =>
         item.id === ac.id ? { ...item, completed: !item.completed } : item,
       );
-      updateTask.mutate(
-        { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
-        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+      const serialized = serializeAcceptanceCriteria(updated);
+      optimisticMutate(
+        { acceptanceCriteria: serialized },
+        { taskId, data: { acceptanceCriteria: serialized } },
       );
     },
-    [task, taskId, updateTask, queryClient, projectId, taskKey],
+    [task, taskId, optimisticMutate],
   );
 
   const deleteCriteria = useCallback(
@@ -269,12 +284,13 @@ export function TaskDetailPage() {
       if (!task) return;
       const current = parseAcceptanceCriteria(task.acceptanceCriteria);
       const updated = current.filter((item) => item.id !== acId);
-      updateTask.mutate(
-        { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
-        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+      const serialized = serializeAcceptanceCriteria(updated);
+      optimisticMutate(
+        { acceptanceCriteria: serialized },
+        { taskId, data: { acceptanceCriteria: serialized } },
       );
     },
-    [task, taskId, updateTask, queryClient, projectId, taskKey],
+    [task, taskId, optimisticMutate],
   );
 
   const updateCriteriaText = useCallback(
@@ -284,28 +300,23 @@ export function TaskDetailPage() {
       const updated = current.map((item) =>
         item.id === acId ? { ...item, text } : item,
       );
-      updateTask.mutate(
-        { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
-        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+      const serialized = serializeAcceptanceCriteria(updated);
+      optimisticMutate(
+        { acceptanceCriteria: serialized },
+        { taskId, data: { acceptanceCriteria: serialized } },
       );
     },
-    [task, taskId, updateTask, queryClient, projectId, taskKey],
+    [task, taskId, optimisticMutate],
   );
 
   const handleTitleSave = () => {
-    if (!titleValue.trim() || titleValue.trim() === task?.title) {
+    const trimmed = titleValue.trim();
+    if (!trimmed || trimmed === task?.title) {
       setEditingTitle(false);
       return;
     }
-    updateTask.mutate(
-      { taskId, data: { title: titleValue.trim() } },
-      {
-        onSettled: () => {
-          setEditingTitle(false);
-          void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
-        },
-      },
-    );
+    setEditingTitle(false);
+    optimisticMutate({ title: trimmed }, { taskId, data: { title: trimmed } });
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
@@ -450,16 +461,16 @@ export function TaskDetailPage() {
               <RichTextEditor
                 initialContent={task.description ?? ''}
                 onSave={(html) =>
-                  updateTask.mutate(
+                  descriptionUpdate.mutate(
                     { taskId, data: { description: html } },
-                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                    { onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
                   )
                 }
                 editable={canEdit}
                 projectId={projectId}
                 taskId={taskId}
               />
-              {updateTask.isPending && (
+              {descriptionUpdate.isPending && (
                 <div className="flex items-center gap-1 mt-1">
                   <Loader2 className="size-3 animate-spin" />
                   <span className="text-xs text-muted-foreground">Saving...</span>
@@ -590,12 +601,7 @@ export function TaskDetailPage() {
                 <SidebarLabel>Status</SidebarLabel>
                 <Select
                   value={task.status}
-                  onValueChange={(val) =>
-                    updateTask.mutate(
-                      { taskId, data: { status: val as TaskStatus } },
-                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                    )
-                  }
+                  onValueChange={(val) => optimisticMutate({ status: val as TaskStatus }, { taskId, data: { status: val as TaskStatus } })}
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -620,12 +626,10 @@ export function TaskDetailPage() {
                 <SidebarLabel>Assignee</SidebarLabel>
                 <Select
                   value={task.assigneeId ?? 'unassigned'}
-                  onValueChange={(val) =>
-                    updateTask.mutate(
-                      { taskId, data: { assigneeId: val === 'unassigned' ? null : val } },
-                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                    )
-                  }
+                  onValueChange={(val) => {
+                    const assigneeId = val === 'unassigned' ? null : val;
+                    optimisticMutate({ assigneeId }, { taskId, data: { assigneeId } });
+                  }}
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -656,12 +660,10 @@ export function TaskDetailPage() {
                 <SidebarLabel>Sprint</SidebarLabel>
                 <Select
                   value={task.sprintId ?? 'none'}
-                  onValueChange={(val) =>
-                    updateTask.mutate(
-                      { taskId, data: { sprintId: val === 'none' ? null : val } },
-                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                    )
-                  }
+                  onValueChange={(val) => {
+                    const sprintId = val === 'none' ? null : val;
+                    optimisticMutate({ sprintId }, { taskId, data: { sprintId } });
+                  }}
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -694,9 +696,9 @@ export function TaskDetailPage() {
                     const val = e.target.value;
                     const num = val === '' ? null : Number(val);
                     if (num === task.storyPoints) return;
-                    updateTask.mutate(
+                    optimisticMutate(
+                      { storyPoints: num },
                       { taskId, data: { storyPoints: num === null ? undefined : num } },
-                      { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
                     );
                   }}
                 />
@@ -709,11 +711,8 @@ export function TaskDetailPage() {
                   <Select
                     value={task.priority ?? 'none'}
                     onValueChange={(val) => {
-                      const newPriority = val === 'none' ? null : (val as Priority);
-                      updateTask.mutate(
-                        { taskId, data: { priority: newPriority } },
-                        { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                      );
+                      const priority = val === 'none' ? null : (val as Priority);
+                      optimisticMutate({ priority }, { taskId, data: { priority } });
                     }}
                     disabled={!canEdit}
                   >
@@ -748,19 +747,13 @@ export function TaskDetailPage() {
                 <DatePickerField
                   label="Start"
                   value={task.plannedStartDate}
-                  onChange={(iso) => updateTask.mutate(
-                    { taskId, data: { plannedStartDate: iso } },
-                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                  )}
+                  onChange={(iso) => optimisticMutate({ plannedStartDate: iso }, { taskId, data: { plannedStartDate: iso } })}
                   disabled={!canEdit}
                 />
                 <DatePickerField
                   label="End"
                   value={task.plannedEndDate}
-                  onChange={(iso) => updateTask.mutate(
-                    { taskId, data: { plannedEndDate: iso } },
-                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                  )}
+                  onChange={(iso) => optimisticMutate({ plannedEndDate: iso }, { taskId, data: { plannedEndDate: iso } })}
                   disabled={!canEdit}
                 />
               </div>
@@ -771,19 +764,13 @@ export function TaskDetailPage() {
                 <DatePickerField
                   label="Start"
                   value={task.actualStartDate}
-                  onChange={(iso) => updateTask.mutate(
-                    { taskId, data: { actualStartDate: iso } },
-                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                  )}
+                  onChange={(iso) => optimisticMutate({ actualStartDate: iso }, { taskId, data: { actualStartDate: iso } })}
                   disabled={!canEdit}
                 />
                 <DatePickerField
                   label="End"
                   value={task.actualEndDate}
-                  onChange={(iso) => updateTask.mutate(
-                    { taskId, data: { actualEndDate: iso } },
-                    { onSettled: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
-                  )}
+                  onChange={(iso) => optimisticMutate({ actualEndDate: iso }, { taskId, data: { actualEndDate: iso } })}
                   disabled={!canEdit}
                 />
               </div>
