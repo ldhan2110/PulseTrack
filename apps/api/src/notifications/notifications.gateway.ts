@@ -1,6 +1,7 @@
 import {
   WebSocketGateway,
   WebSocketServer,
+  SubscribeMessage,
   OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -37,6 +38,18 @@ export class NotificationsGateway
 
     socket.data.userId = userId;
     await socket.join(`user:${userId}`);
+  }
+
+  @SubscribeMessage('join-project')
+  handleJoinProject(socket: Socket, projectId: string): void {
+    if (socket.data.userId) {
+      void socket.join(`project:${projectId}`);
+    }
+  }
+
+  @SubscribeMessage('leave-project')
+  handleLeaveProject(socket: Socket, projectId: string): void {
+    void socket.leave(`project:${projectId}`);
   }
 
   handleDisconnect(_socket: Socket): void {

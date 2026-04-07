@@ -25,9 +25,14 @@ describe('TasksService', () => {
     $transaction: vi.fn(),
   };
 
+  const mockNotificationsService = {
+    notifyProject: vi.fn(),
+    notifyUser: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new TasksService(mockPrismaService as any);
+    service = new TasksService(mockPrismaService as any, mockNotificationsService as any);
   });
 
   describe('create()', () => {

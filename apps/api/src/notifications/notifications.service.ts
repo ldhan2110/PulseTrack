@@ -12,4 +12,8 @@ export class NotificationsService {
   notifyUser(userId: string, event: string, data: unknown): void {
     this.server?.to(`user:${userId}`).emit(event, data);
   }
+
+  notifyProject(projectId: string, event: string, data: unknown): void {
+    this.server?.to(`project:${projectId}`).emit(event, data);
+  }
 }

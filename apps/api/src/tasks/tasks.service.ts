@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateSubTaskDto } from './dto/create-subtask.dto';
 
 @Injectable()
 export class TasksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async create(projectId: string, creatorId: string, dto: CreateTaskDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const task = await this.prisma.$transaction(async (tx) => {
       // Atomically increment the project's task sequence
       const project = await tx.project.update({
         where: { id: projectId },
@@ -43,6 +47,9 @@ export class TasksService {
         },
       });
     });
+
+    this.notifications.notifyProject(projectId, 'task:created', { projectId, task });
+    return task;
   }
 
   async findByTaskKey(taskKey: string) {
@@ -183,6 +190,28 @@ export class TasksService {
       ...historyEntries.map(e => this.prisma.taskHistory.create({ data: e })),
     ]);
 
+    this.notifications.notifyProject(current.projectId, 'task:updated', {
+      projectId: current.projectId,
+      taskId,
+      task: updatedTask,
+    });
+
+    // Notify the current assignee so their My Tasks page refreshes
+    const effectiveAssigneeId = dto.assigneeId !== undefined ? dto.assigneeId : current.assigneeId;
+    if (effectiveAssigneeId) {
+      this.notifications.notifyUser(effectiveAssigneeId, 'task:updated', {
+        projectId: current.projectId,
+        taskId,
+      });
+    }
+    // If assignee changed, also notify the previous assignee
+    if (dto.assigneeId !== undefined && dto.assigneeId !== current.assigneeId && current.assigneeId) {
+      this.notifications.notifyUser(current.assigneeId, 'task:updated', {
+        projectId: current.projectId,
+        taskId,
+      });
+    }
+
     return updatedTask;
   }
 
@@ -213,9 +242,14 @@ export class TasksService {
   }
 
   async delete(taskId: string) {
-    return this.prisma.task.delete({
+    const task = await this.prisma.task.delete({
       where: { id: taskId },
     });
+    this.notifications.notifyProject(task.projectId, 'task:deleted', {
+      projectId: task.projectId,
+      taskId,
+    });
+    return task;
   }
 
   async createSubTask(taskId: string, dto: CreateSubTaskDto) {
