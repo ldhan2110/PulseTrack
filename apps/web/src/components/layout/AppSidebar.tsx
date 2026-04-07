@@ -75,7 +75,7 @@ interface AppSidebarInnerProps {
 function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const { data: projects } = useProjects();
   const { user, logout } = useAuth();
@@ -97,7 +97,17 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
       <SidebarHeader className="h-12 flex items-center px-2">
         {isCollapsed ? (
           <div className="flex justify-center w-full">
-            <SidebarCollapseButton />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <img
+                  src="/favicon.svg"
+                  alt="Logo"
+                  className="size-6 shrink-0 cursor-pointer"
+                  onClick={toggleSidebar}
+                />
+              </TooltipTrigger>
+              <TooltipContent side="right">Expand sidebar</TooltipContent>
+            </Tooltip>
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-1 min-w-0">
