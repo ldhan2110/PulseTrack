@@ -5,6 +5,7 @@ import { useUiStore } from '@/store/uiStore';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { CreateProjectDialog } from '../projects/CreateProjectDialog';
 import { useProjectByPrefix } from '@/hooks/useProjects';
+import { useMembershipSync } from '@/hooks/useMembershipSync';
 
 // 256px expanded, 48px collapsed — per UI-SPEC
 const SIDEBAR_WIDTH = '256px';
@@ -16,6 +17,8 @@ export function ProjectLayout() {
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+
+  useMembershipSync();
 
   // Resolve human-readable prefix to project UUID
   const { data: project } = useProjectByPrefix(projectPrefix ?? '');

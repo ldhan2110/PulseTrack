@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from './components/ui/tooltip';
 import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './auth/AuthProvider';
+import { SocketProvider } from './socket/SocketProvider';
 import App from './App';
 import './index.css';
 
@@ -18,12 +19,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <App />
-            <Toaster />
-          </TooltipProvider>
-        </AuthProvider>
+        <SocketProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <App />
+              <Toaster />
+            </TooltipProvider>
+          </AuthProvider>
+        </SocketProvider>
       </QueryClientProvider>
     </BrowserRouter>
   </React.StrictMode>,
