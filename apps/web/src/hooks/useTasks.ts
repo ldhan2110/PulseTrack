@@ -33,6 +33,8 @@ export function useCreateTask(projectId: string) {
     mutationFn: (data: CreateTaskPayload) => api.createTask(projectId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast.success('Task created successfully');
     },
     onError: () => {
