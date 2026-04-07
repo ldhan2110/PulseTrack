@@ -70,6 +70,8 @@ export function CommentThread({
                 comment={comment}
                 currentUserId={currentUserId}
                 canManage={canManage}
+                projectId={projectId}
+                taskId={taskId}
                 onReply={handleReply}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
@@ -84,6 +86,8 @@ export function CommentThread({
                       comment={reply}
                       currentUserId={currentUserId}
                       canManage={canManage}
+                      projectId={projectId}
+                      taskId={taskId}
                       onReply={handleReply}
                       onDelete={handleDelete}
                       onEdit={handleEdit}

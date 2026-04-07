@@ -1,3 +1,4 @@
+// apps/web/src/components/tasks/CommentItem.tsx
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
@@ -32,6 +33,8 @@ interface CommentItemProps {
   comment: Comment;
   currentUserId: string;
   canManage: boolean;
+  projectId: string;
+  taskId: string;
   onReply: (commentId: string) => void;
   onDelete: (commentId: string) => void;
   onEdit: (commentId: string, content: string) => void;
@@ -42,6 +45,8 @@ export function CommentItem({
   comment,
   currentUserId,
   canManage,
+  projectId,
+  taskId,
   onReply,
   onDelete,
   onEdit,
@@ -50,7 +55,6 @@ export function CommentItem({
   const canDelete = comment.authorId === currentUserId || canManage;
   const canEditComment = comment.authorId === currentUserId || canManage;
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(comment.content);
 
   const relativeTime = (() => {
     try {
@@ -61,7 +65,7 @@ export function CommentItem({
   })();
 
   return (
-    <div className={cn("flex gap-2 group/comment", isReply && "rounded-md bg-muted/30 p-2")}>
+    <div className={cn('flex gap-2 group/comment', isReply && 'rounded-md bg-muted/30 p-2')}>
       <Avatar className="size-6 shrink-0 mt-0.5">
         <AvatarFallback className="text-[10px]">
           {getInitials(comment.author.username)}
@@ -76,28 +80,27 @@ export function CommentItem({
           )}
         </div>
         {isEditing ? (
-          <div className="mt-1 space-y-2">
-            <div className="border rounded-md">
-              <RichTextEditor
-                content={editContent}
-                onChange={setEditContent}
-                placeholder="Edit comment..."
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" className="h-7 text-xs" onClick={() => {
-                onEdit(comment.id, editContent);
+          <div className="mt-1">
+            <RichTextEditor
+              initialContent={comment.content}
+              onSave={(html) => {
+                onEdit(comment.id, html);
                 setIsEditing(false);
-              }}>
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => {
-                setEditContent(comment.content);
-                setIsEditing(false);
-              }}>
-                Cancel
-              </Button>
-            </div>
+              }}
+              editable={true}
+              alwaysEditing={true}
+              projectId={projectId}
+              taskId={taskId}
+              placeholder="Edit comment..."
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs mt-1"
+              onClick={() => setIsEditing(false)}
+            >
+              Cancel
+            </Button>
           </div>
         ) : (
           <div
@@ -131,11 +134,7 @@ export function CommentItem({
           {canDelete && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-6"
-                >
+                <Button variant="ghost" size="icon" className="size-6">
                   <Trash2 className="size-3" />
                   <span className="sr-only">Delete comment</span>
                 </Button>
