@@ -47,6 +47,7 @@ import type { TaskStatus, AcceptanceCriteria, SubTask, Priority } from '@/lib/ty
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -122,7 +123,7 @@ function DatePickerField({ label, value, onChange, disabled }: DatePickerFieldPr
 
   return (
     <div className="flex items-center justify-between gap-2">
-      <SidebarLabel>{label}</SidebarLabel>
+      <Label className='text-sm font-normal'>{label}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -392,44 +393,46 @@ export function TaskDetailPage() {
         <span>/</span>
         <span>Backlog</span>
         <span>/</span>
-        <span className="text-foreground truncate max-w-[200px]">{task.title}</span>
+        <span className="text-foreground truncate max-w-50">{task.title}</span>
       </div>
 
-      {/* Task key badge */}
-      {task.taskKey && (
-        <span className="text-sm font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded w-fit">
-          {task.taskKey}
-        </span>
-      )}
-
       {/* Title — inline editable */}
-      <div>
-        {editingTitle ? (
-          <Input
-            ref={titleInputRef}
-            value={titleValue}
-            onChange={(e) => setTitleValue(e.target.value)}
-            onBlur={handleTitleSave}
-            onKeyDown={handleTitleKeyDown}
-            className="text-xl font-semibold border-2 h-auto py-1"
-            autoFocus
-          />
-        ) : (
-          <h1
-            className={cn(
-              'text-xl font-semibold tracking-tight rounded px-1 -mx-1 transition-colors',
-              canEdit && 'cursor-pointer hover:bg-muted/50',
-            )}
-            onClick={() => {
-              if (!canEdit) return;
-              setTitleValue(task.title);
-              setEditingTitle(true);
-            }}
-            title={canEdit ? 'Click to edit' : undefined}
-          >
-            {task.title}
-          </h1>
+      <div className='flex gap-3'>
+        {/* Task key badge */}
+        {task.taskKey && (
+          <div className="text-sm text-center font-mono align-middle text-muted-foreground bg-muted px-2 py-0.5 rounded w-fit">
+            {task.taskKey}
+          </div>
         )}
+
+        <div className='flex-2'>
+          {editingTitle ? (
+            <Input
+              ref={titleInputRef}
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleTitleKeyDown}
+              className="text-xl font-semibold border-2 h-auto py-1"
+              autoFocus
+            />
+          ) : (
+            <h1
+              className={cn(
+                'text-xl font-semibold tracking-tight rounded px-1 -mx-1 transition-colors',
+                canEdit && 'cursor-pointer hover:bg-muted/50',
+              )}
+              onClick={() => {
+                if (!canEdit) return;
+                setTitleValue(task.title);
+                setEditingTitle(true);
+              }}
+              title={canEdit ? 'Click to edit' : undefined}
+            >
+              {task.title}
+            </h1>
+          )}
+        </div>
       </div>
 
       <Separator />
@@ -453,6 +456,8 @@ export function TaskDetailPage() {
                   )
                 }
                 editable={canEdit}
+                projectId={projectId}
+                taskId={taskId}
               />
               {updateTask.isPending && (
                 <div className="flex items-center gap-1 mt-1">
@@ -734,6 +739,8 @@ export function TaskDetailPage() {
                   </Select>
                 </div>
               </div>
+
+              <Separator/>
 
               {/* Planned dates */}
               <div className="flex flex-col gap-1.5">
