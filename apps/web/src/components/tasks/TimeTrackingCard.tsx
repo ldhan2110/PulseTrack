@@ -1,28 +1,35 @@
+// apps/web/src/components/tasks/TimeTrackingCard.tsx
+import { useState } from 'react';
+import { Pencil, Clock } from 'lucide-react';
+import { Button } from '../ui/button';
 import { formatMinutes, getTotalEstimated, getTotalLogged } from '../../lib/time-utils';
 import type { Task } from '../../lib/types';
+import { SetEstimateModal } from './SetEstimateModal';
+import { LogTimeModal } from './LogTimeModal';
 
 interface TimeTrackingCardProps {
   task: Task;
   onEstimateChange?: (minutes: number | null) => void;
+  onLogTime?: (data: { minutes: number; comment?: string; loggedAt?: string }) => void;
   isParent: boolean;
+  isLogTimeLoading?: boolean;
 }
 
-export function TimeTrackingCard({ task, onEstimateChange, isParent }: TimeTrackingCardProps) {
+export function TimeTrackingCard({
+  task,
+  onEstimateChange,
+  onLogTime,
+  isParent,
+  isLogTimeLoading,
+}: TimeTrackingCardProps) {
+  const [estimateModalOpen, setEstimateModalOpen] = useState(false);
+  const [logTimeModalOpen, setLogTimeModalOpen] = useState(false);
+
   const totalEstimated = getTotalEstimated(task);
   const totalLogged = getTotalLogged(task);
   const isOverBudget = totalEstimated > 0 && totalLogged > totalEstimated;
   const remaining = totalEstimated - totalLogged;
   const progressPercent = totalEstimated > 0 ? Math.min((totalLogged / totalEstimated) * 100, 100) : 0;
-
-  const estimateHours = task.estimatedMinutes ? Math.floor(task.estimatedMinutes / 60) : '';
-  const estimateMinutesRemainder = task.estimatedMinutes ? task.estimatedMinutes % 60 : '';
-
-  const handleEstimateBlur = (hoursStr: string, minsStr: string) => {
-    const h = parseInt(hoursStr) || 0;
-    const m = parseInt(minsStr) || 0;
-    const total = h * 60 + m;
-    onEstimateChange?.(total > 0 ? total : null);
-  };
 
   return (
     <div className="border border-border rounded-lg p-3 space-y-3">
@@ -68,44 +75,53 @@ export function TimeTrackingCard({ task, onEstimateChange, isParent }: TimeTrack
         </div>
       )}
 
-      {/* Estimate input — only for leaf tasks */}
-      {!isParent && onEstimateChange && (
-        <div className="border-t border-border pt-2">
-          <label className="text-xs text-muted-foreground mb-1 block">Set Estimate</label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <input
-                type="number"
-                min={0}
-                placeholder="h"
-                defaultValue={estimateHours}
-                className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
-                onBlur={(e) => {
-                  const minsInput = e.target.parentElement?.nextElementSibling?.querySelector('input');
-                  handleEstimateBlur(e.target.value, minsInput?.value ?? '0');
-                }}
-              />
-            </div>
-            <div className="flex-1">
-              <input
-                type="number"
-                min={0}
-                max={59}
-                placeholder="m"
-                defaultValue={estimateMinutesRemainder}
-                className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
-                onBlur={(e) => {
-                  const hoursInput = e.target.parentElement?.previousElementSibling?.querySelector('input');
-                  handleEstimateBlur(hoursInput?.value ?? '0', e.target.value);
-                }}
-              />
-            </div>
-          </div>
+      {/* Action buttons — only for leaf tasks */}
+      {!isParent && (
+        <div className="flex gap-2 border-t border-border pt-2">
+          {onEstimateChange && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5 h-7 text-xs"
+              onClick={() => setEstimateModalOpen(true)}
+            >
+              <Pencil className="size-3" />
+              Set Estimate
+            </Button>
+          )}
+          {onLogTime && (
+            <Button
+              size="sm"
+              className="flex-1 gap-1.5 h-7 text-xs"
+              onClick={() => setLogTimeModalOpen(true)}
+            >
+              <Clock className="size-3" />
+              Log Time
+            </Button>
+          )}
         </div>
       )}
 
       {isParent && (
         <p className="text-xs text-muted-foreground italic">Auto-summed from sub-tasks</p>
+      )}
+
+      {/* Modals */}
+      {onEstimateChange && (
+        <SetEstimateModal
+          open={estimateModalOpen}
+          onOpenChange={setEstimateModalOpen}
+          currentEstimateMinutes={task.estimatedMinutes ?? null}
+          onSave={onEstimateChange}
+        />
+      )}
+      {onLogTime && (
+        <LogTimeModal
+          open={logTimeModalOpen}
+          onOpenChange={setLogTimeModalOpen}
+          onSubmit={onLogTime}
+          isLoading={isLogTimeLoading}
+        />
       )}
     </div>
   );
