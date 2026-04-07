@@ -16,6 +16,7 @@ export function ProjectLayout() {
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
+  const fullWidth = useUiStore((s) => s.fullWidth);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
   useMembershipSync();
@@ -44,7 +45,7 @@ export function ProjectLayout() {
     >
       <AppSidebar onCreateProject={() => setCreateProjectOpen(true)} />
       <SidebarInset>
-        <main className="px-8 pt-6 pb-8 max-w-[1280px] w-full mx-auto">
+        <main className={fullWidth ? 'px-4 pt-4 pb-4 w-full' : 'px-8 pt-6 pb-8 max-w-[1280px] w-full mx-auto'}>
           <Outlet />
         </main>
       </SidebarInset>
