@@ -48,11 +48,12 @@ export class ProjectsService {
             _count: {
               select: { tasks: true },
             },
+            workflowStatuses: {
+              select: { id: true, isClosed: true, key: true },
+            },
             tasks: {
-              select: { status: true },
-              where: {
-                status: { in: ['IN_PROGRESS', 'BLOCKED'] },
-              },
+              select: { workflowStatusId: true },
+              where: { workflowStatusId: { not: null } },
             },
           },
         },
@@ -62,11 +63,12 @@ export class ProjectsService {
     return memberships
       .filter((m) => !m.project.archived)
       .map((m) => {
-        const inProgressCount = m.project.tasks.filter(
-          (t) => t.status === 'IN_PROGRESS',
-        ).length;
-        const blockedCount = m.project.tasks.filter(
-          (t) => t.status === 'BLOCKED',
+        const closedIds = new Set(
+          m.project.workflowStatuses.filter((s) => s.isClosed).map((s) => s.id),
+        );
+
+        const activeCount = m.project.tasks.filter(
+          (t) => t.workflowStatusId && !closedIds.has(t.workflowStatusId),
         ).length;
 
         return {
@@ -80,8 +82,7 @@ export class ProjectsService {
           userRole: m.role,
           taskSummary: {
             total: m.project._count.tasks,
-            inProgress: inProgressCount,
-            blocked: blockedCount,
+            active: activeCount,
           },
         };
       });
