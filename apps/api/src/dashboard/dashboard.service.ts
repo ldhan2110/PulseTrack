@@ -12,10 +12,15 @@ export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async getProjectDashboard(projectId: string) {
-    const [taskGroups, activeSprint, recentTasks, recentBugs, bugCounts] =
+    const [workflowStatuses, tasksByStatus, activeSprint, recentTasks, recentBugs, bugCounts] =
       await Promise.all([
+        this.prisma.workflowStatus.findMany({
+          where: { projectId },
+          orderBy: { position: 'asc' },
+          select: { id: true, name: true, key: true, color: true, isClosed: true },
+        }),
         this.prisma.task.groupBy({
-          by: ['status'],
+          by: ['workflowStatusId'],
           where: { projectId },
           _count: true,
         }),
@@ -23,7 +28,10 @@ export class DashboardService {
           where: { projectId, status: 'ACTIVE' },
           include: {
             tasks: {
-              select: { storyPoints: true, status: true },
+              select: {
+                storyPoints: true,
+                workflowStatusId: true,
+              },
             },
           },
         }),
@@ -56,37 +64,31 @@ export class DashboardService {
         ]),
       ]);
 
-    // Build task counts by status
-    const taskCounts = {
-      total: 0,
-      backlog: 0,
-      inProgress: 0,
-      inReview: 0,
-      done: 0,
-      blocked: 0,
-    };
+    // Build task counts by workflow status
+    const countByStatusId = new Map<string, number>();
+    let orphaned = 0;
+    let total = 0;
 
-    for (const group of taskGroups) {
+    for (const group of tasksByStatus) {
       const count = group._count;
-      taskCounts.total += count;
-      switch (group.status) {
-        case 'BACKLOG':
-          taskCounts.backlog = count;
-          break;
-        case 'IN_PROGRESS':
-          taskCounts.inProgress = count;
-          break;
-        case 'IN_REVIEW':
-          taskCounts.inReview = count;
-          break;
-        case 'DONE':
-          taskCounts.done = count;
-          break;
-        case 'BLOCKED':
-          taskCounts.blocked = count;
-          break;
+      total += count;
+      if (group.workflowStatusId === null) {
+        orphaned += count;
+      } else {
+        countByStatusId.set(group.workflowStatusId, count);
       }
     }
+
+    const byStatus = workflowStatuses.map((ws) => ({
+      statusId: ws.id,
+      name: ws.name,
+      key: ws.key,
+      color: ws.color,
+      isClosed: ws.isClosed,
+      count: countByStatusId.get(ws.id) ?? 0,
+    }));
+
+    const taskCounts = { total, byStatus, orphaned };
 
     // Build active sprint data
     let activeSprintData: {
@@ -104,8 +106,11 @@ export class DashboardService {
         (sum, t) => sum + (t.storyPoints ?? 0),
         0,
       );
+      const closedStatusIds = new Set(
+        workflowStatuses.filter((ws) => ws.isClosed).map((ws) => ws.id),
+      );
       const completedPoints = activeSprint.tasks
-        .filter((t) => t.status === 'DONE')
+        .filter((t) => t.workflowStatusId !== null && closedStatusIds.has(t.workflowStatusId))
         .reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
 
       activeSprintData = {
@@ -150,7 +155,7 @@ export class DashboardService {
     if (activeSprint) {
       const sprintTasks = await this.prisma.task.findMany({
         where: { sprintId: activeSprint.id },
-        select: { storyPoints: true, status: true, updatedAt: true },
+        select: { storyPoints: true, workflowStatusId: true, updatedAt: true },
       });
 
       const totalPoints = sprintTasks.reduce(
@@ -167,7 +172,12 @@ export class DashboardService {
         ),
       );
 
-      const doneTasks = sprintTasks.filter((t) => t.status === 'DONE');
+      const burndownClosedIds = new Set(
+        workflowStatuses.filter((ws) => ws.isClosed).map((ws) => ws.id),
+      );
+      const doneTasks = sprintTasks.filter(
+        (t) => t.workflowStatusId !== null && burndownClosedIds.has(t.workflowStatusId),
+      );
 
       for (let dayIndex = 0; dayIndex <= totalDays; dayIndex++) {
         const date = new Date(startDate);
