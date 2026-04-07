@@ -119,6 +119,7 @@ export const api = {
     request<void>(`/projects/${projectId}/tasks/${taskId}/subtasks/${subTaskId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteSubTask: (projectId: string, taskId: string, subTaskId: string) =>
     request<void>(`/projects/${projectId}/tasks/${taskId}/subtasks/${subTaskId}`, { method: 'DELETE' }),
+  getMyTasks: () => request<Task[]>('/tasks/my-tasks'),
 
   // ─── Sprints ───────────────────────────────────────────────────────────────
   getSprints: (projectId: string) =>

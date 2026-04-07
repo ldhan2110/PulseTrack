@@ -116,6 +116,7 @@ export interface Task {
   assignee?: User | null;
   createdBy?: User;
   sprint?: Sprint | null;
+  project?: Pick<Project, 'id' | 'name' | 'prefix'>;
   subTasks?: SubTask[];
   acceptanceCriteria?: string | null;  // JSON string — parsed client-side into AcceptanceCriteria[]
   priority?: Priority | null;
