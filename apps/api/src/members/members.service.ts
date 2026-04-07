@@ -5,13 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { AddMembersDto } from './dto/add-members.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
 
 @Injectable()
 export class MembersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   async findAll(projectId: string) {
     return this.prisma.projectMember.findMany({
@@ -33,7 +37,7 @@ export class MembersService {
       throw new ConflictException('User is already a member of this project');
     }
 
-    return this.prisma.projectMember.create({
+    const member = await this.prisma.projectMember.create({
       data: {
         projectId,
         userId: dto.userId,
@@ -45,6 +49,17 @@ export class MembersService {
         },
       },
     });
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { name: true },
+    });
+    this.notifications.notifyUser(dto.userId, 'member:added', {
+      projectId,
+      projectName: project?.name ?? '',
+    });
+
+    return member;
   }
 
   async addMembers(projectId: string, dto: AddMembersDto) {
@@ -65,7 +80,7 @@ export class MembersService {
       );
     }
 
-    return this.prisma.$transaction(
+    const members = await this.prisma.$transaction(
       dto.members.map((entry) =>
         this.prisma.projectMember.create({
           data: {
@@ -81,6 +96,19 @@ export class MembersService {
         }),
       ),
     );
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { name: true },
+    });
+    for (const m of members) {
+      this.notifications.notifyUser(m.userId, 'member:added', {
+        projectId,
+        projectName: project?.name ?? '',
+      });
+    }
+
+    return members;
   }
 
   async changeMemberRole(
@@ -130,6 +158,8 @@ export class MembersService {
     }
 
     await this.prisma.projectMember.delete({ where: { id: memberId } });
+
+    this.notifications.notifyUser(member.userId, 'member:removed', { projectId });
   }
 
   async searchUsers(projectId: string, query: string) {
