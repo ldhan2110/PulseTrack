@@ -19,12 +19,12 @@ When a project member is removed, their assigned Tasks, SubTasks, and Bugs remai
 **Unassign** (set `assigneeId = null`):
 - Tasks: `BACKLOG`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`
 - SubTasks: `BACKLOG`, `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`
-- Bugs: `OPEN`, `IN_PROGRESS`, `REOPENED`
+- Bugs: `OPEN`, `IN_FIX`
 
 **Keep assignee** (no change):
 - Tasks: `DONE`
 - SubTasks: `DONE`
-- Bugs: `RESOLVED`, `CLOSED`
+- Bugs: `FIXED`, `VERIFIED`, `CLOSED`
 
 ## Design
 
