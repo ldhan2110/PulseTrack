@@ -135,9 +135,12 @@ export class MembersService {
     });
   }
 
-  async removeMember(projectId: string, memberId: string) {
+  async removeMember(projectId: string, memberId: string, actorId: string) {
     const member = await this.prisma.projectMember.findFirst({
       where: { id: memberId, projectId },
+      include: {
+        user: { select: { id: true, username: true } },
+      },
     });
 
     if (!member) {
@@ -157,9 +160,116 @@ export class MembersService {
       }
     }
 
-    await this.prisma.projectMember.delete({ where: { id: memberId } });
+    // Gather active work before transaction
+    const activeTasks = await this.prisma.task.findMany({
+      where: {
+        projectId,
+        assigneeId: member.userId,
+        status: { not: 'DONE' },
+      },
+      select: { id: true },
+    });
+    const activeTaskIds = activeTasks.map((t) => t.id);
 
+    const activeSubTaskCount = await this.prisma.subTask.count({
+      where: {
+        parent: { projectId },
+        assigneeId: member.userId,
+        status: { not: 'DONE' },
+      },
+    });
+
+    const activeBugCount = await this.prisma.bug.count({
+      where: {
+        projectId,
+        assigneeId: member.userId,
+        status: { notIn: ['RESOLVED', 'CLOSED'] },
+      },
+    });
+
+    // Execute transaction: unassign work, record history, delete member
+    const txOps = [];
+
+    if (activeTaskIds.length > 0) {
+      txOps.push(
+        this.prisma.task.updateMany({
+          where: { id: { in: activeTaskIds } },
+          data: { assigneeId: null },
+        }),
+      );
+    }
+
+    if (activeSubTaskCount > 0) {
+      txOps.push(
+        this.prisma.subTask.updateMany({
+          where: {
+            parent: { projectId },
+            assigneeId: member.userId,
+            status: { not: 'DONE' },
+          },
+          data: { assigneeId: null },
+        }),
+      );
+    }
+
+    if (activeBugCount > 0) {
+      txOps.push(
+        this.prisma.bug.updateMany({
+          where: {
+            projectId,
+            assigneeId: member.userId,
+            status: { notIn: ['RESOLVED', 'CLOSED'] },
+          },
+          data: { assigneeId: null },
+        }),
+      );
+    }
+
+    for (const taskId of activeTaskIds) {
+      txOps.push(
+        this.prisma.taskHistory.create({
+          data: {
+            taskId,
+            actorId,
+            field: 'assigneeId',
+            oldValue: member.userId,
+            newValue: null,
+          },
+        }),
+      );
+    }
+
+    txOps.push(
+      this.prisma.projectMember.delete({ where: { id: memberId } }),
+    );
+
+    await this.prisma.$transaction(txOps);
+
+    // Post-transaction notifications
     this.notifications.notifyUser(member.userId, 'member:removed', { projectId });
+
+    const totalUnassigned = activeTaskIds.length + activeSubTaskCount + activeBugCount;
+    if (totalUnassigned > 0) {
+      const pmMembers = await this.prisma.projectMember.findMany({
+        where: { projectId, role: 'pm', userId: { not: actorId } },
+        select: { userId: true },
+      });
+
+      for (const pm of pmMembers) {
+        this.notifications.notifyUser(pm.userId, 'member:removed:tasks-unassigned', {
+          projectId,
+          memberName: member.user.username,
+          tasks: activeTaskIds.length,
+          subTasks: activeSubTaskCount,
+          bugs: activeBugCount,
+        });
+      }
+    }
+
+    this.notifications.notifyProject(projectId, 'member:removed', {
+      projectId,
+      memberId,
+    });
   }
 
   async searchUsers(projectId: string, query: string) {

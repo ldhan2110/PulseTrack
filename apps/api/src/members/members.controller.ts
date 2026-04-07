@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -77,7 +78,8 @@ export class MembersController {
   removeMember(
     @Param('projectId') projectId: string,
     @Param('memberId') memberId: string,
+    @Req() req: Request & { user: { id: string } },
   ) {
-    return this.membersService.removeMember(projectId, memberId);
+    return this.membersService.removeMember(projectId, memberId, req.user.id);
   }
 }
