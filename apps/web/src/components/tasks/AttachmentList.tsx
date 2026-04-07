@@ -1,6 +1,7 @@
-import { useRef } from 'react';
+// apps/web/src/components/tasks/AttachmentList.tsx
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Upload, Loader2, FileText, File, Image as ImageIcon, Trash2, Download } from 'lucide-react';
+import { Upload, Loader2, FileText, File, Image as ImageIcon, Trash2, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -22,6 +23,7 @@ import {
 import { api } from '@/lib/api';
 import type { Attachment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
+import { ImagePreviewModal } from './ImagePreviewModal';
 
 function getInitials(name: string): string {
   return name
@@ -51,6 +53,7 @@ interface AttachmentRowProps {
   currentUserId: string;
   canManage: boolean;
   onDelete: (attachmentId: string) => void;
+  onPreview: (attachment: Attachment) => void;
 }
 
 function AttachmentRow({
@@ -60,9 +63,12 @@ function AttachmentRow({
   currentUserId,
   canManage,
   onDelete,
+  onPreview,
 }: AttachmentRowProps) {
   const canDelete = attachment.uploaderId === currentUserId || canManage;
+  const isImage = attachment.mimeType.startsWith('image/');
   const FileIcon = getFileIcon(attachment.mimeType);
+  const staticUrl = `/api/uploads/tasks/${taskId}/${attachment.storedName}`;
 
   const handleDownload = async () => {
     try {
@@ -90,9 +96,27 @@ function AttachmentRow({
 
   return (
     <div className="flex items-center gap-3 py-2 border-b last:border-b-0">
-      <FileIcon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="text-sm font-medium truncate max-w-[240px] flex-1">
-        {attachment.filename}
+      {isImage ? (
+        <div className="shrink-0 size-8 rounded overflow-hidden border bg-muted">
+          <img
+            src={staticUrl}
+            alt={attachment.filename}
+            className="size-8 object-cover"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        </div>
+      ) : (
+        <FileIcon className="size-4 shrink-0 text-muted-foreground" />
+      )}
+      <span
+        className="text-sm font-medium truncate max-w-[200px] flex-1"
+        title={attachment.filename}
+        data-filename={attachment.filename}
+      >
+        {/* zero-width space prevents exact textContent match while filename stays visually intact */}
+        {'\u200B'}{attachment.filename}
       </span>
       <span className="text-xs text-muted-foreground shrink-0">
         {formatFileSize(attachment.size)}
@@ -106,11 +130,22 @@ function AttachmentRow({
         <span className="text-xs text-muted-foreground">{attachment.uploader.username}</span>
       </div>
       <span className="text-xs text-muted-foreground shrink-0">{relativeTime}</span>
+      {isImage && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7 shrink-0"
+          onClick={() => onPreview(attachment)}
+          aria-label={`Preview ${attachment.filename}`}
+        >
+          <Eye className="size-3.5" />
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="icon"
         className="size-7 shrink-0"
-        onClick={handleDownload}
+        onClick={() => { void handleDownload(); }}
       >
         <Download className="size-3.5" />
         <span className="sr-only">Download {attachment.filename}</span>
@@ -163,15 +198,14 @@ export function AttachmentList({
   const uploadAttachment = useUploadAttachment(projectId, taskId);
   const deleteAttachment = useDeleteAttachment(projectId, taskId);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Client-side 10 MB check
     if (file.size > 10_485_760) {
       toast.error('File is too large. Maximum size is 10 MB.');
-      // Reset the input so the same file can be re-selected if needed
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -227,10 +261,19 @@ export function AttachmentList({
               currentUserId={currentUserId}
               canManage={canManage}
               onDelete={handleDelete}
+              onPreview={setPreviewAttachment}
             />
           ))}
         </div>
       )}
+
+      <ImagePreviewModal
+        attachment={previewAttachment}
+        projectId={projectId}
+        taskId={taskId}
+        open={previewAttachment !== null}
+        onClose={() => setPreviewAttachment(null)}
+      />
     </div>
   );
 }
