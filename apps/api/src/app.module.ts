@@ -17,6 +17,8 @@ import { CommentsModule } from './comments/comments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WorkflowModule } from './workflow/workflow.module';
+import { RepositoryConfigModule } from './repository-config/repository-config.module';
+import { AiConfigModule } from './ai-config/ai-config.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { WorkflowModule } from './workflow/workflow.module';
     AttachmentsModule,
     NotificationsModule,
     WorkflowModule,
+    RepositoryConfigModule,
+    AiConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],
