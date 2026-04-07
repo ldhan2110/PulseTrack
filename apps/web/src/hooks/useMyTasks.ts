@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { Task, TaskStatus } from '../lib/types';
+import type { Task } from '../lib/types';
 
 export function useMyTasks() {
   return useQuery({
@@ -10,22 +10,16 @@ export function useMyTasks() {
   });
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  BACKLOG: 'Backlog',
-  IN_PROGRESS: 'In Progress',
-  DONE: 'Done',
-};
-
 export function useUpdateMyTaskStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ task, status }: { task: Task; status: TaskStatus }) =>
-      api.updateTask(task.projectId, task.id, { status }),
-    onMutate: async ({ task, status }) => {
+    mutationFn: ({ task, workflowStatusId }: { task: Task; workflowStatusId: string }) =>
+      api.updateTask(task.projectId, task.id, { workflowStatusId }),
+    onMutate: async ({ task, workflowStatusId }) => {
       await queryClient.cancelQueries({ queryKey: ['my-tasks'] });
       const previousTasks = queryClient.getQueryData<Task[]>(['my-tasks']);
       queryClient.setQueryData<Task[]>(['my-tasks'], (old) =>
-        old?.map((t) => (t.id === task.id ? { ...t, status } : t)) ?? [],
+        old?.map((t) => (t.id === task.id ? { ...t, workflowStatusId } : t)) ?? [],
       );
       return { previousTasks };
     },
@@ -42,8 +36,8 @@ export function useUpdateMyTaskStatus() {
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', task.projectId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', task.projectId, task.id] });
     },
-    onSuccess: (_data, { status }) => {
-      toast.success(`Moved to ${STATUS_LABELS[status] ?? status}`);
+    onSuccess: () => {
+      toast.success('Status updated');
     },
   });
 }

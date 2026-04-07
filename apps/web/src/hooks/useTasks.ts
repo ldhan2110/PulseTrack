@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { Task, CreateTaskPayload, UpdateTaskPayload, TaskStatus } from '../lib/types';
+import type { Task, CreateTaskPayload, UpdateTaskPayload } from '../lib/types';
 
 export function useTasks(projectId: string) {
   return useQuery({
@@ -94,28 +94,20 @@ export function useDeleteTask(projectId: string) {
   });
 }
 
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  BACKLOG: 'Backlog',
-  IN_PROGRESS: 'In Progress',
-  IN_REVIEW: 'In Review',
-  DONE: 'Done',
-  BLOCKED: 'Blocked',
-};
-
 export function useUpdateTaskStatus(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ taskId, status }: { taskId: string; status: TaskStatus }) =>
-      api.updateTask(projectId, taskId, { status }),
-    onMutate: async ({ taskId, status }) => {
+    mutationFn: ({ taskId, workflowStatusId }: { taskId: string; workflowStatusId: string }) =>
+      api.updateTask(projectId, taskId, { workflowStatusId }),
+    onMutate: async ({ taskId, workflowStatusId }) => {
       await queryClient.cancelQueries({ queryKey: ['tasks', projectId] });
       const previousTasks = queryClient.getQueryData<Task[]>(['tasks', projectId]);
       queryClient.setQueryData<Task[]>(['tasks', projectId], (old) =>
-        old?.map((t) => (t.id === taskId ? { ...t, status } : t)) ?? [],
+        old?.map((t) => (t.id === taskId ? { ...t, workflowStatusId } : t)) ?? [],
       );
       const previousTask = queryClient.getQueryData(['task', projectId, taskId]);
       queryClient.setQueryData(['task', projectId, taskId], (old: Task | undefined) =>
-        old ? { ...old, status } : old,
+        old ? { ...old, workflowStatusId } : old,
       );
       return { previousTasks, previousTask };
     },
@@ -135,8 +127,8 @@ export function useUpdateTaskStatus(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
     },
-    onSuccess: (_data, { status }) => {
-      toast.success(`Moved to ${STATUS_LABELS[status]}`);
+    onSuccess: () => {
+      toast.success('Status updated');
     },
   });
 }
