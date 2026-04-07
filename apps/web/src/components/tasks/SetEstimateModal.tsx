@@ -27,9 +27,11 @@ export function SetEstimateModal({
   // Sync form with current estimate when modal opens
   useEffect(() => {
     if (open) {
-      if (currentEstimateMinutes && currentEstimateMinutes > 0) {
-        setHours(String(Math.floor(currentEstimateMinutes / 60) || ''));
-        setMinutes(String(currentEstimateMinutes % 60 || ''));
+      if (currentEstimateMinutes != null && currentEstimateMinutes > 0) {
+        const h = Math.floor(currentEstimateMinutes / 60);
+        const m = currentEstimateMinutes % 60;
+        setHours(h > 0 ? String(h) : '');
+        setMinutes(m > 0 ? String(m) : '');
       } else {
         setHours('');
         setMinutes('');
