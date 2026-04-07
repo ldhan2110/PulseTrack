@@ -26,11 +26,8 @@ async function bootstrap() {
     }),
   );
 
-  // CORS for Vite dev server
-  app.enableCors({
-    origin: 'http://localhost:5173',
-    credentials: true,
-  });
+  // CORS — wildcard origin; auth uses Bearer token so credentials flag is not needed
+  app.enableCors({ origin: '*' });
 
   // Global API prefix
   app.setGlobalPrefix('api');

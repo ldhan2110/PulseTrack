@@ -14,6 +14,7 @@ import { BugsModule } from './bugs/bugs.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CommentsModule } from './comments/comments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AttachmentsModule } from './attachments/attachments.module';
     DashboardModule,
     CommentsModule,
     AttachmentsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
