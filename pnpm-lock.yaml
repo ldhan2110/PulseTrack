@@ -52,6 +52,9 @@ importers:
       '@prisma/client':
         specifier: ^7.6.0
         version: 7.6.0(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(magicast@0.3.5)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       axios:
         specifier: ^1.9.0
         version: 1.14.0
@@ -67,6 +70,9 @@ importers:
       dotenv:
         specifier: ^17.4.0
         version: 17.4.0
+      jsonwebtoken:
+        specifier: ^9.0.3
+        version: 9.0.3
       jwks-rsa:
         specifier: ^3.2.0
         version: 3.2.2
