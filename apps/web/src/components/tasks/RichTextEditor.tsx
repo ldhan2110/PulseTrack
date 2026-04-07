@@ -139,12 +139,15 @@ export function RichTextEditor({
   const handleSaveAndExit = useCallback(
     async (editor: Editor) => {
       setIsSaving(true);
-      await awaitPendingUploads();
-      const html = editor.getHTML();
-      onSave(html);
-      setIsSaving(false);
-      if (!alwaysEditing) {
-        setIsEditing(false);
+      try {
+        await awaitPendingUploads();
+        const html = editor.getHTML();
+        onSave(html);
+      } finally {
+        setIsSaving(false);
+        if (!alwaysEditing) {
+          setIsEditing(false);
+        }
       }
     },
     [onSave, alwaysEditing, awaitPendingUploads],
