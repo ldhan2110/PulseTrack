@@ -8,6 +8,10 @@ export function useRepositoryConfig(projectId: string) {
     queryKey: ['repositoryConfig', projectId],
     queryFn: () => api.getRepositoryConfig(projectId),
     enabled: !!projectId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.cloneStatus;
+      return status === 'cloning' ? 3000 : false;
+    },
   });
 }
 
