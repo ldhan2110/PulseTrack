@@ -1,5 +1,8 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
+export type AutoDateField = 'actualStartDate' | 'actualEndDate' | 'plannedStartDate' | 'plannedEndDate';
+export type AutoDateAction = 'set' | 'clear';
+
 export interface WorkflowStatus {
   id: string;
   projectId: string;
@@ -9,6 +12,8 @@ export interface WorkflowStatus {
   position: number;
   isDefault: boolean;
   isClosed: boolean;
+  autoDateField: AutoDateField | null;
+  autoDateAction: AutoDateAction | null;
 }
 
 export interface WorkflowTransition {
@@ -42,6 +47,8 @@ export interface SaveWorkflowPayload {
     position: number;
     isDefault: boolean;
     isClosed: boolean;
+    autoDateField?: AutoDateField | null;
+    autoDateAction?: AutoDateAction | null;
   }[];
   transitions: {
     fromStatusKey: string;

@@ -68,7 +68,7 @@ export class AiContextGeneratorService {
   private buildCliArgs(provider: string, model: string, prompt: string): string[] {
     switch (provider) {
       case 'claude':
-        return ['--bare', '-p', prompt, '--output-format', 'text', '--model', model];
+        return ['-p', prompt, '--output-format', 'text', '--model', model];
       case 'gemini':
         return ['-p', prompt, '--model', model];
       case 'codex':
@@ -81,7 +81,7 @@ export class AiContextGeneratorService {
   private buildCliEnv(provider: string, apiKey: string): Record<string, string> {
     switch (provider) {
       case 'claude':
-        return { ANTHROPIC_API_KEY: apiKey };
+        return { CLAUDE_CODE_OAUTH_TOKEN: apiKey };
       case 'gemini':
         return { GEMINI_API_KEY: apiKey };
       case 'codex':

@@ -24,13 +24,27 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useWorkflow, useSaveWorkflow } from '@/hooks/useWorkflow';
 import { useMembers } from '@/hooks/useMembers';
 import { StatusNode, type StatusNodeData } from './StatusNode';
 import { AssigneeRulePanel } from './AssigneeRulePanel';
-import type { WorkflowStatus, SaveWorkflowPayload } from '@/lib/types';
+import type { WorkflowStatus, SaveWorkflowPayload, AutoDateField, AutoDateAction } from '@/lib/types';
 
 const nodeTypes = { statusNode: StatusNode };
+
+const DATE_FIELD_LABELS: Record<AutoDateField, string> = {
+  actualStartDate: 'Actual Start Date',
+  actualEndDate: 'Actual End Date',
+  plannedStartDate: 'Planned Start Date',
+  plannedEndDate: 'Planned End Date',
+};
 
 interface StatusFormData {
   name: string;
@@ -38,6 +52,8 @@ interface StatusFormData {
   color: string;
   isDefault: boolean;
   isClosed: boolean;
+  autoDateField: AutoDateField | null;
+  autoDateAction: AutoDateAction | null;
 }
 
 const EMPTY_FORM: StatusFormData = {
@@ -46,6 +62,8 @@ const EMPTY_FORM: StatusFormData = {
   color: '#6b7280',
   isDefault: false,
   isClosed: false,
+  autoDateField: null,
+  autoDateAction: null,
 };
 
 function statusToNode(
@@ -105,6 +123,8 @@ export function WorkflowEditor({ projectId, canManage }: WorkflowEditorProps) {
         color: d.color,
         isDefault: d.isDefault,
         isClosed: d.isClosed,
+        autoDateField: (d.autoDateField as AutoDateField) ?? null,
+        autoDateAction: (d.autoDateAction as AutoDateAction) ?? null,
       });
       setEditingNodeId(nodeId);
       setEditDialogOpen(true);
@@ -237,6 +257,8 @@ export function WorkflowEditor({ projectId, canManage }: WorkflowEditorProps) {
         position: i,
         isDefault: d.isDefault,
         isClosed: d.isClosed,
+        autoDateField: (d.autoDateField as AutoDateField) ?? null,
+        autoDateAction: (d.autoDateAction as AutoDateAction) ?? null,
       };
     });
 
@@ -385,10 +407,51 @@ export function WorkflowEditor({ projectId, canManage }: WorkflowEditorProps) {
                 onCheckedChange={(v) => setFormData((f) => ({ ...f, isClosed: v }))}
               />
             </div>
+            <div className="border-t pt-3 mt-1 flex flex-col gap-3">
+              <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Date Automation</Label>
+              <div className="flex flex-col gap-1.5">
+                <Label>Action on enter</Label>
+                <Select
+                  value={formData.autoDateAction ?? 'none'}
+                  onValueChange={(v) => setFormData((f) => ({
+                    ...f,
+                    autoDateAction: v === 'none' ? null : (v as AutoDateAction),
+                    autoDateField: v === 'none' ? null : f.autoDateField,
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="set">Set date to now</SelectItem>
+                    <SelectItem value="clear">Clear date</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {formData.autoDateAction && (
+                <div className="flex flex-col gap-1.5">
+                  <Label>Date field</Label>
+                  <Select
+                    value={formData.autoDateField ?? ''}
+                    onValueChange={(v) => setFormData((f) => ({ ...f, autoDateField: v as AutoDateField }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a date field" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.entries(DATE_FIELD_LABELS) as [AutoDateField, string][]).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleFormSave} disabled={!formData.name || !formData.key}>
+            <Button onClick={handleFormSave} disabled={!formData.name || !formData.key || (!!formData.autoDateAction && !formData.autoDateField)}>
               {editingNodeId ? 'Update' : 'Add'}
             </Button>
           </DialogFooter>
