@@ -19,6 +19,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { WorkflowModule } from './workflow/workflow.module';
 import { RepositoryConfigModule } from './repository-config/repository-config.module';
 import { AiConfigModule } from './ai-config/ai-config.module';
+import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
 
 @Module({
@@ -41,6 +42,7 @@ import { TimeLogsModule } from './time-logs/time-logs.module';
     WorkflowModule,
     RepositoryConfigModule,
     AiConfigModule,
+    AiTaskGenerationModule,
     TimeLogsModule,
   ],
   controllers: [AppController],
