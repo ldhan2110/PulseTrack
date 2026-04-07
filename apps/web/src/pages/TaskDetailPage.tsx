@@ -46,6 +46,7 @@ import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { TimeTrackingCard } from '@/components/tasks/TimeTrackingCard';
 import { TimeLogsList } from '@/components/tasks/TimeLogsList';
 import { SubTaskCard } from '@/components/tasks/SubTaskCard';
+import { AddSubTaskModal } from '@/components/tasks/AddSubTaskModal';
 import type { AcceptanceCriteria, Priority } from '@/lib/types';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -211,6 +212,9 @@ export function TaskDetailPage() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Sub-task modal
+  const [addSubTaskOpen, setAddSubTaskOpen] = useState(false);
 
   // Acceptance criteria add
   const [addingCriteria, setAddingCriteria] = useState(false);
@@ -561,12 +565,7 @@ export function TaskDetailPage() {
                     size="sm"
                     variant="outline"
                     className="h-7 gap-1"
-                    onClick={() => {
-                      const title = prompt('Sub-task title:');
-                      if (title?.trim()) {
-                        createTask.mutate({ title: title.trim(), parentId: task.id });
-                      }
-                    }}
+                    onClick={() => setAddSubTaskOpen(true)}
                   >
                     <Plus className="size-3.5" />
                     Add
@@ -584,6 +583,12 @@ export function TaskDetailPage() {
               )}
             </div>
           )}
+
+          <AddSubTaskModal
+            open={addSubTaskOpen}
+            onOpenChange={setAddSubTaskOpen}
+            onSave={(title) => createTask.mutate({ title, parentId: task.id })}
+          />
 
           {/* CARD 2: Discussion (Comments / Activity tabs) */}
           <div className="rounded-lg border p-5">
