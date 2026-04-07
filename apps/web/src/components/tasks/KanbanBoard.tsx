@@ -98,7 +98,7 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
-      <div className="flex gap-3 overflow-x-auto h-full pb-4">
+      <div className="flex gap-3 overflow-hidden h-full pb-4">
         {TASK_STATUSES.map((status) => (
           <KanbanColumn
             key={status}
