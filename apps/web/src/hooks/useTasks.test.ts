@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
-import type { Task, TaskStatus } from '../lib/types';
+import type { Task } from '../lib/types';
 import * as apiModule from '../lib/api';
 
 vi.mock('../lib/api');
@@ -22,9 +22,10 @@ function createWrapper() {
 
 const mockTask: Task = {
   id: 'task-1',
+  taskKey: null,
   title: 'Test Task',
   description: null,
-  status: 'BACKLOG' as TaskStatus,
+  workflowStatusId: null,
   storyPoints: null,
   assigneeId: null,
   sprintId: null,
@@ -72,7 +73,7 @@ describe('useTasks', () => {
     const { useUpdateTaskStatus } = await import('./useTasks');
 
     mockApi.updateTask = vi.fn().mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ ...mockTask, status: 'IN_PROGRESS' as TaskStatus }), 100)),
+      () => new Promise((resolve) => setTimeout(() => resolve({ ...mockTask, workflowStatusId: 'ws-in-progress' }), 100)),
     );
 
     const queryClient = new QueryClient({
@@ -93,12 +94,12 @@ describe('useTasks', () => {
     });
 
     // Fire mutation — onMutate will optimistically update the cache
-    mutationResult.current.mutate({ taskId: 'task-1', status: 'IN_PROGRESS' as TaskStatus });
+    mutationResult.current.mutate({ taskId: 'task-1', workflowStatusId: 'ws-in-progress' });
 
     // Optimistic update should be reflected in cache before API resolves
     await waitFor(() => {
       const cachedTasks = queryClient.getQueryData<Task[]>(['tasks', 'proj-1']);
-      expect(cachedTasks?.find((t) => t.id === 'task-1')?.status).toBe('IN_PROGRESS');
+      expect(cachedTasks?.find((t) => t.id === 'task-1')?.workflowStatusId).toBe('ws-in-progress');
     });
   });
 

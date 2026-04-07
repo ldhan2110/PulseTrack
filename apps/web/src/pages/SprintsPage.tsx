@@ -34,7 +34,7 @@ export function SprintsPage() {
   const incompleteCountBySprint = useMemo(() => {
     const map: Record<string, number> = {};
     tasks.forEach((t) => {
-      if (t.sprintId && t.status !== 'DONE') {
+      if (t.sprintId && !t.workflowStatus?.isClosed) {
         map[t.sprintId] = (map[t.sprintId] ?? 0) + 1;
       }
     });

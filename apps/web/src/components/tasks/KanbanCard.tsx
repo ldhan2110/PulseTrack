@@ -40,12 +40,12 @@ function formatDate(iso: string): string {
   }
 }
 
-function isOverdue(plannedEndDate: string | null | undefined, status: string): boolean {
-  if (!plannedEndDate || status === 'DONE') return false;
+function isOverdue(plannedEndDate: string | null | undefined, isClosed: boolean | undefined): boolean {
+  if (!plannedEndDate || isClosed) return false;
   return new Date(plannedEndDate) < new Date();
 }
 
-export function KanbanCard({ task, projectId, projectPrefix }: KanbanCardProps) {
+export function KanbanCard({ task, projectId: _projectId, projectPrefix }: KanbanCardProps) {
   const navigate = useNavigate();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -62,7 +62,7 @@ export function KanbanCard({ task, projectId, projectPrefix }: KanbanCardProps) 
     e.stopPropagation();
   };
 
-  const overdue = isOverdue(task.plannedEndDate, task.status);
+  const overdue = isOverdue(task.plannedEndDate, task.workflowStatus?.isClosed);
   const priority = task.priority ? PRIORITY_CONFIG[task.priority] : null;
 
   return (

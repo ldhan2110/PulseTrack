@@ -44,7 +44,7 @@ export function SprintBoardPage() {
   const { completedPoints, totalPoints, progressPercent } = useMemo(() => {
     const total = sprintTasks.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
     const completed = sprintTasks
-      .filter((t) => t.status === 'DONE')
+      .filter((t) => t.workflowStatus?.isClosed === true)
       .reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { completedPoints: completed, totalPoints: total, progressPercent: percent };

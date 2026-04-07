@@ -35,15 +35,7 @@ import { StatusBadge } from './StatusBadge';
 import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
 import { format } from 'date-fns';
-import type { Task, TaskStatus, Member, Sprint, Priority } from '@/lib/types';
-
-const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
-  { value: 'BACKLOG', label: 'Backlog' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'IN_REVIEW', label: 'In Review' },
-  { value: 'DONE', label: 'Done' },
-  { value: 'BLOCKED', label: 'Blocked' },
-];
+import type { Task, Member, Sprint, Priority } from '@/lib/types';
 
 const PRIORITY_CONFIG: Record<Priority, { color: string; label: string }> = {
   LOW:      { color: '#6b7280', label: 'Low' },
@@ -167,31 +159,13 @@ export function TasksTable({
         enableColumnFilter: true,
       },
       {
-        accessorKey: 'status',
+        accessorKey: 'workflowStatusId',
         header: ({ column }) => <SortHeader label="Status" column={column} />,
         cell: ({ row }) => {
           const task = row.original;
           return (
             <div onClick={(e) => e.stopPropagation()}>
-              <Select
-                value={task.status}
-                onValueChange={(val) => {
-                  updateTaskStatus.mutate({ taskId: task.id, status: val as TaskStatus });
-                }}
-              >
-                <SelectTrigger className="h-7 border-transparent bg-transparent shadow-none p-0 focus:ring-0 w-auto gap-1">
-                  <SelectValue>
-                    <StatusBadge status={task.status} />
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <StatusBadge status={opt.value} />
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <StatusBadge status={task.workflowStatus ?? null} />
             </div>
           );
         },
@@ -282,7 +256,7 @@ export function TasksTable({
         cell: ({ row }) => {
           const due = row.original.plannedEndDate;
           if (!due) return <span className="text-xs text-muted-foreground">—</span>;
-          const isOverdue = new Date(due) < new Date() && row.original.status !== 'DONE';
+          const isOverdue = new Date(due) < new Date() && !row.original.workflowStatus?.isClosed;
           let formatted: string;
           try {
             formatted = format(new Date(due), 'MMM d, yyyy');

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
-import type { Task, TaskStatus } from '@/lib/types';
+import type { Task } from '@/lib/types';
 import { KanbanBoard } from './KanbanBoard';
 import * as tasksHooks from '@/hooks/useTasks';
 
@@ -38,9 +38,11 @@ vi.mock('@/hooks/useTasks', () => ({
 const mockTasks: Task[] = [
   {
     id: 'task-1',
+    taskKey: null,
     title: 'Backlog Task 1',
     description: null,
-    status: 'BACKLOG' as TaskStatus,
+    workflowStatusId: 'ws-backlog',
+    workflowStatus: { id: 'ws-backlog', projectId: 'proj-1', name: 'Backlog', key: 'BACKLOG', color: '#6b7280', position: 0, isDefault: true, isClosed: false },
     storyPoints: 5,
     assigneeId: null,
     sprintId: null,
@@ -51,9 +53,11 @@ const mockTasks: Task[] = [
   },
   {
     id: 'task-2',
+    taskKey: null,
     title: 'In Progress Task',
     description: null,
-    status: 'IN_PROGRESS' as TaskStatus,
+    workflowStatusId: 'ws-in-progress',
+    workflowStatus: { id: 'ws-in-progress', projectId: 'proj-1', name: 'In Progress', key: 'IN_PROGRESS', color: '#3b82f6', position: 1, isDefault: false, isClosed: false },
     storyPoints: 3,
     assigneeId: null,
     sprintId: null,
@@ -64,9 +68,11 @@ const mockTasks: Task[] = [
   },
   {
     id: 'task-3',
+    taskKey: null,
     title: 'Blocked Task',
     description: null,
-    status: 'BLOCKED' as TaskStatus,
+    workflowStatusId: 'ws-blocked',
+    workflowStatus: { id: 'ws-blocked', projectId: 'proj-1', name: 'Blocked', key: 'BLOCKED', color: '#ef4444', position: 4, isDefault: false, isClosed: false },
     storyPoints: null,
     assigneeId: null,
     sprintId: null,
@@ -97,8 +103,8 @@ describe('KanbanBoard', () => {
     } as unknown as ReturnType<typeof tasksHooks.useUpdateTaskStatus>);
   });
 
-  it('renders 5 columns, one per TaskStatus', () => {
-    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" />, { wrapper: Wrapper });
+  it('renders workflow status columns', () => {
+    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" projectPrefix="PM" />, { wrapper: Wrapper });
 
     expect(screen.getByText('Backlog')).toBeInTheDocument();
     expect(screen.getByText('In Progress')).toBeInTheDocument();
@@ -108,7 +114,7 @@ describe('KanbanBoard', () => {
   });
 
   it('groups tasks into correct columns by status', () => {
-    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" />, { wrapper: Wrapper });
+    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" projectPrefix="PM" />, { wrapper: Wrapper });
 
     expect(screen.getByText('Backlog Task 1')).toBeInTheDocument();
     expect(screen.getByText('In Progress Task')).toBeInTheDocument();
@@ -116,7 +122,7 @@ describe('KanbanBoard', () => {
   });
 
   it('shows 0 count badge for empty columns (IN_REVIEW and DONE have no tasks)', () => {
-    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" />, { wrapper: Wrapper });
+    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" projectPrefix="PM" />, { wrapper: Wrapper });
 
     // IN_REVIEW has 0 tasks, DONE has 0 tasks — at least 2 "0" badges
     const badges = screen.getAllByText('0');
@@ -124,7 +130,7 @@ describe('KanbanBoard', () => {
   });
 
   it('initializes useUpdateTaskStatus with the correct projectId', () => {
-    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" />, { wrapper: Wrapper });
+    render(<KanbanBoard tasks={mockTasks} projectId="proj-1" projectPrefix="PM" />, { wrapper: Wrapper });
 
     expect(tasksHooks.useUpdateTaskStatus).toHaveBeenCalledWith('proj-1');
   });

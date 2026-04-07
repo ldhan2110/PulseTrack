@@ -58,32 +58,22 @@ async function main() {
         });
       }
 
-      const tasks = await tx.task.findMany({
-        where: { projectId: project.id },
-        select: { id: true, status: true },
-      });
-      for (const task of tasks) {
-        const wsId = statusMap[task.status];
-        if (wsId) {
-          await tx.task.update({
-            where: { id: task.id },
-            data: { workflowStatusId: wsId },
-          });
-        }
-      }
-
-      const subTasks = await tx.subTask.findMany({
-        where: { parent: { projectId: project.id } },
-        select: { id: true, status: true },
-      });
-      for (const st of subTasks) {
-        const wsId = statusMap[st.status];
-        if (wsId) {
-          await tx.subTask.update({
-            where: { id: st.id },
-            data: { workflowStatusId: wsId },
-          });
-        }
+      // status column has been removed — workflowStatusId migration already applied
+      // Set default workflowStatusId for tasks that don't have one yet
+      const defaultStatusId = statusMap['BACKLOG'];
+      if (defaultStatusId) {
+        await tx.task.updateMany({
+          where: { projectId: project.id, workflowStatusId: null },
+          data: { workflowStatusId: defaultStatusId },
+        });
+        await (tx as unknown as { $queryRaw: (...args: unknown[]) => Promise<unknown> }).$queryRaw`
+          UPDATE "SubTask" st
+          SET "workflowStatusId" = ${defaultStatusId}
+          FROM "Task" t
+          WHERE st."parentId" = t.id
+            AND t."projectId" = ${project.id}
+            AND st."workflowStatusId" IS NULL
+        `;
       }
     });
 

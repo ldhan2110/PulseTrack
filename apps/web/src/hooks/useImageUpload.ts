@@ -16,17 +16,18 @@ export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
     (editor: Editor, oldSrc: string, newSrc: string) => {
       const { state, dispatch } = editor.view;
       let foundPos = -1;
-      let foundNode: Parameters<Parameters<typeof state.doc.nodesBetween>[2]>[0] | null = null;
+      let foundAttrs: Record<string, unknown> | null = null;
       state.doc.nodesBetween(0, state.doc.content.size, (node, pos) => {
         if (node.type.name === 'image' && (node.attrs as Record<string, unknown>).src === oldSrc) {
           foundPos = pos;
-          foundNode = node;
+          foundAttrs = node.attrs as Record<string, unknown>;
           return false; // stop traversal
         }
       });
-      if (foundPos >= 0 && foundNode !== null) {
+      if (foundPos >= 0 && foundAttrs !== null) {
         const tr = state.tr.setNodeMarkup(foundPos, undefined, {
-          ...(foundNode.attrs as Record<string, unknown>),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(foundAttrs as any),
           src: newSrc,
         });
         dispatch(tr);

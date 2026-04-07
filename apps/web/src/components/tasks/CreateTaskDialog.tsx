@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateTask } from '@/hooks/useTasks';
-import type { TaskStatus, Member, Sprint, Priority } from '@/lib/types';
+import type { Member, Sprint, Priority } from '@/lib/types';
 
 // FieldGroup + Field composition per shadcn skill rules
 function FieldGroup({ children }: { children: React.ReactNode }) {
@@ -98,7 +98,6 @@ export function CreateTaskDialog({
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<TaskStatus>('BACKLOG');
   const [assigneeId, setAssigneeId] = useState<string>('');
   const [storyPoints, setStoryPoints] = useState('');
   const [sprintId, setSprintId] = useState<string>('');
@@ -115,7 +114,6 @@ export function CreateTaskDialog({
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setStatus('BACKLOG');
     setAssigneeId('');
     setStoryPoints('');
     setSprintId('');
@@ -153,7 +151,6 @@ export function CreateTaskDialog({
       {
         title: title.trim(),
         description: description.trim() || undefined,
-        status,
         assigneeId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined,
         storyPoints: storyPoints !== '' ? Number(storyPoints) : undefined,
         sprintId: sprintId && sprintId !== 'none' ? sprintId : undefined,
@@ -202,40 +199,22 @@ export function CreateTaskDialog({
               />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel>Status</FieldLabel>
-                <Select value={status} onValueChange={(val) => setStatus(val as TaskStatus)}>
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BACKLOG">Backlog</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                    <SelectItem value="DONE">Done</SelectItem>
-                    <SelectItem value="BLOCKED">Blocked</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="task-points">Story Points</FieldLabel>
-                <Input
-                  id="task-points"
-                  type="number"
-                  min={1}
-                  max={100}
-                  placeholder="—"
-                  value={storyPoints}
-                  onChange={(e) => setStoryPoints(e.target.value)}
-                  aria-invalid={!!errors.storyPoints}
-                />
-                {errors.storyPoints && (
-                  <p className="text-xs text-destructive">{errors.storyPoints}</p>
-                )}
-              </Field>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="task-points">Story Points</FieldLabel>
+              <Input
+                id="task-points"
+                type="number"
+                min={1}
+                max={100}
+                placeholder="—"
+                value={storyPoints}
+                onChange={(e) => setStoryPoints(e.target.value)}
+                aria-invalid={!!errors.storyPoints}
+              />
+              {errors.storyPoints && (
+                <p className="text-xs text-destructive">{errors.storyPoints}</p>
+              )}
+            </Field>
 
             <Field>
               <FieldLabel>Priority</FieldLabel>

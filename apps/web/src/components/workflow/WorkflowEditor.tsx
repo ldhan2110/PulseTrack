@@ -81,8 +81,8 @@ export function WorkflowEditor({ projectId, canManage }: WorkflowEditorProps) {
   const { data: members = [] } = useMembers(projectId);
   const saveWorkflow = useSaveWorkflow(projectId);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [initialized, setInitialized] = useState(false);
 
   // Status editing

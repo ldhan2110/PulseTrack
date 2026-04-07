@@ -1,5 +1,5 @@
 // apps/web/src/components/tasks/AttachmentList.test.tsx
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
@@ -23,6 +23,7 @@ const imageAttachment: Attachment = {
   taskId: 'task-1',
   uploaderId: 'user-1',
   createdAt: '2026-04-07T00:00:00Z',
+  isInline: false,
   uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com' },
 };
 
@@ -34,6 +35,7 @@ const fileAttachment: Attachment = {
   size: 20000,
   taskId: 'task-1',
   uploaderId: 'user-1',
+  isInline: false,
   createdAt: '2026-04-07T00:00:00Z',
   uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com' },
 };

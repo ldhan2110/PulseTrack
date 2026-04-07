@@ -44,7 +44,7 @@ import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
 import { api } from '@/lib/api';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
-import type { TaskStatus, AcceptanceCriteria, SubTask, Priority } from '@/lib/types';
+import type { AcceptanceCriteria, SubTask, Priority } from '@/lib/types';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -232,7 +232,7 @@ export function TaskDetailPage() {
       data,
     }: {
       subTaskId: string;
-      data: { status?: TaskStatus; assigneeId?: string | null; title?: string };
+      data: { workflowStatusId?: string; assigneeId?: string | null; title?: string };
     }) => api.updateSubTask(projectId, taskId, subTaskId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
@@ -1028,14 +1028,14 @@ interface SubTaskMiniRowProps {
   subTask: SubTask;
   members: ReturnType<typeof useMembers>['data'] extends (infer T)[] | undefined ? T[] : never[];
   canEdit: boolean;
-  onUpdate: (data: { status?: TaskStatus; assigneeId?: string | null; title?: string }) => void;
+  onUpdate: (data: { workflowStatusId?: string; assigneeId?: string | null; title?: string }) => void;
   onDelete: () => void;
 }
 
-function SubTaskMiniRow({ subTask, canEdit, onUpdate, onDelete }: SubTaskMiniRowProps) {
+function SubTaskMiniRow({ subTask, canEdit, onDelete }: SubTaskMiniRowProps) {
   return (
     <div className="flex items-center gap-1.5 group/subtask py-0.5">
-      <StatusBadge status={subTask.status} />
+      <StatusBadge status={subTask.workflowStatus ?? null} />
       <span className="text-xs flex-1 truncate">{subTask.title}</span>
       {canEdit && (
         <Button
@@ -1047,23 +1047,6 @@ function SubTaskMiniRow({ subTask, canEdit, onUpdate, onDelete }: SubTaskMiniRow
           <X className="size-3" />
         </Button>
       )}
-      {/* Status update via select */}
-      <Select
-        value={subTask.status}
-        onValueChange={(val) => onUpdate({ status: val as TaskStatus })}
-        disabled={!canEdit}
-      >
-        <SelectTrigger className="h-6 w-6 p-0 border-0 shadow-none opacity-0 group-hover/subtask:opacity-100 [&>svg]:hidden">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {(['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'BLOCKED'] as TaskStatus[]).map((s) => (
-            <SelectItem key={s} value={s}>
-              <StatusBadge status={s} />
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
     </div>
   );
 }

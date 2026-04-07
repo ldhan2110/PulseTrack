@@ -35,7 +35,7 @@ export class SprintsService {
         tasks: {
           select: {
             storyPoints: true,
-            status: true,
+            workflowStatus: { select: { isClosed: true } },
           },
         },
       },
@@ -48,7 +48,7 @@ export class SprintsService {
         0,
       );
       const completedPoints = sprint.tasks
-        .filter((t) => t.status === 'DONE')
+        .filter((t) => t.workflowStatus?.isClosed === true)
         .reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
 
       return {
@@ -116,11 +116,11 @@ export class SprintsService {
 
   async closeSprint(sprintId: string) {
     return this.prisma.$transaction(async (tx) => {
-      // Move all non-DONE tasks back to backlog
+      // Move all non-closed tasks back to backlog
       const moveResult = await tx.task.updateMany({
         where: {
           sprintId,
-          status: { not: 'DONE' },
+          workflowStatus: { isClosed: false },
         },
         data: { sprintId: null },
       });
@@ -141,7 +141,7 @@ export class SprintsService {
   async getSprintStats(sprintId: string) {
     const tasks = await this.prisma.task.findMany({
       where: { sprintId },
-      select: { storyPoints: true, status: true },
+      select: { storyPoints: true, workflowStatus: { select: { isClosed: true } } },
     });
 
     const totalPoints = tasks.reduce(
@@ -149,11 +149,11 @@ export class SprintsService {
       0,
     );
     const completedPoints = tasks
-      .filter((t) => t.status === 'DONE')
+      .filter((t) => t.workflowStatus?.isClosed === true)
       .reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
     const remainingPoints = totalPoints - completedPoints;
     const taskCount = tasks.length;
-    const completedTaskCount = tasks.filter((t) => t.status === 'DONE').length;
+    const completedTaskCount = tasks.filter((t) => t.workflowStatus?.isClosed === true).length;
 
     return {
       totalPoints,

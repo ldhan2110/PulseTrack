@@ -23,7 +23,7 @@ export function BugsPage() {
   const [globalFilter, setGlobalFilter] = useState('');
 
   // Per D-33: PM, BA, or QC can report bugs
-  const canReport = role === 'PM' || role === 'BA' || role === 'QC';
+  const canReport = role === 'pm' || role === 'ba' || role === 'qc';
 
   const bugList = bugs ?? [];
 

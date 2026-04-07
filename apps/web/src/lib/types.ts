@@ -1,7 +1,5 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type TaskStatus = string;
-
 export interface WorkflowStatus {
   id: string;
   projectId: string;
@@ -146,7 +144,6 @@ export interface ChangeRolePayload {
 export interface SubTask {
   id: string;
   title: string;
-  status: TaskStatus;
   workflowStatusId: string | null;
   workflowStatus?: WorkflowStatus | null;
   assigneeId: string | null;
@@ -161,7 +158,6 @@ export interface Task {
   taskKey: string | null;
   title: string;
   description: string | null;
-  status: TaskStatus;
   workflowStatusId: string | null;
   workflowStatus?: WorkflowStatus | null;
   storyPoints: number | null;

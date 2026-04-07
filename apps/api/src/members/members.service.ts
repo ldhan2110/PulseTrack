@@ -166,19 +166,19 @@ export class MembersService {
     const { taskCount, subTaskCount, bugCount } = await this.prisma.$transaction(async (tx) => {
       // Query active work inside the transaction
       const activeTasks = await tx.task.findMany({
-        where: { projectId, assigneeId: userId, status: { not: 'DONE' } },
+        where: { projectId, assigneeId: userId, workflowStatus: { isClosed: false } },
         select: { id: true },
       });
 
       // Unassign active tasks
       const tasksResult = await tx.task.updateMany({
-        where: { projectId, assigneeId: userId, status: { not: 'DONE' } },
+        where: { projectId, assigneeId: userId, workflowStatus: { isClosed: false } },
         data: { assigneeId: null },
       });
 
       // Unassign active subtasks
       const subTasksResult = await tx.subTask.updateMany({
-        where: { parent: { projectId }, assigneeId: userId, status: { not: 'DONE' } },
+        where: { parent: { projectId }, assigneeId: userId, workflowStatus: { isClosed: false } },
         data: { assigneeId: null },
       });
 
@@ -272,14 +272,14 @@ export class MembersService {
         where: {
           projectId,
           assigneeId: member.userId,
-          status: { not: 'DONE' },
+          workflowStatus: { isClosed: false },
         },
       }),
       this.prisma.subTask.count({
         where: {
           parent: { projectId },
           assigneeId: member.userId,
-          status: { not: 'DONE' },
+          workflowStatus: { isClosed: false },
         },
       }),
       this.prisma.bug.count({

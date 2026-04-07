@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { SaveWorkflowPayload, WorkflowData } from '../lib/types';
+import type { SaveWorkflowPayload, WorkflowData, WorkflowStatus } from '../lib/types';
 
 export function useWorkflow(projectId: string) {
   return useQuery({
@@ -43,5 +43,5 @@ export function useValidTransitions(workflow: WorkflowData | undefined, currentS
   return workflow.transitions
     .filter((t) => t.fromStatusKey === currentStatus.key)
     .map((t) => workflow.statuses.find((s) => s.key === t.toStatusKey))
-    .filter(Boolean);
+    .filter((s): s is WorkflowStatus => s !== undefined);
 }

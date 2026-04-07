@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { KanbanColumn } from './KanbanColumn';
 import { useUpdateTask } from '@/hooks/useTasks';
 import { useWorkflow } from '@/hooks/useWorkflow';
-import type { Task, WorkflowStatus } from '@/lib/types';
+import type { Task } from '@/lib/types';
 
 interface KanbanBoardProps {
   tasks: Task[];

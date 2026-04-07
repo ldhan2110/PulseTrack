@@ -50,6 +50,7 @@ const mockAttachment: Attachment = {
   size: 50000,
   taskId: 'task-1',
   uploaderId: 'user-1',
+  isInline: true,
   createdAt: '2026-04-07T00:00:00Z',
   uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com' },
 };

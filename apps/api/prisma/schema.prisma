@@ -21,14 +21,6 @@ enum ProjectRole {
   developer
 }
 
-enum TaskStatus {
-  BACKLOG
-  IN_PROGRESS
-  IN_REVIEW
-  DONE
-  BLOCKED
-}
-
 enum Priority {
   LOW
   MEDIUM
@@ -207,7 +199,6 @@ model Task {
   title               String
   taskKey             String?   @unique   // e.g. "PM-1", "ACME-42"
   description         String?
-  status              TaskStatus  @default(BACKLOG)
   storyPoints         Int?
   acceptanceCriteria  String?
   priority            Priority?
@@ -353,7 +344,6 @@ model Bug {
 model SubTask {
   id         String     @id @default(cuid())
   title      String
-  status     TaskStatus @default(BACKLOG)
   parentId         String
   assigneeId       String?
   workflowStatusId String?

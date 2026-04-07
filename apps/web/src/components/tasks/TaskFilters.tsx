@@ -8,15 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Task, TaskStatus, Member, Sprint } from '@/lib/types';
-
-const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
-  { value: 'BACKLOG', label: 'Backlog' },
-  { value: 'IN_PROGRESS', label: 'In Progress' },
-  { value: 'IN_REVIEW', label: 'In Review' },
-  { value: 'DONE', label: 'Done' },
-  { value: 'BLOCKED', label: 'Blocked' },
-];
+import type { Task, WorkflowStatus, Member, Sprint } from '@/lib/types';
 
 function getInitials(name: string): string {
   return name
@@ -32,6 +24,7 @@ interface TaskFiltersProps {
   table: Table<Task>;
   members: Member[];
   sprints: Sprint[];
+  workflowStatuses?: WorkflowStatus[];
   globalFilter: string;
   onGlobalFilterChange: (value: string) => void;
 }
@@ -40,6 +33,7 @@ export function TaskFilters({
   table,
   members,
   sprints,
+  workflowStatuses = [],
   globalFilter,
   onGlobalFilterChange,
 }: TaskFiltersProps) {
@@ -61,11 +55,11 @@ export function TaskFilters({
     };
   }, []);
 
-  const statusColumn = table.getColumn('status');
+  const statusColumn = table.getColumn('workflowStatusId');
   const assigneeColumn = table.getColumn('assigneeId');
   const sprintColumn = table.getColumn('sprintId');
 
-  const selectedStatuses = (statusColumn?.getFilterValue() as TaskStatus[] | undefined) ?? [];
+  const selectedStatuses = (statusColumn?.getFilterValue() as string[] | undefined) ?? [];
   const selectedAssignees = (assigneeColumn?.getFilterValue() as string[] | undefined) ?? [];
   const selectedSprint = (sprintColumn?.getFilterValue() as string | undefined) ?? '';
 
@@ -83,11 +77,11 @@ export function TaskFilters({
     onGlobalFilterChange('');
   };
 
-  const toggleStatus = (status: TaskStatus) => {
+  const toggleStatus = (statusId: string) => {
     const current = [...selectedStatuses];
-    const idx = current.indexOf(status);
+    const idx = current.indexOf(statusId);
     if (idx >= 0) current.splice(idx, 1);
-    else current.push(status);
+    else current.push(statusId);
     statusColumn?.setFilterValue(current.length > 0 ? current : undefined);
   };
 
@@ -117,42 +111,48 @@ export function TaskFilters({
       </div>
 
       {/* Status filter */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn(
-              'h-8 gap-1.5',
-              selectedStatuses.length > 0 && 'border-primary',
-            )}
-          >
-            Status
-            {selectedStatuses.length > 0 && (
-              <Badge variant="secondary" className="size-5 p-0 flex items-center justify-center text-[10px] rounded-full">
-                {selectedStatuses.length}
-              </Badge>
-            )}
-            <ChevronDown className="size-3.5 text-muted-foreground" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-48 p-2" align="start">
-          <div className="flex flex-col gap-1">
-            {STATUS_OPTIONS.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
-              >
-                <Checkbox
-                  checked={selectedStatuses.includes(opt.value)}
-                  onCheckedChange={() => toggleStatus(opt.value)}
-                />
-                {opt.label}
-              </label>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
+      {workflowStatuses.length > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                'h-8 gap-1.5',
+                selectedStatuses.length > 0 && 'border-primary',
+              )}
+            >
+              Status
+              {selectedStatuses.length > 0 && (
+                <Badge variant="secondary" className="size-5 p-0 flex items-center justify-center text-[10px] rounded-full">
+                  {selectedStatuses.length}
+                </Badge>
+              )}
+              <ChevronDown className="size-3.5 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" align="start">
+            <div className="flex flex-col gap-1">
+              {workflowStatuses.map((ws) => (
+                <label
+                  key={ws.id}
+                  className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
+                >
+                  <Checkbox
+                    checked={selectedStatuses.includes(ws.id)}
+                    onCheckedChange={() => toggleStatus(ws.id)}
+                  />
+                  <span
+                    className="inline-block size-2 rounded-full shrink-0"
+                    style={{ backgroundColor: ws.color }}
+                  />
+                  {ws.name}
+                </label>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
 
       {/* Assignee filter */}
       <Popover>
@@ -280,9 +280,9 @@ export function TaskFilters({
 }
 
 // Custom filter functions for use with TanStack Table
-export const statusFilterFn = (row: { getValue: (id: string) => unknown }, columnId: string, filterValue: TaskStatus[]) => {
+export const statusFilterFn = (row: { getValue: (id: string) => unknown }, columnId: string, filterValue: string[]) => {
   if (!filterValue || filterValue.length === 0) return true;
-  return filterValue.includes(row.getValue(columnId) as TaskStatus);
+  return filterValue.includes(row.getValue(columnId) as string);
 };
 
 export const assigneeFilterFn = (row: { getValue: (id: string) => unknown }, columnId: string, filterValue: string[]) => {
