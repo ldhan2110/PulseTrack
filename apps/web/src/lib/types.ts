@@ -1,6 +1,60 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type TaskStatus = 'BACKLOG' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
+export type TaskStatus = string;
+
+export interface WorkflowStatus {
+  id: string;
+  projectId: string;
+  name: string;
+  key: string;
+  color: string;
+  position: number;
+  isDefault: boolean;
+  isClosed: boolean;
+}
+
+export interface WorkflowTransition {
+  id: string;
+  fromStatusKey: string;
+  toStatusKey: string;
+  fromStatusId: string;
+  toStatusId: string;
+}
+
+export interface WorkflowAllowedAssignee {
+  memberId: string;
+  userId: string;
+  username: string;
+  email: string;
+}
+
+export interface WorkflowData {
+  statuses: WorkflowStatus[];
+  transitions: WorkflowTransition[];
+  assigneeRules: Record<string, WorkflowAllowedAssignee[]>;
+  layout: Record<string, unknown> | null;
+}
+
+export interface SaveWorkflowPayload {
+  statuses: {
+    id?: string;
+    name: string;
+    key: string;
+    color: string;
+    position: number;
+    isDefault: boolean;
+    isClosed: boolean;
+  }[];
+  transitions: {
+    fromStatusKey: string;
+    toStatusKey: string;
+  }[];
+  assigneeRules: {
+    statusKey: string;
+    memberIds: string[];
+  }[];
+  layout?: Record<string, unknown>;
+}
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'BLOCKER';
 
@@ -93,6 +147,8 @@ export interface SubTask {
   id: string;
   title: string;
   status: TaskStatus;
+  workflowStatusId: string | null;
+  workflowStatus?: WorkflowStatus | null;
   assigneeId: string | null;
   taskId: string;
   createdAt: string;
@@ -106,6 +162,8 @@ export interface Task {
   title: string;
   description: string | null;
   status: TaskStatus;
+  workflowStatusId: string | null;
+  workflowStatus?: WorkflowStatus | null;
   storyPoints: number | null;
   assigneeId: string | null;
   sprintId: string | null;
@@ -136,7 +194,6 @@ export interface AcceptanceCriteria {
 export interface CreateTaskPayload {
   title: string;
   description?: string;
-  status?: TaskStatus;
   storyPoints?: number;
   assigneeId?: string;
   sprintId?: string;
@@ -151,7 +208,7 @@ export interface CreateTaskPayload {
 export interface UpdateTaskPayload {
   title?: string;
   description?: string;
-  status?: TaskStatus;
+  workflowStatusId?: string;
   storyPoints?: number;
   assigneeId?: string | null;
   sprintId?: string | null;
@@ -170,7 +227,7 @@ export interface CreateSubTaskPayload {
 
 export interface UpdateSubTaskPayload {
   title?: string;
-  status?: TaskStatus;
+  workflowStatusId?: string;
   assigneeId?: string | null;
 }
 
@@ -250,13 +307,19 @@ export interface UpdateBugPayload {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
+export interface StatusCount {
+  statusId: string;
+  name: string;
+  key: string;
+  color: string;
+  count: number;
+  isClosed: boolean;
+}
+
 export interface TaskCounts {
   total: number;
-  backlog: number;
-  inProgress: number;
-  inReview: number;
-  done: number;
-  blocked: number;
+  byStatus: StatusCount[];
+  orphaned: number;
 }
 
 export interface BurndownPoint {

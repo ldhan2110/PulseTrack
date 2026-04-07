@@ -25,6 +25,10 @@ import type {
   Attachment,
   TaskHistoryEntry,
   UpdateSettingsPayload,
+  WorkflowData,
+  WorkflowStatus,
+  SaveWorkflowPayload,
+  WorkflowAllowedAssignee,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -154,6 +158,17 @@ export const api = {
   // ─── Dashboard ─────────────────────────────────────────────────────────────
   getDashboard: (projectId: string) =>
     request<DashboardData>(`/projects/${projectId}/dashboard`),
+
+  // ─── Workflow ─────────────────────────────────────────────────────────────
+  getWorkflow: (projectId: string) =>
+    request<WorkflowData>(`/projects/${projectId}/workflow`),
+  saveWorkflow: (projectId: string, data: SaveWorkflowPayload) =>
+    request<{ statuses: WorkflowStatus[] }>(`/projects/${projectId}/workflow`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  getAllowedAssignees: (projectId: string, statusId: string) =>
+    request<WorkflowAllowedAssignee[]>(`/projects/${projectId}/workflow/statuses/${statusId}/allowed-assignees`),
 
   // ─── Comments ──────────────────────────────────────────────────────────────
   getComments: (projectId: string, taskId: string) =>
