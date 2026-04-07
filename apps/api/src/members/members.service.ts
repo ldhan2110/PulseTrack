@@ -181,4 +181,40 @@ export class MembersService {
       take: 20,
     });
   }
+
+  async getActiveWork(projectId: string, memberId: string) {
+    const member = await this.prisma.projectMember.findFirst({
+      where: { id: memberId, projectId },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Member not found in this project');
+    }
+
+    const [tasks, subTasks, bugs] = await Promise.all([
+      this.prisma.task.count({
+        where: {
+          projectId,
+          assigneeId: member.userId,
+          status: { not: 'DONE' },
+        },
+      }),
+      this.prisma.subTask.count({
+        where: {
+          parent: { projectId },
+          assigneeId: member.userId,
+          status: { not: 'DONE' },
+        },
+      }),
+      this.prisma.bug.count({
+        where: {
+          projectId,
+          assigneeId: member.userId,
+          status: { notIn: ['RESOLVED', 'CLOSED'] },
+        },
+      }),
+    ]);
+
+    return { tasks, subTasks, bugs };
+  }
 }

@@ -63,6 +63,15 @@ export class MembersController {
     return this.membersService.changeMemberRole(projectId, memberId, dto);
   }
 
+  @Get(':memberId/active-work')
+  @ProjectRoles('pm')
+  getActiveWork(
+    @Param('projectId') projectId: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.membersService.getActiveWork(projectId, memberId);
+  }
+
   @Delete(':memberId')
   @ProjectRoles('pm')
   removeMember(
