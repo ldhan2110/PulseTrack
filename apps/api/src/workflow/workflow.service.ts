@@ -149,10 +149,7 @@ export class WorkflowService {
           where: { workflowStatusId: { in: removedIds } },
           data: { workflowStatusId: null },
         });
-        await tx.subTask.updateMany({
-          where: { workflowStatusId: { in: removedIds } },
-          data: { workflowStatusId: null },
-        });
+        // Sub-tasks are now child Task records — already covered by the task.updateMany above
       }
 
       await tx.statusAssigneeRule.deleteMany({

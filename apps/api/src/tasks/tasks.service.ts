@@ -4,7 +4,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WorkflowService } from '../workflow/workflow.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { CreateSubTaskDto } from './dto/create-subtask.dto';
 
 @Injectable()
 export class TasksService {
@@ -16,14 +15,39 @@ export class TasksService {
 
   async create(projectId: string, creatorId: string, dto: CreateTaskDto) {
     const task = await this.prisma.$transaction(async (tx) => {
-      // Atomically increment the project's task sequence
-      const project = await tx.project.update({
-        where: { id: projectId },
-        data: { taskSeq: { increment: 1 } },
-        select: { prefix: true, taskSeq: true },
-      });
+      let taskKey: string | null = null;
 
-      const taskKey = project.prefix ? `${project.prefix}-${project.taskSeq}` : null;
+      if (dto.parentId) {
+        // Creating a sub-task
+        const parent = await tx.task.findUnique({
+          where: { id: dto.parentId },
+          select: { id: true, projectId: true, parentId: true, taskKey: true },
+        });
+
+        if (!parent || parent.projectId !== projectId) {
+          throw new BadRequestException('Parent task not found in this project');
+        }
+        if (parent.parentId) {
+          throw new BadRequestException('Cannot create sub-tasks on a sub-task (max 1 level)');
+        }
+
+        const updatedParent = await tx.task.update({
+          where: { id: dto.parentId },
+          data: { subTaskSequence: { increment: 1 } },
+          select: { taskKey: true, subTaskSequence: true },
+        });
+
+        taskKey = updatedParent.taskKey
+          ? `${updatedParent.taskKey}-${updatedParent.subTaskSequence}`
+          : null;
+      } else {
+        const project = await tx.project.update({
+          where: { id: projectId },
+          data: { taskSeq: { increment: 1 } },
+          select: { prefix: true, taskSeq: true },
+        });
+        taskKey = project.prefix ? `${project.prefix}-${project.taskSeq}` : null;
+      }
 
       // Find default workflow status for this project
       const defaultStatus = await tx.workflowStatus.findFirst({
@@ -43,6 +67,8 @@ export class TasksService {
           sprintId: dto.sprintId,
           acceptanceCriteria: dto.acceptanceCriteria,
           priority: dto.priority,
+          parentId: dto.parentId,
+          estimatedMinutes: dto.estimatedMinutes,
           plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : undefined,
           plannedEndDate: dto.plannedEndDate ? new Date(dto.plannedEndDate) : undefined,
           actualStartDate: dto.actualStartDate ? new Date(dto.actualStartDate) : undefined,
@@ -68,12 +94,20 @@ export class TasksService {
         sprint: { select: { id: true, name: true } },
         creator: { select: { id: true, username: true, email: true } },
         workflowStatus: true,
-        subTasks: {
+        parent: { select: { id: true, taskKey: true, title: true } },
+        children: {
           include: {
             assignee: { select: { id: true, username: true, email: true } },
             workflowStatus: true,
+            timeLogs: { select: { minutes: true } },
           },
           orderBy: { createdAt: 'asc' },
+        },
+        timeLogs: {
+          orderBy: { loggedAt: 'desc' },
+          include: {
+            user: { select: { id: true, username: true, email: true } },
+          },
         },
       },
     });
@@ -81,12 +115,20 @@ export class TasksService {
 
   async findAll(projectId: string) {
     return this.prisma.task.findMany({
-      where: { projectId },
+      where: { projectId, parentId: null },
       include: {
         assignee: { select: { id: true, username: true, email: true } },
         sprint: { select: { id: true, name: true } },
         workflowStatus: true,
-        _count: { select: { subTasks: true } },
+        children: {
+          include: {
+            assignee: { select: { id: true, username: true, email: true } },
+            workflowStatus: true,
+            timeLogs: { select: { minutes: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+        timeLogs: { select: { minutes: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -100,12 +142,20 @@ export class TasksService {
         sprint: { select: { id: true, name: true } },
         creator: { select: { id: true, username: true, email: true } },
         workflowStatus: true,
-        subTasks: {
+        parent: { select: { id: true, taskKey: true, title: true } },
+        children: {
           include: {
             assignee: { select: { id: true, username: true, email: true } },
             workflowStatus: true,
+            timeLogs: { select: { minutes: true } },
           },
           orderBy: { createdAt: 'asc' },
+        },
+        timeLogs: {
+          orderBy: { loggedAt: 'desc' },
+          include: {
+            user: { select: { id: true, username: true, email: true } },
+          },
         },
       },
     });
@@ -149,6 +199,14 @@ export class TasksService {
         } else if (targetStatus.autoDateAction === 'clear') {
           autoDateUpdates[field] = null;
         }
+      }
+    }
+
+    // Validate estimatedMinutes — cannot set on parent tasks
+    if (dto.estimatedMinutes !== undefined) {
+      const childCount = await this.prisma.task.count({ where: { parentId: taskId } });
+      if (childCount > 0) {
+        throw new BadRequestException('Cannot set estimate on a parent task. Estimates are auto-summed from sub-tasks.');
       }
     }
 
@@ -205,6 +263,19 @@ export class TasksService {
       });
     }
 
+    // Track estimatedMinutes changes
+    if (dto.estimatedMinutes !== undefined && dto.estimatedMinutes !== current.estimatedMinutes) {
+      const oldFormatted = current.estimatedMinutes ? this.formatMinutes(current.estimatedMinutes) : null;
+      const newFormatted = dto.estimatedMinutes ? this.formatMinutes(dto.estimatedMinutes) : null;
+      historyEntries.push({
+        taskId,
+        actorId,
+        field: 'estimatedMinutes',
+        oldValue: oldFormatted,
+        newValue: newFormatted,
+      });
+    }
+
     // Track date field changes (manual + auto)
     const dateFields = ['plannedStartDate', 'plannedEndDate', 'actualStartDate', 'actualEndDate'] as const;
     for (const f of dateFields) {
@@ -243,6 +314,7 @@ export class TasksService {
             acceptanceCriteria: dto.acceptanceCriteria,
           }),
           ...(dto.priority !== undefined && { priority: dto.priority }),
+          ...(dto.estimatedMinutes !== undefined && { estimatedMinutes: dto.estimatedMinutes }),
           ...autoDateUpdates,
           ...(dto.plannedStartDate !== undefined && {
             plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : null,
@@ -309,7 +381,7 @@ export class TasksService {
         sprint: { select: { id: true, name: true } },
         project: { select: { id: true, name: true, prefix: true } },
         workflowStatus: true,
-        _count: { select: { subTasks: true } },
+        _count: { select: { children: true } },
       },
       orderBy: [
         { plannedEndDate: { sort: 'asc', nulls: 'last' } },
@@ -329,39 +401,11 @@ export class TasksService {
     return task;
   }
 
-  async createSubTask(taskId: string, dto: CreateSubTaskDto) {
-    return this.prisma.subTask.create({
-      data: {
-        parentId: taskId,
-        title: dto.title,
-        workflowStatusId: dto.workflowStatusId,
-        assigneeId: dto.assigneeId,
-      },
-      include: {
-        assignee: { select: { id: true, username: true, email: true } },
-        workflowStatus: true,
-      },
-    });
-  }
-
-  async updateSubTask(subTaskId: string, dto: Partial<CreateSubTaskDto>) {
-    return this.prisma.subTask.update({
-      where: { id: subTaskId },
-      data: {
-        ...(dto.title !== undefined && { title: dto.title }),
-        ...(dto.workflowStatusId !== undefined && { workflowStatusId: dto.workflowStatusId }),
-        ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
-      },
-      include: {
-        assignee: { select: { id: true, username: true, email: true } },
-        workflowStatus: true,
-      },
-    });
-  }
-
-  async deleteSubTask(subTaskId: string) {
-    return this.prisma.subTask.delete({
-      where: { id: subTaskId },
-    });
+  private formatMinutes(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
   }
 }

@@ -15,7 +15,6 @@ import { ProjectRoles } from '../auth/project-roles.decorator';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { CreateSubTaskDto } from './dto/create-subtask.dto';
 
 @Controller('projects/:projectId/tasks')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -68,27 +67,4 @@ export class TasksController {
     return this.tasksService.delete(taskId);
   }
 
-  @Post(':taskId/subtasks')
-  @ProjectRoles('pm', 'ba', 'developer')
-  createSubTask(
-    @Param('taskId') taskId: string,
-    @Body() dto: CreateSubTaskDto,
-  ) {
-    return this.tasksService.createSubTask(taskId, dto);
-  }
-
-  @Patch(':taskId/subtasks/:subTaskId')
-  @ProjectRoles('pm', 'ba', 'developer')
-  updateSubTask(
-    @Param('subTaskId') subTaskId: string,
-    @Body() dto: CreateSubTaskDto,
-  ) {
-    return this.tasksService.updateSubTask(subTaskId, dto);
-  }
-
-  @Delete(':taskId/subtasks/:subTaskId')
-  @ProjectRoles('pm', 'ba')
-  deleteSubTask(@Param('subTaskId') subTaskId: string) {
-    return this.tasksService.deleteSubTask(subTaskId);
-  }
 }

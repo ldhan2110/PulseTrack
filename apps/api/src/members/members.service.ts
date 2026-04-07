@@ -176,9 +176,9 @@ export class MembersService {
         data: { assigneeId: null },
       });
 
-      // Unassign active subtasks
-      const subTasksResult = await tx.subTask.updateMany({
-        where: { parent: { projectId }, assigneeId: userId, workflowStatus: { isClosed: false } },
+      // Unassign active sub-tasks (child tasks within the project)
+      const subTasksResult = await tx.task.updateMany({
+        where: { projectId, assigneeId: userId, parentId: { not: null }, workflowStatus: { isClosed: false } },
         data: { assigneeId: null },
       });
 
@@ -275,10 +275,11 @@ export class MembersService {
           workflowStatus: { isClosed: false },
         },
       }),
-      this.prisma.subTask.count({
+      this.prisma.task.count({
         where: {
-          parent: { projectId },
+          projectId,
           assigneeId: member.userId,
+          parentId: { not: null },
           workflowStatus: { isClosed: false },
         },
       }),

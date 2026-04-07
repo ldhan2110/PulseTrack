@@ -69,4 +69,10 @@ export class UpdateTaskDto {
   @ValidateIf(o => o.actualEndDate !== null)
   @IsDateString()
   actualEndDate?: string | null;
+
+  @IsOptional()
+  @ValidateIf(o => o.estimatedMinutes !== null)
+  @IsInt()
+  @Min(1)
+  estimatedMinutes?: number | null;
 }

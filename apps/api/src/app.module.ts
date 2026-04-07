@@ -19,6 +19,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { WorkflowModule } from './workflow/workflow.module';
 import { RepositoryConfigModule } from './repository-config/repository-config.module';
 import { AiConfigModule } from './ai-config/ai-config.module';
+import { TimeLogsModule } from './time-logs/time-logs.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AiConfigModule } from './ai-config/ai-config.module';
     WorkflowModule,
     RepositoryConfigModule,
     AiConfigModule,
+    TimeLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

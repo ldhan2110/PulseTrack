@@ -60,4 +60,13 @@ export class CreateTaskDto {
   @IsOptional()
   @IsDateString()
   actualEndDate?: string;
+
+  @IsOptional()
+  @IsString()
+  parentId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  estimatedMinutes?: number;
 }
