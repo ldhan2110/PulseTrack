@@ -17,10 +17,8 @@ describe('TasksService', () => {
       create: vi.fn(),
       findMany: vi.fn(),
     },
-    subTask: {
-      create: vi.fn(),
+    project: {
       update: vi.fn(),
-      delete: vi.fn(),
     },
     workflowStatus: {
       findFirst: vi.fn(),
@@ -48,7 +46,7 @@ describe('TasksService', () => {
   });
 
   describe('create()', () => {
-    it('creates a task with projectId, creatorId and returns with relations', async () => {
+    it('creates a top-level task with projectId, creatorId and returns with relations', async () => {
       const projectId = 'proj-1';
       const creatorId = 'user-1';
       const dto = { title: 'Implement login', description: 'OAuth flow' };
@@ -57,12 +55,16 @@ describe('TasksService', () => {
         projectId,
         creatorId,
         title: dto.title,
+        taskKey: 'PM-1',
         description: dto.description,
         workflowStatus: { id: 'ws-1', name: 'Backlog' },
         assignee: null,
         sprint: null,
       };
 
+      mockPrismaService.$transaction.mockImplementation(async (fn: any) => fn(mockPrismaService));
+      mockPrismaService.project.update.mockResolvedValue({ prefix: 'PM', taskSeq: 1 });
+      mockPrismaService.workflowStatus.findFirst.mockResolvedValue({ id: 'ws-1' });
       mockPrismaService.task.create.mockResolvedValue(createdTask);
 
       const result = await service.create(projectId, creatorId, dto);
@@ -162,56 +164,22 @@ describe('TasksService', () => {
     });
   });
 
-  describe('createSubTask()', () => {
-    it('creates a sub-task linked to the parent task', async () => {
-      const taskId = 'task-1';
-      const dto = { title: 'Write unit tests', workflowStatusId: 'ws-backlog' };
-      const createdSubTask = {
-        id: 'subtask-1',
-        parentId: taskId,
-        title: dto.title,
-        workflowStatus: { id: 'ws-backlog', name: 'Backlog' },
-        assignee: null,
-      };
-
-      mockPrismaService.subTask.create.mockResolvedValue(createdSubTask);
-
-      const result = await service.createSubTask(taskId, dto);
-
-      expect(result).toEqual(createdSubTask);
-      expect(mockPrismaService.subTask.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ parentId: taskId, title: dto.title }),
-        }),
-      );
-    });
-  });
-
-  describe('updateSubTask()', () => {
-    it('updates sub-task workflowStatusId', async () => {
-      const subTaskId = 'subtask-1';
-      const dto = { workflowStatusId: 'ws-done' };
-      const updated = { id: subTaskId, workflowStatus: { id: 'ws-done', name: 'Done' }, assignee: null };
-
-      mockPrismaService.subTask.update.mockResolvedValue(updated);
-
-      const result = await service.updateSubTask(subTaskId, dto);
-
-      expect(result.workflowStatus?.name).toBe('Done');
-    });
-  });
-
-  describe('deleteSubTask()', () => {
-    it('deletes a sub-task by id', async () => {
-      const subTaskId = 'subtask-1';
-      mockPrismaService.subTask.delete.mockResolvedValue({ id: subTaskId });
-
-      const result = await service.deleteSubTask(subTaskId);
-
-      expect(result.id).toBe(subTaskId);
-      expect(mockPrismaService.subTask.delete).toHaveBeenCalledWith({
-        where: { id: subTaskId },
+  describe('create() - sub-task hierarchy', () => {
+    it('rejects creating a sub-task on a sub-task (max 1 level)', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (fn: any) => fn(mockPrismaService));
+      mockPrismaService.task.findUnique.mockResolvedValue({
+        id: 'parent-id',
+        projectId: 'proj-1',
+        parentId: 'grandparent-id',
+        taskKey: 'PM-1-1',
       });
+
+      await expect(
+        service.create('proj-1', 'user-1', {
+          title: 'Nested sub-task',
+          parentId: 'parent-id',
+        }),
+      ).rejects.toThrow('Cannot create sub-tasks on a sub-task');
     });
   });
 });
