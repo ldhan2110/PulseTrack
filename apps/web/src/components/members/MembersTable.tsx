@@ -186,7 +186,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleRemoveConfirm}
-              disabled={removeMember.isPending}
+              disabled={removeMember.isPending || activeWork.isLoading}
             >
               Remove
             </AlertDialogAction>

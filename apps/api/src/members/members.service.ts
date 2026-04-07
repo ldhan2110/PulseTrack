@@ -160,95 +160,61 @@ export class MembersService {
       }
     }
 
-    // Gather active work before transaction
-    const activeTasks = await this.prisma.task.findMany({
-      where: {
-        projectId,
-        assigneeId: member.userId,
-        status: { not: 'DONE' },
-      },
-      select: { id: true },
-    });
-    const activeTaskIds = activeTasks.map((t) => t.id);
+    const userId = member.userId;
 
-    const activeSubTaskCount = await this.prisma.subTask.count({
-      where: {
-        parent: { projectId },
-        assigneeId: member.userId,
-        status: { not: 'DONE' },
-      },
-    });
+    // Interactive transaction: reads and writes in the same transaction boundary
+    const { taskCount, subTaskCount, bugCount } = await this.prisma.$transaction(async (tx) => {
+      // Query active work inside the transaction
+      const activeTasks = await tx.task.findMany({
+        where: { projectId, assigneeId: userId, status: { not: 'DONE' } },
+        select: { id: true },
+      });
 
-    const activeBugCount = await this.prisma.bug.count({
-      where: {
-        projectId,
-        assigneeId: member.userId,
-        status: { notIn: ['RESOLVED', 'CLOSED'] },
-      },
-    });
+      // Unassign active tasks
+      const tasksResult = await tx.task.updateMany({
+        where: { projectId, assigneeId: userId, status: { not: 'DONE' } },
+        data: { assigneeId: null },
+      });
 
-    // Execute transaction: unassign work, record history, delete member
-    const txOps = [];
+      // Unassign active subtasks
+      const subTasksResult = await tx.subTask.updateMany({
+        where: { parent: { projectId }, assigneeId: userId, status: { not: 'DONE' } },
+        data: { assigneeId: null },
+      });
 
-    if (activeTaskIds.length > 0) {
-      txOps.push(
-        this.prisma.task.updateMany({
-          where: { id: { in: activeTaskIds } },
-          data: { assigneeId: null },
-        }),
-      );
-    }
+      // Unassign active bugs
+      const bugsResult = await tx.bug.updateMany({
+        where: { projectId, assigneeId: userId, status: { notIn: ['RESOLVED', 'CLOSED'] } },
+        data: { assigneeId: null },
+      });
 
-    if (activeSubTaskCount > 0) {
-      txOps.push(
-        this.prisma.subTask.updateMany({
-          where: {
-            parent: { projectId },
-            assigneeId: member.userId,
-            status: { not: 'DONE' },
-          },
-          data: { assigneeId: null },
-        }),
-      );
-    }
-
-    if (activeBugCount > 0) {
-      txOps.push(
-        this.prisma.bug.updateMany({
-          where: {
-            projectId,
-            assigneeId: member.userId,
-            status: { notIn: ['RESOLVED', 'CLOSED'] },
-          },
-          data: { assigneeId: null },
-        }),
-      );
-    }
-
-    for (const taskId of activeTaskIds) {
-      txOps.push(
-        this.prisma.taskHistory.create({
+      // Record history for each unassigned task
+      for (const task of activeTasks) {
+        await tx.taskHistory.create({
           data: {
-            taskId,
+            taskId: task.id,
             actorId,
             field: 'assigneeId',
-            oldValue: member.userId,
+            oldValue: userId,
             newValue: null,
           },
-        }),
-      );
-    }
+        });
+      }
 
-    txOps.push(
-      this.prisma.projectMember.delete({ where: { id: memberId } }),
-    );
+      // Delete the project member
+      await tx.projectMember.delete({ where: { id: memberId } });
 
-    await this.prisma.$transaction(txOps);
+      return {
+        taskCount: tasksResult.count,
+        subTaskCount: subTasksResult.count,
+        bugCount: bugsResult.count,
+      };
+    });
 
     // Post-transaction notifications
-    this.notifications.notifyUser(member.userId, 'member:removed', { projectId });
+    this.notifications.notifyUser(userId, 'member:removed', { projectId });
 
-    const totalUnassigned = activeTaskIds.length + activeSubTaskCount + activeBugCount;
+    const totalUnassigned = taskCount + subTaskCount + bugCount;
     if (totalUnassigned > 0) {
       const pmMembers = await this.prisma.projectMember.findMany({
         where: { projectId, role: 'pm', userId: { not: actorId } },
@@ -259,9 +225,9 @@ export class MembersService {
         this.notifications.notifyUser(pm.userId, 'member:removed:tasks-unassigned', {
           projectId,
           memberName: member.user.username,
-          tasks: activeTaskIds.length,
-          subTasks: activeSubTaskCount,
-          bugs: activeBugCount,
+          tasks: taskCount,
+          subTasks: subTaskCount,
+          bugs: bugCount,
         });
       }
     }
