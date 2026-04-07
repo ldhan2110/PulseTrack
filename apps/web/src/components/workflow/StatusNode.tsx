@@ -51,14 +51,16 @@ function StatusNodeComponent({ id, data }: NodeProps) {
             >
               <Pencil className="size-3" />
             </Button>
-            <Button
-              variant="destructive"
-              size="icon"
-              className="size-6 rounded-full shadow-md"
-              onClick={(e) => { e.stopPropagation(); onDelete(id); }}
-            >
-              <Trash2 className="size-3" />
-            </Button>
+            {!isDefault && !isClosed && (
+              <Button
+                variant="destructive"
+                size="icon"
+                className="size-6 rounded-full shadow-md"
+                onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+              >
+                <Trash2 className="size-3" />
+              </Button>
+            )}
           </div>
         )}
       </div>

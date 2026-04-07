@@ -634,7 +634,29 @@ export function TaskDetailPage() {
                     </SelectContent>
                   </Select>
                 ) : (
-                  <StatusBadge status={null} />
+                  <Select
+                    value=""
+                    onValueChange={(val) =>
+                      optimisticMutate(
+                        { workflowStatusId: val },
+                        { taskId, data: { workflowStatusId: val } },
+                      )
+                    }
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="h-8 w-full">
+                      <SelectValue>
+                        <StatusBadge status={null} />
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(workflow?.statuses ?? []).map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <StatusBadge status={s} />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
 
