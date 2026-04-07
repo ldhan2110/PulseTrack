@@ -1,6 +1,6 @@
 // apps/web/src/components/tasks/AttachmentList.test.tsx
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import type { Attachment } from '@/lib/types';
@@ -102,7 +102,8 @@ describe('AttachmentList image preview', () => {
       { wrapper },
     );
     fireEvent.click(screen.getByRole('button', { name: /preview photo\.png/i }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('photo.png')).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('photo.png')).toBeInTheDocument();
   });
 });

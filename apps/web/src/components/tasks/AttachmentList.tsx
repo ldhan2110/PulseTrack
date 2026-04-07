@@ -110,13 +110,8 @@ function AttachmentRow({
       ) : (
         <FileIcon className="size-4 shrink-0 text-muted-foreground" />
       )}
-      <span
-        className="text-sm font-medium truncate max-w-[200px] flex-1"
-        title={attachment.filename}
-        data-filename={attachment.filename}
-      >
-        {/* zero-width space prevents exact textContent match while filename stays visually intact */}
-        {'\u200B'}{attachment.filename}
+      <span className="text-sm font-medium truncate max-w-[200px] flex-1">
+        {attachment.filename}
       </span>
       <span className="text-xs text-muted-foreground shrink-0">
         {formatFileSize(attachment.size)}
