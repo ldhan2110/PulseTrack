@@ -402,3 +402,44 @@ export interface TaskHistoryEntry {
   createdAt: string;
   actor: Pick<User, 'id' | 'username' | 'email'>;
 }
+
+// ─── Repository Config ──────────────────────────────────────────────────────
+
+export type CloneStatus = 'pending' | 'cloning' | 'cloned' | 'failed';
+
+export interface RepositoryConfig {
+  id: string;
+  repoUrl: string;
+  accessToken: string; // masked
+  cloneStatus: CloneStatus;
+  cloneError: string | null;
+  workspacePath: string | null;
+}
+
+export interface UpsertRepositoryConfigPayload {
+  repoUrl: string;
+  accessToken: string;
+}
+
+// ─── AI Config ───────────────────────────────────────────────────────────────
+
+export type AiProvider = 'claude' | 'gemini' | 'codex';
+
+export interface AiConfig {
+  id: string;
+  provider: AiProvider;
+  model: string;
+  apiKey: string; // masked
+  projectContext: string | null;
+}
+
+export interface UpsertAiConfigPayload {
+  provider: AiProvider;
+  model: string;
+  apiKey: string;
+  projectContext?: string;
+}
+
+export interface UpdateProjectContextPayload {
+  projectContext: string;
+}

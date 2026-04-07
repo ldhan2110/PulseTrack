@@ -29,6 +29,11 @@ import type {
   WorkflowStatus,
   SaveWorkflowPayload,
   WorkflowAllowedAssignee,
+  RepositoryConfig,
+  UpsertRepositoryConfigPayload,
+  AiConfig,
+  UpsertAiConfigPayload,
+  UpdateProjectContextPayload,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -169,6 +174,35 @@ export const api = {
     }),
   getAllowedAssignees: (projectId: string, statusId: string) =>
     request<WorkflowAllowedAssignee[]>(`/projects/${projectId}/workflow/statuses/${statusId}/allowed-assignees`),
+
+  // ─── Repository Config ────────────────────────────────────────────────────
+  getRepositoryConfig: (projectId: string) =>
+    request<RepositoryConfig | null>(`/projects/${projectId}/settings/repository`),
+  upsertRepositoryConfig: (projectId: string, data: UpsertRepositoryConfigPayload) =>
+    request<RepositoryConfig>(`/projects/${projectId}/settings/repository`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteRepositoryConfig: (projectId: string) =>
+    request<void>(`/projects/${projectId}/settings/repository`, { method: 'DELETE' }),
+
+  // ─── AI Config ────────────────────────────────────────────────────────────
+  getAiConfig: (projectId: string) =>
+    request<AiConfig | null>(`/projects/${projectId}/settings/ai`),
+  upsertAiConfig: (projectId: string, data: UpsertAiConfigPayload) =>
+    request<AiConfig>(`/projects/${projectId}/settings/ai`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  updateProjectContext: (projectId: string, data: UpdateProjectContextPayload) =>
+    request<AiConfig>(`/projects/${projectId}/settings/ai/context`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  generateProjectContext: (projectId: string) =>
+    request<{ projectContext: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
+      method: 'POST',
+    }),
 
   // ─── Comments ──────────────────────────────────────────────────────────────
   getComments: (projectId: string, taskId: string) =>
