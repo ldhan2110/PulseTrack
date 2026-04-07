@@ -1,5 +1,5 @@
 // apps/web/src/hooks/useAiTaskGeneration.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
@@ -13,13 +13,20 @@ export function useAiTaskGeneration(projectId: string) {
   const queryClient = useQueryClient();
   const [jobId, setJobId] = useState<string | null>(null);
   const [step, setStep] = useState<AiGenerationStep | 'idle' | 'queued' | 'completed' | 'failed'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isActive = !!jobId && step !== 'idle' && step !== 'completed' && step !== 'failed';
+  const lastFormDataRef = useRef<FormData | null>(null);
 
   // Submit generation request
   const generate = useMutation({
-    mutationFn: (formData: FormData) => api.generateTasks(projectId, formData),
+    mutationFn: (formData: FormData) => {
+      lastFormDataRef.current = formData;
+      return api.generateTasks(projectId, formData);
+    },
     onSuccess: (data) => {
       setJobId(data.jobId);
       setStep('queued');
+      setErrorMessage(null);
       toast.info('AI task generation started');
     },
     onError: (error: Error) => {
@@ -27,12 +34,34 @@ export function useAiTaskGeneration(projectId: string) {
     },
   });
 
-  // Poll job result when completed
+  // Poll job result when completed (fetch tasks)
   const jobResult = useQuery({
     queryKey: ['ai-generation', projectId, jobId],
     queryFn: () => api.getGenerationJobResult(projectId, jobId!),
     enabled: !!jobId && step === 'completed',
   });
+
+  // Polling fallback: check job status every 5s while in-progress
+  const jobStatus = useQuery({
+    queryKey: ['ai-generation-status', projectId, jobId],
+    queryFn: () => api.getGenerationJobResult(projectId, jobId!),
+    enabled: isActive,
+    refetchInterval: 5_000,
+  });
+
+  // Sync poll results into local state (fallback for missed socket events)
+  useEffect(() => {
+    if (!jobStatus.data) return;
+    const data = jobStatus.data;
+    if (data.status === 'completed') {
+      setStep('completed');
+    } else if (data.status === 'failed') {
+      setStep('failed');
+      setErrorMessage(data.error ?? 'Unknown error');
+    } else if (data.step) {
+      setStep(data.step);
+    }
+  }, [jobStatus.data]);
 
   // Socket.IO listeners
   useEffect(() => {
@@ -54,6 +83,7 @@ export function useAiTaskGeneration(projectId: string) {
     const onFailed = (data: { jobId: string; error: string }) => {
       if (data.jobId === jobId) {
         setStep('failed');
+        setErrorMessage(data.error);
         toast.error(`Generation failed: ${data.error}`);
       }
     };
@@ -72,18 +102,30 @@ export function useAiTaskGeneration(projectId: string) {
   const reset = useCallback(() => {
     setJobId(null);
     setStep('idle');
+    setErrorMessage(null);
     void queryClient.removeQueries({ queryKey: ['ai-generation', projectId] });
+    void queryClient.removeQueries({ queryKey: ['ai-generation-status', projectId] });
   }, [projectId, queryClient]);
+
+  const cancel = useCallback(() => {
+    reset();
+  }, [reset]);
+
+  const retry = useCallback(() => {
+    reset();
+  }, [reset]);
 
   return {
     generate,
     jobId,
     step,
     tasks: jobResult.data?.tasks ?? [],
-    isLoading: generate.isPending || (step !== 'idle' && step !== 'completed' && step !== 'failed'),
+    isLoading: generate.isPending || isActive,
     isCompleted: step === 'completed',
     isFailed: step === 'failed',
-    error: jobResult.data?.error,
+    error: errorMessage ?? jobResult.data?.error ?? null,
     reset,
+    cancel,
+    retry,
   };
 }

@@ -473,6 +473,7 @@ export type AiGenerationStatus = 'waiting' | 'active' | 'completed' | 'failed';
 
 export interface AiGenerationJobResult {
   status: AiGenerationStatus;
+  step?: AiGenerationStep;
   tasks?: GeneratedTask[];
   error?: string;
 }

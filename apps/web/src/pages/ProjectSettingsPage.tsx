@@ -171,7 +171,7 @@ export function ProjectSettingsPage() {
                     value={prefix}
                     onChange={(e) => validatePrefix(e.target.value)}
                     placeholder="e.g. PM, ACME"
-                    className="max-w-[120px]"
+                    className="max-w-30"
                     disabled={!canManage}
                   />
                   {prefix && !prefixError && (

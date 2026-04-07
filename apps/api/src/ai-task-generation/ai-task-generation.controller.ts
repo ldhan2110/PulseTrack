@@ -105,6 +105,8 @@ export class AiTaskGenerationController {
       return { status: 'failed', error: job.failedReason ?? 'Unknown error' };
     }
 
-    return { status: state }; // 'waiting' | 'active' | 'delayed'
+    // Include current step from job progress so frontend can recover state
+    const progress = job.progress as { step?: string } | undefined;
+    return { status: state, step: progress?.step ?? 'queued' };
   }
 }

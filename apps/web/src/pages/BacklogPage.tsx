@@ -151,6 +151,9 @@ export function BacklogPage() {
           onSubmit={handleGenerateSubmit}
           isProcessing={aiGeneration.isLoading}
           step={aiGeneration.step}
+          error={aiGeneration.error}
+          onCancel={() => { aiGeneration.cancel(); setGenerateOpen(false); }}
+          onRetry={() => { aiGeneration.retry(); }}
         />
 
         {wizardOpen && aiGeneration.tasks.length > 0 && (

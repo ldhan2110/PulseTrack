@@ -42,7 +42,7 @@ export class AiContextGeneratorService {
     const cli = CLI_COMMANDS[aiConfig.provider] ?? aiConfig.provider;
 
     const prompt = `
-      Scan this codebase and build a concise but structured understanding of the system. It should as short as possible while covering the following aspects:
+      Scan this codebase and build a concise but structured understanding of the system. It should as short as possible while covering the following aspects (around 4000 - 8000 characters):
       Focus on:
       - System purpose: what problem it solves and for whom
       - Core business capabilities (key features and user-facing behavior)
@@ -71,6 +71,11 @@ export class AiContextGeneratorService {
 
     // Truncate to 10000 chars at last complete sentence
     let context = stdout.trim();
+    if (context.length > 10000) {
+      const truncated = context.slice(0, 10000);
+      const lastPeriod = truncated.lastIndexOf('.');
+      context = lastPeriod > 0 ? truncated.slice(0, lastPeriod + 1) : truncated;
+    }
     const updated = await this.aiConfigService.updateContext(projectId, context);
     return { projectContext: updated.projectContext };
   }

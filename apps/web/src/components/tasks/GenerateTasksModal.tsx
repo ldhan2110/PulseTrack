@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles, Upload, X, FileText } from 'lucide-react';
+import { Sparkles, Upload, X, FileText, AlertCircle, RotateCcw } from 'lucide-react';
 import type { AiGenerationStep } from '@/lib/types';
 
 const STEP_LABELS: Record<string, string> = {
@@ -37,13 +37,16 @@ interface Props {
   onSubmit: (formData: FormData) => void;
   isProcessing: boolean;
   step: AiGenerationStep | 'idle' | 'queued' | 'completed' | 'failed';
+  error?: string | null;
+  onCancel?: () => void;
+  onRetry?: () => void;
 }
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = '.pdf,.docx,.txt,.md,.png,.jpg,.jpeg';
 
-export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing, step }: Props) {
+export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing, step, error, onCancel, onRetry }: Props) {
   const [prompt, setPrompt] = useState('');
   const [scanCodebase, setScanCodebase] = useState(false);
   const [breakIntoSubTasks, setBreakIntoSubTasks] = useState(false);
@@ -83,7 +86,17 @@ export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing,
           </DialogTitle>
         </DialogHeader>
 
-        {isProcessing ? (
+        {step === 'failed' ? (
+          <div className="py-8 space-y-4">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <AlertCircle className="size-10 text-destructive" />
+              <h3 className="text-base font-semibold">Generation Failed</h3>
+              <p className="text-sm text-muted-foreground max-w-[400px]">
+                {error ?? 'An unexpected error occurred'}
+              </p>
+            </div>
+          </div>
+        ) : isProcessing ? (
           <div className="py-8 space-y-4">
             <div className="text-sm text-muted-foreground text-center">
               {STEP_LABELS[step] ?? 'Processing...'}
@@ -196,7 +209,21 @@ export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing,
         )}
 
         <DialogFooter>
-          {!isProcessing && (
+          {step === 'failed' ? (
+            <>
+              <Button variant="outline" onClick={() => { onRetry?.(); }}>
+                Close
+              </Button>
+              <Button onClick={() => { onRetry?.(); }}>
+                <RotateCcw className="size-4 mr-1" />
+                Try Again
+              </Button>
+            </>
+          ) : isProcessing ? (
+            <Button variant="ghost" onClick={() => { onCancel?.(); }}>
+              Cancel
+            </Button>
+          ) : (
             <>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
