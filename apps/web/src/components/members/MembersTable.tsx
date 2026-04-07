@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useChangeMemberRole, useRemoveMember } from '@/hooks/useMembers';
+import { useChangeMemberRole, useRemoveMember, useMemberActiveWork } from '@/hooks/useMembers';
 import type { Member, ProjectRole } from '@/lib/types';
 
 const ROLES: ProjectRole[] = ['pm', 'ba', 'qc', 'developer'];
@@ -63,6 +63,28 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
   const [removingMember, setRemovingMember] = useState<Member | null>(null);
   const changeMemberRole = useChangeMemberRole(projectId);
   const removeMember = useRemoveMember(projectId);
+  const activeWork = useMemberActiveWork(projectId, removingMember?.id ?? null);
+
+  const getRemovalDescription = () => {
+    if (!removingMember) return '';
+
+    const name = removingMember.user.username;
+    const base = `Remove ${name} from this project? They will lose access to all project data.`;
+
+    if (activeWork.isLoading) return base;
+    if (!activeWork.data) return base;
+
+    const { tasks, subTasks, bugs } = activeWork.data;
+    const total = tasks + subTasks + bugs;
+    if (total === 0) return base;
+
+    const parts: string[] = [];
+    if (tasks > 0) parts.push(`${tasks} task${tasks !== 1 ? 's' : ''}`);
+    if (subTasks > 0) parts.push(`${subTasks} subtask${subTasks !== 1 ? 's' : ''}`);
+    if (bugs > 0) parts.push(`${bugs} bug${bugs !== 1 ? 's' : ''}`);
+
+    return `Removing ${name} will unassign ${parts.join(', ')} currently assigned to them. These items will become unassigned.`;
+  };
 
   const handleRemoveConfirm = () => {
     if (!removingMember) return;
@@ -156,8 +178,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Member</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove {removingMember?.user.username} from this project? They will lose access to
-              all project data.
+              {getRemovalDescription()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -99,6 +99,8 @@ export const api = {
     request<void>(`/projects/${projectId}/members/${memberId}/role`, { method: 'PATCH', body: JSON.stringify(data) }),
   removeMember: (projectId: string, memberId: string) =>
     request<void>(`/projects/${projectId}/members/${memberId}`, { method: 'DELETE' }),
+  getMemberActiveWork: (projectId: string, memberId: string) =>
+    request<{ tasks: number; subTasks: number; bugs: number }>(`/projects/${projectId}/members/${memberId}/active-work`),
 
   // ─── Tasks ─────────────────────────────────────────────────────────────────
   getTasks: (projectId: string) =>

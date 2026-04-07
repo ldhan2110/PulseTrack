@@ -69,10 +69,20 @@ export function useRemoveMember(projectId: string) {
       api.removeMember(projectId, memberId).then(() => name),
     onSuccess: (name) => {
       void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
       toast.success(`${name} removed from project`);
     },
     onError: () => {
       toast.error('Something went wrong. Please try again.');
     },
+  });
+}
+
+export function useMemberActiveWork(projectId: string, memberId: string | null) {
+  return useQuery({
+    queryKey: ['member-active-work', projectId, memberId],
+    queryFn: () => api.getMemberActiveWork(projectId, memberId!),
+    enabled: !!memberId,
   });
 }
