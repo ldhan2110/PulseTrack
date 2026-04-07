@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { mkdirSync } from 'fs';
+import { join } from 'path';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Increase body size limit to support inline base64 images in rich text content
   app.use(json({ limit: '10mb' }));
@@ -24,11 +26,8 @@ async function bootstrap() {
     }),
   );
 
-  // CORS for Vite dev server
-  app.enableCors({
-    origin: 'http://localhost:5173',
-    credentials: true,
-  });
+  // CORS — wildcard origin; auth uses Bearer token so credentials flag is not needed
+  app.enableCors({ origin: '*' });
 
   // Global API prefix
   app.setGlobalPrefix('api');
@@ -45,6 +44,9 @@ async function bootstrap() {
 
   // Create uploads directory for file attachments
   mkdirSync('uploads', { recursive: true });
+
+  // Serve uploaded files statically
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/api/uploads' });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

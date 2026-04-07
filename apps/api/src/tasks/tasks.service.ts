@@ -9,21 +9,55 @@ export class TasksService {
   constructor(private prisma: PrismaService) {}
 
   async create(projectId: string, creatorId: string, dto: CreateTaskDto) {
-    return this.prisma.task.create({
-      data: {
-        projectId,
-        creatorId,
-        title: dto.title,
-        description: dto.description,
-        status: dto.status,
-        assigneeId: dto.assigneeId,
-        storyPoints: dto.storyPoints,
-        sprintId: dto.sprintId,
-        acceptanceCriteria: dto.acceptanceCriteria,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      // Atomically increment the project's task sequence
+      const project = await tx.project.update({
+        where: { id: projectId },
+        data: { taskSeq: { increment: 1 } },
+        select: { prefix: true, taskSeq: true },
+      });
+
+      const taskKey = project.prefix ? `${project.prefix}-${project.taskSeq}` : null;
+
+      return tx.task.create({
+        data: {
+          projectId,
+          creatorId,
+          title: dto.title,
+          taskKey,
+          description: dto.description,
+          status: dto.status,
+          assigneeId: dto.assigneeId,
+          storyPoints: dto.storyPoints,
+          sprintId: dto.sprintId,
+          acceptanceCriteria: dto.acceptanceCriteria,
+          priority: dto.priority,
+          plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : undefined,
+          plannedEndDate: dto.plannedEndDate ? new Date(dto.plannedEndDate) : undefined,
+          actualStartDate: dto.actualStartDate ? new Date(dto.actualStartDate) : undefined,
+          actualEndDate: dto.actualEndDate ? new Date(dto.actualEndDate) : undefined,
+        },
+        include: {
+          assignee: { select: { id: true, username: true, email: true } },
+          sprint: { select: { id: true, name: true } },
+        },
+      });
+    });
+  }
+
+  async findByTaskKey(taskKey: string) {
+    return this.prisma.task.findUnique({
+      where: { taskKey },
       include: {
         assignee: { select: { id: true, username: true, email: true } },
         sprint: { select: { id: true, name: true } },
+        creator: { select: { id: true, username: true, email: true } },
+        subTasks: {
+          include: {
+            assignee: { select: { id: true, username: true, email: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   }
@@ -62,16 +96,56 @@ export class TasksService {
     const current = await this.prisma.task.findUniqueOrThrow({ where: { id: taskId } });
 
     // Build history entries for tracked fields only
-    const trackedFields = ['status', 'assigneeId', 'sprintId', 'storyPoints', 'title'] as const;
-    const historyEntries = trackedFields
+    const trackedFields = ['status', 'assigneeId', 'sprintId', 'storyPoints', 'title', 'priority'] as const;
+    const historyEntries: { taskId: string; actorId: string; field: string; oldValue: string | null; newValue: string | null }[] = trackedFields
       .filter(f => dto[f] !== undefined && String(dto[f] ?? '') !== String(current[f] ?? ''))
       .map(f => ({
         taskId,
         actorId,
-        field: f,
+        field: f as string,
         oldValue: current[f] != null ? String(current[f]) : null,
         newValue: dto[f] != null ? String(dto[f]) : null,
       }));
+
+    // Track description changes
+    if (dto.description !== undefined && dto.description !== current.description) {
+      historyEntries.push({
+        taskId,
+        actorId,
+        field: 'description',
+        oldValue: current.description ? current.description.replace(/<[^>]*>/g, '').slice(0, 500) : null,
+        newValue: dto.description ? dto.description.replace(/<[^>]*>/g, '').slice(0, 500) : null,
+      });
+    }
+
+    // Track acceptance criteria changes
+    if (dto.acceptanceCriteria !== undefined && dto.acceptanceCriteria !== current.acceptanceCriteria) {
+      historyEntries.push({
+        taskId,
+        actorId,
+        field: 'acceptanceCriteria',
+        oldValue: current.acceptanceCriteria ?? null,
+        newValue: dto.acceptanceCriteria ?? null,
+      });
+    }
+
+    // Track date field changes
+    const dateFields = ['plannedStartDate', 'plannedEndDate', 'actualStartDate', 'actualEndDate'] as const;
+    for (const f of dateFields) {
+      if (dto[f] !== undefined) {
+        const oldRaw = current[f] ? (current[f] as Date).toISOString() : null;
+        const newRaw = dto[f] ? new Date(dto[f] as string).toISOString() : null;
+        if (oldRaw !== newRaw) {
+          historyEntries.push({
+            taskId,
+            actorId,
+            field: f,
+            oldValue: oldRaw,
+            newValue: newRaw,
+          });
+        }
+      }
+    }
 
     // Execute update + history inserts in a single transaction
     const [updatedTask] = await this.prisma.$transaction([
@@ -86,6 +160,19 @@ export class TasksService {
           ...(dto.sprintId !== undefined && { sprintId: dto.sprintId }),
           ...(dto.acceptanceCriteria !== undefined && {
             acceptanceCriteria: dto.acceptanceCriteria,
+          }),
+          ...(dto.priority !== undefined && { priority: dto.priority }),
+          ...(dto.plannedStartDate !== undefined && {
+            plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : null,
+          }),
+          ...(dto.plannedEndDate !== undefined && {
+            plannedEndDate: dto.plannedEndDate ? new Date(dto.plannedEndDate) : null,
+          }),
+          ...(dto.actualStartDate !== undefined && {
+            actualStartDate: dto.actualStartDate ? new Date(dto.actualStartDate) : null,
+          }),
+          ...(dto.actualEndDate !== undefined && {
+            actualEndDate: dto.actualEndDate ? new Date(dto.actualEndDate) : null,
           }),
         },
         include: {

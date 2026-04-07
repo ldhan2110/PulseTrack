@@ -16,7 +16,8 @@ import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
 import type { Task } from '@/lib/types';
 
 export function BacklogPage() {
-  const { projectId = '' } = useParams<{ projectId: string }>();
+  const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
   const { data: sprints = [] } = useSprints(projectId);
   const { data: members = [] } = useMembers(projectId);
@@ -104,7 +105,7 @@ export function BacklogPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-8">
+    <div className="flex flex-col gap-4 p-8 h-full min-h-0">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
         {canEdit && (
@@ -115,6 +116,7 @@ export function BacklogPage() {
       <Tabs
         value={backlogView}
         onValueChange={(v) => setBacklogView(v as 'table' | 'board')}
+        className="flex flex-col flex-1 min-h-0"
       >
         <TabsList>
           <TabsTrigger value="table">Table</TabsTrigger>
@@ -125,14 +127,15 @@ export function BacklogPage() {
           <TasksTable
             tasks={taskList}
             projectId={projectId}
+            projectPrefix={projectPrefix}
             members={members}
             sprints={sprints}
             onRowSelectionChange={setSelectedTasks}
           />
         </TabsContent>
 
-        <TabsContent value="board" className="mt-4">
-          <KanbanBoard tasks={taskList} projectId={projectId} />
+        <TabsContent value="board" className="mt-4 flex-1 min-h-0">
+          <KanbanBoard tasks={taskList} projectId={projectId} projectPrefix={projectPrefix} />
         </TabsContent>
       </Tabs>
 

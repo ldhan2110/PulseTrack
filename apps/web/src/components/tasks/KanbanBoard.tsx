@@ -16,6 +16,7 @@ const TASK_STATUSES: TaskStatus[] = ['BACKLOG', 'IN_PROGRESS', 'IN_REVIEW', 'DON
 interface KanbanBoardProps {
   tasks: Task[];
   projectId: string;
+  projectPrefix: string;
 }
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -26,7 +27,7 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   BLOCKED: 'Blocked',
 };
 
-export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProps) {
   const updateTaskStatus = useUpdateTaskStatus(projectId);
 
   const sensors = useSensors(
@@ -104,6 +105,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
             status={status}
             tasks={tasksByStatus[status]}
             projectId={projectId}
+            projectPrefix={projectPrefix}
           />
         ))}
       </div>

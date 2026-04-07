@@ -8,6 +8,8 @@ import {
   FolderKanban,
   ChevronLeft,
   ChevronRight,
+  Settings,
+  LogOut,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -28,7 +30,6 @@ import { Separator } from '@/components/ui/separator';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { useUiStore } from '@/store/uiStore';
-import { cn } from '@/lib/utils';
 
 const PROJECT_NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
@@ -36,6 +37,7 @@ const PROJECT_NAV_ITEMS = [
   { label: 'Sprints', icon: Zap, path: 'sprints' },
   { label: 'Bugs', icon: Bug, path: 'bugs' },
   { label: 'Members', icon: Users, path: 'members' },
+  { label: 'Settings', icon: Settings, path: 'settings' },
 ];
 
 function SidebarCollapseButton() {
@@ -50,7 +52,7 @@ function SidebarCollapseButton() {
           size="icon"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           onClick={toggleSidebar}
-          className="size-8"
+          className="size-8 shrink-0"
         >
           {isCollapsed ? (
             <ChevronRight className="size-4" />
@@ -73,10 +75,10 @@ interface AppSidebarInnerProps {
 function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const { data: projects } = useProjects();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
 
   const userInitials = user?.username
@@ -85,16 +87,45 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
 
   const userName = user?.username ?? user?.email ?? 'User';
 
+  // Find active project to get its prefix for URL generation
+  const activeProject = projects?.find((p) => p.id === activeProjectId);
+  const activeProjectPrefix = activeProject?.prefix ?? activeProjectId ?? '';
+
   return (
     <Sidebar collapsible="icon">
-      {/* Header: PM logo */}
-      <SidebarHeader className="h-12 flex items-center px-3">
-        <div className={cn('flex items-center gap-2', isCollapsed && 'justify-center')}>
-          <FolderKanban className="size-5 text-primary shrink-0" />
-          {!isCollapsed && (
-            <span className="font-semibold text-base tracking-tight">PM</span>
-          )}
-        </div>
+      {/* Header: logo + collapse toggle */}
+      <SidebarHeader className="h-12 flex items-center px-2">
+        {isCollapsed ? (
+          <div className="flex justify-center w-full">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <img
+                  src="/favicon.svg"
+                  alt="Logo"
+                  className="size-6 shrink-0 cursor-pointer"
+                  onClick={toggleSidebar}
+                />
+              </TooltipTrigger>
+              <TooltipContent side="right">Expand sidebar</TooltipContent>
+            </Tooltip>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <img
+              src="/favicon.svg"
+              alt="Logo"
+              className="size-6 shrink-0 cursor-pointer"
+              onClick={() => navigate('/')}
+            />
+            <span
+              className="font-semibold text-base tracking-tight truncate cursor-pointer flex-1"
+              onClick={() => navigate('/')}
+            >
+              PulseTrack
+            </span>
+            <SidebarCollapseButton />
+          </div>
+        )}
       </SidebarHeader>
 
       <Separator />
@@ -109,7 +140,8 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
           )}
           <SidebarMenu>
             {(projects ?? []).map((project) => {
-              const isActive = location.pathname.startsWith(`/projects/${project.id}`);
+              const projectIdentifier = project.prefix ?? project.id;
+              const isActive = location.pathname.startsWith(`/projects/${projectIdentifier}`);
               return (
                 <SidebarMenuItem key={project.id}>
                   <Tooltip>
@@ -117,10 +149,14 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                       <SidebarMenuButton
                         isActive={isActive}
                         aria-label={project.name}
-                        onClick={() => navigate(`/projects/${project.id}/dashboard`)}
+                        onClick={() => navigate(`/projects/${projectIdentifier}/dashboard`)}
                         className="cursor-pointer"
                       >
-                        <FolderKanban />
+                        {project.avatarUrl ? (
+                          <img src={project.avatarUrl} alt={`${project.name} avatar`} className="size-4 rounded" />
+                        ) : (
+                          <FolderKanban className="size-4" />
+                        )}
                         <span className="truncate">{project.name}</span>
                       </SidebarMenuButton>
                     </TooltipTrigger>
@@ -160,12 +196,12 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
             <SidebarGroup>
               {!isCollapsed && (
                 <SidebarGroupLabel className="text-[13px] font-semibold truncate">
-                  {projects?.find((p) => p.id === activeProjectId)?.name ?? 'Project'}
+                  {activeProject?.name ?? 'Project'}
                 </SidebarGroupLabel>
               )}
               <SidebarMenu>
                 {PROJECT_NAV_ITEMS.map((item) => {
-                  const href = `/projects/${activeProjectId}/${item.path}`;
+                  const href = `/projects/${activeProjectPrefix}/${item.path}`;
                   const isActive = location.pathname === href;
                   return (
                     <SidebarMenuItem key={item.path}>
@@ -194,36 +230,54 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="h-12">
+      {/* Footer: user info + logout */}
+      <SidebarFooter>
         <Separator />
-        <div
-          className={cn(
-            'flex items-center px-3 h-12',
-            isCollapsed ? 'justify-center' : 'gap-2',
-          )}
-        >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Avatar className="size-7 shrink-0 cursor-default">
-                <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
-              </Avatar>
-            </TooltipTrigger>
-            {isCollapsed && (
+        {isCollapsed ? (
+          <div className="flex flex-col items-center gap-1 py-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Avatar className="size-7 cursor-default">
+                  <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
               <TooltipContent side="right">{userName}</TooltipContent>
-            )}
-          </Tooltip>
-          {!isCollapsed && (
-            <span className="text-sm truncate text-sidebar-foreground">{userName}</span>
-          )}
-          {!isCollapsed && (
-            <div className="ml-auto">
-              <SidebarCollapseButton />
-            </div>
-          )}
-        </div>
-        {isCollapsed && (
-          <div className="flex justify-center pb-1">
-            <SidebarCollapseButton />
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Sign out"
+                  onClick={logout}
+                  className="size-8"
+                >
+                  <LogOut className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign out</TooltipContent>
+            </Tooltip>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 h-12">
+            <Avatar className="size-7 shrink-0 cursor-default">
+              <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm truncate text-sidebar-foreground flex-1">{userName}</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Sign out"
+                  onClick={logout}
+                  className="size-8 shrink-0"
+                >
+                  <LogOut className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign out</TooltipContent>
+            </Tooltip>
           </div>
         )}
       </SidebarFooter>

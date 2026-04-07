@@ -22,27 +22,48 @@ export class CommentsService {
   }
 
   async create(taskId: string, authorId: string, content: string) {
-    return this.prisma.comment.create({
-      data: { taskId, authorId, content },
-      include: {
-        author: { select: { id: true, username: true, email: true } },
-        replies: true,
-      },
-    });
+    const [comment] = await this.prisma.$transaction([
+      this.prisma.comment.create({
+        data: { taskId, authorId, content },
+        include: {
+          author: { select: { id: true, username: true, email: true } },
+          replies: true,
+        },
+      }),
+      this.prisma.taskHistory.create({
+        data: {
+          taskId,
+          actorId: authorId,
+          field: 'comment_added',
+          newValue: content.replace(/<[^>]*>/g, '').slice(0, 200),
+        },
+      }),
+    ]);
+    return comment;
   }
 
   async createReply(taskId: string, parentId: string, authorId: string, content: string) {
-    // Verify parent comment exists and belongs to the same task
     const parent = await this.prisma.comment.findUnique({ where: { id: parentId } });
     if (!parent || parent.taskId !== taskId) {
       throw new NotFoundException('Parent comment not found');
     }
-    return this.prisma.comment.create({
-      data: { taskId, authorId, content, parentId },
-      include: {
-        author: { select: { id: true, username: true, email: true } },
-      },
-    });
+    const [reply] = await this.prisma.$transaction([
+      this.prisma.comment.create({
+        data: { taskId, authorId, content, parentId },
+        include: {
+          author: { select: { id: true, username: true, email: true } },
+        },
+      }),
+      this.prisma.taskHistory.create({
+        data: {
+          taskId,
+          actorId: authorId,
+          field: 'comment_added',
+          newValue: content.replace(/<[^>]*>/g, '').slice(0, 200),
+        },
+      }),
+    ]);
+    return reply;
   }
 
   async delete(commentId: string, userId: string, userRole: string) {
@@ -50,12 +71,53 @@ export class CommentsService {
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
-    // Only author or PM can delete (per D-10)
     if (comment.authorId !== userId && userRole !== 'pm') {
       throw new ForbiddenException('Only the comment author or a PM can delete this comment');
     }
-    // Delete replies first (parentId FK is NoAction), then delete the comment
-    await this.prisma.comment.deleteMany({ where: { parentId: commentId } });
-    return this.prisma.comment.delete({ where: { id: commentId } });
+    await this.prisma.$transaction([
+      this.prisma.comment.deleteMany({ where: { parentId: commentId } }),
+      this.prisma.comment.delete({ where: { id: commentId } }),
+      this.prisma.taskHistory.create({
+        data: {
+          taskId: comment.taskId,
+          actorId: userId,
+          field: 'comment_deleted',
+          oldValue: comment.content.replace(/<[^>]*>/g, '').slice(0, 200),
+        },
+      }),
+    ]);
+  }
+
+  async update(commentId: string, userId: string, userRole: string, content: string) {
+    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+    if (comment.authorId !== userId && userRole !== 'pm') {
+      throw new ForbiddenException('Only the comment author or a PM can edit this comment');
+    }
+
+    const oldContent = comment.content;
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.comment.update({
+        where: { id: commentId },
+        data: { content, isEdited: true },
+        include: {
+          author: { select: { id: true, username: true, email: true } },
+        },
+      }),
+      this.prisma.taskHistory.create({
+        data: {
+          taskId: comment.taskId,
+          actorId: userId,
+          field: 'comment_edited',
+          oldValue: oldContent.replace(/<[^>]*>/g, '').slice(0, 500),
+          newValue: content.replace(/<[^>]*>/g, '').slice(0, 500),
+        },
+      }),
+    ]);
+
+    return updated;
   }
 }

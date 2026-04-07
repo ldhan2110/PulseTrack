@@ -2,6 +2,8 @@
 
 export type TaskStatus = 'BACKLOG' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
 
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'BLOCKER';
+
 export type BugSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 export type BugStatus = 'OPEN' | 'IN_FIX' | 'FIXED' | 'VERIFIED' | 'CLOSED';
@@ -33,6 +35,8 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
+  prefix: string | null;
+  avatarUrl: string | null;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -45,11 +49,18 @@ export interface Project {
 export interface CreateProjectPayload {
   name: string;
   description?: string;
+  prefix: string;
 }
 
 export interface UpdateProjectPayload {
   name?: string;
   description?: string;
+}
+
+export interface UpdateSettingsPayload {
+  name?: string;
+  description?: string;
+  prefix?: string;
 }
 
 // ─── Member ───────────────────────────────────────────────────────────────────
@@ -66,6 +77,10 @@ export interface Member {
 export interface AddMemberPayload {
   userId: string;
   role: ProjectRole;
+}
+
+export interface AddMembersPayload {
+  members: AddMemberPayload[];
 }
 
 export interface ChangeRolePayload {
@@ -87,6 +102,7 @@ export interface SubTask {
 
 export interface Task {
   id: string;
+  taskKey: string | null;
   title: string;
   description: string | null;
   status: TaskStatus;
@@ -102,6 +118,11 @@ export interface Task {
   sprint?: Sprint | null;
   subTasks?: SubTask[];
   acceptanceCriteria?: string | null;  // JSON string — parsed client-side into AcceptanceCriteria[]
+  priority?: Priority | null;
+  plannedStartDate?: string | null;
+  plannedEndDate?: string | null;
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
 }
 
 export interface AcceptanceCriteria {
@@ -118,6 +139,12 @@ export interface CreateTaskPayload {
   storyPoints?: number;
   assigneeId?: string;
   sprintId?: string;
+  acceptanceCriteria?: string;
+  priority?: Priority;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
+  actualStartDate?: string;
+  actualEndDate?: string;
 }
 
 export interface UpdateTaskPayload {
@@ -128,6 +155,11 @@ export interface UpdateTaskPayload {
   assigneeId?: string | null;
   sprintId?: string | null;
   acceptanceCriteria?: string;  // JSON string of AcceptanceCriteria[]
+  priority?: Priority | null;
+  plannedStartDate?: string | null;
+  plannedEndDate?: string | null;
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
 }
 
 export interface CreateSubTaskPayload {
@@ -272,6 +304,7 @@ export interface Comment {
   taskId: string;
   authorId: string;
   parentId: string | null;
+  isEdited: boolean;
   createdAt: string;
   updatedAt: string;
   author: Pick<User, 'id' | 'username' | 'email'>;
@@ -292,6 +325,7 @@ export interface Attachment {
   size: number;
   taskId: string;
   uploaderId: string;
+  isInline: boolean;
   createdAt: string;
   uploader: Pick<User, 'id' | 'username' | 'email'>;
 }

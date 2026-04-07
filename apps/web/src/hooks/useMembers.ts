@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { AddMemberPayload, ChangeRolePayload } from '../lib/types';
+import type { AddMemberPayload, AddMembersPayload, ChangeRolePayload } from '../lib/types';
 
 export function useMembers(projectId: string) {
   return useQuery({
@@ -29,6 +29,20 @@ export function useAddMember(projectId: string) {
     },
     onError: () => {
       toast.error('Something went wrong. Please try again.');
+    },
+  });
+}
+
+export function useAddMembers(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AddMembersPayload) => api.addMembers(projectId, data),
+    onSuccess: (members) => {
+      void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
+      toast.success(`${members.length} member${members.length === 1 ? '' : 's'} added to project`);
+    },
+    onError: () => {
+      toast.error('Failed to add members. Please try again.');
     },
   });
 }

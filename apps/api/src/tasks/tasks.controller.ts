@@ -37,6 +37,11 @@ export class TasksController {
     return this.tasksService.create(projectId, req.user.id, dto);
   }
 
+  @Get('by-key/:taskKey')
+  findByKey(@Param('taskKey') taskKey: string) {
+    return this.tasksService.findByTaskKey(taskKey);
+  }
+
   @Get(':taskId/history')
   getHistory(@Param('taskId') taskId: string) {
     return this.tasksService.getHistory(taskId);

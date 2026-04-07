@@ -35,7 +35,7 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <Card
       className="cursor-pointer hover:shadow-md transition-shadow"
-      onClick={() => navigate(`/projects/${project.id}/dashboard`)}
+      onClick={() => navigate(`/projects/${project.prefix}/dashboard`)}
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">

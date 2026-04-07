@@ -51,3 +51,19 @@ export function useDeleteComment(projectId: string, taskId: string) {
     },
   });
 }
+
+export function useUpdateComment(projectId: string, taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ commentId, content }: { commentId: string; content: string }) =>
+      api.updateComment(projectId, taskId, commentId, { content }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['comments', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
+      toast.success('Comment updated');
+    },
+    onError: () => {
+      toast.error('Failed to update comment. Please try again.');
+    },
+  });
+}

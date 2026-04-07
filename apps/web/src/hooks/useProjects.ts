@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { CreateProjectPayload, UpdateProjectPayload } from '../lib/types';
+import type { CreateProjectPayload, UpdateProjectPayload, UpdateSettingsPayload } from '../lib/types';
 
 export function useProjects() {
   return useQuery({
@@ -54,6 +54,59 @@ export function useArchiveProject() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Project archived');
+    },
+    onError: () => {
+      toast.error('Something went wrong. Please try again.');
+    },
+  });
+}
+
+export function useProjectByPrefix(prefix: string) {
+  return useQuery({
+    queryKey: ['project-by-prefix', prefix],
+    queryFn: () => api.getProjectByPrefix(prefix),
+    enabled: !!prefix,
+  });
+}
+
+export function useUpdateProjectSettings(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdateSettingsPayload) => api.updateProjectSettings(projectId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Settings updated');
+    },
+    onError: () => {
+      toast.error('Something went wrong. Please try again.');
+    },
+  });
+}
+
+export function useUploadProjectAvatar(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => api.uploadProjectAvatar(projectId, file),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Avatar updated');
+    },
+    onError: () => {
+      toast.error('Failed to upload avatar. Please try again.');
+    },
+  });
+}
+
+export function useRemoveProjectAvatar(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.removeProjectAvatar(projectId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Avatar removed');
     },
     onError: () => {
       toast.error('Something went wrong. Please try again.');

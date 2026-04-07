@@ -34,7 +34,8 @@ import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
 import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
-import type { Task, TaskStatus, Member, Sprint } from '@/lib/types';
+import { format } from 'date-fns';
+import type { Task, TaskStatus, Member, Sprint, Priority } from '@/lib/types';
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: 'BACKLOG', label: 'Backlog' },
@@ -43,6 +44,18 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: 'DONE', label: 'Done' },
   { value: 'BLOCKED', label: 'Blocked' },
 ];
+
+const PRIORITY_CONFIG: Record<Priority, { color: string; label: string }> = {
+  LOW:      { color: '#6b7280', label: 'Low' },
+  MEDIUM:   { color: '#3b82f6', label: 'Medium' },
+  HIGH:     { color: '#f59e0b', label: 'High' },
+  CRITICAL: { color: '#ef4444', label: 'Critical' },
+  BLOCKER:  { color: '#7c3aed', label: 'Blocker' },
+};
+
+const PRIORITY_ORDER: Record<Priority, number> = {
+  LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3, BLOCKER: 4,
+};
 
 function getInitials(name: string): string {
   return name
@@ -82,6 +95,7 @@ function SortHeader({ label, column }: SortHeaderProps) {
 interface TasksTableProps {
   tasks: Task[];
   projectId: string;
+  projectPrefix: string;
   members: Member[];
   sprints: Sprint[];
   isLoading?: boolean;
@@ -91,6 +105,7 @@ interface TasksTableProps {
 export function TasksTable({
   tasks,
   projectId,
+  projectPrefix,
   members,
   sprints,
   isLoading,
@@ -142,6 +157,9 @@ export function TasksTable({
         header: ({ column }) => <SortHeader label="Title" column={column} />,
         cell: ({ row }) => (
           <span className="text-sm font-medium truncate block max-w-[400px]" title={row.original.title}>
+            {row.original.taskKey && (
+              <span className="font-mono text-xs text-muted-foreground mr-2">{row.original.taskKey}</span>
+            )}
             {row.original.title}
           </span>
         ),
@@ -180,6 +198,35 @@ export function TasksTable({
         size: 120,
         filterFn: statusFilterFn,
         enableColumnFilter: true,
+      },
+      {
+        accessorKey: 'priority',
+        header: ({ column }) => <SortHeader label="Priority" column={column} />,
+        cell: ({ row }) => {
+          const p = row.original.priority as Priority | null | undefined;
+          if (!p) return <span className="text-xs text-muted-foreground">—</span>;
+          const cfg = PRIORITY_CONFIG[p];
+          return (
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block size-2 rounded-full"
+                style={{ backgroundColor: cfg.color }}
+              />
+              <span className="text-xs font-medium" style={{ color: cfg.color }}>
+                {cfg.label}
+              </span>
+            </div>
+          );
+        },
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.priority;
+          const b = rowB.original.priority;
+          const aOrder = a ? PRIORITY_ORDER[a] : -1;
+          const bOrder = b ? PRIORITY_ORDER[b] : -1;
+          return aOrder - bOrder;
+        },
+        enableSorting: true,
+        size: 100,
       },
       {
         accessorKey: 'assigneeId',
@@ -228,6 +275,36 @@ export function TasksTable({
         size: 120,
         filterFn: sprintFilterFn,
         enableColumnFilter: true,
+      },
+      {
+        accessorKey: 'plannedEndDate',
+        header: ({ column }) => <SortHeader label="Due" column={column} />,
+        cell: ({ row }) => {
+          const due = row.original.plannedEndDate;
+          if (!due) return <span className="text-xs text-muted-foreground">—</span>;
+          const isOverdue = new Date(due) < new Date() && row.original.status !== 'DONE';
+          let formatted: string;
+          try {
+            formatted = format(new Date(due), 'MMM d, yyyy');
+          } catch {
+            return <span className="text-xs text-muted-foreground">—</span>;
+          }
+          return (
+            <span className={cn('text-xs', isOverdue ? 'text-destructive' : 'text-amber-500')}>
+              {formatted}
+            </span>
+          );
+        },
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.plannedEndDate;
+          const b = rowB.original.plannedEndDate;
+          if (!a && !b) return 0;
+          if (!a) return 1;
+          if (!b) return -1;
+          return new Date(a).getTime() - new Date(b).getTime();
+        },
+        enableSorting: true,
+        size: 110,
       },
     ],
     [sprintMap, updateTaskStatus],
@@ -316,7 +393,7 @@ export function TasksTable({
                     'h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100',
                     row.getIsSelected() && 'bg-muted/30',
                   )}
-                  onClick={() => navigate(`/projects/${projectId}/tasks/${row.original.id}`)}
+                  onClick={() => navigate(`/projects/${projectPrefix}/tasks/${row.original.taskKey ?? row.original.id}`)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="py-0">

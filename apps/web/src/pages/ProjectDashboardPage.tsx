@@ -1,5 +1,5 @@
-import { useParams } from 'react-router-dom';
 import { ListTodo, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useUiStore } from '@/store/uiStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,8 +29,8 @@ function DashboardSkeleton() {
 }
 
 export function ProjectDashboardPage() {
-  const { projectId } = useParams<{ projectId: string }>();
-  const { data, isLoading } = useDashboard(projectId ?? '');
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
+  const { data, isLoading } = useDashboard(projectId);
 
   if (isLoading) {
     return (

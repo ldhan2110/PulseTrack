@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useUiStore } from '@/store/uiStore';
 import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +11,7 @@ import { CreateSprintDialog } from '@/components/sprints/CreateSprintDialog';
 import type { Sprint } from '@/lib/types';
 
 export function SprintsPage() {
-  const { projectId = '' } = useParams<{ projectId: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: sprints, isLoading } = useSprints(projectId);
   const { data: tasks = [] } = useTasks(projectId);
   const { canManage } = useProjectRole(projectId);

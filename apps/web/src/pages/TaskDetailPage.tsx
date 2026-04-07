@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Trash2, Plus, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,16 +34,20 @@ import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import { CommentThread } from '@/components/tasks/CommentThread';
 import { AttachmentList } from '@/components/tasks/AttachmentList';
 import { ActivityLog } from '@/components/tasks/ActivityLog';
-import { useTask, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
+import { useTaskByKey, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
+import { useUiStore } from '@/store/uiStore';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
 import { useProjectRole } from '@/hooks/useProjectRole';
 import { useProject } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { api } from '@/lib/api';
-import { formatDistanceToNow } from 'date-fns';
-import type { TaskStatus, AcceptanceCriteria, SubTask } from '@/lib/types';
+import { formatDistanceToNow, format, parseISO } from 'date-fns';
+import type { TaskStatus, AcceptanceCriteria, SubTask, Priority } from '@/lib/types';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -98,21 +102,100 @@ function SidebarLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
+  { value: 'LOW',      label: 'Low',      color: '#6b7280' },
+  { value: 'MEDIUM',   label: 'Medium',   color: '#3b82f6' },
+  { value: 'HIGH',     label: 'High',     color: '#f59e0b' },
+  { value: 'CRITICAL', label: 'Critical', color: '#ef4444' },
+  { value: 'BLOCKER',  label: 'Blocker',  color: '#7c3aed' },
+];
+
+interface DatePickerFieldProps {
+  label: string;
+  value: string | null | undefined;
+  onChange: (iso: string | null) => void;
+  disabled?: boolean;
+}
+
+function DatePickerField({ label, value, onChange, disabled }: DatePickerFieldProps) {
+  const selected = value ? parseISO(value) : undefined;
+  const displayLabel = selected ? format(selected, 'MMM d, yyyy') : 'Pick a date';
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <Label className='text-sm font-normal text-muted-foreground'>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn('h-7 gap-1.5 text-xs font-normal', !value && 'text-muted-foreground')}
+            disabled={disabled}
+          >
+            <CalendarIcon className="size-3" />
+            {displayLabel}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <CalendarComponent
+            mode="single"
+            selected={selected}
+            onSelect={(day) => onChange(day ? day.toISOString() : null)}
+            initialFocus
+          />
+          {value && (
+            <div className="border-t p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs text-muted-foreground"
+                onClick={() => onChange(null)}
+              >
+                Clear date
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export function TaskDetailPage() {
-  const { projectId = '', taskId = '' } = useParams<{ projectId: string; taskId: string }>();
+  const { taskKey = '', projectPrefix = '' } = useParams<{ taskKey: string; projectPrefix: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: task, isLoading, isError } = useTask(projectId, taskId);
+  const { data: task, isLoading, isError } = useTaskByKey(projectId, taskKey);
+  const taskId = task?.id ?? '';
   const { data: members = [] } = useMembers(projectId);
   const { data: sprints = [] } = useSprints(projectId);
   const { canManage, canEdit } = useProjectRole(projectId);
   const { data: project } = useProject(projectId);
   const updateTask = useUpdateTask(projectId);
+  const descriptionUpdate = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
+
+  const taskQueryKey = ['task-by-key', projectId, taskKey] as const;
+
+  const optimisticMutate = useCallback(
+    (patch: Record<string, unknown>, payload: { taskId: string; data: Record<string, unknown> }) => {
+      const prev = queryClient.getQueryData(taskQueryKey);
+      queryClient.setQueryData(taskQueryKey, (old: typeof task | undefined) =>
+        old ? { ...old, ...patch } : old,
+      );
+      updateTask.mutate(payload, {
+        onError: () => queryClient.setQueryData(taskQueryKey, prev),
+        onSuccess: () => void queryClient.invalidateQueries({ queryKey: taskQueryKey }),
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, projectId, taskKey, updateTask],
+  );
 
   // Inline title editing
   const [editingTitle, setEditingTitle] = useState(false);
@@ -131,7 +214,7 @@ export function TaskDetailPage() {
   const createSubTask = useMutation({
     mutationFn: (title: string) => api.createSubTask(projectId, taskId, { title }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
       setNewSubTaskTitle('');
       setAddingSubTask(false);
     },
@@ -147,7 +230,7 @@ export function TaskDetailPage() {
       data: { status?: TaskStatus; assigneeId?: string | null; title?: string };
     }) => api.updateSubTask(projectId, taskId, subTaskId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
     },
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
@@ -155,7 +238,7 @@ export function TaskDetailPage() {
   const deleteSubTask = useMutation({
     mutationFn: (subTaskId: string) => api.deleteSubTask(projectId, taskId, subTaskId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] });
     },
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
@@ -171,17 +254,14 @@ export function TaskDetailPage() {
       taskId: task.id,
     };
     const updated = [...current, newItem];
-    updateTask.mutate(
-      { taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } },
-      {
-        onSuccess: () => {
-          setNewCriteriaText('');
-          setAddingCriteria(false);
-        },
-        onError: () => toast.error('Something went wrong. Please try again.'),
-      },
+    const serialized = serializeAcceptanceCriteria(updated);
+    setNewCriteriaText('');
+    setAddingCriteria(false);
+    optimisticMutate(
+      { acceptanceCriteria: serialized },
+      { taskId, data: { acceptanceCriteria: serialized } },
     );
-  }, [newCriteriaText, task, taskId, updateTask]);
+  }, [newCriteriaText, task, taskId, optimisticMutate]);
 
   const toggleCriteria = useCallback(
     (ac: AcceptanceCriteria) => {
@@ -190,9 +270,13 @@ export function TaskDetailPage() {
       const updated = current.map((item) =>
         item.id === ac.id ? { ...item, completed: !item.completed } : item,
       );
-      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
+      const serialized = serializeAcceptanceCriteria(updated);
+      optimisticMutate(
+        { acceptanceCriteria: serialized },
+        { taskId, data: { acceptanceCriteria: serialized } },
+      );
     },
-    [task, taskId, updateTask],
+    [task, taskId, optimisticMutate],
   );
 
   const deleteCriteria = useCallback(
@@ -200,9 +284,13 @@ export function TaskDetailPage() {
       if (!task) return;
       const current = parseAcceptanceCriteria(task.acceptanceCriteria);
       const updated = current.filter((item) => item.id !== acId);
-      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
+      const serialized = serializeAcceptanceCriteria(updated);
+      optimisticMutate(
+        { acceptanceCriteria: serialized },
+        { taskId, data: { acceptanceCriteria: serialized } },
+      );
     },
-    [task, taskId, updateTask],
+    [task, taskId, optimisticMutate],
   );
 
   const updateCriteriaText = useCallback(
@@ -212,20 +300,23 @@ export function TaskDetailPage() {
       const updated = current.map((item) =>
         item.id === acId ? { ...item, text } : item,
       );
-      updateTask.mutate({ taskId, data: { acceptanceCriteria: serializeAcceptanceCriteria(updated) } });
+      const serialized = serializeAcceptanceCriteria(updated);
+      optimisticMutate(
+        { acceptanceCriteria: serialized },
+        { taskId, data: { acceptanceCriteria: serialized } },
+      );
     },
-    [task, taskId, updateTask],
+    [task, taskId, optimisticMutate],
   );
 
   const handleTitleSave = () => {
-    if (!titleValue.trim() || titleValue.trim() === task?.title) {
+    const trimmed = titleValue.trim();
+    if (!trimmed || trimmed === task?.title) {
       setEditingTitle(false);
       return;
     }
-    updateTask.mutate(
-      { taskId, data: { title: titleValue.trim() } },
-      { onSettled: () => setEditingTitle(false) },
-    );
+    setEditingTitle(false);
+    optimisticMutate({ title: trimmed }, { taskId, data: { title: trimmed } });
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
@@ -238,7 +329,7 @@ export function TaskDetailPage() {
 
   const handleDelete = () => {
     deleteTask.mutate(taskId, {
-      onSuccess: () => navigate(`/projects/${projectId}/backlog`),
+      onSuccess: () => navigate(`/projects/${projectPrefix}/backlog`),
     });
   };
 
@@ -279,7 +370,7 @@ export function TaskDetailPage() {
             This task doesn't exist or has been deleted.
           </p>
           <Link
-            to={`/projects/${projectId}/backlog`}
+            to={`/projects/${projectPrefix}/backlog`}
             className="text-sm font-medium underline underline-offset-4"
           >
             Go to Backlog
@@ -303,7 +394,7 @@ export function TaskDetailPage() {
           variant="ghost"
           size="sm"
           className="h-7 gap-1 -ml-2"
-          onClick={() => navigate(`/projects/${projectId}/backlog`)}
+          onClick={() => navigate(`/projects/${projectPrefix}/backlog`)}
         >
           <ArrowLeft className="size-4" />
           Back
@@ -313,37 +404,46 @@ export function TaskDetailPage() {
         <span>/</span>
         <span>Backlog</span>
         <span>/</span>
-        <span className="text-foreground truncate max-w-[200px]">{task.title}</span>
+        <span className="text-foreground truncate max-w-50">{task.title}</span>
       </div>
 
       {/* Title — inline editable */}
-      <div>
-        {editingTitle ? (
-          <Input
-            ref={titleInputRef}
-            value={titleValue}
-            onChange={(e) => setTitleValue(e.target.value)}
-            onBlur={handleTitleSave}
-            onKeyDown={handleTitleKeyDown}
-            className="text-xl font-semibold border-2 h-auto py-1"
-            autoFocus
-          />
-        ) : (
-          <h1
-            className={cn(
-              'text-xl font-semibold tracking-tight rounded px-1 -mx-1 transition-colors',
-              canEdit && 'cursor-pointer hover:bg-muted/50',
-            )}
-            onClick={() => {
-              if (!canEdit) return;
-              setTitleValue(task.title);
-              setEditingTitle(true);
-            }}
-            title={canEdit ? 'Click to edit' : undefined}
-          >
-            {task.title}
-          </h1>
+      <div className='flex gap-3'>
+        {/* Task key badge */}
+        {task.taskKey && (
+          <div className="text-sm text-center font-mono align-middle text-muted-foreground bg-muted px-2 py-0.5 rounded w-fit">
+            {task.taskKey}
+          </div>
         )}
+
+        <div className='flex-2'>
+          {editingTitle ? (
+            <Input
+              ref={titleInputRef}
+              value={titleValue}
+              onChange={(e) => setTitleValue(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleTitleKeyDown}
+              className="text-xl font-semibold border-2 h-auto py-1"
+              autoFocus
+            />
+          ) : (
+            <h1
+              className={cn(
+                'text-xl font-semibold tracking-tight rounded px-1 -mx-1 transition-colors',
+                canEdit && 'cursor-pointer hover:bg-muted/50',
+              )}
+              onClick={() => {
+                if (!canEdit) return;
+                setTitleValue(task.title);
+                setEditingTitle(true);
+              }}
+              title={canEdit ? 'Click to edit' : undefined}
+            >
+              {task.title}
+            </h1>
+          )}
+        </div>
       </div>
 
       <Separator />
@@ -361,11 +461,16 @@ export function TaskDetailPage() {
               <RichTextEditor
                 initialContent={task.description ?? ''}
                 onSave={(html) =>
-                  updateTask.mutate({ taskId, data: { description: html } })
+                  descriptionUpdate.mutate(
+                    { taskId, data: { description: html } },
+                    { onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId, taskKey] }) },
+                  )
                 }
                 editable={canEdit}
+                projectId={projectId}
+                taskId={taskId}
               />
-              {updateTask.isPending && (
+              {descriptionUpdate.isPending && (
                 <div className="flex items-center gap-1 mt-1">
                   <Loader2 className="size-3 animate-spin" />
                   <span className="text-xs text-muted-foreground">Saving...</span>
@@ -496,9 +601,7 @@ export function TaskDetailPage() {
                 <SidebarLabel>Status</SidebarLabel>
                 <Select
                   value={task.status}
-                  onValueChange={(val) =>
-                    updateTask.mutate({ taskId, data: { status: val as TaskStatus } })
-                  }
+                  onValueChange={(val) => optimisticMutate({ status: val as TaskStatus }, { taskId, data: { status: val as TaskStatus } })}
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -523,12 +626,10 @@ export function TaskDetailPage() {
                 <SidebarLabel>Assignee</SidebarLabel>
                 <Select
                   value={task.assigneeId ?? 'unassigned'}
-                  onValueChange={(val) =>
-                    updateTask.mutate({
-                      taskId,
-                      data: { assigneeId: val === 'unassigned' ? null : val },
-                    })
-                  }
+                  onValueChange={(val) => {
+                    const assigneeId = val === 'unassigned' ? null : val;
+                    optimisticMutate({ assigneeId }, { taskId, data: { assigneeId } });
+                  }}
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -559,12 +660,10 @@ export function TaskDetailPage() {
                 <SidebarLabel>Sprint</SidebarLabel>
                 <Select
                   value={task.sprintId ?? 'none'}
-                  onValueChange={(val) =>
-                    updateTask.mutate({
-                      taskId,
-                      data: { sprintId: val === 'none' ? null : val },
-                    })
-                  }
+                  onValueChange={(val) => {
+                    const sprintId = val === 'none' ? null : val;
+                    optimisticMutate({ sprintId }, { taskId, data: { sprintId } });
+                  }}
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
@@ -597,11 +696,82 @@ export function TaskDetailPage() {
                     const val = e.target.value;
                     const num = val === '' ? null : Number(val);
                     if (num === task.storyPoints) return;
-                    updateTask.mutate({
-                      taskId,
-                      data: { storyPoints: num === null ? undefined : num },
-                    });
+                    optimisticMutate(
+                      { storyPoints: num },
+                      { taskId, data: { storyPoints: num === null ? undefined : num } },
+                    );
                   }}
+                />
+              </div>
+
+              {/* Priority */}
+              <div className="flex items-center justify-between">
+                <SidebarLabel>Priority</SidebarLabel>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={task.priority ?? 'none'}
+                    onValueChange={(val) => {
+                      const priority = val === 'none' ? null : (val as Priority);
+                      optimisticMutate({ priority }, { taskId, data: { priority } });
+                    }}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="h-7 w-[110px] text-xs">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground text-xs">None</span>
+                      </SelectItem>
+                      {PRIORITY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="inline-block size-2 rounded-full"
+                              style={{ backgroundColor: opt.color }}
+                            />
+                            <span className="text-xs" style={{ color: opt.color }}>{opt.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Separator/>
+
+              {/* Planned dates */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Planned</SidebarLabel>
+                <DatePickerField
+                  label="Start"
+                  value={task.plannedStartDate}
+                  onChange={(iso) => optimisticMutate({ plannedStartDate: iso }, { taskId, data: { plannedStartDate: iso } })}
+                  disabled={!canEdit}
+                />
+                <DatePickerField
+                  label="End"
+                  value={task.plannedEndDate}
+                  onChange={(iso) => optimisticMutate({ plannedEndDate: iso }, { taskId, data: { plannedEndDate: iso } })}
+                  disabled={!canEdit}
+                />
+              </div>
+
+              {/* Actual dates */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Actual</SidebarLabel>
+                <DatePickerField
+                  label="Start"
+                  value={task.actualStartDate}
+                  onChange={(iso) => optimisticMutate({ actualStartDate: iso }, { taskId, data: { actualStartDate: iso } })}
+                  disabled={!canEdit}
+                />
+                <DatePickerField
+                  label="End"
+                  value={task.actualEndDate}
+                  onChange={(iso) => optimisticMutate({ actualEndDate: iso }, { taskId, data: { actualEndDate: iso } })}
+                  disabled={!canEdit}
                 />
               </div>
 

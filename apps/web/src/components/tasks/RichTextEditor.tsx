@@ -1,8 +1,8 @@
+// apps/web/src/components/tasks/RichTextEditor.tsx
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import Image from '@tiptap/extension-image';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
@@ -14,11 +14,15 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
+import { ResizableImage } from '@/components/editor/ResizableImage';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface RichTextEditorProps {
   initialContent: string;
   onSave: (html: string) => void;
   editable: boolean;
+  projectId: string;
+  taskId: string;
   /** Always show editor (no read/edit toggle). Used by CommentComposer. */
   alwaysEditing?: boolean;
   placeholder?: string;
@@ -110,39 +114,22 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
   );
 }
 
-/** Handle paste events to convert clipboard images to base64 */
-function handleImagePaste(editor: Editor, event: ClipboardEvent): boolean {
-  const items = event.clipboardData?.items;
-  if (!items) return false;
-
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      event.preventDefault();
-      const file = item.getAsFile();
-      if (!file) continue;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        editor.chain().focus().setImage({ src: base64 }).run();
-      };
-      reader.readAsDataURL(file);
-      return true;
-    }
-  }
-  return false;
-}
-
 export function RichTextEditor({
   initialContent,
   onSave,
   editable,
+  projectId,
+  taskId,
   alwaysEditing = false,
   placeholder: placeholderText = 'Add a description...',
 }: RichTextEditorProps) {
   const [isEditing, setIsEditing] = useState(alwaysEditing);
+  const [isSaving, setIsSaving] = useState(false);
   const initialContentRef = useRef(initialContent);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
+
+  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId, taskId });
 
   // Keep initialContentRef in sync for read-mode rendering
   useEffect(() => {
@@ -150,21 +137,27 @@ export function RichTextEditor({
   }, [initialContent]);
 
   const handleSaveAndExit = useCallback(
-    (editor: Editor) => {
-      const html = editor.getHTML();
-      onSave(html);
-      if (!alwaysEditing) {
-        setIsEditing(false);
+    async (editor: Editor) => {
+      setIsSaving(true);
+      try {
+        await awaitPendingUploads();
+        const html = editor.getHTML();
+        onSave(html);
+      } finally {
+        setIsSaving(false);
+        if (!alwaysEditing) {
+          setIsEditing(false);
+        }
       }
     },
-    [onSave, alwaysEditing],
+    [onSave, alwaysEditing, awaitPendingUploads],
   );
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false }),
       Placeholder.configure({ placeholder: placeholderText }),
-      Image.configure({ inline: true, allowBase64: true }),
+      ResizableImage,
       Table.configure({ resizable: false }),
       TableRow,
       TableCell,
@@ -174,14 +167,28 @@ export function RichTextEditor({
     editable: true,
     editorProps: {
       handlePaste: (_view, event) => {
-        if (editorRef.current) {
-          return handleImagePaste(editorRef.current, event as unknown as ClipboardEvent);
+        const items = event.clipboardData?.items;
+        if (!items || !editorRef.current) return false;
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (!file) continue;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result as string;
+              editorRef.current!.chain().focus().insertContent({ type: 'image', attrs: { src: base64 } }).run();
+              handleImagePaste(file, editorRef.current!, base64);
+            };
+            reader.readAsDataURL(file);
+            return true;
+          }
         }
         return false;
       },
       handleKeyDown: (_view, event) => {
         if (event.key === 'Escape' && !alwaysEditing) {
-          if (editor) handleSaveAndExit(editor);
+          if (editor) void handleSaveAndExit(editor);
           return true;
         }
         return false;
@@ -204,10 +211,9 @@ export function RichTextEditor({
     if (!editor || alwaysEditing) return;
 
     const handleBlur = ({ event }: { event: FocusEvent }) => {
-      // Check if focus moved to the toolbar (still within our container)
       const relatedTarget = event.relatedTarget as Node | null;
       if (containerRef.current?.contains(relatedTarget)) return;
-      handleSaveAndExit(editor);
+      void handleSaveAndExit(editor);
     };
 
     editor.on('blur', handleBlur);
@@ -219,7 +225,6 @@ export function RichTextEditor({
   // When entering edit mode, focus the editor
   useEffect(() => {
     if (isEditing && editor && !alwaysEditing) {
-      // Update content to latest before editing
       editor.commands.setContent(initialContent);
       setTimeout(() => editor.commands.focus('end'), 0);
     }
@@ -269,6 +274,9 @@ export function RichTextEditor({
         className="prose prose-sm max-w-none p-3 text-sm leading-relaxed focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted [&_th]:font-semibold"
         aria-label="Task description"
       />
+      {isSaving && (
+        <div className="px-3 pb-2 text-xs text-muted-foreground">Uploading images…</div>
+      )}
     </div>
   );
 }

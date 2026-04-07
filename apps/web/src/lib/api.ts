@@ -4,6 +4,7 @@ import type {
   UpdateProjectPayload,
   Member,
   AddMemberPayload,
+  AddMembersPayload,
   ChangeRolePayload,
   UserSearchResult,
   Task,
@@ -23,6 +24,7 @@ import type {
   CreateCommentPayload,
   Attachment,
   TaskHistoryEntry,
+  UpdateSettingsPayload,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -42,7 +44,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message || `API error: ${res.status}`);
   }
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export const api = {
@@ -57,12 +60,39 @@ export const api = {
     request<void>(`/projects/${id}/archive`, { method: 'POST' }),
   unarchiveProject: (id: string) =>
     request<void>(`/projects/${id}/unarchive`, { method: 'POST' }),
+  getProjectByPrefix: (prefix: string) => request<Project>(`/projects/by-prefix/${prefix}`),
+  updateProjectSettings: (id: string, data: UpdateSettingsPayload) =>
+    request<Project>(`/projects/${id}/settings`, { method: 'PATCH', body: JSON.stringify(data) }),
+  uploadProjectAvatar: async (id: string, file: File): Promise<Project> => {
+    const token = keycloak.token;
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/projects/${id}/avatar`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Upload failed: ${res.status}`);
+    }
+    return res.json() as Promise<Project>;
+  },
+  removeProjectAvatar: (id: string) =>
+    request<Project>(`/projects/${id}/avatar`, { method: 'DELETE' }),
 
   // ─── Members ───────────────────────────────────────────────────────────────
   getMembers: (projectId: string) =>
     request<Member[]>(`/projects/${projectId}/members`),
   addMember: (projectId: string, data: AddMemberPayload) =>
     request<Member>(`/projects/${projectId}/members`, { method: 'POST', body: JSON.stringify(data) }),
+  addMembers: (projectId: string, data: AddMembersPayload) =>
+    request<Member[]>(`/projects/${projectId}/members/batch`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   searchUsers: (projectId: string, query: string) =>
     request<UserSearchResult[]>(`/projects/${projectId}/members/search?q=${encodeURIComponent(query)}`),
   changeMemberRole: (projectId: string, memberId: string, data: ChangeRolePayload) =>
@@ -77,6 +107,8 @@ export const api = {
     request<Task>(`/projects/${projectId}/tasks`, { method: 'POST', body: JSON.stringify(data) }),
   getTask: (projectId: string, taskId: string) =>
     request<Task>(`/projects/${projectId}/tasks/${taskId}`),
+  getTaskByKey: (projectId: string, taskKey: string) =>
+    request<Task>(`/projects/${projectId}/tasks/by-key/${taskKey}`),
   updateTask: (projectId: string, taskId: string, data: UpdateTaskPayload) =>
     request<Task>(`/projects/${projectId}/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteTask: (projectId: string, taskId: string) =>
@@ -137,15 +169,21 @@ export const api = {
     request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, {
       method: 'DELETE',
     }),
+  updateComment: (projectId: string, taskId: string, commentId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 
   // ─── Attachments ───────────────────────────────────────────────────────────
   getAttachments: (projectId: string, taskId: string) =>
     request<Attachment[]>(`/projects/${projectId}/tasks/${taskId}/attachments`),
-  uploadAttachment: async (projectId: string, taskId: string, file: File): Promise<Attachment> => {
+  uploadAttachment: async (projectId: string, taskId: string, file: File, inline = false): Promise<Attachment> => {
     const token = keycloak.token;
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments`, {
+    const url = `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments${inline ? '?inline=true' : ''}`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

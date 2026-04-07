@@ -19,6 +19,14 @@ export function useTask(projectId: string, taskId: string) {
   });
 }
 
+export function useTaskByKey(projectId: string, taskKey: string) {
+  return useQuery({
+    queryKey: ['task-by-key', projectId, taskKey],
+    queryFn: () => api.getTaskByKey(projectId, taskKey),
+    enabled: !!projectId && !!taskKey,
+  });
+}
+
 export function useCreateTask(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -63,6 +71,7 @@ export function useUpdateTask(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
     },
     onSuccess: () => {
       toast.success('Task updated');
@@ -122,6 +131,7 @@ export function useUpdateTaskStatus(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['task', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
     },
     onSuccess: (_data, { status }) => {
       toast.success(`Moved to ${STATUS_LABELS[status]}`);

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useUiStore } from '@/store/uiStore';
 import { Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,8 @@ function formatDate(dateStr: string | null): string {
 }
 
 export function SprintBoardPage() {
-  const { projectId = '', sprintId = '' } = useParams<{ projectId: string; sprintId: string }>();
+  const { sprintId = '', projectPrefix = '' } = useParams<{ sprintId: string; projectPrefix: string }>();
+  const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
   const { data: sprint, isLoading: sprintLoading, isError: sprintError } = useSprint(projectId, sprintId);
   const { data: allTasks, isLoading: tasksLoading } = useTasks(projectId);
@@ -82,7 +84,7 @@ export function SprintBoardPage() {
             This sprint doesn't exist or has been deleted.
           </p>
           <Link
-            to={`/projects/${projectId}/sprints`}
+            to={`/projects/${projectPrefix}/sprints`}
             className="text-sm font-medium underline underline-offset-4"
           >
             Go to Sprints
@@ -101,7 +103,7 @@ export function SprintBoardPage() {
         variant="ghost"
         size="sm"
         className="h-7 gap-1 -ml-2 w-fit"
-        onClick={() => navigate(`/projects/${projectId}/sprints`)}
+        onClick={() => navigate(`/projects/${projectPrefix}/sprints`)}
       >
         ← Back to Sprints
       </Button>
@@ -145,7 +147,7 @@ export function SprintBoardPage() {
               variant="outline"
               asChild
             >
-              <Link to={`/projects/${projectId}/backlog`}>Go to Backlog</Link>
+              <Link to={`/projects/${projectPrefix}/backlog`}>Go to Backlog</Link>
             </Button>
           </div>
         </div>
@@ -165,13 +167,14 @@ export function SprintBoardPage() {
                 This sprint is closed — board is read-only.
               </div>
             ) : null}
-            <KanbanBoard tasks={sprintTasks} projectId={projectId} />
+            <KanbanBoard tasks={sprintTasks} projectId={projectId} projectPrefix={projectPrefix} />
           </TabsContent>
 
           <TabsContent value="table" className="mt-4">
             <TasksTable
               tasks={sprintTasks}
               projectId={projectId}
+              projectPrefix={projectPrefix}
               members={members}
               sprints={sprints}
             />

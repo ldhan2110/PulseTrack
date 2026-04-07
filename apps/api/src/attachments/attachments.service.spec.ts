@@ -15,6 +15,7 @@ const mockAttachment = {
   size: 1024,
   taskId: 'task-1',
   uploaderId: 'user-1',
+  isInline: false,
   createdAt: new Date(),
 };
 
@@ -38,6 +39,10 @@ const mockPrisma = {
     create: vi.fn(),
     delete: vi.fn(),
   },
+  taskHistory: {
+    create: vi.fn(),
+  },
+  $transaction: vi.fn().mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops)),
 };
 
 describe('AttachmentsService', () => {
@@ -45,28 +50,52 @@ describe('AttachmentsService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPrisma.$transaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
     service = new AttachmentsService(mockPrisma as any);
   });
 
+  describe('findAll()', () => {
+    it('should only return non-inline attachments', async () => {
+      mockPrisma.attachment.findMany.mockResolvedValue([mockAttachment]);
+
+      await service.findAll('task-1');
+
+      expect(mockPrisma.attachment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { taskId: 'task-1', isInline: false },
+        }),
+      );
+    });
+  });
+
   describe('create()', () => {
-    it('should create an attachment record', async () => {
+    it('should create an explicit (non-inline) attachment by default', async () => {
       const created = { ...mockAttachment, uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com' } };
       mockPrisma.attachment.create.mockResolvedValue(created);
+      mockPrisma.taskHistory.create.mockResolvedValue({});
 
       const result = await service.create('task-1', 'user-1', mockFile);
 
-      expect(mockPrisma.attachment.create).toHaveBeenCalledWith({
-        data: {
-          taskId: 'task-1',
-          uploaderId: 'user-1',
-          filename: 'document.pdf',
-          storedName: 'uuid-1234.pdf',
-          mimeType: 'application/pdf',
-          size: 1024,
-        },
-        include: expect.any(Object),
-      });
+      expect(mockPrisma.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ isInline: false }),
+        }),
+      );
       expect(result.filename).toBe('document.pdf');
+    });
+
+    it('should create an inline attachment when isInline=true', async () => {
+      const created = { ...mockAttachment, isInline: true, uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com' } };
+      mockPrisma.attachment.create.mockResolvedValue(created);
+      mockPrisma.taskHistory.create.mockResolvedValue({});
+
+      await service.create('task-1', 'user-1', mockFile, true);
+
+      expect(mockPrisma.attachment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ isInline: true }),
+        }),
+      );
     });
   });
 
@@ -74,6 +103,7 @@ describe('AttachmentsService', () => {
     it('should allow uploader to delete own attachment', async () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(mockAttachment);
       mockPrisma.attachment.delete.mockResolvedValue(mockAttachment);
+      mockPrisma.taskHistory.create.mockResolvedValue({});
 
       await expect(service.delete('attachment-1', 'user-1', 'developer')).resolves.toBeDefined();
       expect(mockPrisma.attachment.delete).toHaveBeenCalledWith({ where: { id: 'attachment-1' } });
@@ -82,6 +112,7 @@ describe('AttachmentsService', () => {
     it('should allow PM to delete any attachment', async () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(mockAttachment);
       mockPrisma.attachment.delete.mockResolvedValue(mockAttachment);
+      mockPrisma.taskHistory.create.mockResolvedValue({});
 
       await expect(service.delete('attachment-1', 'other-user', 'pm')).resolves.toBeDefined();
     });

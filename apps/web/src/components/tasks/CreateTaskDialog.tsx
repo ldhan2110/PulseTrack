@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateTask } from '@/hooks/useTasks';
-import type { TaskStatus, Member, Sprint } from '@/lib/types';
+import type { TaskStatus, Member, Sprint, Priority } from '@/lib/types';
 
 // FieldGroup + Field composition per shadcn skill rules
 function FieldGroup({ children }: { children: React.ReactNode }) {
@@ -66,6 +66,14 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
+  { value: 'LOW',      label: 'Low',      color: '#6b7280' },
+  { value: 'MEDIUM',   label: 'Medium',   color: '#3b82f6' },
+  { value: 'HIGH',     label: 'High',     color: '#f59e0b' },
+  { value: 'CRITICAL', label: 'Critical', color: '#ef4444' },
+  { value: 'BLOCKER',  label: 'Blocker',  color: '#7c3aed' },
+];
+
 interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -94,6 +102,7 @@ export function CreateTaskDialog({
   const [assigneeId, setAssigneeId] = useState<string>('');
   const [storyPoints, setStoryPoints] = useState('');
   const [sprintId, setSprintId] = useState<string>('');
+  const [priority, setPriority] = useState<Priority | ''>('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [assigneeOpen, setAssigneeOpen] = useState(false);
 
@@ -110,6 +119,7 @@ export function CreateTaskDialog({
     setAssigneeId('');
     setStoryPoints('');
     setSprintId('');
+    setPriority('');
     setErrors({});
   };
 
@@ -147,6 +157,7 @@ export function CreateTaskDialog({
         assigneeId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined,
         storyPoints: storyPoints !== '' ? Number(storyPoints) : undefined,
         sprintId: sprintId && sprintId !== 'none' ? sprintId : undefined,
+        priority: priority || undefined,
       },
       {
         onSuccess: () => {
@@ -225,6 +236,31 @@ export function CreateTaskDialog({
                 )}
               </Field>
             </div>
+
+            <Field>
+              <FieldLabel>Priority</FieldLabel>
+              <Select value={priority || 'none'} onValueChange={(val) => setPriority(val === 'none' ? '' : val as Priority)}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="None (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">None</span>
+                  </SelectItem>
+                  {PRIORITY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="inline-block size-2 rounded-full"
+                          style={{ backgroundColor: opt.color }}
+                        />
+                        <span style={{ color: opt.color }}>{opt.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
             <div className="grid grid-cols-2 gap-4">
               <Field>

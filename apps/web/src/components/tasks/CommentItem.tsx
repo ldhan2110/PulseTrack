@@ -1,9 +1,12 @@
+// apps/web/src/components/tasks/CommentItem.tsx
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
 import { formatDistanceToNow } from 'date-fns';
-import { Trash2, Reply } from 'lucide-react';
+import { Trash2, Reply, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { RichTextEditor } from './RichTextEditor';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,8 +33,11 @@ interface CommentItemProps {
   comment: Comment;
   currentUserId: string;
   canManage: boolean;
+  projectId: string;
+  taskId: string;
   onReply: (commentId: string) => void;
   onDelete: (commentId: string) => void;
+  onEdit: (commentId: string, content: string) => void;
   isReply?: boolean;
 }
 
@@ -39,11 +45,16 @@ export function CommentItem({
   comment,
   currentUserId,
   canManage,
+  projectId,
+  taskId,
   onReply,
   onDelete,
+  onEdit,
   isReply = false,
 }: CommentItemProps) {
   const canDelete = comment.authorId === currentUserId || canManage;
+  const canEditComment = comment.authorId === currentUserId || canManage;
+  const [isEditing, setIsEditing] = useState(false);
 
   const relativeTime = (() => {
     try {
@@ -54,7 +65,7 @@ export function CommentItem({
   })();
 
   return (
-    <div className={cn("flex gap-2 group/comment", isReply && "rounded-md bg-muted/30 p-2")}>
+    <div className={cn('flex gap-2 group/comment', isReply && 'rounded-md bg-muted/30 p-2')}>
       <Avatar className="size-6 shrink-0 mt-0.5">
         <AvatarFallback className="text-[10px]">
           {getInitials(comment.author.username)}
@@ -64,11 +75,39 @@ export function CommentItem({
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-sm font-medium">{comment.author.username}</span>
           <span className="text-xs text-muted-foreground">{relativeTime}</span>
+          {comment.isEdited && (
+            <span className="text-xs text-muted-foreground italic">(edited)</span>
+          )}
         </div>
-        <div
-          className="prose prose-sm max-w-none mt-0.5 break-words text-sm [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-2 [&_p]:my-0.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-1.5 [&_td]:text-xs [&_th]:border [&_th]:border-border [&_th]:p-1.5 [&_th]:text-xs [&_th]:bg-muted [&_th]:font-semibold"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content) }}
-        />
+        {isEditing ? (
+          <div className="mt-1">
+            <RichTextEditor
+              initialContent={comment.content}
+              onSave={(html) => {
+                onEdit(comment.id, html);
+                setIsEditing(false);
+              }}
+              editable={true}
+              alwaysEditing={true}
+              projectId={projectId}
+              taskId={taskId}
+              placeholder="Edit comment..."
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs mt-1"
+              onClick={() => setIsEditing(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div
+            className="prose prose-sm max-w-none mt-0.5 break-words text-sm [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-2 [&_p]:my-0.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-1.5 [&_td]:text-xs [&_th]:border [&_th]:border-border [&_th]:p-1.5 [&_th]:text-xs [&_th]:bg-muted [&_th]:font-semibold"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content) }}
+          />
+        )}
         <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">
           {!isReply && (
             <Button
@@ -81,14 +120,21 @@ export function CommentItem({
               Reply
             </Button>
           )}
+          {canEditComment && !isEditing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs gap-1"
+              onClick={() => setIsEditing(true)}
+            >
+              <Pencil className="size-3" />
+              Edit
+            </Button>
+          )}
           {canDelete && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-6"
-                >
+                <Button variant="ghost" size="icon" className="size-6">
                   <Trash2 className="size-3" />
                   <span className="sr-only">Delete comment</span>
                 </Button>
