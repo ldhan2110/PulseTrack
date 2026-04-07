@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Settings,
   LogOut,
+  CheckSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -131,6 +132,32 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
       <Separator />
 
       <SidebarContent className="overflow-hidden">
+        {/* My Tasks — top-level nav */}
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton
+                    isActive={location.pathname === '/my-tasks'}
+                    aria-label="My Tasks"
+                    onClick={() => navigate('/my-tasks')}
+                    className="cursor-pointer"
+                  >
+                    <CheckSquare className="size-4" />
+                    <span>My Tasks</span>
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="right">My Tasks</TooltipContent>
+                )}
+              </Tooltip>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <Separator />
+
         {/* Projects section */}
         <SidebarGroup>
           {!isCollapsed && (
