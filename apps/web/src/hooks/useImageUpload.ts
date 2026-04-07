@@ -62,7 +62,7 @@ export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
   const handleImagePaste = useCallback(
     (file: File, editor: Editor, base64Src: string) => {
       const uploadPromise = api
-        .uploadAttachment(projectId, taskId, file)
+        .uploadAttachment(projectId, taskId, file, true)
         .then((attachment) => {
           const serverUrl = `/api/uploads/tasks/${taskId}/${attachment.storedName}`;
           swapSrcInEditor(editor, base64Src, serverUrl);
