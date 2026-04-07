@@ -1,6 +1,7 @@
-import { createContext, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { createContext, useEffect } from 'react';
+import { Socket } from 'socket.io-client';
 import keycloak from '../auth/keycloak';
+import { getSocket } from './instance';
 
 export const SocketContext = createContext<Socket | null>(null);
 
@@ -9,24 +10,19 @@ interface SocketProviderProps {
 }
 
 export function SocketProvider({ children }: SocketProviderProps) {
-  const socketRef = useRef<Socket | null>(null);
-
-  if (!socketRef.current) {
-    socketRef.current = io('/', {
-      auth: { token: keycloak.token },
-      transports: ['websocket'],
-      autoConnect: true,
-    });
-  }
+  const socket = getSocket();
 
   useEffect(() => {
-    const socket = socketRef.current!;
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     function handleConnectError(err: Error) {
       if (
         err.message === 'Unauthorized' ||
         err.message.toLowerCase().includes('auth') ||
-        (err as unknown as { data?: { type?: string } }).data?.type === 'UnauthorizedError'
+        (err as unknown as { data?: { type?: string } }).data?.type ===
+          'UnauthorizedError'
       ) {
         socket.auth = { token: keycloak.token };
         socket.connect();
@@ -37,13 +33,10 @@ export function SocketProvider({ children }: SocketProviderProps) {
 
     return () => {
       socket.off('connect_error', handleConnectError);
-      socket.disconnect();
     };
-  }, []);
+  }, [socket]);
 
   return (
-    <SocketContext.Provider value={socketRef.current}>
-      {children}
-    </SocketContext.Provider>
+    <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
   );
 }
