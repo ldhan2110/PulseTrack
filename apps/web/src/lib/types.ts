@@ -325,6 +325,7 @@ export interface Attachment {
   size: number;
   taskId: string;
   uploaderId: string;
+  isInline: boolean;
   createdAt: string;
   uploader: Pick<User, 'id' | 'username' | 'email'>;
 }

@@ -44,7 +44,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message || `API error: ${res.status}`);
   }
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export const api = {
@@ -177,11 +178,12 @@ export const api = {
   // ─── Attachments ───────────────────────────────────────────────────────────
   getAttachments: (projectId: string, taskId: string) =>
     request<Attachment[]>(`/projects/${projectId}/tasks/${taskId}/attachments`),
-  uploadAttachment: async (projectId: string, taskId: string, file: File): Promise<Attachment> => {
+  uploadAttachment: async (projectId: string, taskId: string, file: File, inline = false): Promise<Attachment> => {
     const token = keycloak.token;
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments`, {
+    const url = `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments${inline ? '?inline=true' : ''}`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
