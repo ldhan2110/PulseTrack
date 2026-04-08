@@ -30,16 +30,26 @@ export function SprintsPage() {
     return [...active, ...planned, ...closed];
   }, [sprints]);
 
-  // Count incomplete tasks per sprint (not DONE)
-  const incompleteCountBySprint = useMemo(() => {
-    const map: Record<string, number> = {};
+  // Group tasks by sprint and compute counts
+  const tasksBySprint = useMemo(() => {
+    const map: Record<string, typeof tasks> = {};
     tasks.forEach((t) => {
-      if (t.sprintId && !t.workflowStatus?.isClosed) {
-        map[t.sprintId] = (map[t.sprintId] ?? 0) + 1;
+      if (t.sprintId) {
+        if (!map[t.sprintId]) map[t.sprintId] = [];
+        map[t.sprintId].push(t);
       }
     });
     return map;
   }, [tasks]);
+
+  const sprintStats = useMemo(() => {
+    const map: Record<string, { completed: number; total: number }> = {};
+    for (const [sprintId, sprintTasks] of Object.entries(tasksBySprint)) {
+      const completed = sprintTasks.filter((t) => t.workflowStatus?.isClosed === true).length;
+      map[sprintId] = { completed, total: sprintTasks.length };
+    }
+    return map;
+  }, [tasksBySprint]);
 
   const handleActivate = (sprint: Sprint) => {
     activateSprint.mutate(sprint.id);
@@ -115,7 +125,9 @@ export function SprintsPage() {
             isActive={sprint.status === 'ACTIVE'}
             canManage={canManage}
             projectId={projectId}
-            incompleteTasks={incompleteCountBySprint[sprint.id] ?? 0}
+            sprintTasks={tasksBySprint[sprint.id] ?? []}
+            completedCount={sprintStats[sprint.id]?.completed ?? 0}
+            totalCount={sprintStats[sprint.id]?.total ?? 0}
             onActivate={() => handleActivate(sprint)}
             onClose={() => handleClose(sprint)}
           />
