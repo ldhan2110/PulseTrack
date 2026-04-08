@@ -125,6 +125,8 @@ model User {
   keycloakId        String    @unique // sub from JWT
   email             String    @unique
   username          String
+  name              String?   // Display name from Keycloak user-info.usrNm
+  imageUrl          String?   // Avatar URL from Keycloak user-info.imgUrl
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

@@ -9,10 +9,10 @@ export class CommentsService {
     return this.prisma.comment.findMany({
       where: { taskId, parentId: null },
       include: {
-        author: { select: { id: true, username: true, email: true } },
+        author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         replies: {
           include: {
-            author: { select: { id: true, username: true, email: true } },
+            author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -26,7 +26,7 @@ export class CommentsService {
       this.prisma.comment.create({
         data: { taskId, authorId, content },
         include: {
-          author: { select: { id: true, username: true, email: true } },
+          author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           replies: true,
         },
       }),
@@ -51,7 +51,7 @@ export class CommentsService {
       this.prisma.comment.create({
         data: { taskId, authorId, content, parentId },
         include: {
-          author: { select: { id: true, username: true, email: true } },
+          author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         },
       }),
       this.prisma.taskHistory.create({
@@ -104,7 +104,7 @@ export class CommentsService {
         where: { id: commentId },
         data: { content, isEdited: true },
         include: {
-          author: { select: { id: true, username: true, email: true } },
+          author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         },
       }),
       this.prisma.taskHistory.create({

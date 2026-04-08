@@ -95,7 +95,7 @@ export class ProjectsService {
         members: {
           include: {
             user: {
-              select: { id: true, email: true, username: true },
+              select: { id: true, email: true, username: true, name: true, imageUrl: true },
             },
           },
         },
@@ -141,7 +141,7 @@ export class ProjectsService {
         members: {
           include: {
             user: {
-              select: { id: true, email: true, username: true },
+              select: { id: true, email: true, username: true, name: true, imageUrl: true },
             },
           },
         },

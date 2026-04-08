@@ -43,7 +43,7 @@ export class DashboardService {
             id: true,
             title: true,
             updatedAt: true,
-            creator: { select: { username: true } },
+            creator: { select: { username: true, name: true, imageUrl: true } },
           },
         }),
         this.prisma.bug.findMany({
@@ -54,7 +54,7 @@ export class DashboardService {
             id: true,
             title: true,
             updatedAt: true,
-            reporter: { select: { username: true } },
+            reporter: { select: { username: true, name: true, imageUrl: true } },
           },
         }),
         Promise.all([

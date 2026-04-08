@@ -67,6 +67,8 @@ export interface UserProfile {
   keycloakId: string;
   email: string;
   username: string;
+  name: string | null;
+  imageUrl: string | null;
 }
 
 export interface ProjectMemberProfile {
@@ -77,11 +79,21 @@ export interface ProjectMemberProfile {
   joinedAt: string;
 }
 
+export interface KeycloakUserInfo {
+  usrNm?: string | null;
+  imgUrl?: string | null;
+  usrId?: string | null;
+  usrEml?: string | null;
+  orzNm?: string | null;
+  coCd?: string | null;
+}
+
 export interface JwtPayload {
   sub: string;
   email: string;
   preferred_username: string;
   realm_access?: { roles: string[] };
+  'user-info'?: KeycloakUserInfo;
 }
 
 export interface SubTask {

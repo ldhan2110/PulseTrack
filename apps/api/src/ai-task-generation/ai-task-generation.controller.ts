@@ -105,8 +105,12 @@ export class AiTaskGenerationController {
       return { status: 'failed', error: job.failedReason ?? 'Unknown error' };
     }
 
-    // Include current step from job progress so frontend can recover state
-    const progress = job.progress as { step?: string } | undefined;
-    return { status: state, step: progress?.step ?? 'queued' };
+    // Include current step and streaming text from job progress so frontend can recover state
+    const progress = job.progress as { step?: string; streamText?: string } | undefined;
+    return {
+      status: state,
+      step: progress?.step ?? 'queued',
+      ...(progress?.streamText ? { streamText: progress.streamText } : {}),
+    };
   }
 }

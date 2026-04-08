@@ -4,8 +4,8 @@ import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
 
 const BUG_RELATIONS = {
-  reporter: { select: { id: true, username: true, email: true } },
-  assignee: { select: { id: true, username: true, email: true } },
+  reporter: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+  assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
 };
 
 @Injectable()

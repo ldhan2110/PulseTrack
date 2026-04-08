@@ -11,7 +11,7 @@ export class AttachmentsService {
     return this.prisma.attachment.findMany({
       where: { taskId, isInline: false },
       include: {
-        uploader: { select: { id: true, username: true, email: true } },
+        uploader: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -30,7 +30,7 @@ export class AttachmentsService {
           isInline,
         },
         include: {
-          uploader: { select: { id: true, username: true, email: true } },
+          uploader: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         },
       }),
       // Only log to task history for explicit (non-inline) attachments

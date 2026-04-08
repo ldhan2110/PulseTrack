@@ -75,7 +75,7 @@ export class TasksService {
           actualEndDate: dto.actualEndDate ? new Date(dto.actualEndDate) : undefined,
         },
         include: {
-          assignee: { select: { id: true, username: true, email: true } },
+          assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           sprint: { select: { id: true, name: true } },
           workflowStatus: true,
         },
@@ -90,14 +90,14 @@ export class TasksService {
     return this.prisma.task.findUnique({
       where: { taskKey },
       include: {
-        assignee: { select: { id: true, username: true, email: true } },
+        assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         sprint: { select: { id: true, name: true } },
-        creator: { select: { id: true, username: true, email: true } },
+        creator: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         workflowStatus: true,
         parent: { select: { id: true, taskKey: true, title: true } },
         children: {
           include: {
-            assignee: { select: { id: true, username: true, email: true } },
+            assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
             workflowStatus: true,
             timeLogs: { select: { minutes: true } },
           },
@@ -106,7 +106,7 @@ export class TasksService {
         timeLogs: {
           orderBy: { loggedAt: 'desc' },
           include: {
-            user: { select: { id: true, username: true, email: true } },
+            user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           },
         },
       },
@@ -117,12 +117,12 @@ export class TasksService {
     return this.prisma.task.findMany({
       where: { projectId, parentId: null },
       include: {
-        assignee: { select: { id: true, username: true, email: true } },
+        assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         sprint: { select: { id: true, name: true } },
         workflowStatus: true,
         children: {
           include: {
-            assignee: { select: { id: true, username: true, email: true } },
+            assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
             workflowStatus: true,
             timeLogs: { select: { minutes: true } },
           },
@@ -138,14 +138,14 @@ export class TasksService {
     return this.prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        assignee: { select: { id: true, username: true, email: true } },
+        assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         sprint: { select: { id: true, name: true } },
-        creator: { select: { id: true, username: true, email: true } },
+        creator: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         workflowStatus: true,
         parent: { select: { id: true, taskKey: true, title: true } },
         children: {
           include: {
-            assignee: { select: { id: true, username: true, email: true } },
+            assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
             workflowStatus: true,
             timeLogs: { select: { minutes: true } },
           },
@@ -154,7 +154,7 @@ export class TasksService {
         timeLogs: {
           orderBy: { loggedAt: 'desc' },
           include: {
-            user: { select: { id: true, username: true, email: true } },
+            user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           },
         },
       },
@@ -330,7 +330,7 @@ export class TasksService {
           }),
         },
         include: {
-          assignee: { select: { id: true, username: true, email: true } },
+          assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           sprint: { select: { id: true, name: true } },
           workflowStatus: true,
         },
@@ -367,7 +367,7 @@ export class TasksService {
     return this.prisma.taskHistory.findMany({
       where: { taskId },
       include: {
-        actor: { select: { id: true, username: true, email: true } },
+        actor: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -377,7 +377,7 @@ export class TasksService {
     return this.prisma.task.findMany({
       where: { assigneeId: userId },
       include: {
-        assignee: { select: { id: true, username: true, email: true } },
+        assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         sprint: { select: { id: true, name: true } },
         project: { select: { id: true, name: true, prefix: true } },
         workflowStatus: true,

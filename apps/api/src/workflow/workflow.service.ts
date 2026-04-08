@@ -48,7 +48,7 @@ export class WorkflowService {
         include: {
           member: {
             include: {
-              user: { select: { id: true, username: true, email: true } },
+              user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
             },
           },
         },
@@ -244,7 +244,7 @@ export class WorkflowService {
       include: {
         member: {
           include: {
-            user: { select: { id: true, username: true, email: true } },
+            user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           },
         },
       },
@@ -254,7 +254,7 @@ export class WorkflowService {
       const members = await this.prisma.projectMember.findMany({
         where: { projectId },
         include: {
-          user: { select: { id: true, username: true, email: true } },
+          user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         },
       });
       return members.map((m) => ({

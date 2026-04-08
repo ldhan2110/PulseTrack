@@ -33,7 +33,7 @@ export class TimeLogsService {
         userId,
       },
       include: {
-        user: { select: { id: true, username: true, email: true } },
+        user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
       },
     });
 
@@ -61,7 +61,7 @@ export class TimeLogsService {
       where: { taskId },
       orderBy: { loggedAt: 'desc' },
       include: {
-        user: { select: { id: true, username: true, email: true } },
+        user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
       },
     });
   }

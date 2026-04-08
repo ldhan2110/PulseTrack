@@ -30,13 +30,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    //console.log('JWT payload:', payload);
     const user = await this.prisma.user.findUnique({
       where: { keycloakId: payload.preferred_username },
     });
 
     if (!user) {
       throw new UnauthorizedException('You are not allowed to access the app');
+    }
+
+    // Sync name and imageUrl from Keycloak user-info claim
+    const userInfo = payload['user-info'];
+    if (userInfo) {
+      const blueprintUrl = this.config.get<string>('BLUEPRINT_URL') || '';
+      const name = userInfo.usrNm ?? null;
+      const imageUrl = userInfo.imgUrl
+        ? `${blueprintUrl}/upload/${userInfo.imgUrl.replace(/\\/g, '/')}`
+        : null;
+
+      if (user.name !== name || user.imageUrl !== imageUrl) {
+        return this.prisma.user.update({
+          where: { id: user.id },
+          data: { name, imageUrl },
+        });
+      }
     }
 
     return user;

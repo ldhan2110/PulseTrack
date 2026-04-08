@@ -22,7 +22,7 @@ export class MembersService {
       where: { projectId },
       include: {
         user: {
-          select: { id: true, email: true, username: true },
+          select: { id: true, email: true, username: true, name: true, imageUrl: true },
         },
       },
     });
@@ -45,7 +45,7 @@ export class MembersService {
       },
       include: {
         user: {
-          select: { id: true, email: true, username: true },
+          select: { id: true, email: true, username: true, name: true, imageUrl: true },
         },
       },
     });
@@ -90,7 +90,7 @@ export class MembersService {
           },
           include: {
             user: {
-              select: { id: true, email: true, username: true },
+              select: { id: true, email: true, username: true, name: true, imageUrl: true },
             },
           },
         }),
@@ -129,7 +129,7 @@ export class MembersService {
       data: { role: dto.role },
       include: {
         user: {
-          select: { id: true, email: true, username: true },
+          select: { id: true, email: true, username: true, name: true, imageUrl: true },
         },
       },
     });
@@ -139,7 +139,7 @@ export class MembersService {
     const member = await this.prisma.projectMember.findFirst({
       where: { id: memberId, projectId },
       include: {
-        user: { select: { id: true, username: true } },
+        user: { select: { id: true, username: true, name: true, imageUrl: true } },
       },
     });
 
@@ -253,7 +253,7 @@ export class MembersService {
           { email: { contains: query, mode: 'insensitive' } },
         ],
       },
-      select: { id: true, email: true, username: true },
+      select: { id: true, email: true, username: true, name: true, imageUrl: true },
       take: 20,
     });
   }

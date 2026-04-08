@@ -65,7 +65,7 @@ export class SprintsService {
       include: {
         tasks: {
           include: {
-            assignee: { select: { id: true, username: true, email: true } },
+            assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           },
           orderBy: { createdAt: 'asc' },
         },
