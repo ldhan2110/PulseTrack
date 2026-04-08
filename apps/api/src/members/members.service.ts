@@ -287,7 +287,7 @@ export class MembersService {
         where: {
           projectId,
           assigneeId: member.userId,
-          status: { notIn: ['FIXED', 'VERIFIED', 'CLOSED'] },
+          workflowStatus: { isClosed: false },
         },
       }),
     ]);

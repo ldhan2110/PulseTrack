@@ -7,7 +7,7 @@ import { diskStorage } from 'multer';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { BugAttachmentsService } from './bug-attachments.service';
@@ -24,7 +24,7 @@ export class BugAttachmentsController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: (req, _file, cb) => {
-          const bugId = req.params.bugId;
+          const bugId = req.params.bugId as string;
           const dir = path.join(UPLOAD_DIR, bugId);
           fs.mkdirSync(dir, { recursive: true });
           cb(null, dir);
