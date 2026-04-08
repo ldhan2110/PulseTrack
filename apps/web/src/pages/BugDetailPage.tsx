@@ -418,6 +418,18 @@ export function BugDetailPage() {
         <div className="w-60 shrink-0">
           <div className="sticky top-8 flex flex-col gap-4">
             <div className="rounded-lg border p-4 flex flex-col gap-4">
+              {/* Watchers */}
+              {bug && user && (
+                <>
+                  <WatcherSelect
+                    projectId={projectId}
+                    entityType="BUG"
+                    entityId={bug.id}
+                    currentUserId={user.id}
+                  />
+                </>
+              )}
+              <Separator />
               {/* Status */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Status</SidebarLabel>
@@ -574,18 +586,6 @@ export function BugDetailPage() {
                 <SidebarLabel>Updated</SidebarLabel>
                 <span className="text-sm text-muted-foreground">{formatRelative(bug.updatedAt)}</span>
               </div>
-              {/* Watchers */}
-              {bug && user && (
-                <>
-                  <Separator />
-                  <WatcherSelect
-                    projectId={projectId}
-                    entityType="BUG"
-                    entityId={bug.id}
-                    currentUserId={user.id}
-                  />
-                </>
-              )}
 
               {/* Delete action — PM only */}
               {canManage && (

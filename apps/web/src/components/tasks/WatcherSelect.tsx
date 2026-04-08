@@ -68,21 +68,64 @@ export function WatcherSelect({ projectId, entityType, entityId, currentUserId }
               <Plus className="size-3" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="p-0 w-56" align="start">
-            <Command>
-              <CommandInput placeholder="Add watcher..." />
-              <CommandList>
-                <CommandEmpty>No members found</CommandEmpty>
-                <CommandGroup>
+          <PopoverContent
+            align="start"
+            className="w-72 p-3 rounded-xl border bg-popover shadow-2xl"
+          >
+            <Command className="w-full">
+              
+              {/* 🔍 Search */}
+              <div className="flex items-center h-9 px-2 rounded-md border bg-background focus-within:ring-2 focus-within:ring-primary">
+                <CommandInput
+                  placeholder="Search members..."
+                  className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-border my-2" />
+
+              {/* List */}
+              <CommandList className="max-h-64 overflow-y-auto">
+                <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
+                  No members found
+                </CommandEmpty>
+
+                <CommandGroup
+                  heading="Members"
+                  className="px-1 py-1 text-[11px] font-medium text-muted-foreground"
+                >
                   {nonWatcherMembers.map((m) => (
-                    <CommandItem key={m.userId} onSelect={() => { addWatchers.mutate([m.userId]); setOpen(false); }}>
-                      <Avatar className="size-5 mr-2">
-                        {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} />}
-                        <AvatarFallback className="text-[9px]">
+                    <CommandItem
+                      key={m.userId}
+                      onSelect={() => {
+                        addWatchers.mutate([m.userId]);
+                        setOpen(false);
+                      }}
+                      className="
+                        flex items-center gap-3 px-2 py-2 rounded-md cursor-pointer
+                        hover:bg-accent hover:text-accent-foreground
+                        data-[selected=true]:bg-accent
+                        transition-all duration-150
+                      "
+                    >
+                      <Avatar className="size-7 shrink-0">
+                        {m.user.imageUrl && (
+                          <AvatarImage src={m.user.imageUrl} />
+                        )}
+                        <AvatarFallback className="text-[10px]">
                           {getInitials(m.user.name ?? m.user.username)}
                         </AvatarFallback>
                       </Avatar>
-                      {m.user.name ?? m.user.username}
+
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium truncate">
+                          {m.user.name ?? m.user.username}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          @{m.user.username}
+                        </span>
+                      </div>
                     </CommandItem>
                   ))}
                 </CommandGroup>

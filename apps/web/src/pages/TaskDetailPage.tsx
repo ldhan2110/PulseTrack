@@ -677,6 +677,19 @@ export function TaskDetailPage() {
         <div className="w-60 shrink-0">
           <div className="sticky top-8 flex flex-col gap-4">
             <div className="rounded-lg border p-4 flex flex-col gap-4">
+              {/* Watchers */}
+              {task && user && (
+                <>
+                  <WatcherSelect
+                    projectId={projectId}
+                    entityType="TASK"
+                    entityId={task.id}
+                    currentUserId={user.id}
+                  />
+                </>
+              )}
+              <Separator />
+
               {/* Status */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Status</SidebarLabel>
@@ -961,19 +974,7 @@ export function TaskDetailPage() {
                   <span className="text-sm">{task.sprint.name}</span>
                 </div>
               )}
-              {/* Watchers */}
-              {task && user && (
-                <>
-                  <Separator />
-                  <WatcherSelect
-                    projectId={projectId}
-                    entityType="TASK"
-                    entityId={task.id}
-                    currentUserId={user.id}
-                  />
-                </>
-              )}
-
+            
               {/* Delete Task */}
               {canManage && (
                 <AlertDialog>
