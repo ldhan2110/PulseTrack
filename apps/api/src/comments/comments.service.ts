@@ -74,18 +74,64 @@ export class CommentsService {
     if (comment.authorId !== userId && userRole !== 'pm') {
       throw new ForbiddenException('Only the comment author or a PM can delete this comment');
     }
-    await this.prisma.$transaction([
+    const txOps: any[] = [
       this.prisma.comment.deleteMany({ where: { parentId: commentId } }),
       this.prisma.comment.delete({ where: { id: commentId } }),
-      this.prisma.taskHistory.create({
-        data: {
-          taskId: comment.taskId,
-          actorId: userId,
-          field: 'comment_deleted',
-          oldValue: comment.content.replace(/<[^>]*>/g, '').slice(0, 200),
+    ];
+    if (comment.taskId) {
+      txOps.push(
+        this.prisma.taskHistory.create({
+          data: {
+            taskId: comment.taskId,
+            actorId: userId,
+            field: 'comment_deleted',
+            oldValue: comment.content.replace(/<[^>]*>/g, '').slice(0, 200),
+          },
+        }),
+      );
+    }
+    await this.prisma.$transaction(txOps);
+  }
+
+  // ── Bug comment methods ─────────────────────────────────────────────────
+
+  async findAllForBug(bugId: string) {
+    return this.prisma.comment.findMany({
+      where: { bugId, parentId: null },
+      include: {
+        author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+        replies: {
+          include: {
+            author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+          },
+          orderBy: { createdAt: 'desc' },
         },
-      }),
-    ]);
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createForBug(bugId: string, authorId: string, content: string) {
+    return this.prisma.comment.create({
+      data: { bugId, authorId, content },
+      include: {
+        author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+        replies: true,
+      },
+    });
+  }
+
+  async createReplyForBug(bugId: string, parentId: string, authorId: string, content: string) {
+    const parent = await this.prisma.comment.findUnique({ where: { id: parentId } });
+    if (!parent || parent.bugId !== bugId) {
+      throw new NotFoundException('Parent comment not found');
+    }
+    return this.prisma.comment.create({
+      data: { bugId, authorId, content, parentId },
+      include: {
+        author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+      },
+    });
   }
 
   async update(commentId: string, userId: string, userRole: string, content: string) {
@@ -99,7 +145,7 @@ export class CommentsService {
 
     const oldContent = comment.content;
 
-    const [updated] = await this.prisma.$transaction([
+    const txOps: any[] = [
       this.prisma.comment.update({
         where: { id: commentId },
         data: { content, isEdited: true },
@@ -107,17 +153,21 @@ export class CommentsService {
           author: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         },
       }),
-      this.prisma.taskHistory.create({
-        data: {
-          taskId: comment.taskId,
-          actorId: userId,
-          field: 'comment_edited',
-          oldValue: oldContent.replace(/<[^>]*>/g, '').slice(0, 500),
-          newValue: content.replace(/<[^>]*>/g, '').slice(0, 500),
-        },
-      }),
-    ]);
-
+    ];
+    if (comment.taskId) {
+      txOps.push(
+        this.prisma.taskHistory.create({
+          data: {
+            taskId: comment.taskId,
+            actorId: userId,
+            field: 'comment_edited',
+            oldValue: oldContent.replace(/<[^>]*>/g, '').slice(0, 500),
+            newValue: content.replace(/<[^>]*>/g, '').slice(0, 500),
+          },
+        }),
+      );
+    }
+    const [updated] = await this.prisma.$transaction(txOps);
     return updated;
   }
 }
