@@ -14,28 +14,26 @@ const CLI_COMMANDS: Record<string, string> = {
 const SYSTEM_PROMPT = `You are a Business Analyst assistant for a project management tool.
 Generate tasks as structured JSON based on the user's request.
 
+## CRITICAL: Output Completeness
+You MUST return a complete, valid JSON response. Do not stop mid-output.
+Keep descriptions concise so you can finish the entire response.
+If the request is large, generate fewer but complete tasks rather than many incomplete ones.
+
 ## Task Description Format
-Write each task description as a user story:
-- "As a [role], I want [capability], so that [business value]"
-- Follow with implementation notes: what needs to happen technically, key considerations, edge cases
-- Reference relevant code areas if codebase scan results are provided
+Write each task description as a short paragraph (2-4 sentences). Start with the user story
+("As a [role], I want [capability], so that [business value]") then briefly note the key
+technical approach and any important edge cases. Do NOT use bullet points or lists in descriptions.
+Reference relevant code areas inline if codebase scan results are provided.
 
 ## Acceptance Criteria Format
-Every task MUST include acceptance criteria:
-- Use "Given / When / Then" format where applicable
-- Each criterion must be specific and verifiable
-- No vague statements like "works correctly"
-- Cover happy path, edge cases, and error scenarios
-- For sub-tasks, scope criteria to that sub-task only
+Return acceptance criteria as an array of 2-5 individual testable statements.
+Each criterion must be a single verifiable assertion that can independently pass or fail.
+Example: ["Valid email and password returns 200 with JWT token", "Invalid credentials return 401 with generic error message"]
+Do NOT return a paragraph. Return a JSON array of short, specific strings.
 
-## Priority Assignment
-- CRITICAL: Blocks other work or is a security/data concern
-- HIGH: Core functionality required for the feature
-- MEDIUM: Important but not blocking
-- LOW: Nice-to-have, polish, or optimization
+## Priority: CRITICAL (blocks other work / security), HIGH (core functionality), MEDIUM (important, not blocking), LOW (nice-to-have)
 
-## Story Points (Fibonacci Scale)
-1, 2, 3, 5, 8, 13 — base on complexity, not time.
+## Story Points (Fibonacci): 1, 2, 3, 5, 8, 13 — base on complexity, not time.
 
 ## Output Format
 Return ONLY valid JSON matching this schema:
@@ -43,8 +41,8 @@ Return ONLY valid JSON matching this schema:
   "tasks": [
     {
       "title": "string (max 200 chars)",
-      "description": "string (user story format: As a [role], I want [capability], so that [value]. Then implementation notes.)",
-      "acceptanceCriteria": "string (Given/When/Then checklist, each criterion on a new line starting with '- ')",
+      "description": "string (paragraph format, 2-4 sentences)",
+      "acceptanceCriteria": ["string (testable assertion)", "string (testable assertion)"],
       "priority": "CRITICAL | HIGH | MEDIUM | LOW",
       "storyPoints": "number (1 | 2 | 3 | 5 | 8 | 13)",
       "subTasks": []
@@ -208,8 +206,14 @@ export class AiTaskGenerationService {
     if (!task.description || typeof task.description !== 'string') {
       throw new Error(`Task "${task.title}" missing description`);
     }
-    if (!task.acceptanceCriteria || typeof task.acceptanceCriteria !== 'string') {
+    if (!task.acceptanceCriteria || !Array.isArray(task.acceptanceCriteria)) {
       throw new Error(`Task "${task.title}" missing acceptance criteria`);
+    }
+    task.acceptanceCriteria = task.acceptanceCriteria
+      .filter((c: unknown) => typeof c === 'string' && (c as string).trim().length > 0)
+      .map((c: string) => c.trim());
+    if (task.acceptanceCriteria.length === 0) {
+      throw new Error(`Task "${task.title}" has no valid acceptance criteria`);
     }
     const validPriorities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
     if (!validPriorities.includes(task.priority)) {
