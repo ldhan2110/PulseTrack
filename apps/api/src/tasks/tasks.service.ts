@@ -7,6 +7,7 @@ import { WorkflowService } from '../workflow/workflow.service';
 import { WatchersService } from '../watchers/watchers.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { Prisma } from '@prisma/client';
 import type { NotificationType, EntityType } from '@prisma/client';
 
 @Injectable()
@@ -474,7 +475,7 @@ export class TasksService {
       entityTitle: opts.entityTitle,
       actorId: opts.actorId,
       summary: opts.summary,
-      metadata: opts.metadata ?? undefined,
+      metadata: opts.metadata as Prisma.InputJsonValue | undefined,
     }));
     await this.notifications.createMany(data);
 

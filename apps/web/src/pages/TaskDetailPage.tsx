@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -318,7 +317,7 @@ export function TaskDetailPage() {
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
+      <div className="p-8 max-w-7xl mx-auto flex flex-col gap-6">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-8 w-2/3" />
         <Separator />
@@ -962,47 +961,46 @@ export function TaskDetailPage() {
                   <span className="text-sm">{task.sprint.name}</span>
                 </div>
               )}
-            </div>
+              {/* Watchers */}
+              {task && user && (
+                <>
+                  <Separator />
+                  <WatcherSelect
+                    projectId={projectId}
+                    entityType="TASK"
+                    entityId={task.id}
+                    currentUserId={user.id}
+                  />
+                </>
+              )}
 
-            {/* Watchers */}
-            {task && user && (
-              <Separator />
-            )}
-            {task && user && (
-              <WatcherSelect
-                projectId={projectId}
-                entityType="TASK"
-                entityId={task.id}
-                currentUserId={user.id}
-              />
-            )}
-
-            {/* Delete Task */}
-            {canManage && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="w-full gap-2">
-                    <Trash2 className="size-4" />
-                    Delete Task
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete this task and all its sub-tasks. This action
-                      cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction variant="destructive" onClick={handleDelete}>
+              {/* Delete Task */}
+              {canManage && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="w-full gap-2">
+                      <Trash2 className="size-4" />
                       Delete Task
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete this task and all its sub-tasks. This action
+                        cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction variant="destructive" onClick={handleDelete}>
+                        Delete Task
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
         </div>
       </div>

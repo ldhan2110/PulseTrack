@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
 import { Bug } from 'lucide-react';
@@ -11,6 +12,7 @@ import { BugFilters } from '@/components/bugs/BugFilters';
 import { CreateBugDialog } from '@/components/bugs/CreateBugDialog';
 
 export function BugsPage() {
+  const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: bugs, isLoading } = useBugs(projectId);
   const { data: members = [] } = useMembers(projectId);
@@ -81,6 +83,7 @@ export function BugsPage() {
       <BugsTable
         bugs={bugList}
         projectId={projectId}
+        projectPrefix={projectPrefix}
         isLoading={isLoading}
         sorting={sorting}
         onSortingChange={setSorting}

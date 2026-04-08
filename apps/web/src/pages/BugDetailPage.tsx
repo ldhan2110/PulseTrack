@@ -574,49 +574,48 @@ export function BugDetailPage() {
                 <SidebarLabel>Updated</SidebarLabel>
                 <span className="text-sm text-muted-foreground">{formatRelative(bug.updatedAt)}</span>
               </div>
-            </div>
+              {/* Watchers */}
+              {bug && user && (
+                <>
+                  <Separator />
+                  <WatcherSelect
+                    projectId={projectId}
+                    entityType="BUG"
+                    entityId={bug.id}
+                    currentUserId={user.id}
+                  />
+                </>
+              )}
 
-            {/* Watchers */}
-            {bug && user && (
-              <Separator />
-            )}
-            {bug && user && (
-              <WatcherSelect
-                projectId={projectId}
-                entityType="BUG"
-                entityId={bug.id}
-                currentUserId={user.id}
-              />
-            )}
-
-            {/* Delete action — PM only */}
-            {canManage && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="w-full gap-2">
-                    <Trash2 className="size-4" />
-                    Delete Bug
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Bug</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete this bug report. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={handleDelete}
-                    >
+              {/* Delete action — PM only */}
+              {canManage && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="w-full gap-2">
+                      <Trash2 className="size-4" />
                       Delete Bug
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Bug</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete this bug report. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={handleDelete}
+                      >
+                        Delete Bug
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
         </div>
       </div>

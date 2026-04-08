@@ -6,7 +6,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WatchersService } from '../watchers/watchers.service';
 import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
-import type { NotificationType, EntityType } from '@prisma/client';
+import type { NotificationType, EntityType, Prisma } from '@prisma/client';
 
 const BUG_RELATIONS = {
   reporter: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
@@ -193,7 +193,7 @@ export class BugsService {
       actorId: opts.actorId,
       summary: opts.summary,
       metadata: opts.metadata ?? undefined,
-    }));
+    })) as Prisma.NotificationCreateManyInput[]; 
     await this.notifications.createMany(data);
 
     const project = await this.prisma.project.findUnique({

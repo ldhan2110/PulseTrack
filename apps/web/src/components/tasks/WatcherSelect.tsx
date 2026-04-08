@@ -49,15 +49,15 @@ export function WatcherSelect({ projectId, entityType, entityId, currentUserId }
       </div>
       <div className="flex flex-wrap gap-1">
         {watchers.map((w) => (
-          <div key={w.id} className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs group">
-            <Avatar className="size-4">
+          <div key={w.id} className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs group max-w-full min-w-0">
+            <Avatar className="size-4 shrink-0">
               {w.user.imageUrl && <AvatarImage src={w.user.imageUrl} />}
               <AvatarFallback className="text-[8px]">
                 {getInitials(w.user.name ?? w.user.username)}
               </AvatarFallback>
             </Avatar>
-            <span>{w.user.name ?? w.user.username}</span>
-            <button onClick={() => removeWatcher.mutate(w.userId)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="truncate">{w.user.name ?? w.user.username}</span>
+            <button onClick={() => removeWatcher.mutate(w.userId)} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <X className="size-3" />
             </button>
           </div>

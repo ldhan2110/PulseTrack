@@ -29,6 +29,8 @@ export interface WorkflowAllowedAssignee {
   userId: string;
   username: string;
   email: string;
+  imageUrl: string | null;
+  name: string | null;
 }
 
 export interface WorkflowData {
