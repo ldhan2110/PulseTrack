@@ -1,6 +1,7 @@
 import {
   IsString,
   IsOptional,
+  IsBoolean,
   Matches,
   MinLength,
   MaxLength,
@@ -24,4 +25,8 @@ export class UpdateSettingsDto {
   @MaxLength(10)
   @Matches(/^[A-Z]{2,10}$/, { message: 'Prefix must be 2-10 uppercase letters' })
   prefix?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  emailNotificationsEnabled?: boolean;
 }
