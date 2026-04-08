@@ -33,6 +33,7 @@ export function CommentThread({
   const mentionMembers = members.map((m) => ({
     id: m.userId,
     label: m.user.name ?? m.user.username,
+    imageUrl: m.user.imageUrl || null,
   }));
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);

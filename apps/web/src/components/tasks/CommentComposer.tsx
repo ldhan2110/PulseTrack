@@ -26,7 +26,7 @@ interface CommentComposerProps {
   taskId: string;
   placeholder?: string;
   onCancel?: () => void;
-  members?: Array<{ id: string; label: string }>;
+  members?: Array<{ id: string; label: string, imageUrl?: string | null }>;
 }
 
 function ToolbarButton({
@@ -90,6 +90,7 @@ export function CommentComposer({
       Mention.configure({
         HTMLAttributes: { class: 'mention' },
         renderHTML({ node }) {
+          console.log('Rendering mention with attrs:', node.attrs);
           return ['span', { class: 'mention', 'data-mention-id': node.attrs.id }, `@${node.attrs.label}`];
         },
         suggestion: {

@@ -1,13 +1,18 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import type { SuggestionKeyDownProps } from '@tiptap/suggestion';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export interface MentionSuggestionRef {
   onKeyDown: (props: SuggestionKeyDownProps) => boolean;
 }
 
 interface MentionListProps {
-  items: Array<{ id: string; label: string }>;
-  command: (item: { id: string; label: string }) => void;
+  items: Array<{ id: string; label: string, imageUrl?: string | null }>;
+  command: (item: { id: string; label: string, imageUrl?: string | null }) => void;
+}
+
+function getInitials(name: string): string {
+  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
 export const MentionList = forwardRef<MentionSuggestionRef, MentionListProps>(
@@ -47,7 +52,15 @@ export const MentionList = forwardRef<MentionSuggestionRef, MentionListProps>(
             }`}
             onClick={() => command(item)}
           >
-            @{item.label}
+            <Avatar className="size-4 shrink-0">
+              {item.imageUrl && <AvatarImage src={item.imageUrl} />}
+              {!item.imageUrl && (
+                <AvatarFallback className="text-[8px]">
+                  {getInitials(item.label)}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            {item.label}
           </button>
         ))}
       </div>
