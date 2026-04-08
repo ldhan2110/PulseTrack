@@ -86,4 +86,8 @@ export class SaveWorkflowDto {
 
   @IsOptional()
   layout?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsIn(['TASK', 'BUG'])
+  kind?: 'TASK' | 'BUG';
 }

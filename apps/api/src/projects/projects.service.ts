@@ -35,6 +35,7 @@ export class ProjectsService {
     });
 
     await this.workflowService.seedDefaultWorkflow(project.id);
+    await this.workflowService.seedDefaultBugWorkflow(project.id);
 
     return project;
   }
