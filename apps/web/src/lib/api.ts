@@ -286,29 +286,6 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  // Bug comments
-  getBugComments: (projectId: string, bugId: string) =>
-    request<Comment[]>(`/projects/${projectId}/bugs/${bugId}/comments`),
-  createBugComment: (projectId: string, bugId: string, data: CreateCommentPayload) =>
-    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  createBugReply: (projectId: string, bugId: string, commentId: string, data: CreateCommentPayload) =>
-    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}/replies`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  deleteBugComment: (projectId: string, bugId: string, commentId: string) =>
-    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, {
-      method: 'DELETE',
-    }),
-  updateBugComment: (projectId: string, bugId: string, commentId: string, data: CreateCommentPayload) =>
-    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-
   // ─── Attachments ───────────────────────────────────────────────────────────
   getAttachments: (projectId: string, taskId: string) =>
     request<Attachment[]>(`/projects/${projectId}/tasks/${taskId}/attachments`),
