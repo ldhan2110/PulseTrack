@@ -298,6 +298,7 @@ export interface UpdateSprintPayload {
 
 export interface Bug {
   id: string;
+  bugKey: string | null;
   title: string;
   description: string | null;
   severity: BugSeverity;
@@ -404,7 +405,8 @@ export interface DashboardData {
 export interface Comment {
   id: string;
   content: string;
-  taskId: string;
+  taskId: string | null;
+  bugId: string | null;
   authorId: string;
   parentId: string | null;
   isEdited: boolean;

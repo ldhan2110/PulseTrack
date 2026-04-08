@@ -167,6 +167,8 @@ export const api = {
     request<Bug>(`/projects/${projectId}/bugs`, { method: 'POST', body: JSON.stringify(data) }),
   getBug: (projectId: string, bugId: string) =>
     request<Bug>(`/projects/${projectId}/bugs/${bugId}`),
+  getBugByKey: (projectId: string, bugKey: string) =>
+    request<Bug>(`/projects/${projectId}/bugs/by-key/${bugKey}`),
   updateBug: (projectId: string, bugId: string, data: UpdateBugPayload) =>
     request<Bug>(`/projects/${projectId}/bugs/${bugId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteBug: (projectId: string, bugId: string) =>
@@ -278,6 +280,29 @@ export const api = {
     }),
   updateComment: (projectId: string, taskId: string, commentId: string, data: CreateCommentPayload) =>
     request<Comment>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  // Bug comments
+  getBugComments: (projectId: string, bugId: string) =>
+    request<Comment[]>(`/projects/${projectId}/bugs/${bugId}/comments`),
+  createBugComment: (projectId: string, bugId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  createBugReply: (projectId: string, bugId: string, commentId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}/replies`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteBugComment: (projectId: string, bugId: string, commentId: string) =>
+    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, {
+      method: 'DELETE',
+    }),
+  updateBugComment: (projectId: string, bugId: string, commentId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
