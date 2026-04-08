@@ -36,6 +36,7 @@ import { AttachmentList } from '@/components/tasks/AttachmentList';
 import { ActivityLog } from '@/components/tasks/ActivityLog';
 import { useTaskByKey, useUpdateTask, useDeleteTask, useCreateTask, useCreateTimeLog, useDeleteTimeLog } from '@/hooks/useTasks';
 import { useUiStore } from '@/store/uiStore';
+import { useBugs } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
 import { useProjectRole } from '@/hooks/useProjectRole';
@@ -190,6 +191,9 @@ export function TaskDetailPage() {
   const { data: workflow } = useWorkflow(projectId);
   const validNextStatuses = useValidTransitions(workflow, task?.workflowStatusId ?? null);
   const { data: allowedAssignees } = useAllowedAssignees(projectId, task?.workflowStatusId ?? null);
+
+  const { data: allBugs = [] } = useBugs(projectId);
+  const childBugs = allBugs.filter((b) => b.parentTaskId === task?.id);
 
   const taskQueryKey = ['task-by-key', projectId, taskKey] as const;
 
@@ -594,6 +598,44 @@ export function TaskDetailPage() {
             onSave={(title) => createTask.mutate({ title, parentId: task.id })}
           />
 
+          {/* Bugs Section */}
+          {task && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[13px] font-semibold text-muted-foreground">
+                  Bugs ({childBugs.length})
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => navigate(`/projects/${projectPrefix}/bugs`)}
+                >
+                  <Plus className="size-3" />
+                  Report Bug
+                </Button>
+              </div>
+              {childBugs.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  {childBugs.map((bug) => (
+                    <Link
+                      key={bug.id}
+                      to={`/projects/${projectPrefix}/bugs/${bug.id}`}
+                      className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
+                    >
+                      <span
+                        className="size-2 rounded-full shrink-0"
+                        style={{ backgroundColor: bug.workflowStatus?.color ?? '#6b7280' }}
+                      />
+                      <span className="flex-1 truncate">{bug.title}</span>
+                      <span className="text-xs font-medium text-muted-foreground">{bug.severity}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* CARD 2: Discussion (Comments / Activity tabs) */}
           <div className="rounded-lg border p-5">
             <Tabs defaultValue="comments">
@@ -706,7 +748,19 @@ export function TaskDetailPage() {
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
-                    <SelectValue placeholder="Unassigned" />
+                    {task.assigneeId && task.assignee ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-5">
+                          {task.assignee.imageUrl && <AvatarImage src={task.assignee.imageUrl} alt={task.assignee.name ?? task.assignee.username} />}
+                          <AvatarFallback className="text-[9px]">
+                            {getInitials(task.assignee.name ?? task.assignee.username)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{task.assignee.name ?? task.assignee.username}</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Unassigned" />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">
