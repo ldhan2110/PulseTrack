@@ -184,7 +184,7 @@ export class MembersService {
 
       // Unassign active bugs
       const bugsResult = await tx.bug.updateMany({
-        where: { projectId, assigneeId: userId, status: { notIn: ['FIXED', 'VERIFIED', 'CLOSED'] } },
+        where: { projectId, assigneeId: userId, workflowStatus: { isClosed: false } },
         data: { assigneeId: null },
       });
 
