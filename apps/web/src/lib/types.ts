@@ -144,6 +144,7 @@ export interface UpdateSettingsPayload {
   name?: string;
   description?: string;
   prefix?: string;
+  emailNotificationsEnabled?: boolean;
 }
 
 // ─── Member ───────────────────────────────────────────────────────────────────
@@ -537,4 +538,48 @@ export interface AiGenerationFailedEvent {
 export interface AiGenerationStreamEvent {
   jobId: string;
   text: string;
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export type NotificationType =
+  | 'STATUS_CHANGE' | 'ASSIGNEE_CHANGE' | 'COMMENT_ADDED' | 'COMMENT_EDITED'
+  | 'COMMENT_DELETED' | 'ATTACHMENT_CHANGE' | 'CRITERIA_CHANGE' | 'SUBTASK_CHANGE'
+  | 'DESCRIPTION_EDIT' | 'SPRINT_CHANGE' | 'PRIORITY_CHANGE' | 'TICKET_DELETED' | 'MENTION';
+
+export type EntityType = 'TASK' | 'BUG';
+
+export interface Notification {
+  id: string;
+  recipientId: string;
+  projectId: string;
+  type: NotificationType;
+  entityType: EntityType;
+  entityId: string;
+  entityTitle: string;
+  actorId: string;
+  summary: string;
+  metadata: Record<string, unknown> | null;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+  actor: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+}
+
+export interface NotificationPage {
+  items: Notification[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// ─── Watchers ─────────────────────────────────────────────────────────────────
+
+export interface TicketWatcher {
+  id: string;
+  entityType: EntityType;
+  entityId: string;
+  userId: string;
+  createdAt: string;
+  user: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
 }

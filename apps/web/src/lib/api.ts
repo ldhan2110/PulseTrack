@@ -37,6 +37,8 @@ import type {
   AiGenerationJobResult,
   BugAttachment,
   WorkflowKind,
+  NotificationPage,
+  TicketWatcher,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -347,4 +349,57 @@ export const api = {
   // ─── Task History ──────────────────────────────────────────────────────────
   getTaskHistory: (projectId: string, taskId: string) =>
     request<TaskHistoryEntry[]>(`/projects/${projectId}/tasks/${taskId}/history`),
+
+  // ─── Notifications ──────────────────────────────────────────────────────────
+  getNotifications: (params?: { page?: number; limit?: number; isRead?: boolean; type?: string }) => {
+    const sp = new URLSearchParams();
+    if (params?.page) sp.set('page', String(params.page));
+    if (params?.limit) sp.set('limit', String(params.limit));
+    if (params?.isRead !== undefined) sp.set('isRead', String(params.isRead));
+    if (params?.type) sp.set('type', params.type);
+    const qs = sp.toString();
+    return request<NotificationPage>(`/notifications${qs ? `?${qs}` : ''}`);
+  },
+  getNotificationCount: () =>
+    request<{ count: number }>('/notifications/count'),
+  markNotificationRead: (id: string) =>
+    request<void>(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllNotificationsRead: () =>
+    request<void>('/notifications/read-all', { method: 'PATCH' }),
+
+  // ─── Watchers ───────────────────────────────────────────────────────────────
+  getTaskWatchers: (projectId: string, taskId: string) =>
+    request<TicketWatcher[]>(`/projects/${projectId}/tasks/${taskId}/watchers`),
+  addTaskWatchers: (projectId: string, taskId: string, userIds: string[]) =>
+    request<void>(`/projects/${projectId}/tasks/${taskId}/watchers`, {
+      method: 'POST', body: JSON.stringify({ userIds }),
+    }),
+  removeTaskWatcher: (projectId: string, taskId: string, userId: string) =>
+    request<void>(`/projects/${projectId}/tasks/${taskId}/watchers/${userId}`, { method: 'DELETE' }),
+  getBugWatchers: (projectId: string, bugId: string) =>
+    request<TicketWatcher[]>(`/projects/${projectId}/bugs/${bugId}/watchers`),
+  addBugWatchers: (projectId: string, bugId: string, userIds: string[]) =>
+    request<void>(`/projects/${projectId}/bugs/${bugId}/watchers`, {
+      method: 'POST', body: JSON.stringify({ userIds }),
+    }),
+  removeBugWatcher: (projectId: string, bugId: string, userId: string) =>
+    request<void>(`/projects/${projectId}/bugs/${bugId}/watchers/${userId}`, { method: 'DELETE' }),
+
+  // ─── Bug Comments ──────────────────────────────────────────────────────────
+  getBugComments: (projectId: string, bugId: string) =>
+    request<Comment[]>(`/projects/${projectId}/bugs/${bugId}/comments`),
+  createBugComment: (projectId: string, bugId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+  createBugReply: (projectId: string, bugId: string, commentId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}/replies`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+  deleteBugComment: (projectId: string, bugId: string, commentId: string) =>
+    request<void>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, { method: 'DELETE' }),
+  updateBugComment: (projectId: string, bugId: string, commentId: string, data: CreateCommentPayload) =>
+    request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
 };
