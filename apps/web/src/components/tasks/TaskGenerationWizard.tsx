@@ -1,5 +1,6 @@
 // apps/web/src/components/tasks/TaskGenerationWizard.tsx
 import { useState, useMemo, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ interface FlatTask {
   parentIndex: number | null;
   status: TaskStatus;
   createdTaskId?: string;
+  createdTaskKey?: string;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -199,6 +201,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
           ...updated[currentIndex],
           status: 'approved',
           createdTaskId: created.id,
+          createdTaskKey: created.taskKey ?? undefined,
         };
         return updated;
       });
@@ -239,7 +242,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
 
         setFlatTasks((prev) => {
           const updated = [...prev];
-          updated[i] = { ...updated[i], status: 'approved', createdTaskId: created.id };
+          updated[i] = { ...updated[i], status: 'approved', createdTaskId: created.id, createdTaskKey: created.taskKey ?? undefined };
           return updated;
         });
       } catch {
@@ -335,7 +338,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left sidebar — task list */}
           <div className="w-56 border-r shrink-0">
             <ScrollArea className="h-full p-3">
@@ -362,6 +365,9 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
                     <div className="flex items-center gap-1.5">
                       {ft.status === 'approved' && <Check className="size-3 shrink-0" />}
                       {ft.status === 'skipped' && <SkipForward className="size-3 shrink-0" />}
+                      {ft.status === 'approved' && ft.createdTaskKey && (
+                        <span className="text-muted-foreground shrink-0">{ft.createdTaskKey}</span>
+                      )}
                       <span className="truncate">{ft.task.title}</span>
                     </div>
                   </button>
@@ -485,11 +491,10 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
                       />
                     ) : (
                       <div
-                        className="text-sm whitespace-pre-wrap bg-muted/50 rounded-lg p-3 cursor-pointer hover:bg-muted/70 transition-colors"
+                        className="text-sm bg-muted/50 rounded-lg p-3 cursor-pointer hover:bg-muted/70 transition-colors prose prose-sm max-w-none [&_h4]:text-xs [&_h4]:font-semibold [&_h4]:uppercase [&_h4]:tracking-wider [&_h4]:text-muted-foreground [&_h4]:mt-3 [&_h4]:mb-1 [&_h4:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_li]:my-0.5"
                         onClick={startEditDesc}
-                      >
-                        {current.task.description}
-                      </div>
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(current.task.description) }}
+                      />
                     )}
                   </div>
 
