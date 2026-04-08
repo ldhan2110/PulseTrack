@@ -177,6 +177,7 @@ model Project {
   owner       User      @relation("ProjectOwner", fields: [ownerId], references: [id])
   prefix      String?   @unique   // 2-10 uppercase letters, URL slug + task key prefix
   taskSeq     Int       @default(0) // Auto-incrementing counter for task keys
+  bugSeq      Int       @default(0)
   avatarUrl          String?   // Path to uploaded avatar image
   bugReporterRoles   String[]  @default(["pm", "ba", "qc"])
   emailNotificationsEnabled Boolean @default(false)
@@ -359,6 +360,7 @@ model BlueprintSync {
 
 model Bug {
   id               String      @id @default(cuid())
+  bugKey           String?     @unique
   title            String
   description      String?
   severity         BugSeverity
