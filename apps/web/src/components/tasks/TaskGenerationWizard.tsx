@@ -225,6 +225,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
       const parentId = flatTasks[i].parentIndex !== null ? getParentTaskId(flatTasks, i) : undefined;
 
       if (flatTasks[i].parentIndex !== null && !parentId) continue;
+      if (task.acceptanceCriteria.length === 0) continue;
 
       try {
         const created = await createTask.mutateAsync({
@@ -250,6 +251,10 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
 
   const goBack = () => {
     if (currentIndex > 0) {
+      // Auto-save any in-progress inline edits before navigating
+      if (editingTitle) saveTitle();
+      if (editingDesc) saveDesc();
+      if (editingAcIndex !== null) saveAc();
       setCurrentIndex(currentIndex - 1);
       resetInlineEditing();
     }
