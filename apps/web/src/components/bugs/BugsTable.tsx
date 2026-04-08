@@ -118,6 +118,7 @@ export const bugAssigneeFilterFn = (
 interface BugsTableProps {
   bugs: Bug[];
   projectId: string;
+  projectPrefix: string;
   isLoading?: boolean;
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
@@ -130,6 +131,7 @@ interface BugsTableProps {
 export function BugsTable({
   bugs,
   projectId,
+  projectPrefix,
   isLoading,
   sorting,
   onSortingChange,
@@ -142,6 +144,16 @@ export function BugsTable({
 
   const columns = useMemo<ColumnDef<Bug>[]>(
     () => [
+      {
+        accessorKey: 'bugKey',
+        header: 'Key',
+        cell: ({ row }) =>
+          row.original.bugKey ? (
+            <span className="text-xs font-mono text-muted-foreground">{row.original.bugKey}</span>
+          ) : null,
+        size: 120,
+        enableSorting: false,
+      },
       {
         accessorKey: 'title',
         header: ({ column }) => <SortHeader label="Title" column={column} />,
@@ -225,7 +237,7 @@ export function BugsTable({
         cell: ({ row }) =>
           row.original.parentTask?.taskKey ? (
             <Link
-              to={`/projects/${projectId}/tasks/${row.original.parentTask.taskKey}`}
+              to={`/projects/${projectPrefix}/tasks/${row.original.parentTask.taskKey}`}
               className="text-xs text-primary hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
@@ -236,7 +248,7 @@ export function BugsTable({
         enableSorting: false,
       },
     ],
-    [projectId],
+    [projectPrefix],
   );
 
   const table = useReactTable({
@@ -297,7 +309,7 @@ export function BugsTable({
               <TableRow
                 key={row.id}
                 className="h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100"
-                onClick={() => navigate(`/projects/${projectId}/bugs/${row.original.id}`)}
+                onClick={() => navigate(`/projects/${projectPrefix}/bugs/${row.original.bugKey ?? row.original.id}`)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className="py-0">
