@@ -22,7 +22,7 @@ export class GenerateTasksDto {
 export interface GeneratedTask {
   title: string;
   description: string;
-  acceptanceCriteria: string;
+  acceptanceCriteria: string[];
   priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   storyPoints: number;
   subTasks?: GeneratedTask[];
