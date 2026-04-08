@@ -456,7 +456,7 @@ export interface UpdateProjectContextPayload {
 export interface GeneratedTask {
   title: string;
   description: string;
-  acceptanceCriteria: string;
+  acceptanceCriteria: string[];
   priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   storyPoints: number;
   subTasks?: GeneratedTask[];
@@ -476,6 +476,7 @@ export interface AiGenerationJobResult {
   step?: AiGenerationStep;
   tasks?: GeneratedTask[];
   error?: string;
+  streamText?: string;
 }
 
 export type AiGenerationStep = 'pulling' | 'scanning' | 'generating' | 'parsing';
@@ -493,4 +494,9 @@ export interface AiGenerationCompletedEvent {
 export interface AiGenerationFailedEvent {
   jobId: string;
   error: string;
+}
+
+export interface AiGenerationStreamEvent {
+  jobId: string;
+  text: string;
 }
