@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { WatchersService } from './watchers.service';
@@ -16,13 +16,21 @@ export class WatchersController {
   }
 
   @Post('tasks/:taskId/watchers')
-  addTaskWatchers(@Param('taskId') taskId: string, @Body() dto: AddWatchersDto) {
-    return this.watchersService.addWatchers('TASK' as EntityType, taskId, dto.userIds);
+  addTaskWatchers(
+    @Param('taskId') taskId: string,
+    @Req() req: any,
+    @Body() dto: AddWatchersDto,
+  ) {
+    return this.watchersService.addWatchers('TASK' as EntityType, taskId, dto.userIds, req.user.id);
   }
 
   @Delete('tasks/:taskId/watchers/:userId')
-  removeTaskWatcher(@Param('taskId') taskId: string, @Param('userId') userId: string) {
-    return this.watchersService.removeWatcher('TASK' as EntityType, taskId, userId);
+  removeTaskWatcher(
+    @Param('taskId') taskId: string,
+    @Param('userId') userId: string,
+    @Req() req: any,
+  ) {
+    return this.watchersService.removeWatcher('TASK' as EntityType, taskId, userId, req.user.id);
   }
 
   @Get('bugs/:bugId/watchers')
@@ -31,12 +39,20 @@ export class WatchersController {
   }
 
   @Post('bugs/:bugId/watchers')
-  addBugWatchers(@Param('bugId') bugId: string, @Body() dto: AddWatchersDto) {
-    return this.watchersService.addWatchers('BUG' as EntityType, bugId, dto.userIds);
+  addBugWatchers(
+    @Param('bugId') bugId: string,
+    @Req() req: any,
+    @Body() dto: AddWatchersDto,
+  ) {
+    return this.watchersService.addWatchers('BUG' as EntityType, bugId, dto.userIds, req.user.id);
   }
 
   @Delete('bugs/:bugId/watchers/:userId')
-  removeBugWatcher(@Param('bugId') bugId: string, @Param('userId') userId: string) {
-    return this.watchersService.removeWatcher('BUG' as EntityType, bugId, userId);
+  removeBugWatcher(
+    @Param('bugId') bugId: string,
+    @Param('userId') userId: string,
+    @Req() req: any,
+  ) {
+    return this.watchersService.removeWatcher('BUG' as EntityType, bugId, userId, req.user.id);
   }
 }

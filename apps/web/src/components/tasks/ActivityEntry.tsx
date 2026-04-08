@@ -3,6 +3,7 @@ import {
   ArrowRight, UserCheck, Milestone, Star, Pencil,
   MessageSquare, MessageSquareDiff, MessageSquareX,
   FileText, ListChecks, Paperclip, CalendarDays, Tag, Clock,
+  Eye, EyeOff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TaskHistoryEntry, Member, Sprint } from '@/lib/types';
@@ -41,6 +42,8 @@ const FIELD_CONFIG: Record<string, FieldConfig> = {
   actualEndDate:    { icon: CalendarDays,  color: 'text-emerald-600',bg: 'bg-emerald-100 dark:bg-emerald-900/40' },
   timeLog:          { icon: Clock,         color: 'text-emerald-600',bg: 'bg-emerald-100 dark:bg-emerald-900/40' },
   estimatedMinutes: { icon: Clock,         color: 'text-blue-600',   bg: 'bg-blue-100 dark:bg-blue-900/40' },
+  watcher_added:    { icon: Eye,           color: 'text-green-600',  bg: 'bg-green-100 dark:bg-green-900/40' },
+  watcher_removed:  { icon: EyeOff,        color: 'text-red-600',    bg: 'bg-red-100 dark:bg-red-900/40' },
 };
 
 const DEFAULT_CONFIG: FieldConfig = {
@@ -111,6 +114,10 @@ function buildDescription(
       if (oldValue && newValue) return `changed estimate from ${oldValue} to ${newValue}`;
       if (newValue) return `set estimate to ${newValue}`;
       return 'removed estimate';
+    case 'watcher_added':
+      return `added ${newValue} as watcher${newValue && newValue.includes(',') ? 's' : ''}`;
+    case 'watcher_removed':
+      return `removed ${oldValue} from watchers`;
     default:
       return `changed ${field}`;
   }

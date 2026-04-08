@@ -15,17 +15,59 @@ export class WatchersService {
     });
   }
 
-  async addWatchers(entityType: EntityType, entityId: string, userIds: string[]) {
-    return this.prisma.ticketWatcher.createMany({
+  async addWatchers(entityType: EntityType, entityId: string, userIds: string[], actorId?: string) {
+    const result = await this.prisma.ticketWatcher.createMany({
       data: userIds.map((userId) => ({ entityType, entityId, userId })),
       skipDuplicates: true,
     });
+
+    if (actorId && entityType === 'TASK' && userIds.length > 0) {
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, username: true },
+      });
+      const names = users.map((u) => u.name ?? u.username).join(', ');
+      await this.prisma.taskHistory.create({
+        data: {
+          taskId: entityId,
+          actorId,
+          field: 'watcher_added',
+          oldValue: null,
+          newValue: names,
+        },
+      });
+    }
+
+    return result;
   }
 
-  async removeWatcher(entityType: EntityType, entityId: string, userId: string) {
-    return this.prisma.ticketWatcher.deleteMany({
+  async removeWatcher(entityType: EntityType, entityId: string, userId: string, actorId?: string) {
+    let removedUserName: string | null = null;
+    if (actorId && entityType === 'TASK') {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, username: true },
+      });
+      removedUserName = user?.name ?? user?.username ?? null;
+    }
+
+    const result = await this.prisma.ticketWatcher.deleteMany({
       where: { entityType, entityId, userId },
     });
+
+    if (actorId && entityType === 'TASK' && removedUserName) {
+      await this.prisma.taskHistory.create({
+        data: {
+          taskId: entityId,
+          actorId,
+          field: 'watcher_removed',
+          oldValue: removedUserName,
+          newValue: null,
+        },
+      });
+    }
+
+    return result;
   }
 
   async getWatcherUserIds(entityType: EntityType, entityId: string): Promise<string[]> {

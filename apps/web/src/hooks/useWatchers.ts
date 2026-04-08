@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api } from '../lib/api';
 import type { EntityType } from '../lib/types';
 
@@ -22,6 +23,13 @@ export function useAddWatchers(projectId: string, entityType: EntityType, entity
       : api.addBugWatchers(projectId, entityId, userIds),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['watchers', projectId, entityType, entityId] });
+      if (isTask) {
+        void qc.invalidateQueries({ queryKey: ['task-history', projectId, entityId] });
+      }
+      toast.success('Watcher added');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -35,6 +43,13 @@ export function useRemoveWatcher(projectId: string, entityType: EntityType, enti
       : api.removeBugWatcher(projectId, entityId, userId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['watchers', projectId, entityType, entityId] });
+      if (isTask) {
+        void qc.invalidateQueries({ queryKey: ['task-history', projectId, entityId] });
+      }
+      toast.success('Watcher removed');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
