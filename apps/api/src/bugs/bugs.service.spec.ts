@@ -14,6 +14,9 @@ describe('BugsService', () => {
       createMany: vi.fn(),
       deleteMany: vi.fn(),
     },
+    project: {
+      update: vi.fn().mockResolvedValue({ prefix: 'PM', bugSeq: 1 }),
+    },
   };
 
   const mockPrismaService = {
@@ -45,9 +48,18 @@ describe('BugsService', () => {
     parentTask: { select: { id: true, taskKey: true, title: true } },
   };
 
+  const mockNotificationsService = { createMany: vi.fn(), notifyProject: vi.fn() };
+  const mockWatchersService = { getWatcherUserIds: vi.fn().mockResolvedValue([]) };
+  const mockEmailQueue = { add: vi.fn() };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new BugsService(mockPrismaService as any);
+    service = new BugsService(
+      mockPrismaService as any,
+      mockNotificationsService as any,
+      mockWatchersService as any,
+      mockEmailQueue as any,
+    );
     mockPrismaService.workflowStatus.findFirst.mockResolvedValue(defaultWorkflowStatus);
   });
 

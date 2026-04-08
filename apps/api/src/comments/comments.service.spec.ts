@@ -38,7 +38,13 @@ describe('CommentsService', () => {
       }
       return args(mockPrisma);
     });
-    service = new CommentsService(mockPrisma as any);
+    const mockNotificationsService = { createMany: vi.fn() };
+    const mockWatchersService = { getWatcherUserIds: vi.fn().mockResolvedValue([]) };
+    service = new CommentsService(
+      mockPrisma as any,
+      mockNotificationsService as any,
+      mockWatchersService as any,
+    );
   });
 
   describe('create()', () => {
