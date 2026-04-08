@@ -53,6 +53,11 @@ export class BugsController {
     return this.bugsService.create(projectId, req.user.id, dto);
   }
 
+  @Get('by-key/:bugKey')
+  findByKey(@Param('bugKey') bugKey: string) {
+    return this.bugsService.findByBugKey(bugKey);
+  }
+
   @Get(':bugId')
   findOne(@Param('bugId') bugId: string) {
     return this.bugsService.findOne(bugId);

@@ -21,10 +21,19 @@ export class BugsService {
     });
 
     return this.prisma.$transaction(async (tx) => {
+      // Atomically increment bugSeq to generate bugKey
+      const project = await tx.project.update({
+        where: { id: projectId },
+        data: { bugSeq: { increment: 1 } },
+        select: { prefix: true, bugSeq: true },
+      });
+      const bugKey = project.prefix ? `${project.prefix}-BUG-${project.bugSeq}` : null;
+
       const bug = await tx.bug.create({
         data: {
           projectId,
           reporterId,
+          bugKey,
           title: dto.title,
           description: dto.description,
           severity: dto.severity,
@@ -81,6 +90,21 @@ export class BugsService {
   async findOne(bugId: string) {
     return this.prisma.bug.findUnique({
       where: { id: bugId },
+      include: {
+        ...BUG_RELATIONS,
+        attachments: {
+          include: {
+            uploader: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
+  async findByBugKey(bugKey: string) {
+    return this.prisma.bug.findUnique({
+      where: { bugKey },
       include: {
         ...BUG_RELATIONS,
         attachments: {
