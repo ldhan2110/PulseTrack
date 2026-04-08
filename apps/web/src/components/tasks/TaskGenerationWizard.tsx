@@ -1,6 +1,5 @@
 // apps/web/src/components/tasks/TaskGenerationWizard.tsx
 import { useState, useMemo, useCallback } from 'react';
-import DOMPurify from 'dompurify';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +9,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -37,6 +35,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useCreateTask } from '@/hooks/useTasks';
+import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import type { GeneratedTask, Priority } from '@/lib/types';
 
 type TaskStatus = 'pending' | 'approved' | 'skipped';
@@ -100,8 +99,6 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
   // Inline editing state
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState('');
-  const [editingDesc, setEditingDesc] = useState(false);
-  const [descValue, setDescValue] = useState('');
   const [editingAcIndex, setEditingAcIndex] = useState<number | null>(null);
   const [acEditValue, setAcEditValue] = useState('');
   const [addingCriteria, setAddingCriteria] = useState(false);
@@ -148,7 +145,6 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
 
   const resetInlineEditing = useCallback(() => {
     setEditingTitle(false);
-    setEditingDesc(false);
     setEditingAcIndex(null);
     setAddingCriteria(false);
     setNewCriteriaText('');
@@ -256,7 +252,6 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
     if (currentIndex > 0) {
       // Auto-save any in-progress inline edits before navigating
       if (editingTitle) saveTitle();
-      if (editingDesc) saveDesc();
       if (editingAcIndex !== null) saveAc();
       setCurrentIndex(currentIndex - 1);
       resetInlineEditing();
@@ -276,18 +271,6 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
       updateTaskData(currentIndex, { title: trimmed });
     }
     setEditingTitle(false);
-  };
-
-  const startEditDesc = () => {
-    setEditingDesc(true);
-    setDescValue(current.task.description);
-  };
-
-  const saveDesc = () => {
-    if (descValue !== current.task.description) {
-      updateTaskData(currentIndex, { description: descValue });
-    }
-    setEditingDesc(false);
   };
 
   const startEditAc = (index: number) => {
@@ -473,29 +456,14 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
 
                   <Separator />
 
-                  {/* Description — inline editable */}
+                  {/* Description — rich text editor */}
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Description</Label>
-                    {editingDesc ? (
-                      <Textarea
-                        value={descValue}
-                        onChange={(e) => setDescValue(e.target.value)}
-                        onBlur={saveDesc}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') {
-                            setEditingDesc(false);
-                          }
-                        }}
-                        rows={6}
-                        autoFocus
-                      />
-                    ) : (
-                      <div
-                        className="text-sm bg-muted/50 rounded-lg p-3 cursor-pointer hover:bg-muted/70 transition-colors prose prose-sm max-w-none [&_h4]:text-xs [&_h4]:font-semibold [&_h4]:uppercase [&_h4]:tracking-wider [&_h4]:text-muted-foreground [&_h4]:mt-3 [&_h4]:mb-1 [&_h4:first-child]:mt-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_li]:my-0.5"
-                        onClick={startEditDesc}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(current.task.description) }}
-                      />
-                    )}
+                    <RichTextEditor
+                      initialContent={current.task.description}
+                      onSave={(html) => updateTaskData(currentIndex, { description: html })}
+                      editable={current.status === 'pending'}
+                    />
                   </div>
 
                   {/* Acceptance Criteria — individual items */}

@@ -27,8 +27,8 @@ export function useCreateSprint(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
       toast.success('Sprint created');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -42,8 +42,8 @@ export function useUpdateSprint(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
       toast.success('Sprint updated');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -56,8 +56,8 @@ export function useActivateSprint(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
       toast.success('Sprint activated');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -71,8 +71,8 @@ export function useCloseSprint(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       toast.success(`Sprint closed. ${data.movedToBacklog} tasks returned to backlog.`);
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

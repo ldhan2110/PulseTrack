@@ -17,8 +17,8 @@ export function useUploadAttachment(projectId: string, taskId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['attachments', projectId, taskId] });
     },
-    onError: () => {
-      toast.error('Upload failed. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -31,8 +31,8 @@ export function useDeleteAttachment(projectId: string, taskId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['attachments', projectId, taskId] });
     },
-    onError: () => {
-      toast.error('Failed to remove attachment. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

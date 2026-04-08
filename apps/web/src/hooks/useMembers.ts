@@ -27,8 +27,8 @@ export function useAddMember(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
       toast.success(`${member.user.username} added to project`);
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -41,8 +41,8 @@ export function useAddMembers(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
       toast.success(`${members.length} member${members.length === 1 ? '' : 's'} added to project`);
     },
-    onError: () => {
-      toast.error('Failed to add members. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -56,8 +56,8 @@ export function useChangeMemberRole(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
       toast.success('Role updated');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -73,8 +73,8 @@ export function useRemoveMember(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
       toast.success(`${name} removed from project`);
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

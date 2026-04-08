@@ -73,7 +73,7 @@ export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
         .catch((err: unknown) => {
           removeImageFromEditor(editor, base64Src);
           pendingUploads.current.delete(base64Src);
-          toast.error('Image upload failed — please try again.');
+          toast.error(err instanceof Error ? err.message : 'Image upload failed');
           throw err;
         });
 

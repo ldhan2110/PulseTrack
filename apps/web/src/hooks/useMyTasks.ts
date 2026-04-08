@@ -20,8 +20,8 @@ export function useDeleteMyTask() {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       toast.success('Task deleted');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -39,11 +39,11 @@ export function useUpdateMyTaskStatus() {
       );
       return { previousTasks };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err: Error, _vars, context) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(['my-tasks'], context.previousTasks);
       }
-      toast.error('Something went wrong. Please try again.');
+      toast.error(err.message);
     },
     onSettled: (_data, _error, { task }) => {
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });

@@ -37,8 +37,8 @@ export function useCreateTask(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast.success('Task created successfully');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -60,14 +60,14 @@ export function useUpdateTask(projectId: string) {
       );
       return { previousTasks, previousTask };
     },
-    onError: (_err, { taskId }, context) => {
+    onError: (err: Error, { taskId }, context) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks', projectId], context.previousTasks);
       }
       if (context?.previousTask) {
         queryClient.setQueryData(['task', projectId, taskId], context.previousTask);
       }
-      toast.error('Something went wrong. Please try again.');
+      toast.error(err.message);
     },
     onSettled: (_data, _error, { taskId }) => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
@@ -90,8 +90,8 @@ export function useDeleteTask(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       toast.success('Task deleted');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -113,14 +113,14 @@ export function useUpdateTaskStatus(projectId: string) {
       );
       return { previousTasks, previousTask };
     },
-    onError: (_err, { taskId }, context) => {
+    onError: (err: Error, { taskId }, context) => {
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks', projectId], context.previousTasks);
       }
       if (context?.previousTask) {
         queryClient.setQueryData(['task', projectId, taskId], context.previousTask);
       }
-      toast.error('Something went wrong. Please try again.');
+      toast.error(err.message);
     },
     onSettled: (_data, _error, { taskId }) => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
@@ -155,7 +155,7 @@ export function useCreateTimeLog(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
       toast.success('Time logged');
     },
-    onError: () => toast.error('Failed to log time'),
+    onError: (err: Error) => toast.error(err.message),
   });
 }
 
@@ -170,6 +170,6 @@ export function useDeleteTimeLog(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       toast.success('Time log deleted');
     },
-    onError: () => toast.error('Failed to delete time log'),
+    onError: (err: Error) => toast.error(err.message),
   });
 }

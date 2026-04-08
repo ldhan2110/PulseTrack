@@ -27,8 +27,8 @@ export function useCreateBug(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
       toast.success('Bug reported');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -42,8 +42,8 @@ export function useUpdateBug(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
       toast.success('Bug updated');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -56,8 +56,8 @@ export function useDeleteBug(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
       toast.success('Bug deleted');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

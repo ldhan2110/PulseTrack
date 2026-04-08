@@ -26,8 +26,8 @@ export function useCreateProject() {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Project created');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -41,8 +41,8 @@ export function useUpdateProject(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Project updated');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -55,8 +55,8 @@ export function useArchiveProject() {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Project archived');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -78,8 +78,8 @@ export function useUpdateProjectSettings(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Settings updated');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -93,8 +93,8 @@ export function useUploadProjectAvatar(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Avatar updated');
     },
-    onError: () => {
-      toast.error('Failed to upload avatar. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -108,8 +108,8 @@ export function useRemoveProjectAvatar(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Avatar removed');
     },
-    onError: () => {
-      toast.error('Something went wrong. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

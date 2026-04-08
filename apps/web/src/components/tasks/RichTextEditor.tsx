@@ -21,8 +21,8 @@ interface RichTextEditorProps {
   initialContent: string;
   onSave: (html: string) => void;
   editable: boolean;
-  projectId: string;
-  taskId: string;
+  projectId?: string;
+  taskId?: string;
   /** Always show editor (no read/edit toggle). Used by CommentComposer. */
   alwaysEditing?: boolean;
   placeholder?: string;
@@ -129,7 +129,8 @@ export function RichTextEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
 
-  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId, taskId });
+  const supportsImages = Boolean(projectId && taskId);
+  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId: projectId ?? '', taskId: taskId ?? '' });
 
   // Keep initialContentRef in sync for read-mode rendering
   useEffect(() => {
@@ -167,6 +168,7 @@ export function RichTextEditor({
     editable: true,
     editorProps: {
       handlePaste: (_view, event) => {
+        if (!supportsImages) return false;
         const items = event.clipboardData?.items;
         if (!items || !editorRef.current) return false;
         for (const item of items) {

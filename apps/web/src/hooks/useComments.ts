@@ -18,8 +18,8 @@ export function useCreateComment(projectId: string, taskId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['comments', projectId, taskId] });
     },
-    onError: () => {
-      toast.error('Failed to post comment. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -32,8 +32,8 @@ export function useCreateReply(projectId: string, taskId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['comments', projectId, taskId] });
     },
-    onError: () => {
-      toast.error('Failed to post reply. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -46,8 +46,8 @@ export function useDeleteComment(projectId: string, taskId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['comments', projectId, taskId] });
     },
-    onError: () => {
-      toast.error('Failed to delete comment. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
@@ -62,8 +62,8 @@ export function useUpdateComment(projectId: string, taskId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
       toast.success('Comment updated');
     },
-    onError: () => {
-      toast.error('Failed to update comment. Please try again.');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

@@ -38,8 +38,8 @@ export function useDeleteRepositoryConfig(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['repositoryConfig', projectId] });
       toast.success('Repository config removed');
     },
-    onError: () => {
-      toast.error('Failed to remove repository config');
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
