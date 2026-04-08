@@ -138,6 +138,16 @@ export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing,
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Reset form state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setPrompt('');
+      setScanCodebase(false);
+      setBreakIntoSubTasks(false);
+      setFiles([]);
+    }
+  }, [open]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
     const valid = selected.filter((f) => f.size <= MAX_FILE_SIZE);

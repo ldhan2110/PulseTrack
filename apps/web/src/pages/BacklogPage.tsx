@@ -155,7 +155,10 @@ export function BacklogPage() {
         </div>
         <GenerateTasksModal
           open={generateOpen}
-          onOpenChange={setGenerateOpen}
+          onOpenChange={(open) => {
+            setGenerateOpen(open);
+            if (!open) aiGeneration.reset();
+          }}
           onSubmit={handleGenerateSubmit}
           isProcessing={aiGeneration.isLoading}
           step={aiGeneration.step}
@@ -261,12 +264,18 @@ export function BacklogPage() {
 
       <GenerateTasksModal
         open={generateOpen}
-        onOpenChange={setGenerateOpen}
+        onOpenChange={(open) => {
+          setGenerateOpen(open);
+          if (!open) aiGeneration.reset();
+        }}
         onSubmit={handleGenerateSubmit}
         isProcessing={aiGeneration.isLoading}
         step={aiGeneration.step}
+        error={aiGeneration.error}
         displayLines={aiGeneration.displayLines}
         rawText={aiGeneration.rawText}
+        onCancel={() => { aiGeneration.cancel(); setGenerateOpen(false); }}
+        onRetry={() => { aiGeneration.retry(); }}
       />
 
       {wizardOpen && aiGeneration.tasks.length > 0 && (

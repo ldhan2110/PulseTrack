@@ -74,12 +74,7 @@ Break each parent task into 2-5 focused sub-tasks that together deliver the pare
 const NO_SUB_TASK_ADDENDUM = `
 Do NOT include "subTasks" in the output. Generate only top-level tasks.`;
 
-const BUILD_GRAPH_PROMPT = `You have access to the code-review-graph MCP server. Perform these steps:
-
-1. Run build_or_update_graph_tool to build or update the knowledge graph for this repository.
-2. Run embed_graph_tool to enable semantic search on the graph.
-3. Run list_graph_stats_tool and report the stats.
-
+const BUILD_GRAPH_PROMPT = `Build or update the knowledge graph for this repository using the code-review-graph skills installed.
 Do not do anything else. Just build the graph and report the result.`;
 
 const CODE_GRAPH_SCAN_PROMPT = `You have access to the code-review-graph MCP server with a freshly built knowledge graph for this repository.
@@ -171,7 +166,7 @@ export class AiTaskGenerationService {
 
     switch (provider) {
       case 'claude':
-        baseArgs.push('-p', prompt, '--output-format', 'text', '--model', model);
+        baseArgs.push('--dangerously-skip-permissions','-p', prompt, '--output-format', 'text', '--model', model);
         // Claude Code can read files passed in the prompt by referencing paths
         break;
       case 'gemini':
