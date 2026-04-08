@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { WatchersService } from '../watchers/watchers.service';
 import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
+import type { NotificationType, EntityType } from '@prisma/client';
 
 const BUG_RELATIONS = {
   reporter: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
@@ -13,7 +18,12 @@ const BUG_RELATIONS = {
 
 @Injectable()
 export class BugsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private watchersService: WatchersService,
+    @InjectQueue('notification-email') private emailQueue: Queue,
+  ) {}
 
   async create(projectId: string, reporterId: string, dto: CreateBugDto) {
     const initialStatus = await this.prisma.workflowStatus.findFirst({
@@ -158,5 +168,50 @@ export class BugsService {
 
   async delete(bugId: string) {
     return this.prisma.bug.delete({ where: { id: bugId } });
+  }
+
+  private async triggerWatcherNotifications(opts: {
+    projectId: string;
+    entityId: string;
+    entityTitle: string;
+    type: NotificationType;
+    actorId: string;
+    summary: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    const watcherIds = await this.watchersService.getWatcherUserIds('BUG' as EntityType, opts.entityId);
+    const recipientIds = watcherIds.filter((id) => id !== opts.actorId);
+    if (recipientIds.length === 0) return;
+
+    const data = recipientIds.map((recipientId) => ({
+      recipientId,
+      projectId: opts.projectId,
+      type: opts.type,
+      entityType: 'BUG' as EntityType,
+      entityId: opts.entityId,
+      entityTitle: opts.entityTitle,
+      actorId: opts.actorId,
+      summary: opts.summary,
+      metadata: opts.metadata ?? undefined,
+    }));
+    await this.notifications.createMany(data);
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: opts.projectId },
+      select: { emailNotificationsEnabled: true },
+    });
+    if (project?.emailNotificationsEnabled) {
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: recipientIds } },
+        select: { id: true, email: true, name: true, username: true },
+      });
+      for (const user of users) {
+        await this.emailQueue.add('send', {
+          notificationId: opts.entityId,
+          recipientEmail: user.email,
+          recipientName: user.name ?? user.username,
+        });
+      }
+    }
   }
 }
