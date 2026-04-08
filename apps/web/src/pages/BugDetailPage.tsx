@@ -30,9 +30,12 @@ import { useBug, useUpdateBug, useDeleteBug } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
 import { useProjectRole } from '@/hooks/useProjectRole';
 import { useProject } from '@/hooks/useProjects';
+import { useWorkflow, useValidTransitions } from '@/hooks/useWorkflow';
 import { formatDistanceToNow } from 'date-fns';
-import type { BugSeverity, BugStatus } from '@/lib/types';
+import type { BugSeverity } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { ReproStepsList } from '@/components/bugs/ReproStepsList';
+import { BugAttachments } from '@/components/bugs/BugAttachments';
 
 // FieldGroup + Field composition per shadcn skill rules
 function FieldGroup({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -79,6 +82,8 @@ export function BugDetailPage() {
   const { data: project } = useProject(projectId);
   const updateBug = useUpdateBug(projectId);
   const deleteBug = useDeleteBug(projectId);
+  const { data: workflow } = useWorkflow(projectId, 'BUG');
+  const validTransitions = useValidTransitions(workflow, bug?.workflowStatusId ?? null);
 
   // Inline title editing
   const [editingTitle, setEditingTitle] = useState(false);
@@ -89,10 +94,13 @@ export function BugDetailPage() {
   const [descSaving, setDescSaving] = useState(false);
   const descTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Steps to reproduce auto-save
-  const [stepsValue, setStepsValue] = useState('');
-  const [stepsSaving, setStepsSaving] = useState(false);
-  const stepsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Expected/Actual result auto-save
+  const [expectedValue, setExpectedValue] = useState('');
+  const [expectedSaving, setExpectedSaving] = useState(false);
+  const expectedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [actualValue, setActualValue] = useState('');
+  const [actualSaving, setActualSaving] = useState(false);
+  const actualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Environment auto-save
   const [envValue, setEnvValue] = useState('');
@@ -102,7 +110,8 @@ export function BugDetailPage() {
   useEffect(() => {
     if (bug) {
       setDescValue(bug.description ?? '');
-      setStepsValue(bug.stepsToReproduce ?? '');
+      setExpectedValue(bug.expectedResult ?? '');
+      setActualValue(bug.actualResult ?? '');
       setEnvValue(bug.environment ?? '');
     }
   }, [bug?.id]);
@@ -149,25 +158,48 @@ export function BugDetailPage() {
     }
   };
 
-  const handleStepsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setStepsValue(e.target.value);
-    if (stepsTimerRef.current) clearTimeout(stepsTimerRef.current);
-    stepsTimerRef.current = setTimeout(() => {
-      setStepsSaving(true);
+  const handleExpectedChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setExpectedValue(e.target.value);
+    if (expectedTimerRef.current) clearTimeout(expectedTimerRef.current);
+    expectedTimerRef.current = setTimeout(() => {
+      setExpectedSaving(true);
       updateBug.mutate(
-        { bugId, data: { stepsToReproduce: e.target.value } },
-        { onSettled: () => setTimeout(() => setStepsSaving(false), 800) },
+        { bugId, data: { expectedResult: e.target.value } },
+        { onSettled: () => setTimeout(() => setExpectedSaving(false), 800) },
       );
     }, 500);
   };
 
-  const handleStepsBlur = () => {
-    if (stepsTimerRef.current) {
-      clearTimeout(stepsTimerRef.current);
-      setStepsSaving(true);
+  const handleExpectedBlur = () => {
+    if (expectedTimerRef.current) {
+      clearTimeout(expectedTimerRef.current);
+      setExpectedSaving(true);
       updateBug.mutate(
-        { bugId, data: { stepsToReproduce: stepsValue } },
-        { onSettled: () => setTimeout(() => setStepsSaving(false), 800) },
+        { bugId, data: { expectedResult: expectedValue } },
+        { onSettled: () => setTimeout(() => setExpectedSaving(false), 800) },
+      );
+    }
+  };
+
+  const handleActualChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setActualValue(e.target.value);
+    if (actualTimerRef.current) clearTimeout(actualTimerRef.current);
+    actualTimerRef.current = setTimeout(() => {
+      setActualSaving(true);
+      updateBug.mutate(
+        { bugId, data: { actualResult: e.target.value } },
+        { onSettled: () => setTimeout(() => setActualSaving(false), 800) },
+      );
+    }, 500);
+  };
+
+  const handleActualBlur = () => {
+    if (actualTimerRef.current) {
+      clearTimeout(actualTimerRef.current);
+      setActualSaving(true);
+      updateBug.mutate(
+        { bugId, data: { actualResult: actualValue } },
+        { onSettled: () => setTimeout(() => setActualSaving(false), 800) },
       );
     }
   };
@@ -285,20 +317,36 @@ export function BugDetailPage() {
         <Field>
           <FieldLabel>Status</FieldLabel>
           <Select
-            value={bug.status}
-            onValueChange={(val) =>
-              updateBug.mutate({ bugId, data: { status: val as BugStatus } })
-            }
+            value={bug.workflowStatusId ?? ''}
+            onValueChange={(val) => updateBug.mutate({ bugId, data: { workflowStatusId: val } })}
           >
             <SelectTrigger className="h-8 w-auto gap-2">
-              <SelectValue />
+              <SelectValue>
+                {bug.workflowStatus && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
+                    {bug.workflowStatus.name}
+                  </span>
+                )}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="OPEN">Open</SelectItem>
-              <SelectItem value="IN_FIX">In Fix</SelectItem>
-              <SelectItem value="FIXED">Fixed</SelectItem>
-              <SelectItem value="VERIFIED">Verified</SelectItem>
-              <SelectItem value="CLOSED">Closed</SelectItem>
+              {bug.workflowStatus && (
+                <SelectItem value={bug.workflowStatus.id}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
+                    {bug.workflowStatus.name}
+                  </span>
+                </SelectItem>
+              )}
+              {validTransitions.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
+                    {s.name}
+                  </span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </Field>
@@ -389,23 +437,63 @@ export function BugDetailPage() {
           {/* Reproduction Steps */}
           <div className="flex flex-col gap-2">
             <h2 className="text-[13px] font-semibold text-muted-foreground">Reproduction Steps</h2>
-            <div className="relative">
-              <Textarea
-                placeholder="Steps to reproduce..."
-                value={stepsValue}
-                onChange={handleStepsChange}
-                onBlur={handleStepsBlur}
-                rows={4}
-                className="resize-y"
-              />
-              {stepsSaving && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                  <Loader2 className="size-3 animate-spin" />
-                  Saving...
-                </div>
-              )}
+            <ReproStepsList
+              steps={(bug.reproSteps ?? []).map(s => ({ position: s.position, content: s.content }))}
+              onChange={(steps) => {
+                updateBug.mutate({ bugId, data: { reproSteps: steps } });
+              }}
+            />
+          </div>
+
+          {/* Expected / Actual Result */}
+          <div className="flex gap-4">
+            <div className="flex-1 flex flex-col gap-2">
+              <h2 className="text-[13px] font-semibold text-muted-foreground">Expected Result</h2>
+              <div className="relative">
+                <Textarea
+                  placeholder="What should happen..."
+                  value={expectedValue}
+                  onChange={handleExpectedChange}
+                  onBlur={handleExpectedBlur}
+                  rows={3}
+                  className="resize-y"
+                />
+                {expectedSaving && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Loader2 className="size-3 animate-spin" />
+                    Saving...
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 flex flex-col gap-2">
+              <h2 className="text-[13px] font-semibold text-muted-foreground">Actual Result</h2>
+              <div className="relative">
+                <Textarea
+                  placeholder="What actually happened..."
+                  value={actualValue}
+                  onChange={handleActualChange}
+                  onBlur={handleActualBlur}
+                  rows={3}
+                  className="resize-y"
+                />
+                {actualSaving && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Loader2 className="size-3 animate-spin" />
+                    Saving...
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Attachments */}
+          <BugAttachments
+            projectId={projectId}
+            bugId={bugId}
+            attachments={bug.attachments ?? []}
+            canEdit={canManage}
+          />
 
           {/* Environment */}
           <div className="flex flex-col gap-2">
@@ -430,6 +518,17 @@ export function BugDetailPage() {
         {/* Right: sidebar metadata */}
         <div className="w-56 shrink-0 flex flex-col gap-4">
           <div className="rounded-lg border p-4 flex flex-col gap-3">
+            {bug.parentTask && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Parent Task</span>
+                <Link
+                  to={`/projects/${projectPrefix}/tasks/${bug.parentTask.taskKey}`}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {bug.parentTask.taskKey} — {bug.parentTask.title}
+                </Link>
+              </div>
+            )}
             {bug.reporter && (
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
