@@ -22,6 +22,7 @@ import { AiConfigModule } from './ai-config/ai-config.module';
 import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
+import { WatchersModule } from './watchers/watchers.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
     AiTaskGenerationModule,
     TimeLogsModule,
     BugAttachmentsModule,
+    WatchersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
