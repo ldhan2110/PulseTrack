@@ -203,7 +203,18 @@ export function ProjectSettingsPage() {
 
         {canManage && (
           <TabsContent value="workflow" className="mt-6">
-            <WorkflowEditor projectId={projectId} canManage={canManage} />
+            <Tabs defaultValue="TASK">
+              <TabsList>
+                <TabsTrigger value="TASK">Task Workflow</TabsTrigger>
+                <TabsTrigger value="BUG">Bug Workflow</TabsTrigger>
+              </TabsList>
+              <TabsContent value="TASK" className="mt-4">
+                <WorkflowEditor projectId={projectId} canManage={canManage} kind="TASK" />
+              </TabsContent>
+              <TabsContent value="BUG" className="mt-4">
+                <WorkflowEditor projectId={projectId} canManage={canManage} kind="BUG" />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         )}
       </Tabs>
