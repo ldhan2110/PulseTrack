@@ -18,6 +18,7 @@ import type { AiGenerationStep } from '@/lib/types';
 const STEP_LABELS: Record<string, string> = {
   queued: 'Queued — waiting for available slot...',
   pulling: 'Pulling latest code...',
+  'building-graph': 'Building code knowledge graph...',
   scanning: 'Scanning codebase with code-graph...',
   generating: 'Generating tasks with AI...',
   parsing: 'Parsing results...',
@@ -25,9 +26,10 @@ const STEP_LABELS: Record<string, string> = {
 
 const STEP_PROGRESS: Record<string, number> = {
   queued: 10,
-  pulling: 25,
-  scanning: 45,
-  generating: 70,
+  pulling: 20,
+  'building-graph': 35,
+  scanning: 50,
+  generating: 72,
   parsing: 90,
 };
 

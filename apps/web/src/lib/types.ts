@@ -483,7 +483,7 @@ export interface AiGenerationJobResult {
   streamText?: string;
 }
 
-export type AiGenerationStep = 'pulling' | 'scanning' | 'generating' | 'parsing';
+export type AiGenerationStep = 'pulling' | 'building-graph' | 'scanning' | 'generating' | 'parsing';
 
 export interface AiGenerationProgressEvent {
   jobId: string;

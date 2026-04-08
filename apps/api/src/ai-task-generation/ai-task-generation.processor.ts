@@ -152,12 +152,30 @@ export class AiTaskGenerationProcessor extends WorkerHost {
       if (!pullOutput.trim()) emitStream('Already up to date.\n');
       emitStream('\n');
 
-      // Step 2: Codebase scan (if requested)
+      // Step 2: Build code graph + scan (if requested)
       let scanResults: string | null = null;
       if (scanCodebase) {
+        // Step 2a: Build/update the code knowledge graph
+        currentStep = 'building-graph';
+        this.emitStep(userId, job, 'building-graph');
+        emitStream(`$ ${config.cli} (building code graph)\n`);
+
+        const graphPrompt = this.aiService.buildGraphPrompt();
+        const graphArgs = this.aiService.buildCliArgs(config.provider, config.model, graphPrompt, []);
+        const graphEnv = this.aiService.buildCliEnv(config.provider, config.apiKey);
+
+        await this.runCliStreaming(config.cli, graphArgs, {
+          cwd: config.workspacePath,
+          timeout: 300_000,
+          env: { ...process.env, ...graphEnv },
+        }, job.id, emitStream);
+
+        emitStream('\n');
+
+        // Step 2b: Scan codebase using the freshly built graph
         currentStep = 'scanning';
         this.emitStep(userId, job, 'scanning');
-        emitStream(`$ ${config.cli} (codebase scan)\n`);
+        emitStream(`$ ${config.cli} (scanning codebase with code-graph)\n`);
 
         const scanPrompt = this.aiService.buildScanPrompt(prompt);
         const scanArgs = this.aiService.buildCliArgs(config.provider, config.model, scanPrompt, []);
