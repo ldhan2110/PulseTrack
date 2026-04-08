@@ -47,6 +47,27 @@ enum WorkflowKind {
   BUG
 }
 
+enum NotificationType {
+  STATUS_CHANGE
+  ASSIGNEE_CHANGE
+  COMMENT_ADDED
+  COMMENT_EDITED
+  COMMENT_DELETED
+  ATTACHMENT_CHANGE
+  CRITERIA_CHANGE
+  SUBTASK_CHANGE
+  DESCRIPTION_EDIT
+  SPRINT_CHANGE
+  PRIORITY_CHANGE
+  TICKET_DELETED
+  MENTION
+}
+
+enum EntityType {
+  TASK
+  BUG
+}
+
 model WorkflowStatus {
   id        String       @id @default(cuid())
   projectId String
@@ -142,6 +163,9 @@ model User {
   uploadedAttachments     Attachment[]      @relation("AttachmentUploader")
   bugAttachments          BugAttachment[]   @relation("BugAttachmentUploader")
   taskHistories           TaskHistory[]     @relation("TaskHistoryActor")
+  notifications           Notification[]    @relation("NotificationRecipient")
+  actedNotifications      Notification[]    @relation("NotificationActor")
+  ticketWatches           TicketWatcher[]
 }
 
 model Project {
@@ -155,6 +179,7 @@ model Project {
   taskSeq     Int       @default(0) // Auto-incrementing counter for task keys
   avatarUrl          String?   // Path to uploaded avatar image
   bugReporterRoles   String[]  @default(["pm", "ba", "qc"])
+  emailNotificationsEnabled Boolean @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -170,6 +195,7 @@ model Project {
   workflowTransitions WorkflowTransition[]
   repositoryConfig    RepositoryConfig?
   aiConfig            AiConfig?
+  notifications       Notification[]
 }
 
 model ProjectMember {
@@ -242,14 +268,16 @@ model Task {
 model Comment {
   id        String    @id @default(cuid())
   content   String
-  taskId    String
+  taskId    String?
+  bugId     String?
   authorId  String
   parentId  String?   // Threaded comments
   isEdited  Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task      Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  bug       Bug?      @relation(fields: [bugId], references: [id], onDelete: Cascade)
   author    User      @relation(fields: [authorId], references: [id])
   parent    Comment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies   Comment[] @relation("CommentThread")
@@ -352,6 +380,7 @@ model Bug {
   workflowStatus WorkflowStatus?  @relation("BugWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
   reproSteps     BugReproStep[]
   attachments    BugAttachment[]
+  comments       Comment[]
 }
 
 // =====================
@@ -417,6 +446,46 @@ model TaskHistory {
 
   task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   actor User @relation("TaskHistoryActor", fields: [actorId], references: [id])
+}
+
+// =====================
+// NOTIFICATIONS & WATCHERS
+// =====================
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  projectId   String
+  type        NotificationType
+  entityType  EntityType
+  entityId    String
+  entityTitle String
+  actorId     String
+  summary     String
+  metadata    Json?
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  recipient User    @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  actor     User    @relation("NotificationActor", fields: [actorId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, createdAt])
+  @@index([recipientId, createdAt])
+}
+
+model TicketWatcher {
+  id         String     @id @default(cuid())
+  entityType EntityType
+  entityId   String
+  userId     String
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId, userId])
+  @@index([entityType, entityId])
 }
 
 // =====================
