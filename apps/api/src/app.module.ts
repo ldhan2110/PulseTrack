@@ -23,6 +23,7 @@ import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.
 import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 import { WatchersModule } from './watchers/watchers.module';
+import { NotificationEmailModule } from './notification-email/notification-email.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { WatchersModule } from './watchers/watchers.module';
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,
+    NotificationEmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
