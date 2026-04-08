@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { ProjectRoles } from '../auth/project-roles.decorator';
@@ -11,8 +11,11 @@ export class WorkflowController {
   constructor(private workflowService: WorkflowService) {}
 
   @Get()
-  getWorkflow(@Param('projectId') projectId: string) {
-    return this.workflowService.getWorkflow(projectId);
+  getWorkflow(
+    @Param('projectId') projectId: string,
+    @Query('kind') kind?: 'TASK' | 'BUG',
+  ) {
+    return this.workflowService.getWorkflow(projectId, kind ?? 'TASK');
   }
 
   @Put()

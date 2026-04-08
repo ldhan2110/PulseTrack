@@ -6,6 +6,7 @@ import {
   useDeleteComment,
   useUpdateComment,
 } from '@/hooks/useComments';
+import { useMembers } from '@/hooks/useMembers';
 import { CommentItem } from './CommentItem';
 import { CommentComposer } from './CommentComposer';
 
@@ -23,10 +24,17 @@ export function CommentThread({
   canManage,
 }: CommentThreadProps) {
   const { data: comments = [] } = useComments(projectId, taskId);
+  const { data: members = [] } = useMembers(projectId);
   const createComment = useCreateComment(projectId, taskId);
   const createReply = useCreateReply(projectId, taskId);
   const deleteComment = useDeleteComment(projectId, taskId);
   const updateComment = useUpdateComment(projectId, taskId);
+
+  const mentionMembers = members.map((m) => ({
+    id: m.userId,
+    label: m.user.name ?? m.user.username,
+    imageUrl: m.user.imageUrl || null,
+  }));
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
@@ -107,6 +115,7 @@ export function CommentThread({
                     taskId={taskId}
                     placeholder="Write a reply..."
                     onCancel={() => setReplyingTo(null)}
+                    members={mentionMembers}
                   />
                 </div>
               )}
@@ -122,6 +131,7 @@ export function CommentThread({
         projectId={projectId}
         taskId={taskId}
         placeholder="Add a comment..."
+        members={mentionMembers}
       />
     </div>
   );

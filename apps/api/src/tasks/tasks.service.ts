@@ -1,9 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WorkflowService } from '../workflow/workflow.service';
+import { WatchersService } from '../watchers/watchers.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { Prisma } from '@prisma/client';
+import type { NotificationType, EntityType } from '@prisma/client';
 
 @Injectable()
 export class TasksService {
@@ -11,6 +16,8 @@ export class TasksService {
     private prisma: PrismaService,
     private notifications: NotificationsService,
     private workflowService: WorkflowService,
+    private watchersService: WatchersService,
+    @InjectQueue('notification-email') private emailQueue: Queue,
   ) {}
 
   async create(projectId: string, creatorId: string, dto: CreateTaskDto) {
@@ -360,6 +367,43 @@ export class TasksService {
       });
     }
 
+    // Trigger watcher notifications for tracked field changes
+    const taskTitle = updatedTask.taskKey
+      ? `${updatedTask.taskKey}: ${updatedTask.title}`
+      : updatedTask.title;
+
+    for (const entry of historyEntries) {
+      const fieldToType: Record<string, NotificationType> = {
+        status: 'STATUS_CHANGE' as NotificationType,
+        assigneeId: 'ASSIGNEE_CHANGE' as NotificationType,
+        priority: 'PRIORITY_CHANGE' as NotificationType,
+        description: 'DESCRIPTION_EDIT' as NotificationType,
+        acceptanceCriteria: 'CRITERIA_CHANGE' as NotificationType,
+        sprintId: 'SPRINT_CHANGE' as NotificationType,
+      };
+      const notifType = fieldToType[entry.field];
+      if (!notifType) continue;
+
+      const summaryMap: Record<string, string> = {
+        status: `changed status from "${entry.oldValue ?? 'none'}" to "${entry.newValue}"`,
+        assigneeId: 'changed assignee',
+        priority: `changed priority from "${entry.oldValue ?? 'none'}" to "${entry.newValue}"`,
+        description: 'updated the description',
+        acceptanceCriteria: 'updated acceptance criteria',
+        sprintId: 'moved to a different sprint',
+      };
+
+      void this.triggerWatcherNotifications({
+        projectId: current.projectId,
+        entityId: taskId,
+        entityTitle: taskTitle,
+        type: notifType,
+        actorId,
+        summary: summaryMap[entry.field],
+        metadata: { field: entry.field, oldValue: entry.oldValue, newValue: entry.newValue },
+      });
+    }
+
     return updatedTask;
   }
 
@@ -407,5 +451,50 @@ export class TasksService {
     if (h > 0 && m > 0) return `${h}h ${m}m`;
     if (h > 0) return `${h}h`;
     return `${m}m`;
+  }
+
+  private async triggerWatcherNotifications(opts: {
+    projectId: string;
+    entityId: string;
+    entityTitle: string;
+    type: NotificationType;
+    actorId: string;
+    summary: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    const watcherIds = await this.watchersService.getWatcherUserIds('TASK' as EntityType, opts.entityId);
+    const recipientIds = watcherIds.filter((id) => id !== opts.actorId);
+    if (recipientIds.length === 0) return;
+
+    const data = recipientIds.map((recipientId) => ({
+      recipientId,
+      projectId: opts.projectId,
+      type: opts.type,
+      entityType: 'TASK' as EntityType,
+      entityId: opts.entityId,
+      entityTitle: opts.entityTitle,
+      actorId: opts.actorId,
+      summary: opts.summary,
+      metadata: opts.metadata as Prisma.InputJsonValue | undefined,
+    }));
+    await this.notifications.createMany(data);
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: opts.projectId },
+      select: { emailNotificationsEnabled: true },
+    });
+    if (project?.emailNotificationsEnabled) {
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: recipientIds } },
+        select: { id: true, email: true, name: true, username: true },
+      });
+      for (const user of users) {
+        await this.emailQueue.add('send', {
+          notificationId: opts.entityId,
+          recipientEmail: user.email,
+          recipientName: user.name ?? user.username,
+        });
+      }
+    }
   }
 }

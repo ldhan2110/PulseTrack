@@ -4,7 +4,25 @@ import { DashboardService } from './dashboard.service';
 describe('DashboardService', () => {
   let service: DashboardService;
 
+  // Workflow statuses returned by the first workflowStatus.findMany call (TASK statuses)
+  const mockWorkflowStatuses = [
+    { id: 'ws-backlog', name: 'Backlog', key: 'BACKLOG', color: '#ccc', isClosed: false },
+    { id: 'ws-in-progress', name: 'In Progress', key: 'IN_PROGRESS', color: '#36f', isClosed: false },
+    { id: 'ws-in-review', name: 'In Review', key: 'IN_REVIEW', color: '#f90', isClosed: false },
+    { id: 'ws-done', name: 'Done', key: 'DONE', color: '#0c0', isClosed: true },
+    { id: 'ws-blocked', name: 'Blocked', key: 'BLOCKED', color: '#c00', isClosed: false },
+  ];
+
+  // Bug workflow statuses returned by the second workflowStatus.findMany call
+  const mockBugWorkflowStatuses = [
+    { id: 'bws-open', isClosed: false },
+    { id: 'bws-closed', isClosed: true },
+  ];
+
   const mockPrismaService = {
+    workflowStatus: {
+      findMany: vi.fn(),
+    },
     task: {
       groupBy: vi.fn(),
       findMany: vi.fn(),
@@ -23,16 +41,29 @@ describe('DashboardService', () => {
     service = new DashboardService(mockPrismaService as any);
   });
 
+  /**
+   * Helper to set up default mocks for the workflowStatus.findMany calls.
+   * The service calls it twice:
+   *   1) All statuses for the project (ordered by position)
+   *   2) BUG-kind statuses for bug count computation
+   */
+  function setupWorkflowStatusMocks() {
+    mockPrismaService.workflowStatus.findMany
+      .mockResolvedValueOnce(mockWorkflowStatuses) // first call: all project statuses
+      .mockResolvedValueOnce(mockBugWorkflowStatuses); // second call: BUG kind statuses
+  }
+
   describe('getProjectDashboard()', () => {
-    it('returns correct task counts by status', async () => {
+    it('returns correct task counts by workflow status', async () => {
       const projectId = 'proj-1';
 
+      setupWorkflowStatusMocks();
       mockPrismaService.task.groupBy.mockResolvedValue([
-        { status: 'BACKLOG', _count: 5 },
-        { status: 'IN_PROGRESS', _count: 3 },
-        { status: 'IN_REVIEW', _count: 1 },
-        { status: 'DONE', _count: 8 },
-        { status: 'BLOCKED', _count: 2 },
+        { workflowStatusId: 'ws-backlog', _count: 5 },
+        { workflowStatusId: 'ws-in-progress', _count: 3 },
+        { workflowStatusId: 'ws-in-review', _count: 1 },
+        { workflowStatusId: 'ws-done', _count: 8 },
+        { workflowStatusId: 'ws-blocked', _count: 2 },
       ]);
       mockPrismaService.sprint.findFirst.mockResolvedValue(null);
       mockPrismaService.task.findMany.mockResolvedValue([]);
@@ -44,19 +75,22 @@ describe('DashboardService', () => {
 
       const result = await service.getProjectDashboard(projectId);
 
-      expect(result.taskCounts).toEqual({
-        total: 19,
-        backlog: 5,
-        inProgress: 3,
-        inReview: 1,
-        done: 8,
-        blocked: 2,
-      });
+      expect(result.taskCounts.total).toBe(19);
+      expect(result.taskCounts.byStatus).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ key: 'BACKLOG', count: 5 }),
+          expect.objectContaining({ key: 'IN_PROGRESS', count: 3 }),
+          expect.objectContaining({ key: 'IN_REVIEW', count: 1 }),
+          expect.objectContaining({ key: 'DONE', count: 8 }),
+          expect.objectContaining({ key: 'BLOCKED', count: 2 }),
+        ]),
+      );
     });
 
     it('returns null activeSprint when no active sprint exists', async () => {
       const projectId = 'proj-1';
 
+      setupWorkflowStatusMocks();
       mockPrismaService.task.groupBy.mockResolvedValue([]);
       mockPrismaService.sprint.findFirst.mockResolvedValue(null);
       mockPrismaService.task.findMany.mockResolvedValue([]);
@@ -77,6 +111,7 @@ describe('DashboardService', () => {
       const startDate = new Date('2026-04-01');
       const endDate = new Date('2026-04-14');
 
+      setupWorkflowStatusMocks();
       mockPrismaService.task.groupBy.mockResolvedValue([]);
       mockPrismaService.sprint.findFirst.mockResolvedValue({
         id: 'sprint-1',
@@ -85,17 +120,17 @@ describe('DashboardService', () => {
         endDate,
         status: 'ACTIVE',
         tasks: [
-          { storyPoints: 5, status: 'DONE' },
-          { storyPoints: 3, status: 'IN_PROGRESS' },
-          { storyPoints: 8, status: 'BACKLOG' },
+          { storyPoints: 5, workflowStatusId: 'ws-done' },
+          { storyPoints: 3, workflowStatusId: 'ws-in-progress' },
+          { storyPoints: 8, workflowStatusId: 'ws-backlog' },
         ],
       });
       mockPrismaService.task.findMany
         .mockResolvedValueOnce([]) // recentTasks
         .mockResolvedValueOnce([ // burndown tasks
-          { storyPoints: 5, status: 'DONE', updatedAt: new Date('2026-04-05') },
-          { storyPoints: 3, status: 'IN_PROGRESS', updatedAt: new Date() },
-          { storyPoints: 8, status: 'BACKLOG', updatedAt: new Date() },
+          { storyPoints: 5, workflowStatusId: 'ws-done', updatedAt: new Date('2026-04-05') },
+          { storyPoints: 3, workflowStatusId: 'ws-in-progress', updatedAt: new Date() },
+          { storyPoints: 8, workflowStatusId: 'ws-backlog', updatedAt: new Date() },
         ]);
       mockPrismaService.bug.findMany.mockResolvedValue([]);
       mockPrismaService.bug.count
@@ -118,6 +153,7 @@ describe('DashboardService', () => {
       const startDate = new Date('2026-04-01');
       const endDate = new Date('2026-04-03');
 
+      setupWorkflowStatusMocks();
       mockPrismaService.task.groupBy.mockResolvedValue([]);
       mockPrismaService.sprint.findFirst.mockResolvedValue({
         id: 'sprint-1',
@@ -126,13 +162,13 @@ describe('DashboardService', () => {
         endDate,
         status: 'ACTIVE',
         tasks: [
-          { storyPoints: 10, status: 'IN_PROGRESS' },
+          { storyPoints: 10, workflowStatusId: 'ws-in-progress' },
         ],
       });
       mockPrismaService.task.findMany
         .mockResolvedValueOnce([]) // recentTasks
         .mockResolvedValueOnce([ // burndown tasks
-          { storyPoints: 10, status: 'IN_PROGRESS', updatedAt: new Date('2026-04-02') },
+          { storyPoints: 10, workflowStatusId: 'ws-in-progress', updatedAt: new Date('2026-04-02') },
         ]);
       mockPrismaService.bug.findMany.mockResolvedValue([]);
       mockPrismaService.bug.count
@@ -154,6 +190,7 @@ describe('DashboardService', () => {
     it('returns correct bug counts', async () => {
       const projectId = 'proj-1';
 
+      setupWorkflowStatusMocks();
       mockPrismaService.task.groupBy.mockResolvedValue([]);
       mockPrismaService.sprint.findFirst.mockResolvedValue(null);
       mockPrismaService.task.findMany.mockResolvedValue([]);

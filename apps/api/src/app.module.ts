@@ -21,6 +21,9 @@ import { RepositoryConfigModule } from './repository-config/repository-config.mo
 import { AiConfigModule } from './ai-config/ai-config.module';
 import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
+import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
+import { WatchersModule } from './watchers/watchers.module';
+import { NotificationEmailModule } from './notification-email/notification-email.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { TimeLogsModule } from './time-logs/time-logs.module';
     AiConfigModule,
     AiTaskGenerationModule,
     TimeLogsModule,
+    BugAttachmentsModule,
+    WatchersModule,
+    NotificationEmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

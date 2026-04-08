@@ -19,6 +19,14 @@ export function useBug(projectId: string, bugId: string) {
   });
 }
 
+export function useBugByKey(projectId: string, bugKey: string) {
+  return useQuery({
+    queryKey: ['bug-by-key', projectId, bugKey],
+    queryFn: () => api.getBugByKey(projectId, bugKey),
+    enabled: !!projectId && !!bugKey,
+  });
+}
+
 export function useCreateBug(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -19,9 +19,14 @@ describe('ProjectsService', () => {
     $transaction: vi.fn(),
   };
 
+  const mockWorkflowService = {
+    seedDefaultWorkflow: vi.fn().mockResolvedValue(undefined),
+    seedDefaultBugWorkflow: vi.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new ProjectsService(mockPrismaService as any);
+    service = new ProjectsService(mockPrismaService as any, mockWorkflowService as any);
   });
 
   describe('create()', () => {
@@ -53,6 +58,8 @@ describe('ProjectsService', () => {
 
       expect(result).toEqual(createdProject);
       expect(mockPrismaService.$transaction).toHaveBeenCalledOnce();
+      expect(mockWorkflowService.seedDefaultWorkflow).toHaveBeenCalledWith(projectId);
+      expect(mockWorkflowService.seedDefaultBugWorkflow).toHaveBeenCalledWith(projectId);
     });
 
     it('sets ownerId to the creator userId and creates a PM member', async () => {
@@ -98,10 +105,19 @@ describe('ProjectsService', () => {
             id: 'proj-active',
             name: 'Active Project',
             description: null,
+            prefix: 'AP',
+            avatarUrl: null,
             archived: false,
             createdAt: new Date(),
             _count: { tasks: 5 },
-            tasks: [{ status: 'IN_PROGRESS' }, { status: 'BLOCKED' }],
+            workflowStatuses: [
+              { id: 'ws-open', isClosed: false, key: 'OPEN' },
+              { id: 'ws-done', isClosed: true, key: 'DONE' },
+            ],
+            tasks: [
+              { workflowStatusId: 'ws-open' },
+              { workflowStatusId: 'ws-open' },
+            ],
           },
         },
         {
@@ -110,9 +126,12 @@ describe('ProjectsService', () => {
             id: 'proj-archived',
             name: 'Archived Project',
             description: null,
+            prefix: 'AR',
+            avatarUrl: null,
             archived: true,
             createdAt: new Date(),
             _count: { tasks: 2 },
+            workflowStatuses: [],
             tasks: [],
           },
         },
@@ -124,8 +143,7 @@ describe('ProjectsService', () => {
       expect(result[0].id).toBe('proj-active');
       expect(result[0].userRole).toBe('pm');
       expect(result[0].taskSummary.total).toBe(5);
-      expect(result[0].taskSummary.inProgress).toBe(1);
-      expect(result[0].taskSummary.blocked).toBe(1);
+      expect(result[0].taskSummary.active).toBe(2);
     });
 
     it('returns empty array when user has no memberships', async () => {
@@ -142,9 +160,12 @@ describe('ProjectsService', () => {
             id: 'archived-proj',
             name: 'Archived',
             description: null,
+            prefix: 'ARC',
+            avatarUrl: null,
             archived: true,
             createdAt: new Date(),
             _count: { tasks: 0 },
+            workflowStatuses: [],
             tasks: [],
           },
         },

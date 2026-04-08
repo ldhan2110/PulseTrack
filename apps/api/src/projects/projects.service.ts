@@ -35,6 +35,7 @@ export class ProjectsService {
     });
 
     await this.workflowService.seedDefaultWorkflow(project.id);
+    await this.workflowService.seedDefaultBugWorkflow(project.id);
 
     return project;
   }
@@ -162,6 +163,9 @@ export class ProjectsService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.prefix !== undefined && { prefix: dto.prefix }),
+        ...(dto.emailNotificationsEnabled !== undefined && {
+          emailNotificationsEnabled: dto.emailNotificationsEnabled,
+        }),
       },
     });
   }

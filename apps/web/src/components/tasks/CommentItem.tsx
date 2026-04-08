@@ -105,8 +105,8 @@ export function CommentItem({
           </div>
         ) : (
           <div
-            className="prose prose-sm max-w-none mt-0.5 break-words text-sm [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-2 [&_p]:my-0.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-1.5 [&_td]:text-xs [&_th]:border [&_th]:border-border [&_th]:p-1.5 [&_th]:text-xs [&_th]:bg-muted [&_th]:font-semibold"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content) }}
+            className="prose prose-sm max-w-none mt-0.5 break-words text-sm [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-2 [&_p]:my-0.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-1.5 [&_td]:text-xs [&_th]:border [&_th]:border-border [&_th]:p-1.5 [&_th]:text-xs [&_th]:bg-muted [&_th]:font-semibold [&_.mention]:bg-blue-100 [&_.mention]:text-blue-800 [&_.mention]:dark:bg-blue-900/30 [&_.mention]:dark:text-blue-300 [&_.mention]:rounded [&_.mention]:px-1 [&_.mention]:font-medium"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content, { ADD_ATTR: ['data-mention-id'] }) }}
           />
         )}
         <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">

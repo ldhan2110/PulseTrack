@@ -36,27 +36,46 @@ enum BugSeverity {
   LOW
 }
 
-enum BugStatus {
-  OPEN
-  IN_FIX
-  FIXED
-  VERIFIED
-  CLOSED
-}
-
 enum SprintStatus {
   PLANNED
   ACTIVE
   COMPLETED
 }
 
+enum WorkflowKind {
+  TASK
+  BUG
+}
+
+enum NotificationType {
+  STATUS_CHANGE
+  ASSIGNEE_CHANGE
+  COMMENT_ADDED
+  COMMENT_EDITED
+  COMMENT_DELETED
+  ATTACHMENT_CHANGE
+  CRITERIA_CHANGE
+  SUBTASK_CHANGE
+  DESCRIPTION_EDIT
+  SPRINT_CHANGE
+  PRIORITY_CHANGE
+  TICKET_DELETED
+  MENTION
+}
+
+enum EntityType {
+  TASK
+  BUG
+}
+
 model WorkflowStatus {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   projectId String
   name      String
   key       String
   color     String
   position  Int
+  kind      WorkflowKind @default(TASK)
   isDefault      Boolean  @default(false)
   isClosed       Boolean  @default(false)
   autoDateField  String?
@@ -68,6 +87,7 @@ model WorkflowStatus {
   transitionsTo   WorkflowTransition[] @relation("TransitionTo")
   assigneeRules   StatusAssigneeRule[]
   tasks           Task[]               @relation("TaskWorkflowStatus")
+  bugs            Bug[]                @relation("BugWorkflowStatus")
 
   @@unique([projectId, key])
 }
@@ -140,8 +160,12 @@ model User {
   aiJobsRequested   AiJob[]
   reportedBugs      Bug[]     @relation("BugReporter")
   assignedBugs      Bug[]     @relation("BugAssignee")
-  uploadedAttachments     Attachment[]  @relation("AttachmentUploader")
-  taskHistories           TaskHistory[] @relation("TaskHistoryActor")
+  uploadedAttachments     Attachment[]      @relation("AttachmentUploader")
+  bugAttachments          BugAttachment[]   @relation("BugAttachmentUploader")
+  taskHistories           TaskHistory[]     @relation("TaskHistoryActor")
+  notifications           Notification[]    @relation("NotificationRecipient")
+  actedNotifications      Notification[]    @relation("NotificationActor")
+  ticketWatches           TicketWatcher[]
 }
 
 model Project {
@@ -153,7 +177,10 @@ model Project {
   owner       User      @relation("ProjectOwner", fields: [ownerId], references: [id])
   prefix      String?   @unique   // 2-10 uppercase letters, URL slug + task key prefix
   taskSeq     Int       @default(0) // Auto-incrementing counter for task keys
-  avatarUrl   String?   // Path to uploaded avatar image
+  bugSeq      Int       @default(0)
+  avatarUrl          String?   // Path to uploaded avatar image
+  bugReporterRoles   String[]  @default(["pm", "ba", "qc"])
+  emailNotificationsEnabled Boolean @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -169,6 +196,7 @@ model Project {
   workflowTransitions WorkflowTransition[]
   repositoryConfig    RepositoryConfig?
   aiConfig            AiConfig?
+  notifications       Notification[]
 }
 
 model ProjectMember {
@@ -235,19 +263,22 @@ model Task {
   blueprintSyncs BlueprintSync[]
   attachments    Attachment[]
   history        TaskHistory[]
+  bugs           Bug[]          @relation("TaskBugs")
 }
 
 model Comment {
   id        String    @id @default(cuid())
   content   String
-  taskId    String
+  taskId    String?
+  bugId     String?
   authorId  String
   parentId  String?   // Threaded comments
   isEdited  Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task      Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  bug       Bug?      @relation(fields: [bugId], references: [id], onDelete: Cascade)
   author    User      @relation(fields: [authorId], references: [id])
   parent    Comment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies   Comment[] @relation("CommentThread")
@@ -328,22 +359,59 @@ model BlueprintSync {
 // =====================
 
 model Bug {
-  id                String      @id @default(cuid())
-  title             String
-  description       String?
-  severity          BugSeverity
-  reproductionSteps String?
-  environment       String?
-  status            BugStatus   @default(OPEN)
-  projectId         String
-  reporterId        String
-  assigneeId        String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  id               String      @id @default(cuid())
+  bugKey           String?     @unique
+  title            String
+  description      String?
+  severity         BugSeverity
+  expectedResult   String?
+  actualResult     String?
+  environment      String?
+  workflowStatusId String?
+  parentTaskId     String?
+  projectId        String
+  reporterId       String
+  assigneeId       String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  reporter  User     @relation("BugReporter", fields: [reporterId], references: [id])
-  assignee  User?    @relation("BugAssignee", fields: [assigneeId], references: [id])
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter       User             @relation("BugReporter", fields: [reporterId], references: [id])
+  assignee       User?            @relation("BugAssignee", fields: [assigneeId], references: [id])
+  parentTask     Task?            @relation("TaskBugs", fields: [parentTaskId], references: [id])
+  workflowStatus WorkflowStatus?  @relation("BugWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
+  reproSteps     BugReproStep[]
+  attachments    BugAttachment[]
+  comments       Comment[]
+}
+
+// =====================
+// BUG REPRO STEPS & ATTACHMENTS
+// =====================
+
+model BugReproStep {
+  id       String @id @default(cuid())
+  bugId    String
+  position Int
+  content  String
+
+  bug Bug @relation(fields: [bugId], references: [id], onDelete: Cascade)
+
+  @@unique([bugId, position])
+}
+
+model BugAttachment {
+  id         String   @id @default(cuid())
+  bugId      String
+  filename   String
+  storedName String
+  mimeType   String
+  size       Int
+  uploaderId String
+  createdAt  DateTime @default(now())
+
+  bug      Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  uploader User @relation("BugAttachmentUploader", fields: [uploaderId], references: [id])
 }
 
 // =====================
@@ -380,6 +448,46 @@ model TaskHistory {
 
   task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   actor User @relation("TaskHistoryActor", fields: [actorId], references: [id])
+}
+
+// =====================
+// NOTIFICATIONS & WATCHERS
+// =====================
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  projectId   String
+  type        NotificationType
+  entityType  EntityType
+  entityId    String
+  entityTitle String
+  actorId     String
+  summary     String
+  metadata    Json?
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  recipient User    @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  actor     User    @relation("NotificationActor", fields: [actorId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, createdAt])
+  @@index([recipientId, createdAt])
+}
+
+model TicketWatcher {
+  id         String     @id @default(cuid())
+  entityType EntityType
+  entityId   String
+  userId     String
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId, userId])
+  @@index([entityType, entityId])
 }
 
 // =====================

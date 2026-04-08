@@ -29,6 +29,8 @@ export interface WorkflowAllowedAssignee {
   userId: string;
   username: string;
   email: string;
+  imageUrl: string | null;
+  name: string | null;
 }
 
 export interface WorkflowData {
@@ -59,13 +61,33 @@ export interface SaveWorkflowPayload {
     memberIds: string[];
   }[];
   layout?: Record<string, unknown>;
+  kind?: WorkflowKind;
 }
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'BLOCKER';
 
 export type BugSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
-export type BugStatus = 'OPEN' | 'IN_FIX' | 'FIXED' | 'VERIFIED' | 'CLOSED';
+export type WorkflowKind = 'TASK' | 'BUG';
+
+export interface BugReproStep {
+  id: string;
+  bugId: string;
+  position: number;
+  content: string;
+}
+
+export interface BugAttachment {
+  id: string;
+  bugId: string;
+  filename: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  uploaderId: string;
+  createdAt: string;
+  uploader?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+}
 
 export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED';
 
@@ -124,6 +146,7 @@ export interface UpdateSettingsPayload {
   name?: string;
   description?: string;
   prefix?: string;
+  emailNotificationsEnabled?: boolean;
 }
 
 // ─── Member ───────────────────────────────────────────────────────────────────
@@ -278,38 +301,51 @@ export interface UpdateSprintPayload {
 
 export interface Bug {
   id: string;
+  bugKey: string | null;
   title: string;
   description: string | null;
   severity: BugSeverity;
-  status: BugStatus;
-  stepsToReproduce: string | null;
   environment: string | null;
+  expectedResult: string | null;
+  actualResult: string | null;
+  workflowStatusId: string | null;
+  workflowStatus?: WorkflowStatus | null;
   assigneeId: string | null;
   reporterId: string;
   projectId: string;
+  parentTaskId: string | null;
+  parentTask?: { id: string; taskKey: string | null; title: string } | null;
   createdAt: string;
   updatedAt: string;
   assignee?: User | null;
   reporter?: User;
+  reproSteps?: BugReproStep[];
+  attachments?: BugAttachment[];
 }
 
 export interface CreateBugPayload {
   title: string;
   description?: string;
   severity: BugSeverity;
-  stepsToReproduce?: string;
   environment?: string;
+  expectedResult?: string;
+  actualResult?: string;
   assigneeId?: string;
+  parentTaskId?: string;
+  reproSteps?: { position: number; content: string }[];
 }
 
 export interface UpdateBugPayload {
   title?: string;
   description?: string;
   severity?: BugSeverity;
-  status?: BugStatus;
-  stepsToReproduce?: string;
   environment?: string;
+  expectedResult?: string;
+  actualResult?: string;
   assigneeId?: string | null;
+  parentTaskId?: string | null;
+  workflowStatusId?: string;
+  reproSteps?: { position: number; content: string }[];
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -372,7 +408,8 @@ export interface DashboardData {
 export interface Comment {
   id: string;
   content: string;
-  taskId: string;
+  taskId: string | null;
+  bugId: string | null;
   authorId: string;
   parentId: string | null;
   isEdited: boolean;
@@ -503,4 +540,48 @@ export interface AiGenerationFailedEvent {
 export interface AiGenerationStreamEvent {
   jobId: string;
   text: string;
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export type NotificationType =
+  | 'STATUS_CHANGE' | 'ASSIGNEE_CHANGE' | 'COMMENT_ADDED' | 'COMMENT_EDITED'
+  | 'COMMENT_DELETED' | 'ATTACHMENT_CHANGE' | 'CRITERIA_CHANGE' | 'SUBTASK_CHANGE'
+  | 'DESCRIPTION_EDIT' | 'SPRINT_CHANGE' | 'PRIORITY_CHANGE' | 'TICKET_DELETED' | 'MENTION';
+
+export type EntityType = 'TASK' | 'BUG';
+
+export interface Notification {
+  id: string;
+  recipientId: string;
+  projectId: string;
+  type: NotificationType;
+  entityType: EntityType;
+  entityId: string;
+  entityTitle: string;
+  actorId: string;
+  summary: string;
+  metadata: Record<string, unknown> | null;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+  actor: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+}
+
+export interface NotificationPage {
+  items: Notification[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// ─── Watchers ─────────────────────────────────────────────────────────────────
+
+export interface TicketWatcher {
+  id: string;
+  entityType: EntityType;
+  entityId: string;
+  userId: string;
+  createdAt: string;
+  user: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
 }

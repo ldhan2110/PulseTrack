@@ -29,7 +29,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateBug } from '@/hooks/useBugs';
-import type { BugSeverity, Member } from '@/lib/types';
+import { useTasks } from '@/hooks/useTasks';
+import { ReproStepsList } from '@/components/bugs/ReproStepsList';
+import type { BugSeverity, Member, Task } from '@/lib/types';
 import { useAuth } from '@/auth/useAuth';
 
 // FieldGroup + Field composition per shadcn skill rules
@@ -37,8 +39,8 @@ function FieldGroup({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-4">{children}</div>;
 }
 
-function Field({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1.5">{children}</div>;
+function Field({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('flex flex-col gap-1.5', className)}>{children}</div>;
 }
 
 function FieldLabel({
@@ -72,6 +74,7 @@ interface CreateBugDialogProps {
   onOpenChange: (open: boolean) => void;
   projectId: string;
   members: Member[];
+  defaultParentTaskId?: string;
 }
 
 interface FormErrors {
@@ -84,17 +87,23 @@ export function CreateBugDialog({
   onOpenChange,
   projectId,
   members,
+  defaultParentTaskId,
 }: CreateBugDialogProps) {
   const createBug = useCreateBug(projectId);
   const { user } = useAuth();
+  const { data: tasks = [] } = useTasks(projectId);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState<BugSeverity | ''>('');
-  const [stepsToReproduce, setStepsToReproduce] = useState('');
+  const [reproSteps, setReproSteps] = useState<{ position: number; content: string }[]>([]);
+  const [expectedResult, setExpectedResult] = useState('');
+  const [actualResult, setActualResult] = useState('');
   const [environment, setEnvironment] = useState('');
   const [assigneeId, setAssigneeId] = useState<string>('');
+  const [parentTaskId, setParentTaskId] = useState<string>(defaultParentTaskId ?? '');
   const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const [parentTaskOpen, setParentTaskOpen] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const assigneeLabel = useMemo(() => {
@@ -103,13 +112,23 @@ export function CreateBugDialog({
     return member?.user.name ?? member?.user.username ?? 'Unassigned';
   }, [assigneeId, members]);
 
+  const parentTaskLabel = useMemo(() => {
+    if (!parentTaskId) return 'None';
+    const task = tasks.find((t: Task) => t.id === parentTaskId);
+    if (!task) return 'None';
+    return task.taskKey ? `${task.taskKey} — ${task.title}` : task.title;
+  }, [parentTaskId, tasks]);
+
   const resetForm = () => {
     setTitle('');
     setDescription('');
     setSeverity('');
-    setStepsToReproduce('');
+    setReproSteps([]);
+    setExpectedResult('');
+    setActualResult('');
     setEnvironment('');
     setAssigneeId('');
+    setParentTaskId(defaultParentTaskId ?? '');
     setErrors({});
   };
 
@@ -139,9 +158,12 @@ export function CreateBugDialog({
         title: title.trim(),
         description: description.trim() || undefined,
         severity,
-        stepsToReproduce: stepsToReproduce.trim() || undefined,
+        expectedResult: expectedResult.trim() || undefined,
+        actualResult: actualResult.trim() || undefined,
         environment: environment.trim() || undefined,
         assigneeId: assigneeId || undefined,
+        parentTaskId: parentTaskId || undefined,
+        reproSteps: reproSteps.length > 0 ? reproSteps : undefined,
       },
       {
         onSuccess: () => {
@@ -205,15 +227,35 @@ export function CreateBugDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="bug-steps">Reproduction Steps</FieldLabel>
-              <Textarea
-                id="bug-steps"
-                placeholder="Steps to reproduce..."
-                value={stepsToReproduce}
-                onChange={(e) => setStepsToReproduce(e.target.value)}
-                rows={3}
+              <FieldLabel>Reproduction Steps</FieldLabel>
+              <ReproStepsList
+                steps={reproSteps}
+                onChange={setReproSteps}
               />
             </Field>
+
+            <div className="flex gap-4">
+              <Field className="flex-1">
+                <FieldLabel htmlFor="bug-expected">Expected Result</FieldLabel>
+                <Textarea
+                  id="bug-expected"
+                  placeholder="What should happen..."
+                  value={expectedResult}
+                  onChange={(e) => setExpectedResult(e.target.value)}
+                  rows={2}
+                />
+              </Field>
+              <Field className="flex-1">
+                <FieldLabel htmlFor="bug-actual">Actual Result</FieldLabel>
+                <Textarea
+                  id="bug-actual"
+                  placeholder="What actually happened..."
+                  value={actualResult}
+                  onChange={(e) => setActualResult(e.target.value)}
+                  rows={2}
+                />
+              </Field>
+            </div>
 
             <Field>
               <FieldLabel htmlFor="bug-environment">Environment</FieldLabel>
@@ -281,6 +323,70 @@ export function CreateBugDialog({
                               </AvatarFallback>
                             </Avatar>
                             {member.user.name ?? member.user.username}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </Field>
+
+            <Field>
+              <FieldLabel>Parent Task</FieldLabel>
+              <Popover open={parentTaskOpen} onOpenChange={setParentTaskOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={parentTaskOpen}
+                    className="h-8 justify-between font-normal"
+                  >
+                    <span className={cn('truncate text-sm', !parentTaskId && 'text-muted-foreground')}>
+                      {parentTaskLabel}
+                    </span>
+                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search tasks..." />
+                    <CommandList>
+                      <CommandEmpty>No tasks found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="none"
+                          onSelect={() => {
+                            setParentTaskId('');
+                            setParentTaskOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn('mr-2 size-4', !parentTaskId ? 'opacity-100' : 'opacity-0')}
+                          />
+                          <span className="text-muted-foreground">None</span>
+                        </CommandItem>
+                        {tasks.map((task: Task) => (
+                          <CommandItem
+                            key={task.id}
+                            value={task.taskKey ? `${task.taskKey} ${task.title}` : task.title}
+                            onSelect={() => {
+                              setParentTaskId(task.id);
+                              setParentTaskOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 size-4',
+                                parentTaskId === task.id ? 'opacity-100' : 'opacity-0',
+                              )}
+                            />
+                            <span className="truncate">
+                              {task.taskKey && (
+                                <span className="font-mono text-muted-foreground mr-1.5">{task.taskKey}</span>
+                              )}
+                              {task.title}
+                            </span>
                           </CommandItem>
                         ))}
                       </CommandGroup>

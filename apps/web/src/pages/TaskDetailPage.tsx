@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +35,7 @@ import { AttachmentList } from '@/components/tasks/AttachmentList';
 import { ActivityLog } from '@/components/tasks/ActivityLog';
 import { useTaskByKey, useUpdateTask, useDeleteTask, useCreateTask, useCreateTimeLog, useDeleteTimeLog } from '@/hooks/useTasks';
 import { useUiStore } from '@/store/uiStore';
+import { useBugs } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
 import { useProjectRole } from '@/hooks/useProjectRole';
@@ -52,6 +52,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { WatcherSelect } from '@/components/tasks/WatcherSelect';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -191,6 +192,9 @@ export function TaskDetailPage() {
   const validNextStatuses = useValidTransitions(workflow, task?.workflowStatusId ?? null);
   const { data: allowedAssignees } = useAllowedAssignees(projectId, task?.workflowStatusId ?? null);
 
+  const { data: allBugs = [] } = useBugs(projectId);
+  const childBugs = allBugs.filter((b) => b.parentTaskId === task?.id);
+
   const taskQueryKey = ['task-by-key', projectId, taskKey] as const;
 
   const optimisticMutate = useCallback(
@@ -313,7 +317,7 @@ export function TaskDetailPage() {
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
+      <div className="max-w-7xl mx-auto flex flex-col gap-6">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-8 w-2/3" />
         <Separator />
@@ -365,7 +369,7 @@ export function TaskDetailPage() {
   const hasParent = !!task.parentId;
 
   return (
-    <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto flex flex-col gap-6">
       {/* Breadcrumb nav */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Button
@@ -594,6 +598,44 @@ export function TaskDetailPage() {
             onSave={(title) => createTask.mutate({ title, parentId: task.id })}
           />
 
+          {/* Bugs Section */}
+          {task && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[13px] font-semibold text-muted-foreground">
+                  Bugs ({childBugs.length})
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => navigate(`/projects/${projectPrefix}/bugs`)}
+                >
+                  <Plus className="size-3" />
+                  Report Bug
+                </Button>
+              </div>
+              {childBugs.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  {childBugs.map((bug) => (
+                    <Link
+                      key={bug.id}
+                      to={`/projects/${projectPrefix}/bugs/${bug.id}`}
+                      className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
+                    >
+                      <span
+                        className="size-2 rounded-full shrink-0"
+                        style={{ backgroundColor: bug.workflowStatus?.color ?? '#6b7280' }}
+                      />
+                      <span className="flex-1 truncate">{bug.title}</span>
+                      <span className="text-xs font-medium text-muted-foreground">{bug.severity}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* CARD 2: Discussion (Comments / Activity tabs) */}
           <div className="rounded-lg border p-5">
             <Tabs defaultValue="comments">
@@ -635,6 +677,19 @@ export function TaskDetailPage() {
         <div className="w-60 shrink-0">
           <div className="sticky top-8 flex flex-col gap-4">
             <div className="rounded-lg border p-4 flex flex-col gap-4">
+              {/* Watchers */}
+              {task && user && (
+                <>
+                  <WatcherSelect
+                    projectId={projectId}
+                    entityType="TASK"
+                    entityId={task.id}
+                    currentUserId={user.id}
+                  />
+                </>
+              )}
+              <Separator />
+
               {/* Status */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Status</SidebarLabel>
@@ -706,7 +761,19 @@ export function TaskDetailPage() {
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="h-8 w-full">
-                    <SelectValue placeholder="Unassigned" />
+                    {task.assigneeId && task.assignee ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-5">
+                          {task.assignee.imageUrl && <AvatarImage src={task.assignee.imageUrl} alt={task.assignee.name ?? task.assignee.username} />}
+                          <AvatarFallback className="text-[9px]">
+                            {getInitials(task.assignee.name ?? task.assignee.username)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{task.assignee.name ?? task.assignee.username}</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Unassigned" />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">
@@ -907,34 +974,34 @@ export function TaskDetailPage() {
                   <span className="text-sm">{task.sprint.name}</span>
                 </div>
               )}
-            </div>
-
-            {/* Delete Task */}
-            {canManage && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="w-full gap-2">
-                    <Trash2 className="size-4" />
-                    Delete Task
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete this task and all its sub-tasks. This action
-                      cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction variant="destructive" onClick={handleDelete}>
+            
+              {/* Delete Task */}
+              {canManage && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="w-full gap-2">
+                      <Trash2 className="size-4" />
                       Delete Task
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete this task and all its sub-tasks. This action
+                        cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction variant="destructive" onClick={handleDelete}>
+                        Delete Task
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
         </div>
       </div>

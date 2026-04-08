@@ -194,6 +194,31 @@ export function ProjectSettingsPage() {
             </Button>
           )}
 
+          {/* Email Notifications Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Email Notifications</CardTitle>
+              <CardDescription>Send email notifications to watchers and mentioned users</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Enable email notifications</p>
+                  <p className="text-xs text-muted-foreground">Watchers and mentioned users will receive emails for ticket updates</p>
+                </div>
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-input"
+                  checked={project.emailNotificationsEnabled ?? false}
+                  onChange={(e) => {
+                    updateSettings.mutate({ emailNotificationsEnabled: e.target.checked });
+                  }}
+                  disabled={!canManage}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Repository Settings Card */}
           <RepositorySettingsCard projectId={projectId} canManage={canManage} />
 
@@ -203,7 +228,18 @@ export function ProjectSettingsPage() {
 
         {canManage && (
           <TabsContent value="workflow" className="mt-6">
-            <WorkflowEditor projectId={projectId} canManage={canManage} />
+            <Tabs defaultValue="TASK">
+              <TabsList>
+                <TabsTrigger value="TASK">Task Workflow</TabsTrigger>
+                <TabsTrigger value="BUG">Bug Workflow</TabsTrigger>
+              </TabsList>
+              <TabsContent value="TASK" className="mt-4">
+                <WorkflowEditor projectId={projectId} canManage={canManage} kind="TASK" />
+              </TabsContent>
+              <TabsContent value="BUG" className="mt-4">
+                <WorkflowEditor projectId={projectId} canManage={canManage} kind="BUG" />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         )}
       </Tabs>

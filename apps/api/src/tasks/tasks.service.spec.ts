@@ -38,10 +38,14 @@ describe('TasksService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    const mockWatchersService = { getWatcherUserIds: vi.fn().mockResolvedValue([]) };
+    const mockEmailQueue = { add: vi.fn() };
     service = new TasksService(
       mockPrismaService as any,
       mockNotificationsService as any,
       mockWorkflowService as any,
+      mockWatchersService as any,
+      mockEmailQueue as any,
     );
   });
 

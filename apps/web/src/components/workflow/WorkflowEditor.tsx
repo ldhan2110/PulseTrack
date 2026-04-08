@@ -92,12 +92,13 @@ function statusToNode(
 interface WorkflowEditorProps {
   projectId: string;
   canManage: boolean;
+  kind?: 'TASK' | 'BUG';
 }
 
-export function WorkflowEditor({ projectId, canManage }: WorkflowEditorProps) {
-  const { data: workflow, isLoading } = useWorkflow(projectId);
+export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: WorkflowEditorProps) {
+  const { data: workflow, isLoading } = useWorkflow(projectId, kind);
   const { data: members = [] } = useMembers(projectId);
-  const saveWorkflow = useSaveWorkflow(projectId);
+  const saveWorkflow = useSaveWorkflow(projectId, kind);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);

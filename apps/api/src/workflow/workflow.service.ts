@@ -26,25 +26,45 @@ const DEFAULT_TRANSITIONS: [string, string][] = [
   ['BLOCKED', 'IN_REVIEW'],
 ];
 
+const DEFAULT_BUG_STATUSES = [
+  { key: 'OPEN', name: 'Open', color: '#22c55e', position: 0, isDefault: true, isClosed: false },
+  { key: 'IN_FIX', name: 'In Fix', color: '#3b82f6', position: 1, isDefault: false, isClosed: false },
+  { key: 'FIXED', name: 'Fixed', color: '#a855f7', position: 2, isDefault: false, isClosed: false },
+  { key: 'VERIFIED', name: 'Verified', color: '#14b8a6', position: 3, isDefault: false, isClosed: false },
+  { key: 'CLOSED', name: 'Closed', color: '#6b7280', position: 4, isDefault: false, isClosed: true },
+  { key: 'REOPENED', name: 'Reopened', color: '#f97316', position: 5, isDefault: false, isClosed: false },
+];
+
+const DEFAULT_BUG_TRANSITIONS: [string, string][] = [
+  ['OPEN', 'IN_FIX'],
+  ['IN_FIX', 'FIXED'],
+  ['FIXED', 'VERIFIED'],
+  ['FIXED', 'REOPENED'],
+  ['VERIFIED', 'CLOSED'],
+  ['VERIFIED', 'REOPENED'],
+  ['REOPENED', 'IN_FIX'],
+  ['CLOSED', 'REOPENED'],
+];
+
 @Injectable()
 export class WorkflowService {
   constructor(private prisma: PrismaService) {}
 
-  async getWorkflow(projectId: string) {
+  async getWorkflow(projectId: string, kind: 'TASK' | 'BUG' = 'TASK') {
     const [statuses, transitions, assigneeRules, project] = await Promise.all([
       this.prisma.workflowStatus.findMany({
-        where: { projectId },
+        where: { projectId, kind },
         orderBy: { position: 'asc' },
       }),
       this.prisma.workflowTransition.findMany({
-        where: { projectId },
+        where: { projectId, fromStatus: { kind } },
         include: {
           fromStatus: { select: { key: true } },
           toStatus: { select: { key: true } },
         },
       }),
       this.prisma.statusAssigneeRule.findMany({
-        where: { status: { projectId } },
+        where: { status: { projectId, kind } },
         include: {
           member: {
             include: {
@@ -85,6 +105,8 @@ export class WorkflowService {
   }
 
   async saveWorkflow(projectId: string, dto: SaveWorkflowDto) {
+    const kind = dto.kind ?? 'TASK';
+
     const defaultCount = dto.statuses.filter((s) => s.isDefault).length;
     if (defaultCount !== 1) {
       throw new BadRequestException('Exactly one status must be marked as default');
@@ -137,7 +159,7 @@ export class WorkflowService {
 
     return this.prisma.$transaction(async (tx) => {
       const existingStatuses = await tx.workflowStatus.findMany({
-        where: { projectId },
+        where: { projectId, kind },
         select: { id: true },
       });
       const existingIds = existingStatuses.map((s) => s.id);
@@ -145,24 +167,31 @@ export class WorkflowService {
       const removedIds = existingIds.filter((id) => !keptIds.includes(id));
 
       if (removedIds.length > 0) {
-        await tx.task.updateMany({
-          where: { workflowStatusId: { in: removedIds } },
-          data: { workflowStatusId: null },
-        });
-        // Sub-tasks are now child Task records — already covered by the task.updateMany above
+        if (kind === 'TASK') {
+          await tx.task.updateMany({
+            where: { workflowStatusId: { in: removedIds } },
+            data: { workflowStatusId: null },
+          });
+        } else {
+          await tx.bug.updateMany({
+            where: { workflowStatusId: { in: removedIds } },
+            data: { workflowStatusId: null },
+          });
+        }
       }
 
       await tx.statusAssigneeRule.deleteMany({
-        where: { status: { projectId } },
+        where: { status: { projectId, kind } },
       });
-      await tx.workflowTransition.deleteMany({ where: { projectId } });
-      await tx.workflowStatus.deleteMany({ where: { projectId } });
+      await tx.workflowTransition.deleteMany({ where: { projectId, fromStatus: { kind } } });
+      await tx.workflowStatus.deleteMany({ where: { projectId, kind } });
 
       const statusMap: Record<string, string> = {};
       for (const s of dto.statuses) {
         const created = await tx.workflowStatus.create({
           data: {
             projectId,
+            kind,
             name: s.name,
             key: s.key,
             color: s.color,
@@ -202,31 +231,55 @@ export class WorkflowService {
         data: { workflowLayout: dto.layout ? (dto.layout as any) : undefined },
       });
 
-      return this.getWorkflowFromTx(tx, projectId);
+      return this.getWorkflowFromTx(tx, projectId, kind);
     });
   }
 
-  private async getWorkflowFromTx(tx: any, projectId: string) {
+  private async getWorkflowFromTx(tx: any, projectId: string, kind: 'TASK' | 'BUG' = 'TASK') {
     const statuses = await tx.workflowStatus.findMany({
-      where: { projectId },
+      where: { projectId, kind },
       orderBy: { position: 'asc' },
     });
     return { statuses };
   }
 
   async seedDefaultWorkflow(projectId: string) {
-    const existing = await this.prisma.workflowStatus.count({ where: { projectId } });
+    const existing = await this.prisma.workflowStatus.count({ where: { projectId, kind: 'TASK' } });
     if (existing > 0) return;
 
     await this.prisma.$transaction(async (tx) => {
       const statusMap: Record<string, string> = {};
       for (const s of DEFAULT_STATUSES) {
         const created = await tx.workflowStatus.create({
-          data: { projectId, ...s },
+          data: { projectId, kind: 'TASK', ...s },
         });
         statusMap[s.key] = created.id;
       }
       for (const [from, to] of DEFAULT_TRANSITIONS) {
+        await tx.workflowTransition.create({
+          data: {
+            projectId,
+            fromStatusId: statusMap[from],
+            toStatusId: statusMap[to],
+          },
+        });
+      }
+    });
+  }
+
+  async seedDefaultBugWorkflow(projectId: string) {
+    const existing = await this.prisma.workflowStatus.count({ where: { projectId, kind: 'BUG' } });
+    if (existing > 0) return;
+
+    await this.prisma.$transaction(async (tx) => {
+      const statusMap: Record<string, string> = {};
+      for (const s of DEFAULT_BUG_STATUSES) {
+        const created = await tx.workflowStatus.create({
+          data: { projectId, kind: 'BUG', ...s },
+        });
+        statusMap[s.key] = created.id;
+      }
+      for (const [from, to] of DEFAULT_BUG_TRANSITIONS) {
         await tx.workflowTransition.create({
           data: {
             projectId,

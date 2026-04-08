@@ -8,21 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { BugSeverity, BugStatus, Member } from '@/lib/types';
+import type { BugSeverity, Member } from '@/lib/types';
+import { useWorkflow } from '@/hooks/useWorkflow';
 
 const SEVERITY_OPTIONS: { value: BugSeverity; label: string }[] = [
   { value: 'CRITICAL', label: 'Critical' },
   { value: 'HIGH', label: 'High' },
   { value: 'MEDIUM', label: 'Medium' },
   { value: 'LOW', label: 'Low' },
-];
-
-const STATUS_OPTIONS: { value: BugStatus; label: string }[] = [
-  { value: 'OPEN', label: 'Open' },
-  { value: 'IN_FIX', label: 'In Fix' },
-  { value: 'FIXED', label: 'Fixed' },
-  { value: 'VERIFIED', label: 'Verified' },
-  { value: 'CLOSED', label: 'Closed' },
 ];
 
 function getInitials(name: string | undefined | null): string {
@@ -36,6 +29,7 @@ function getInitials(name: string | undefined | null): string {
 }
 
 interface BugFiltersProps {
+  projectId: string;
   columnFilters: ColumnFiltersState;
   onColumnFiltersChange: (filters: ColumnFiltersState) => void;
   globalFilter: string;
@@ -44,12 +38,14 @@ interface BugFiltersProps {
 }
 
 export function BugFilters({
+  projectId,
   columnFilters,
   onColumnFiltersChange,
   globalFilter,
   onGlobalFilterChange,
   members,
 }: BugFiltersProps) {
+  const { data: workflow } = useWorkflow(projectId, 'BUG');
   const [searchValue, setSearchValue] = useState(globalFilter);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -85,7 +81,7 @@ export function BugFilters({
   );
 
   const selectedSeverities = (getFilterValue('severity') as BugSeverity[] | undefined) ?? [];
-  const selectedStatuses = (getFilterValue('status') as BugStatus[] | undefined) ?? [];
+  const selectedStatuses = (getFilterValue('workflowStatusId') as string[] | undefined) ?? [];
   const selectedAssignees = (getFilterValue('assigneeId') as string[] | undefined) ?? [];
 
   const hasAnyFilter =
@@ -108,12 +104,12 @@ export function BugFilters({
     setFilterValue('severity', current.length > 0 ? current : undefined);
   };
 
-  const toggleStatus = (status: BugStatus) => {
+  const toggleStatus = (statusId: string) => {
     const current = [...selectedStatuses];
-    const idx = current.indexOf(status);
+    const idx = current.indexOf(statusId);
     if (idx >= 0) current.splice(idx, 1);
-    else current.push(status);
-    setFilterValue('status', current.length > 0 ? current : undefined);
+    else current.push(statusId);
+    setFilterValue('workflowStatusId', current.length > 0 ? current : undefined);
   };
 
   const toggleAssignee = (userId: string) => {
@@ -191,16 +187,17 @@ export function BugFilters({
         </PopoverTrigger>
         <PopoverContent className="w-48 p-2" align="start">
           <div className="flex flex-col gap-1">
-            {STATUS_OPTIONS.map((opt) => (
+            {(workflow?.statuses ?? []).map((ws) => (
               <label
-                key={opt.value}
+                key={ws.id}
                 className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
               >
                 <Checkbox
-                  checked={selectedStatuses.includes(opt.value)}
-                  onCheckedChange={() => toggleStatus(opt.value)}
+                  checked={selectedStatuses.includes(ws.id)}
+                  onCheckedChange={() => toggleStatus(ws.id)}
                 />
-                {opt.label}
+                <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: ws.color }} />
+                {ws.name}
               </label>
             ))}
           </div>
