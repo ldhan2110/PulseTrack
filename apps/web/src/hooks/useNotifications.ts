@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { useSocket } from '../socket/useSocket';
 
 export function useNotifications(params?: { page?: number; isRead?: boolean; type?: string }) {
   return useQuery({
@@ -36,4 +38,24 @@ export function useMarkAllNotificationsRead() {
       void qc.invalidateQueries({ queryKey: ['notification-count'] });
     },
   });
+}
+
+export function useNotificationSync() {
+  const socket = useSocket();
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    function onNewNotification() {
+      void qc.invalidateQueries({ queryKey: ['notifications'] });
+      void qc.invalidateQueries({ queryKey: ['notification-count'] });
+    }
+
+    socket.on('notification:new', onNewNotification);
+
+    return () => {
+      socket.off('notification:new', onNewNotification);
+    };
+  }, [socket, qc]);
 }

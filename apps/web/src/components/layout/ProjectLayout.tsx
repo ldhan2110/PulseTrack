@@ -8,6 +8,7 @@ import { useProjectByPrefix } from '@/hooks/useProjects';
 import { useMembershipSync } from '@/hooks/useMembershipSync';
 import { useTaskSync } from '@/hooks/useTaskSync';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { useNotificationSync } from '@/hooks/useNotifications';
 
 // 256px expanded, 48px collapsed — per UI-SPEC
 const SIDEBAR_WIDTH = '256px';
@@ -22,6 +23,7 @@ export function ProjectLayout() {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
   useMembershipSync();
+  useNotificationSync();
 
   // Resolve human-readable prefix to project UUID
   const { data: project } = useProjectByPrefix(projectPrefix ?? '');
