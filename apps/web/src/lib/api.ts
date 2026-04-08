@@ -35,6 +35,8 @@ import type {
   UpsertAiConfigPayload,
   UpdateProjectContextPayload,
   AiGenerationJobResult,
+  BugAttachment,
+  WorkflowKind,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -170,13 +172,37 @@ export const api = {
   deleteBug: (projectId: string, bugId: string) =>
     request<void>(`/projects/${projectId}/bugs/${bugId}`, { method: 'DELETE' }),
 
+  // ─── Bug Attachments ──────────────────────────────────────────────────────
+  getBugAttachments: (projectId: string, bugId: string) =>
+    request<BugAttachment[]>(`/projects/${projectId}/bugs/${bugId}/attachments`),
+  uploadBugAttachment: async (projectId: string, bugId: string, file: File): Promise<BugAttachment> => {
+    const form = new FormData();
+    form.append('file', file);
+    const token = keycloak.token;
+    const url = `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Upload failed: ${res.status}`);
+    }
+    return res.json() as Promise<BugAttachment>;
+  },
+  getBugAttachmentDownloadUrl: (projectId: string, bugId: string, attachmentId: string) =>
+    `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}/download`,
+  deleteBugAttachment: (projectId: string, bugId: string, attachmentId: string) =>
+    request<void>(`/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}`, { method: 'DELETE' }),
+
   // ─── Dashboard ─────────────────────────────────────────────────────────────
   getDashboard: (projectId: string) =>
     request<DashboardData>(`/projects/${projectId}/dashboard`),
 
   // ─── Workflow ─────────────────────────────────────────────────────────────
-  getWorkflow: (projectId: string) =>
-    request<WorkflowData>(`/projects/${projectId}/workflow`),
+  getWorkflow: (projectId: string, kind: WorkflowKind = 'TASK') =>
+    request<WorkflowData>(`/projects/${projectId}/workflow?kind=${kind}`),
   saveWorkflow: (projectId: string, data: SaveWorkflowPayload) =>
     request<{ statuses: WorkflowStatus[] }>(`/projects/${projectId}/workflow`, {
       method: 'PUT',

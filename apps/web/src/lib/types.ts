@@ -59,13 +59,33 @@ export interface SaveWorkflowPayload {
     memberIds: string[];
   }[];
   layout?: Record<string, unknown>;
+  kind?: WorkflowKind;
 }
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'BLOCKER';
 
 export type BugSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
-export type BugStatus = 'OPEN' | 'IN_FIX' | 'FIXED' | 'VERIFIED' | 'CLOSED';
+export type WorkflowKind = 'TASK' | 'BUG';
+
+export interface BugReproStep {
+  id: string;
+  bugId: string;
+  position: number;
+  content: string;
+}
+
+export interface BugAttachment {
+  id: string;
+  bugId: string;
+  filename: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  uploaderId: string;
+  createdAt: string;
+  uploader?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+}
 
 export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED';
 
@@ -281,35 +301,47 @@ export interface Bug {
   title: string;
   description: string | null;
   severity: BugSeverity;
-  status: BugStatus;
-  stepsToReproduce: string | null;
   environment: string | null;
+  expectedResult: string | null;
+  actualResult: string | null;
+  workflowStatusId: string | null;
+  workflowStatus?: WorkflowStatus | null;
   assigneeId: string | null;
   reporterId: string;
   projectId: string;
+  parentTaskId: string | null;
+  parentTask?: { id: string; taskKey: string | null; title: string } | null;
   createdAt: string;
   updatedAt: string;
   assignee?: User | null;
   reporter?: User;
+  reproSteps?: BugReproStep[];
+  attachments?: BugAttachment[];
 }
 
 export interface CreateBugPayload {
   title: string;
   description?: string;
   severity: BugSeverity;
-  stepsToReproduce?: string;
   environment?: string;
+  expectedResult?: string;
+  actualResult?: string;
   assigneeId?: string;
+  parentTaskId?: string;
+  reproSteps?: { position: number; content: string }[];
 }
 
 export interface UpdateBugPayload {
   title?: string;
   description?: string;
   severity?: BugSeverity;
-  status?: BugStatus;
-  stepsToReproduce?: string;
   environment?: string;
+  expectedResult?: string;
+  actualResult?: string;
   assigneeId?: string | null;
+  parentTaskId?: string | null;
+  workflowStatusId?: string;
+  reproSteps?: { position: number; content: string }[];
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────

@@ -1,23 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { SaveWorkflowPayload, WorkflowData, WorkflowStatus } from '../lib/types';
+import type { SaveWorkflowPayload, WorkflowData, WorkflowKind, WorkflowStatus } from '../lib/types';
 
-export function useWorkflow(projectId: string) {
+export function useWorkflow(projectId: string, kind: WorkflowKind = 'TASK') {
   return useQuery({
-    queryKey: ['workflow', projectId],
-    queryFn: () => api.getWorkflow(projectId),
+    queryKey: ['workflow', projectId, kind],
+    queryFn: () => api.getWorkflow(projectId, kind),
     enabled: !!projectId,
   });
 }
 
-export function useSaveWorkflow(projectId: string) {
+export function useSaveWorkflow(projectId: string, kind: WorkflowKind = 'TASK') {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: SaveWorkflowPayload) => api.saveWorkflow(projectId, data),
+    mutationFn: (data: SaveWorkflowPayload) => api.saveWorkflow(projectId, { ...data, kind }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['workflow', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['workflow', projectId, kind] });
+      if (kind === 'TASK') {
+        void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
+      }
       toast.success('Workflow saved');
     },
     onError: (error: Error) => {
