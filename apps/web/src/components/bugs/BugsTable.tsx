@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { Bug, BugSeverity, BugStatus } from '@/lib/types';
+import type { Bug, BugSeverity } from '@/lib/types';
 
 function getInitials(name: string): string {
   return name
@@ -56,31 +56,8 @@ function SeverityBadge({ severity }: { severity: BugSeverity }) {
   );
 }
 
-// Bug status badge with CSS variable colors per UI-SPEC
-function BugStatusBadge({ status }: { status: BugStatus }) {
-  const styles: Record<BugStatus, string> = {
-    OPEN: 'bg-[color-mix(in_oklch,var(--bug-open)_15%,transparent)] text-[var(--bug-open)]',
-    IN_FIX: 'bg-[color-mix(in_oklch,var(--bug-in-fix)_15%,transparent)] text-[var(--bug-in-fix)]',
-    FIXED: 'bg-[color-mix(in_oklch,var(--bug-fixed)_15%,transparent)] text-[var(--bug-fixed)]',
-    VERIFIED: 'bg-[color-mix(in_oklch,var(--bug-verified)_15%,transparent)] text-[var(--bug-verified)]',
-    CLOSED: 'bg-[color-mix(in_oklch,var(--bug-closed)_15%,transparent)] text-[var(--bug-closed)]',
-  };
-  const labels: Record<BugStatus, string> = {
-    OPEN: 'Open',
-    IN_FIX: 'In Fix',
-    FIXED: 'Fixed',
-    VERIFIED: 'Verified',
-    CLOSED: 'Closed',
-  };
-  return (
-    <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', styles[status])}>
-      {labels[status]}
-    </span>
-  );
-}
-
-// Export these for use in BugFilters
-export { SeverityBadge, BugStatusBadge };
+// Export for use in BugFilters
+export { SeverityBadge };
 
 interface SortHeaderProps {
   label: string;
@@ -120,10 +97,10 @@ export const severityFilterFn = (
 export const bugStatusFilterFn = (
   row: { getValue: (id: string) => unknown },
   columnId: string,
-  filterValue: BugStatus[],
+  filterValue: string[],
 ) => {
   if (!filterValue || filterValue.length === 0) return true;
-  return filterValue.includes(row.getValue(columnId) as BugStatus);
+  return filterValue.includes(row.getValue(columnId) as string);
 };
 
 export const bugAssigneeFilterFn = (
@@ -184,9 +161,17 @@ export function BugsTable({
         enableColumnFilter: true,
       },
       {
-        accessorKey: 'status',
+        accessorKey: 'workflowStatusId',
         header: ({ column }) => <SortHeader label="Status" column={column} />,
-        cell: ({ row }) => <BugStatusBadge status={row.original.status} />,
+        cell: ({ row }) =>
+          row.original.workflowStatus ? (
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full" style={{ backgroundColor: row.original.workflowStatus.color }} />
+              <span className="text-xs">{row.original.workflowStatus.name}</span>
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
         size: 120,
         filterFn: bugStatusFilterFn,
         enableColumnFilter: true,
@@ -234,8 +219,24 @@ export function BugsTable({
         size: 140,
         enableSorting: false,
       },
+      {
+        accessorKey: 'parentTaskId',
+        header: 'Parent Task',
+        cell: ({ row }) =>
+          row.original.parentTask?.taskKey ? (
+            <Link
+              to={`/projects/${projectId}/tasks/${row.original.parentTask.taskKey}`}
+              className="text-xs text-primary hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {row.original.parentTask.taskKey}
+            </Link>
+          ) : null,
+        size: 100,
+        enableSorting: false,
+      },
     ],
-    [],
+    [projectId],
   );
 
   const table = useReactTable({

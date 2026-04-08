@@ -70,6 +70,7 @@ export function BugsPage() {
       </div>
 
       <BugFilters
+        projectId={projectId}
         columnFilters={columnFilters}
         onColumnFiltersChange={setColumnFilters}
         globalFilter={globalFilter}
