@@ -37,6 +37,7 @@ import type { BugSeverity } from '@/lib/types';
 import { ReproStepsList } from '@/components/bugs/ReproStepsList';
 import { BugAttachments } from '@/components/bugs/BugAttachments';
 import { BugCommentThread } from '@/components/bugs/BugCommentThread';
+import { WatcherSelect } from '@/components/tasks/WatcherSelect';
 
 function SidebarLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -574,6 +575,19 @@ export function BugDetailPage() {
                 <span className="text-sm text-muted-foreground">{formatRelative(bug.updatedAt)}</span>
               </div>
             </div>
+
+            {/* Watchers */}
+            {bug && user && (
+              <Separator />
+            )}
+            {bug && user && (
+              <WatcherSelect
+                projectId={projectId}
+                entityType="BUG"
+                entityId={bug.id}
+                currentUserId={user.id}
+              />
+            )}
 
             {/* Delete action — PM only */}
             {canManage && (

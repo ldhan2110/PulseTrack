@@ -53,6 +53,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { WatcherSelect } from '@/components/tasks/WatcherSelect';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -962,6 +963,19 @@ export function TaskDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Watchers */}
+            {task && user && (
+              <Separator />
+            )}
+            {task && user && (
+              <WatcherSelect
+                projectId={projectId}
+                entityType="TASK"
+                entityId={task.id}
+                currentUserId={user.id}
+              />
+            )}
 
             {/* Delete Task */}
             {canManage && (
