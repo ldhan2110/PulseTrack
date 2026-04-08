@@ -36,7 +36,7 @@ function App() {
         <Route path="/projects/:projectPrefix/members" element={<MembersPage />} />
         <Route path="/projects/:projectPrefix/settings" element={<ProjectSettingsPage />} />
         <Route path="/projects/:projectPrefix/tasks/:taskKey" element={<TaskDetailPage />} />
-        <Route path="/projects/:projectPrefix/bugs/:bugId" element={<BugDetailPage />} />
+        <Route path="/projects/:projectPrefix/bugs/:bugKey" element={<BugDetailPage />} />
       </Route>
     </Routes>
   );

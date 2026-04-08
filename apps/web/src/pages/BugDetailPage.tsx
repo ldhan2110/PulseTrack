@@ -26,31 +26,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useBug, useUpdateBug, useDeleteBug } from '@/hooks/useBugs';
+import { useBugByKey, useUpdateBug, useDeleteBug } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
 import { useProjectRole } from '@/hooks/useProjectRole';
 import { useProject } from '@/hooks/useProjects';
 import { useWorkflow, useValidTransitions } from '@/hooks/useWorkflow';
+import { useAuth } from '@/auth/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import type { BugSeverity } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { ReproStepsList } from '@/components/bugs/ReproStepsList';
 import { BugAttachments } from '@/components/bugs/BugAttachments';
+import { BugCommentThread } from '@/components/bugs/BugCommentThread';
 
-// FieldGroup + Field composition per shadcn skill rules
-function FieldGroup({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('flex flex-col gap-4', className)}>{children}</div>;
-}
-
-function Field({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('flex flex-col gap-1.5', className)}>{children}</div>;
-}
-
-function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) {
+function SidebarLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="text-[13px] font-semibold text-muted-foreground leading-none">
+    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
-    </label>
+    </span>
   );
 }
 
@@ -71,12 +63,22 @@ function formatRelative(dateStr: string): string {
   }
 }
 
+const SEVERITY_OPTIONS: { value: BugSeverity; label: string }[] = [
+  { value: 'CRITICAL', label: 'Critical' },
+  { value: 'HIGH', label: 'High' },
+  { value: 'MEDIUM', label: 'Medium' },
+  { value: 'LOW', label: 'Low' },
+];
+
 export function BugDetailPage() {
-  const { bugId = '', projectPrefix = '' } = useParams<{ bugId: string; projectPrefix: string }>();
+  const { bugKey = '', projectPrefix = '' } = useParams<{ bugKey: string; projectPrefix: string }>();
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? '';
 
-  const { data: bug, isLoading, isError } = useBug(projectId, bugId);
+  const { data: bug, isLoading, isError } = useBugByKey(projectId, bugKey);
+  const bugId = bug?.id ?? '';
   const { data: members = [] } = useMembers(projectId);
   const { canManage } = useProjectRole(projectId);
   const { data: project } = useProject(projectId);
@@ -226,18 +228,14 @@ export function BugDetailPage() {
       <div className="p-8 max-w-[1280px] flex flex-col gap-6">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-8 w-2/3" />
-        <div className="flex gap-4">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-8 w-32" />
-        </div>
         <div className="flex gap-8">
           <div className="flex-1 flex flex-col gap-4">
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-16 w-full" />
           </div>
-          <div className="w-56 flex flex-col gap-3">
+          <div className="w-60 flex flex-col gap-3">
+            <Skeleton className="h-5 w-full" />
             <Skeleton className="h-5 w-full" />
             <Skeleton className="h-5 w-full" />
             <Skeleton className="h-5 w-full" />
@@ -284,7 +282,7 @@ export function BugDetailPage() {
         <span>/</span>
         <span>Bugs</span>
         <span>/</span>
-        <span className="text-foreground truncate max-w-[200px]">{bug.title}</span>
+        <span className="text-foreground font-mono text-xs">{bug.bugKey ?? bug.title}</span>
       </div>
 
       {/* Title — inline editable */}
@@ -307,111 +305,19 @@ export function BugDetailPage() {
             }}
             title="Click to edit"
           >
+            {bug.bugKey && (
+              <span className="text-muted-foreground font-mono text-base mr-2">{bug.bugKey}</span>
+            )}
             {bug.title}
           </h1>
         )}
       </div>
 
-      {/* Metadata bar */}
-      <FieldGroup className="flex-row flex-wrap gap-6">
-        <Field>
-          <FieldLabel>Status</FieldLabel>
-          <Select
-            value={bug.workflowStatusId ?? ''}
-            onValueChange={(val) => updateBug.mutate({ bugId, data: { workflowStatusId: val } })}
-          >
-            <SelectTrigger className="h-8 w-auto gap-2">
-              <SelectValue>
-                {bug.workflowStatus && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
-                    {bug.workflowStatus.name}
-                  </span>
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {bug.workflowStatus && (
-                <SelectItem value={bug.workflowStatus.id}>
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
-                    {bug.workflowStatus.name}
-                  </span>
-                </SelectItem>
-              )}
-              {validTransitions.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
-                    {s.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <Field>
-          <FieldLabel>Severity</FieldLabel>
-          <Select
-            value={bug.severity}
-            onValueChange={(val) =>
-              updateBug.mutate({ bugId, data: { severity: val as BugSeverity } })
-            }
-          >
-            <SelectTrigger className="h-8 w-auto gap-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="CRITICAL">Critical</SelectItem>
-              <SelectItem value="HIGH">High</SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="LOW">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <Field>
-          <FieldLabel>Assignee</FieldLabel>
-          <Select
-            value={bug.assigneeId ?? 'unassigned'}
-            onValueChange={(val) =>
-              updateBug.mutate({
-                bugId,
-                data: { assigneeId: val === 'unassigned' ? null : val },
-              })
-            }
-          >
-            <SelectTrigger className="h-8 w-[160px]">
-              <SelectValue placeholder="Unassigned" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unassigned">
-                <span className="text-muted-foreground">Unassigned</span>
-              </SelectItem>
-              {members.map((m) => (
-                <SelectItem key={m.userId} value={m.userId}>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="size-5">
-                      {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
-                      <AvatarFallback className="text-[9px]">
-                        {getInitials(m.user.name ?? m.user.username)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {m.user.name ?? m.user.username}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      </FieldGroup>
-
       <Separator />
 
       {/* Content split */}
       <div className="flex gap-8">
-        {/* Left: description, steps to reproduce, environment */}
+        {/* Left: description, steps to reproduce, expected/actual, attachments, comments */}
         <div className="flex-1 flex flex-col gap-6">
           {/* Description */}
           <div className="flex flex-col gap-2">
@@ -495,99 +401,209 @@ export function BugDetailPage() {
             canEdit={canManage}
           />
 
-          {/* Environment */}
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[13px] font-semibold text-muted-foreground">Environment</h2>
-            <div className="relative">
-              <Input
-                placeholder="e.g., Chrome 120, Windows 11"
-                value={envValue}
-                onChange={(e) => setEnvValue(e.target.value)}
-                onBlur={handleEnvBlur}
-              />
-              {envSaving && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                  <Loader2 className="size-3 animate-spin" />
-                  Saving...
-                </div>
-              )}
-            </div>
+          {/* Comments */}
+          <div className="rounded-lg border p-5">
+            <h2 className="text-sm font-semibold mb-4">Comments</h2>
+            <BugCommentThread
+              projectId={projectId}
+              bugId={bugId}
+              currentUserId={currentUserId}
+              canManage={canManage}
+            />
           </div>
         </div>
 
-        {/* Right: sidebar metadata */}
-        <div className="w-56 shrink-0 flex flex-col gap-4">
-          <div className="rounded-lg border p-4 flex flex-col gap-3">
-            {bug.parentTask && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Parent Task</span>
-                <Link
-                  to={`/projects/${projectPrefix}/tasks/${bug.parentTask.taskKey}`}
-                  className="text-sm text-primary hover:underline"
+        {/* RIGHT SIDEBAR */}
+        <div className="w-60 shrink-0">
+          <div className="sticky top-8 flex flex-col gap-4">
+            <div className="rounded-lg border p-4 flex flex-col gap-4">
+              {/* Status */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Status</SidebarLabel>
+                <Select
+                  value={bug.workflowStatusId ?? ''}
+                  onValueChange={(val) => updateBug.mutate({ bugId, data: { workflowStatusId: val } })}
                 >
-                  {bug.parentTask.taskKey} — {bug.parentTask.title}
-                </Link>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue>
+                      {bug.workflowStatus && (
+                        <span className="flex items-center gap-1.5">
+                          <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
+                          {bug.workflowStatus.name}
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bug.workflowStatus && (
+                      <SelectItem value={bug.workflowStatus.id}>
+                        <span className="flex items-center gap-1.5">
+                          <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
+                          {bug.workflowStatus.name}
+                        </span>
+                      </SelectItem>
+                    )}
+                    {validTransitions.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        <span className="flex items-center gap-1.5">
+                          <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
+                          {s.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-            {bug.reporter && (
-              <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Reporter
-                </span>
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-6">
-                    {bug.reporter.imageUrl && <AvatarImage src={bug.reporter.imageUrl} alt={bug.reporter.name ?? bug.reporter.username} />}
-                    <AvatarFallback className="text-[10px]">
-                      {getInitials(bug.reporter.name ?? bug.reporter.username)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm">{bug.reporter.name ?? bug.reporter.username}</span>
-                </div>
-              </div>
-            )}
-            <Separator />
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Created
-              </span>
-              <span className="text-sm text-muted-foreground">{formatRelative(bug.createdAt)}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Updated
-              </span>
-              <span className="text-sm text-muted-foreground">{formatRelative(bug.updatedAt)}</span>
-            </div>
-          </div>
 
-          {/* Delete action — PM only */}
-          {canManage && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="w-full gap-2">
-                  <Trash2 className="size-4" />
-                  Delete Bug
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Bug</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete this bug report. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    onClick={handleDelete}
+              {/* Severity */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Severity</SidebarLabel>
+                <Select
+                  value={bug.severity}
+                  onValueChange={(val) =>
+                    updateBug.mutate({ bugId, data: { severity: val as BugSeverity } })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SEVERITY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Assignee */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Assignee</SidebarLabel>
+                <Select
+                  value={bug.assigneeId ?? 'unassigned'}
+                  onValueChange={(val) =>
+                    updateBug.mutate({
+                      bugId,
+                      data: { assigneeId: val === 'unassigned' ? null : val },
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">
+                      <span className="text-muted-foreground">Unassigned</span>
+                    </SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.userId} value={m.userId}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="size-5">
+                            {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
+                            <AvatarFallback className="text-[9px]">
+                              {getInitials(m.user.name ?? m.user.username)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {m.user.name ?? m.user.username}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Environment */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Environment</SidebarLabel>
+                <Input
+                  placeholder="e.g., Chrome 120"
+                  value={envValue}
+                  onChange={(e) => setEnvValue(e.target.value)}
+                  onBlur={handleEnvBlur}
+                  className="h-8 text-sm"
+                />
+                {envSaving && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 className="size-3 animate-spin" />
+                    Saving...
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Parent Task */}
+              {bug.parentTask && (
+                <div className="flex flex-col gap-1">
+                  <SidebarLabel>Parent Task</SidebarLabel>
+                  <Link
+                    to={`/projects/${projectPrefix}/tasks/${bug.parentTask.taskKey}`}
+                    className="text-sm text-primary hover:underline"
                   >
+                    {bug.parentTask.taskKey} — {bug.parentTask.title}
+                  </Link>
+                </div>
+              )}
+
+              {/* Reporter */}
+              {bug.reporter && (
+                <div className="flex flex-col gap-1">
+                  <SidebarLabel>Reporter</SidebarLabel>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="size-6">
+                      {bug.reporter.imageUrl && <AvatarImage src={bug.reporter.imageUrl} alt={bug.reporter.name ?? bug.reporter.username} />}
+                      <AvatarFallback className="text-[10px]">
+                        {getInitials(bug.reporter.name ?? bug.reporter.username)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">{bug.reporter.name ?? bug.reporter.username}</span>
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Created / Updated */}
+              <div className="flex flex-col gap-1">
+                <SidebarLabel>Created</SidebarLabel>
+                <span className="text-sm text-muted-foreground">{formatRelative(bug.createdAt)}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <SidebarLabel>Updated</SidebarLabel>
+                <span className="text-sm text-muted-foreground">{formatRelative(bug.updatedAt)}</span>
+              </div>
+            </div>
+
+            {/* Delete action — PM only */}
+            {canManage && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="w-full gap-2">
+                    <Trash2 className="size-4" />
                     Delete Bug
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Bug</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this bug report. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={handleDelete}
+                    >
+                      Delete Bug
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
       </div>
     </div>
