@@ -317,7 +317,7 @@ export function TaskDetailPage() {
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto flex flex-col gap-6">
+      <div className="max-w-7xl mx-auto flex flex-col gap-6">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-8 w-2/3" />
         <Separator />
@@ -369,7 +369,7 @@ export function TaskDetailPage() {
   const hasParent = !!task.parentId;
 
   return (
-    <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto flex flex-col gap-6">
       {/* Breadcrumb nav */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Button
