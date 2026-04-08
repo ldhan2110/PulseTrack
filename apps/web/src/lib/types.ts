@@ -78,6 +78,8 @@ export interface User {
   keycloakId: string;
   email: string;
   username: string;
+  name: string | null;
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -86,6 +88,8 @@ export interface UserSearchResult {
   id: string;
   email: string;
   username: string;
+  name: string | null;
+  imageUrl: string | null;
 }
 
 // ─── Project ──────────────────────────────────────────────────────────────────

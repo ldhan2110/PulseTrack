@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, Reply, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RichTextEditor } from './RichTextEditor';
 import {
   AlertDialog,
@@ -67,13 +67,14 @@ export function CommentItem({
   return (
     <div className={cn('flex gap-2 group/comment', isReply && 'rounded-md bg-muted/30 p-2')}>
       <Avatar className="size-6 shrink-0 mt-0.5">
+        {comment.author.imageUrl && <AvatarImage src={comment.author.imageUrl} alt={comment.author.name ?? comment.author.username} />}
         <AvatarFallback className="text-[10px]">
-          {getInitials(comment.author.username)}
+          {getInitials(comment.author.name ?? comment.author.username)}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-sm font-medium">{comment.author.username}</span>
+          <span className="text-sm font-medium">{comment.author.name ?? comment.author.username}</span>
           <span className="text-xs text-muted-foreground">{relativeTime}</span>
           {comment.isEdited && (
             <span className="text-xs text-muted-foreground italic">(edited)</span>

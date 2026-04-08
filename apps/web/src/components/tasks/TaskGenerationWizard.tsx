@@ -327,7 +327,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[85vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-225 max-h-[85vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-purple-500" />
@@ -378,7 +378,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
 
           {/* Main area */}
           <div className="flex-1 flex flex-col min-h-0">
-            <ScrollArea className="flex-1 px-6 py-4">
+            <ScrollArea className="flex-1 px-6 py-4  max-h-[60vh]">
               {isComplete ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
                   <CheckCheck className="size-12 text-green-500" />
@@ -591,7 +591,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
 
             {/* Bottom action bar */}
             {!isComplete && (
-              <div className="border-t px-6 py-3 flex items-center justify-between">
+              <div className="border-t px-6 py-3 flex items-center justify-between shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"

@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
   SelectContent,
@@ -715,17 +715,20 @@ export function TaskDetailPage() {
                     {(allowedAssignees ?? members.map((m) => ({
                       userId: m.userId,
                       username: m.user.username,
+                      name: m.user.name ?? m.user.username,
+                      imageUrl: m.user.imageUrl,
                       memberId: m.id,
                       email: m.user.email,
                     }))).map((a) => (
                       <SelectItem key={a.userId} value={a.userId}>
                         <div className="flex items-center gap-2">
                           <Avatar className="size-5">
+                            {a.imageUrl && <AvatarImage src={a.imageUrl} alt={a.name ?? a.username} />}
                             <AvatarFallback className="text-[9px]">
-                              {getInitials(a.username)}
+                              {getInitials(a.name ?? a.username)}
                             </AvatarFallback>
                           </Avatar>
-                          {a.username}
+                          {a.name ?? a.username}
                         </div>
                       </SelectItem>
                     ))}
@@ -877,11 +880,12 @@ export function TaskDetailPage() {
                   <SidebarLabel>Created by</SidebarLabel>
                   <div className="flex items-center gap-2">
                     <Avatar className="size-5">
+                      {task.createdBy.imageUrl && <AvatarImage src={task.createdBy.imageUrl} alt={task.createdBy.name ?? task.createdBy.username} />}
                       <AvatarFallback className="text-[9px]">
-                        {getInitials(task.createdBy.username)}
+                        {getInitials(task.createdBy.name ?? task.createdBy.username)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm">{task.createdBy.username}</span>
+                    <span className="text-sm">{task.createdBy.name ?? task.createdBy.username}</span>
                   </div>
                 </div>
               )}

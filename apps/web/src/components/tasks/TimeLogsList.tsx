@@ -38,7 +38,7 @@ export function TimeLogsList({ timeLogs, currentUserId, userRole, onDelete, isDe
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-medium">{tl.user?.username ?? 'Unknown'}</span>
+                  <span className="font-medium">{tl.user?.name ?? tl.user?.username ?? 'Unknown'}</span>
                   <span className="text-muted-foreground">·</span>
                   <span className="text-muted-foreground">
                     {new Date(tl.loggedAt).toLocaleDateString('en-US', {

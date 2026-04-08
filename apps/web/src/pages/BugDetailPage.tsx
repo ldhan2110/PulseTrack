@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
   SelectContent,
@@ -345,11 +345,12 @@ export function BugDetailPage() {
                 <SelectItem key={m.userId} value={m.userId}>
                   <div className="flex items-center gap-2">
                     <Avatar className="size-5">
+                      {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
                       <AvatarFallback className="text-[9px]">
-                        {getInitials(m.user.username)}
+                        {getInitials(m.user.name ?? m.user.username)}
                       </AvatarFallback>
                     </Avatar>
-                    {m.user.username}
+                    {m.user.name ?? m.user.username}
                   </div>
                 </SelectItem>
               ))}
@@ -436,11 +437,12 @@ export function BugDetailPage() {
                 </span>
                 <div className="flex items-center gap-2">
                   <Avatar className="size-6">
+                    {bug.reporter.imageUrl && <AvatarImage src={bug.reporter.imageUrl} alt={bug.reporter.name ?? bug.reporter.username} />}
                     <AvatarFallback className="text-[10px]">
-                      {getInitials(bug.reporter.username)}
+                      {getInitials(bug.reporter.name ?? bug.reporter.username)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{bug.reporter.username}</span>
+                  <span className="text-sm">{bug.reporter.name ?? bug.reporter.username}</span>
                 </div>
               </div>
             )}

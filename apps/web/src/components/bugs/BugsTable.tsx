@@ -19,7 +19,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -202,9 +202,10 @@ export function BugsTable({
           return (
             <div className="flex items-center gap-2">
               <Avatar className="size-6">
-                <AvatarFallback className="text-[10px]">{getInitials(assignee.username)}</AvatarFallback>
+                {assignee.imageUrl && <AvatarImage src={assignee.imageUrl} alt={assignee.name ?? assignee.username} />}
+                <AvatarFallback className="text-[10px]">{getInitials(assignee.name ?? assignee.username)}</AvatarFallback>
               </Avatar>
-              <span className="text-sm truncate">{assignee.username}</span>
+              <span className="text-sm truncate">{assignee.name ?? assignee.username}</span>
             </div>
           );
         },
@@ -223,9 +224,10 @@ export function BugsTable({
           return (
             <div className="flex items-center gap-2">
               <Avatar className="size-6">
-                <AvatarFallback className="text-[10px]">{getInitials(reporter.username)}</AvatarFallback>
+                {reporter.imageUrl && <AvatarImage src={reporter.imageUrl} alt={reporter.name ?? reporter.username} />}
+                <AvatarFallback className="text-[10px]">{getInitials(reporter.name ?? reporter.username)}</AvatarFallback>
               </Avatar>
-              <span className="text-sm truncate">{reporter.username}</span>
+              <span className="text-sm truncate">{reporter.name ?? reporter.username}</span>
             </div>
           );
         },

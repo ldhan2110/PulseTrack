@@ -24,7 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -79,14 +79,14 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const { data: projects } = useProjects();
-  const { user, logout } = useAuth();
+  const { user, keycloakUserInfo, logout } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
 
-  const userInitials = user?.username
-    ? user.username.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-    : user?.email?.slice(0, 2).toUpperCase() ?? 'U';
+  const userName = keycloakUserInfo?.usrNm ?? user?.username ?? user?.email ?? 'User';
+  const userAvatarUrl = keycloakUserInfo?.imgUrl ?? null;
 
-  const userName = user?.username ?? user?.email ?? 'User';
+  const userInitials = userName
+    .split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   // Find active project to get its prefix for URL generation
   const activeProject = projects?.find((p) => p.id === activeProjectId);
@@ -265,6 +265,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Avatar className="size-7 cursor-default">
+                  {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={userName} />}
                   <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
                 </Avatar>
               </TooltipTrigger>
@@ -288,6 +289,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
         ) : (
           <div className="flex items-center gap-2 px-3 h-12">
             <Avatar className="size-7 shrink-0 cursor-default">
+              {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={userName} />}
               <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
             </Avatar>
             <span className="text-sm truncate text-sidebar-foreground flex-1">{userName}</span>

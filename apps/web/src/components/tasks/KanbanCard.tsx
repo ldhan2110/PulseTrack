@@ -5,7 +5,7 @@ import { Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import type { Task, Priority } from '@/lib/types';
 
@@ -119,8 +119,11 @@ export function KanbanCard({ task, projectId: _projectId, projectPrefix }: Kanba
             <div className="flex items-center gap-1.5">
               {task.assignee ? (
                 <Avatar className="size-5">
+                  {task.assignee.imageUrl && (
+                    <AvatarImage src={task.assignee.imageUrl} alt={task.assignee.name ?? task.assignee.username} />
+                  )}
                   <AvatarFallback className="text-[9px]">
-                    {getInitials(task.assignee.username)}
+                    {getInitials(task.assignee.name ?? task.assignee.username)}
                   </AvatarFallback>
                 </Avatar>
               ) : (

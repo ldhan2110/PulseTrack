@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Upload, Loader2, FileText, File, Image as ImageIcon, Trash2, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,11 +118,12 @@ function AttachmentRow({
       </span>
       <div className="flex items-center gap-1.5 shrink-0">
         <Avatar className="size-5">
+          {attachment.uploader.imageUrl && <AvatarImage src={attachment.uploader.imageUrl} alt={attachment.uploader.name ?? attachment.uploader.username} />}
           <AvatarFallback className="text-[8px]">
-            {getInitials(attachment.uploader.username)}
+            {getInitials(attachment.uploader.name ?? attachment.uploader.username)}
           </AvatarFallback>
         </Avatar>
-        <span className="text-xs text-muted-foreground">{attachment.uploader.username}</span>
+        <span className="text-xs text-muted-foreground">{attachment.uploader.name ?? attachment.uploader.username}</span>
       </div>
       <span className="text-xs text-muted-foreground shrink-0">{relativeTime}</span>
       {isImage && (

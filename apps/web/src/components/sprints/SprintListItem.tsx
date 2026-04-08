@@ -1,15 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +17,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-import type { Sprint, SprintStatus, Task } from '@/lib/types';
+import type { Priority, Sprint, SprintStatus, Task } from '@/lib/types';
+
+const PRIORITY_CONFIG: Record<Priority, { color: string; label: string }> = {
+  LOW:      { color: '#6b7280', label: 'Low' },
+  MEDIUM:   { color: '#3b82f6', label: 'Medium' },
+  HIGH:     { color: '#f59e0b', label: 'High' },
+  CRITICAL: { color: '#ef4444', label: 'Critical' },
+  BLOCKER:  { color: '#7c3aed', label: 'Blocker' },
+};
 
 function getStatusVariant(status: SprintStatus): 'default' | 'outline' | 'secondary' {
   switch (status) {
@@ -52,6 +56,7 @@ interface SprintListItemProps {
   onActivate: () => void;
   onClose: () => void;
   projectId: string;
+  projectPrefix: string;
   sprintTasks: Task[];
   completedCount: number;
   totalCount: number;
@@ -64,6 +69,7 @@ export function SprintListItem({
   onActivate,
   onClose,
   projectId,
+  projectPrefix,
   sprintTasks,
   completedCount,
   totalCount,
@@ -150,7 +156,7 @@ export function SprintListItem({
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={() => navigate(`/projects/${projectId}/sprints/${sprint.id}`)}
+                  onClick={() => navigate(`/projects/${projectPrefix}/sprints/${sprint.id}`)}
                 >
                   View Board
                 </Button>
@@ -168,7 +174,7 @@ export function SprintListItem({
         )}
       </div>
 
-      {/* Expandable task list */}
+      {/* Expandable task mini table */}
       {expanded && (
         <div className="rounded-lg border bg-card px-4 pb-3 pt-1 rounded-t-none border-t-0">
           {sortedTasks.length === 0 ? (
@@ -176,55 +182,121 @@ export function SprintListItem({
               No tasks in this sprint
             </p>
           ) : (
-            <div className="flex flex-col divide-y">
-              {sortedTasks.map((task) => {
-                const isClosed = task.workflowStatus?.isClosed === true;
-                return (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-3 py-2 min-h-[36px]"
-                  >
-                    {/* Status icon */}
-                    {isClosed ? (
-                      <CheckCircle2 className="size-4 shrink-0 text-green-600" />
-                    ) : (
-                      <Circle className="size-4 shrink-0 text-muted-foreground" />
-                    )}
-
-                    {/* Task title */}
-                    <span
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted-foreground border-b">
+                  <th className="text-left font-medium py-2 pr-3 w-[90px]">Key</th>
+                  <th className="text-left font-medium py-2 pr-3">Title</th>
+                  <th className="text-left font-medium py-2 pr-3 w-[120px]">Status</th>
+                  <th className="text-left font-medium py-2 pr-3 w-[90px]">Priority</th>
+                  <th className="text-left font-medium py-2 pr-3 w-[140px]">Assignee</th>
+                  <th className="text-right font-medium py-2 w-[40px]">SP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedTasks.map((task) => {
+                  const isClosed = task.workflowStatus?.isClosed === true;
+                  const priority = task.priority ? PRIORITY_CONFIG[task.priority] : null;
+                  return (
+                    <tr
+                      key={task.id}
                       className={cn(
-                        'text-sm truncate flex-1 min-w-0',
-                        isClosed && 'line-through text-muted-foreground',
+                        'border-b last:border-b-0 cursor-pointer hover:bg-muted/40 transition-colors h-9',
+                        isClosed && 'opacity-60',
                       )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/projects/${projectPrefix}/tasks/${task.taskKey ?? task.id}`);
+                      }}
                     >
-                      {task.title}
-                    </span>
+                      {/* Key */}
+                      <td className="py-1.5 pr-3">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {task.taskKey ?? '—'}
+                        </span>
+                      </td>
 
-                    {/* Assignee avatar */}
-                    {task.assignee ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="size-6 shrink-0 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">
-                            {task.assignee.username.charAt(0).toUpperCase()}
+                      {/* Title */}
+                      <td className="py-1.5 pr-3 max-w-0">
+                        <span
+                          className={cn(
+                            'truncate block',
+                            isClosed && 'line-through text-muted-foreground',
+                          )}
+                        >
+                          {task.title}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-1.5 pr-3">
+                        {task.workflowStatus ? (
+                          <Badge
+                            variant="outline"
+                            className="text-xs h-5 px-1.5 font-normal"
+                            style={{
+                              borderColor: task.workflowStatus.color ?? undefined,
+                              color: task.workflowStatus.color ?? undefined,
+                            }}
+                          >
+                            {task.workflowStatus.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+
+                      {/* Priority */}
+                      <td className="py-1.5 pr-3">
+                        {priority ? (
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="inline-block size-2 rounded-full shrink-0"
+                              style={{ backgroundColor: priority.color }}
+                            />
+                            <span className="text-xs">{priority.label}</span>
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent>{task.assignee.username}</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <div className="size-6 shrink-0" />
-                    )}
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
 
-                    {/* Story points */}
-                    {task.storyPoints != null && task.storyPoints > 0 && (
-                      <Badge variant="outline" className="shrink-0 text-xs h-5 px-1.5">
-                        {task.storyPoints}
-                      </Badge>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      {/* Assignee */}
+                      <td className="py-1.5 pr-3">
+                        {task.assignee ? (
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Avatar className="size-5 shrink-0 text-[10px] font-medium">
+                              {task.assignee.imageUrl && (
+                                <AvatarImage src={task.assignee.imageUrl} alt={task.assignee.name ?? task.assignee.username} />
+                              )}
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                                {(task.assignee.name ?? task.assignee.username).charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs truncate">
+                              {task.assignee.name ?? task.assignee.username}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+
+                      {/* Story Points */}
+                      <td className="py-1.5 text-right">
+                        {task.storyPoints != null && task.storyPoints > 0 ? (
+                          <Badge variant="outline" className="text-xs h-5 px-1.5">
+                            {task.storyPoints}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       )}

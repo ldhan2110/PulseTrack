@@ -25,7 +25,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateBug } from '@/hooks/useBugs';
@@ -100,7 +100,7 @@ export function CreateBugDialog({
   const assigneeLabel = useMemo(() => {
     if (!assigneeId) return 'Unassigned';
     const member = members.find((m) => m.userId === assigneeId);
-    return member?.user.username ?? 'Unassigned';
+    return member?.user.name ?? member?.user.username ?? 'Unassigned';
   }, [assigneeId, members]);
 
   const resetForm = () => {
@@ -262,7 +262,7 @@ export function CreateBugDialog({
                         {members.map((member) => (
                           <CommandItem
                             key={member.userId}
-                            value={member.user.username}
+                            value={member.user.name ?? member.user.username}
                             onSelect={() => {
                               setAssigneeId(member.userId);
                               setAssigneeOpen(false);
@@ -275,11 +275,12 @@ export function CreateBugDialog({
                               )}
                             />
                             <Avatar className="size-5 mr-1.5">
+                              {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
                               <AvatarFallback className="text-[9px]">
-                                {getInitials(member.user.username)}
+                                {getInitials(member.user.name ?? member.user.username)}
                               </AvatarFallback>
                             </Avatar>
-                            {member.user.username}
+                            {member.user.name ?? member.user.username}
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -294,9 +295,10 @@ export function CreateBugDialog({
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="text-[13px] font-semibold text-foreground">Reporter:</span>
                 <Avatar className="size-5">
-                  <AvatarFallback className="text-[9px]">{getInitials(user.username ?? user.email ?? 'U')}</AvatarFallback>
+                  {user.imageUrl && <AvatarImage src={user.imageUrl} alt={user.name ?? user.username ?? 'User'} />}
+                  <AvatarFallback className="text-[9px]">{getInitials(user.name ?? user.username ?? user.email ?? 'U')}</AvatarFallback>
                 </Avatar>
-                <span>{user.username ?? user.email}</span>
+                <span>{user.name ?? user.username ?? user.email}</span>
               </div>
             )}
           </FieldGroup>

@@ -61,7 +61,7 @@ function buildDescription(
     case 'assigneeId': {
       if (!newValue) return 'removed assignee';
       const member = members?.find((m) => m.userId === newValue);
-      return `assigned to ${member?.user.username ?? newValue}`;
+      return `assigned to ${member?.user.name ?? member?.user.username ?? newValue}`;
     }
     case 'sprintId': {
       if (!newValue) return 'removed from sprint';
@@ -169,7 +169,7 @@ export function ActivityEntry({ entry, members, sprints, isLast = false }: Activ
 
       <div className="flex-1 min-w-0 pb-5">
         <div className="flex items-baseline gap-1 flex-wrap">
-          <span className="text-sm font-medium">{entry.actor.username}</span>
+          <span className="text-sm font-medium">{entry.actor.name ?? entry.actor.username}</span>
           <span className="text-sm text-muted-foreground">{description}</span>
           <span className="text-xs text-muted-foreground ml-auto shrink-0">{relativeTime}</span>
         </div>

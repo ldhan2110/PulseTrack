@@ -25,7 +25,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateTask } from '@/hooks/useTasks';
@@ -108,7 +108,7 @@ export function CreateTaskDialog({
   const assigneeLabel = useMemo(() => {
     if (!assigneeId || assigneeId === 'unassigned') return 'Unassigned';
     const member = members.find((m) => m.userId === assigneeId);
-    return member?.user.username ?? 'Unassigned';
+    return member?.user.name ?? member?.user.username ?? 'Unassigned';
   }, [assigneeId, members]);
 
   const resetForm = () => {
@@ -282,7 +282,7 @@ export function CreateTaskDialog({
                           {members.map((member) => (
                             <CommandItem
                               key={member.userId}
-                              value={member.user.username}
+                              value={member.user.name ?? member.user.username}
                               onSelect={() => {
                                 setAssigneeId(member.userId);
                                 setAssigneeOpen(false);
@@ -295,11 +295,12 @@ export function CreateTaskDialog({
                                 )}
                               />
                               <Avatar className="size-5 mr-1.5">
+                                {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
                                 <AvatarFallback className="text-[9px]">
-                                  {getInitials(member.user.username)}
+                                  {getInitials(member.user.name ?? member.user.username)}
                                 </AvatarFallback>
                               </Avatar>
-                              {member.user.username}
+                              {member.user.name ?? member.user.username}
                             </CommandItem>
                           ))}
                         </CommandGroup>

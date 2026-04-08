@@ -14,6 +14,8 @@ export function useAiTaskGeneration(projectId: string) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [step, setStep] = useState<AiGenerationStep | 'idle' | 'queued' | 'completed' | 'failed'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [displayLines, setDisplayLines] = useState<string[]>([]);
+  const [rawText, setRawText] = useState<string>('');
   const isActive = !!jobId && step !== 'idle' && step !== 'completed' && step !== 'failed';
   const lastFormDataRef = useRef<FormData | null>(null);
 
@@ -58,8 +60,12 @@ export function useAiTaskGeneration(projectId: string) {
     } else if (data.status === 'failed') {
       setStep('failed');
       setErrorMessage(data.error ?? 'Unknown error');
-    } else if (data.step) {
-      setStep(data.step);
+    } else {
+      if (data.step) setStep(data.step);
+      if (data.displayLines) setDisplayLines(data.displayLines);
+      if (data.rawText) setRawText(data.rawText);
+      // Legacy fallback for streamText field
+      if (!data.rawText && data.streamText) setRawText(data.streamText);
     }
   }, [jobStatus.data]);
 
@@ -88,14 +94,25 @@ export function useAiTaskGeneration(projectId: string) {
       }
     };
 
+    const onStream = (data: { jobId: string; displayLines?: string[]; rawText?: string; text?: string }) => {
+      if (data.jobId === jobId) {
+        if (data.displayLines) setDisplayLines(data.displayLines);
+        if (data.rawText) setRawText(data.rawText);
+        // Legacy fallback
+        if (!data.rawText && data.text) setRawText(data.text);
+      }
+    };
+
     socket.on('ai-generation:progress', onProgress);
     socket.on('ai-generation:completed', onCompleted);
     socket.on('ai-generation:failed', onFailed);
+    socket.on('ai-generation:stream', onStream);
 
     return () => {
       socket.off('ai-generation:progress', onProgress);
       socket.off('ai-generation:completed', onCompleted);
       socket.off('ai-generation:failed', onFailed);
+      socket.off('ai-generation:stream', onStream);
     };
   }, [socket, jobId]);
 
@@ -103,6 +120,8 @@ export function useAiTaskGeneration(projectId: string) {
     setJobId(null);
     setStep('idle');
     setErrorMessage(null);
+    setDisplayLines([]);
+    setRawText('');
     void queryClient.removeQueries({ queryKey: ['ai-generation', projectId] });
     void queryClient.removeQueries({ queryKey: ['ai-generation-status', projectId] });
   }, [projectId, queryClient]);
@@ -119,6 +138,8 @@ export function useAiTaskGeneration(projectId: string) {
     generate,
     jobId,
     step,
+    displayLines,
+    rawText,
     tasks: jobResult.data?.tasks ?? [],
     isLoading: generate.isPending || isActive,
     isCompleted: step === 'completed',

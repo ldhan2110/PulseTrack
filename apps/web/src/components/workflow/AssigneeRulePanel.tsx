@@ -50,7 +50,7 @@ export function AssigneeRulePanel({
                 onCheckedChange={() => onToggle(m.id)}
               />
               <div className="flex flex-col">
-                <span className="text-sm">{m.user.username}</span>
+                <span className="text-sm">{m.user.name ?? m.user.username}</span>
                 <span className="text-xs text-muted-foreground capitalize">{m.role}</span>
               </div>
             </label>

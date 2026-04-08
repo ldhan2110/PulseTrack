@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { useSearchUsers, useAddMembers } from '@/hooks/useMembers';
@@ -157,10 +157,11 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                           data-checked={selectedUser?.id === user.id}
                         >
                           <Avatar size="sm">
-                            <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+                            {user.imageUrl && <AvatarImage src={user.imageUrl} alt={user.name ?? user.username} />}
+                            <AvatarFallback>{getInitials(user.name ?? user.username)}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{user.username}</p>
+                            <p className="truncate text-sm font-medium">{user.name ?? user.username}</p>
                             <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                           </div>
                         </CommandItem>
@@ -214,10 +215,11 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                     className="flex items-center gap-2 rounded-md px-2 py-1.5"
                   >
                     <Avatar size="sm">
-                      <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+                      {user.imageUrl && <AvatarImage src={user.imageUrl} alt={user.name ?? user.username} />}
+                      <AvatarFallback>{getInitials(user.name ?? user.username)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{user.username}</p>
+                      <p className="truncate text-sm font-medium">{user.name ?? user.username}</p>
                       <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <Badge variant="secondary" className="shrink-0 text-xs">
@@ -227,7 +229,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                       type="button"
                       onClick={() => handleRemoveFromQueue(user.id)}
                       className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
-                      aria-label={`Remove ${user.username} from list`}
+                      aria-label={`Remove ${user.name ?? user.username} from list`}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>

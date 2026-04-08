@@ -1,5 +1,5 @@
 // apps/web/src/components/tasks/GenerateTasksModal.tsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles, Upload, X, FileText, AlertCircle, RotateCcw } from 'lucide-react';
+import { Sparkles, Upload, X, FileText, AlertCircle, RotateCcw, Terminal, Code } from 'lucide-react';
 import type { AiGenerationStep } from '@/lib/types';
 
 const STEP_LABELS: Record<string, string> = {
@@ -38,15 +38,98 @@ interface Props {
   isProcessing: boolean;
   step: AiGenerationStep | 'idle' | 'queued' | 'completed' | 'failed';
   error?: string | null;
+  displayLines?: string[];
+  rawText?: string;
   onCancel?: () => void;
   onRetry?: () => void;
+}
+
+function TerminalOutput({
+  displayLines,
+  rawText,
+}: {
+  displayLines: string[];
+  rawText: string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showRaw, setShowRaw] = useState(false);
+
+  const hasDisplayLines = displayLines.length > 0;
+
+  // Auto-scroll on new content
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [displayLines, rawText, showRaw]);
+
+  // For raw view, show last ~60 lines
+  const rawLines = rawText.split('\n');
+  const rawDisplay = rawLines.length > 60 ? rawLines.slice(-60).join('\n') : rawText;
+
+  // For display view, show last ~30 lines
+  const visibleLines = displayLines.length > 30 ? displayLines.slice(-30) : displayLines;
+
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-900 overflow-hidden">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 border-b border-zinc-700">
+        <span className="size-2.5 rounded-full bg-red-500/80" />
+        <span className="size-2.5 rounded-full bg-yellow-500/80" />
+        <span className="size-2.5 rounded-full bg-green-500/80" />
+        <span className="ml-2 text-[10px] font-medium text-zinc-400 flex-1">
+          {showRaw ? 'Raw Output' : 'AI Activity'}
+        </span>
+        {hasDisplayLines && (
+          <button
+            onClick={() => setShowRaw(!showRaw)}
+            className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors px-1.5 py-0.5 rounded hover:bg-zinc-700/50"
+          >
+            {showRaw ? (
+              <>
+                <Terminal className="size-3" />
+                Activity
+              </>
+            ) : (
+              <>
+                <Code className="size-3" />
+                Raw
+              </>
+            )}
+          </button>
+        )}
+      </div>
+      <div ref={scrollRef} className="max-h-56 overflow-y-auto p-3">
+        {showRaw || !hasDisplayLines ? (
+          <pre className="text-xs font-mono whitespace-pre-wrap wrap-break-word text-zinc-300 leading-relaxed">
+            {rawDisplay || 'Waiting for output...'}
+            <span className="inline-block w-1.5 h-3.5 bg-zinc-400 animate-pulse ml-0.5 align-text-bottom" />
+          </pre>
+        ) : (
+          <div className="space-y-0.5">
+            {visibleLines.map((line, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 text-xs font-mono text-zinc-300"
+              >
+                <span className="text-emerald-500 shrink-0 mt-px">{'>'}</span>
+                <span className="wrap-break-word">{line}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+              <span className="text-emerald-500 shrink-0">{'>'}</span>
+              <span className="inline-block w-1.5 h-3.5 bg-zinc-400 animate-pulse align-text-bottom" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = '.pdf,.docx,.txt,.md,.png,.jpg,.jpeg';
 
-export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing, step, error, onCancel, onRetry }: Props) {
+export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing, step, error, displayLines, rawText, onCancel, onRetry }: Props) {
   const [prompt, setPrompt] = useState('');
   const [scanCodebase, setScanCodebase] = useState(false);
   const [breakIntoSubTasks, setBreakIntoSubTasks] = useState(false);
@@ -78,7 +161,7 @@ export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing,
 
   return (
     <Dialog open={open} onOpenChange={isProcessing ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className={isProcessing ? 'sm:max-w-[680px]' : 'sm:max-w-[560px]'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-purple-500" />
@@ -97,14 +180,15 @@ export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing,
             </div>
           </div>
         ) : isProcessing ? (
-          <div className="py-8 space-y-4">
+          <div className="py-4 space-y-4">
             <div className="text-sm text-muted-foreground text-center">
               {STEP_LABELS[step] ?? 'Processing...'}
             </div>
             <Progress value={STEP_PROGRESS[step] ?? 0} className="h-2" />
-            <p className="text-xs text-center text-muted-foreground">
-              You can close this dialog — we'll notify you when it's done.
-            </p>
+            <TerminalOutput
+              displayLines={displayLines ?? []}
+              rawText={rawText ?? ''}
+            />
           </div>
         ) : (
           <div className="space-y-4">

@@ -9,7 +9,7 @@ import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import { useAiTaskGeneration } from '@/hooks/useAiTaskGeneration';
 import { GenerateTasksModal } from '@/components/tasks/GenerateTasksModal';
 import { TaskGenerationWizard } from '@/components/tasks/TaskGenerationWizard';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, useDeleteTask } from '@/hooks/useTasks';
 import { useSprints } from '@/hooks/useSprints';
 import { useMembers } from '@/hooks/useMembers';
 import { useProjectRole } from '@/hooks/useProjectRole';
@@ -58,10 +58,18 @@ export function BacklogPage() {
   }, [backlogView, setFullWidth]);
   const [selectedTasks, setSelectedTasks] = useState<Task[]>([]);
   const updateTask = useUpdateTask(projectId);
+  const deleteTask = useDeleteTask(projectId);
 
   const handleBulkMoveToSprint = (sprintId: string | null) => {
     selectedTasks.forEach((task) => {
       updateTask.mutate({ taskId: task.id, data: { sprintId } });
+    });
+    setSelectedTasks([]);
+  };
+
+  const handleBulkDelete = () => {
+    selectedTasks.forEach((task) => {
+      deleteTask.mutate(task.id);
     });
     setSelectedTasks([]);
   };
@@ -152,6 +160,8 @@ export function BacklogPage() {
           isProcessing={aiGeneration.isLoading}
           step={aiGeneration.step}
           error={aiGeneration.error}
+          displayLines={aiGeneration.displayLines}
+          rawText={aiGeneration.rawText}
           onCancel={() => { aiGeneration.cancel(); setGenerateOpen(false); }}
           onRetry={() => { aiGeneration.retry(); }}
         />
@@ -235,6 +245,7 @@ export function BacklogPage() {
             count={selectedTasks.length}
             sprints={sprints}
             onMoveToSprint={handleBulkMoveToSprint}
+            onDelete={handleBulkDelete}
             onClear={() => setSelectedTasks([])}
           />
         </div>
@@ -254,6 +265,8 @@ export function BacklogPage() {
         onSubmit={handleGenerateSubmit}
         isProcessing={aiGeneration.isLoading}
         step={aiGeneration.step}
+        displayLines={aiGeneration.displayLines}
+        rawText={aiGeneration.rawText}
       />
 
       {wizardOpen && aiGeneration.tasks.length > 0 && (

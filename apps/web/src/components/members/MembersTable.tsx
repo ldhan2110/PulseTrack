@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,7 +68,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
   const getRemovalDescription = () => {
     if (!removingMember) return '';
 
-    const name = removingMember.user.username;
+    const name = removingMember.user.name ?? removingMember.user.username;
     const base = `Remove ${name} from this project? They will lose access to all project data.`;
 
     if (activeWork.isLoading) return base;
@@ -89,7 +89,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
   const handleRemoveConfirm = () => {
     if (!removingMember) return;
     removeMember.mutate(
-      { memberId: removingMember.id, name: removingMember.user.username },
+      { memberId: removingMember.id, name: removingMember.user.name ?? removingMember.user.username },
       { onSettled: () => setRemovingMember(null) },
     );
   };
@@ -112,9 +112,10 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Avatar size="sm">
-                    <AvatarFallback>{getInitials(member.user.username)}</AvatarFallback>
+                    {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
+                    <AvatarFallback>{getInitials(member.user.name ?? member.user.username)}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">{member.user.username}</span>
+                  <span className="text-sm font-medium">{member.user.name ?? member.user.username}</span>
                 </div>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">

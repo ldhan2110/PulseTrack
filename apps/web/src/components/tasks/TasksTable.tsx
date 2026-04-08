@@ -26,9 +26,9 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
@@ -247,9 +247,10 @@ export function TasksTable({
           return (
             <div className="flex items-center gap-2">
               <Avatar className="size-6">
-                <AvatarFallback className="text-[10px]">{getInitials(assignee.username)}</AvatarFallback>
+                {assignee.imageUrl && <AvatarImage src={assignee.imageUrl} alt={assignee.name ?? assignee.username} />}
+                <AvatarFallback className="text-[10px]">{getInitials(assignee.name ?? assignee.username)}</AvatarFallback>
               </Avatar>
-              <span className="text-sm truncate">{assignee.username}</span>
+              <span className="text-sm truncate">{assignee.name ?? assignee.username}</span>
             </div>
           );
         },
@@ -471,7 +472,7 @@ export function TasksTable({
                       </TableCell>
                       <TableCell className="text-xs">—</TableCell>
                       <TableCell className="text-xs">
-                        {child.assignee?.username ?? <span className="text-muted-foreground">Unassigned</span>}
+                        {child.assignee?.name ?? child.assignee?.username ?? <span className="text-muted-foreground">Unassigned</span>}
                       </TableCell>
                       <TableCell className="text-xs">—</TableCell>
                       <TableCell className="text-xs">—</TableCell>
@@ -508,10 +509,11 @@ interface BulkActionBarProps {
   count: number;
   sprints: Sprint[];
   onMoveToSprint: (sprintId: string | null) => void;
+  onDelete?: () => void;
   onClear: () => void;
 }
 
-export function BulkActionBar({ count, sprints, onMoveToSprint, onClear }: BulkActionBarProps) {
+export function BulkActionBar({ count, sprints, onMoveToSprint, onDelete, onClear }: BulkActionBarProps) {
   return (
     <div className="flex items-center gap-3 bg-card shadow-lg rounded-lg px-4 py-3 border">
       <span className="text-sm font-medium">{count} task{count !== 1 ? 's' : ''} selected</span>
@@ -528,6 +530,12 @@ export function BulkActionBar({ count, sprints, onMoveToSprint, onClear }: BulkA
           ))}
         </SelectContent>
       </Select>
+      {onDelete && (
+        <Button variant="destructive" size="sm" onClick={onDelete} className="h-8 gap-1.5">
+          <Trash2 className="size-3.5" />
+          Delete
+        </Button>
+      )}
       <Button variant="ghost" size="sm" onClick={onClear} className="h-8">
         Clear
       </Button>

@@ -8,7 +8,7 @@ export function DashboardPage() {
       <h1>PM App - Dashboard</h1>
       <div>
         <p>
-          <strong>User:</strong> {user?.username}
+          <strong>User:</strong> {user?.name ?? user?.username}
         </p>
         <p>
           <strong>Email:</strong> {user?.email}

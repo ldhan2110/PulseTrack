@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Search, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -243,11 +243,12 @@ export function BugFilters({
                   onCheckedChange={() => toggleAssignee(member.userId)}
                 />
                 <Avatar className="size-5">
+                  {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
                   <AvatarFallback className="text-[9px]">
-                    {getInitials(member.user.username)}
+                    {getInitials(member.user.name ?? member.user.username)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate">{member.user.username}</span>
+                <span className="truncate">{member.user.name ?? member.user.username}</span>
               </label>
             ))}
           </div>
