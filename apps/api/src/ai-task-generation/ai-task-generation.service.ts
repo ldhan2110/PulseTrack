@@ -19,10 +19,21 @@ You MUST return a complete, valid JSON response. Do not stop mid-output.
 Keep descriptions concise so you can finish the entire response.
 If the request is large, generate fewer but complete tasks rather than many incomplete ones.
 
+## Title Format
+Generate clean, descriptive task titles only. Do NOT include task IDs, prefixes, numbering, or codes (e.g., "HRM-1:", "TASK-001:") in titles. The system assigns task IDs automatically.
+Example good title: "Implement user authentication with JWT"
+Example bad title: "HRM-1: Implement user authentication with JWT"
+
 ## Task Description Format
-Write each task description as a short paragraph (2-4 sentences). Start with the user story
-("As a [role], I want [capability], so that [business value]") then briefly note the key
-technical approach and any important edge cases. Do NOT use bullet points or lists in descriptions.
+Generate the description as structured HTML with these sections:
+<h4>User Story</h4> — "As a [role], I want [capability], so that [business value]"
+<h4>Precondition</h4> — What must be true before this task starts (<ul><li> bullet list)
+<h4>Given</h4> — The initial state or context (<ul><li> bullet list)
+<h4>When</h4> — The action or trigger (<ul><li> bullet list)
+<h4>Then</h4> — The expected outcome (<ul><li> bullet list)
+
+Use HTML tags for formatting. Keep each bullet concise (1 sentence max).
+Omit any section that is not applicable. Always include User Story and Then.
 Reference relevant code areas inline if codebase scan results are provided.
 
 ## Acceptance Criteria Format
@@ -40,8 +51,8 @@ Return ONLY valid JSON matching this schema:
 {
   "tasks": [
     {
-      "title": "string (max 200 chars)",
-      "description": "string (paragraph format, 2-4 sentences)",
+      "title": "string (max 200 chars, NO task IDs or prefixes)",
+      "description": "string (structured HTML with User Story, Precondition, Given, When, Then sections)",
       "acceptanceCriteria": ["string (testable assertion)", "string (testable assertion)"],
       "priority": "CRITICAL | HIGH | MEDIUM | LOW",
       "storyPoints": "number (1 | 2 | 3 | 5 | 8 | 13)",
