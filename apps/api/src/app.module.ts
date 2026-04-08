@@ -21,6 +21,7 @@ import { RepositoryConfigModule } from './repository-config/repository-config.mo
 import { AiConfigModule } from './ai-config/ai-config.module';
 import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
+import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { TimeLogsModule } from './time-logs/time-logs.module';
     AiConfigModule,
     AiTaskGenerationModule,
     TimeLogsModule,
+    BugAttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
