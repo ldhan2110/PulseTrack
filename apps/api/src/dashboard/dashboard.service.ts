@@ -57,11 +57,18 @@ export class DashboardService {
             reporter: { select: { username: true, name: true, imageUrl: true } },
           },
         }),
-        Promise.all([
-          this.prisma.bug.count({ where: { projectId } }),
-          this.prisma.bug.count({ where: { projectId, status: 'OPEN' } }),
-          this.prisma.bug.count({ where: { projectId, severity: 'CRITICAL' } }),
-        ]),
+        this.prisma.workflowStatus.findMany({
+          where: { projectId, kind: 'BUG' },
+          select: { id: true, isClosed: true },
+        }).then(async (bugStatuses) => {
+          const openStatusIds = bugStatuses.filter((s) => !s.isClosed).map((s) => s.id);
+          const [total, open, critical] = await Promise.all([
+            this.prisma.bug.count({ where: { projectId } }),
+            this.prisma.bug.count({ where: { projectId, workflowStatusId: { in: openStatusIds } } }),
+            this.prisma.bug.count({ where: { projectId, severity: 'CRITICAL' } }),
+          ]);
+          return [total, open, critical] as [number, number, number];
+        }),
       ]);
 
     // Build task counts by workflow status

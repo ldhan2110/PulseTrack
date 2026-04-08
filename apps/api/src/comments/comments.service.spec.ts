@@ -20,6 +20,10 @@ const mockPrisma = {
     deleteMany: vi.fn(),
     delete: vi.fn(),
   },
+  taskHistory: {
+    create: vi.fn(),
+  },
+  $transaction: vi.fn(),
 };
 
 describe('CommentsService', () => {
@@ -27,6 +31,13 @@ describe('CommentsService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // $transaction receives an array of promises and resolves them
+    mockPrisma.$transaction.mockImplementation(async (args: any) => {
+      if (Array.isArray(args)) {
+        return Promise.all(args);
+      }
+      return args(mockPrisma);
+    });
     service = new CommentsService(mockPrisma as any);
   });
 
@@ -34,6 +45,7 @@ describe('CommentsService', () => {
     it('should create a top-level comment', async () => {
       const created = { ...mockComment, author: { id: 'user-1', username: 'alice', email: 'alice@test.com' }, replies: [] };
       mockPrisma.comment.create.mockResolvedValue(created);
+      mockPrisma.taskHistory.create.mockResolvedValue({});
 
       const result = await service.create('task-1', 'user-1', 'Hello world');
 
@@ -64,18 +76,19 @@ describe('CommentsService', () => {
       mockPrisma.comment.findUnique.mockResolvedValue(mockComment);
       mockPrisma.comment.deleteMany.mockResolvedValue({ count: 0 });
       mockPrisma.comment.delete.mockResolvedValue(mockComment);
+      mockPrisma.taskHistory.create.mockResolvedValue({});
 
-      await expect(service.delete('comment-1', 'user-1', 'developer')).resolves.toBeDefined();
-      expect(mockPrisma.comment.deleteMany).toHaveBeenCalledWith({ where: { parentId: 'comment-1' } });
-      expect(mockPrisma.comment.delete).toHaveBeenCalledWith({ where: { id: 'comment-1' } });
+      await expect(service.delete('comment-1', 'user-1', 'developer')).resolves.toBeUndefined();
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
 
     it('should allow PM to delete any comment', async () => {
       mockPrisma.comment.findUnique.mockResolvedValue(mockComment);
       mockPrisma.comment.deleteMany.mockResolvedValue({ count: 0 });
       mockPrisma.comment.delete.mockResolvedValue(mockComment);
+      mockPrisma.taskHistory.create.mockResolvedValue({});
 
-      await expect(service.delete('comment-1', 'other-user', 'pm')).resolves.toBeDefined();
+      await expect(service.delete('comment-1', 'other-user', 'pm')).resolves.toBeUndefined();
     });
 
     it('should reject delete from non-author non-PM', async () => {
