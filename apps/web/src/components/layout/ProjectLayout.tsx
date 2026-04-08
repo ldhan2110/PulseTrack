@@ -7,6 +7,7 @@ import { CreateProjectDialog } from '../projects/CreateProjectDialog';
 import { useProjectByPrefix } from '@/hooks/useProjects';
 import { useMembershipSync } from '@/hooks/useMembershipSync';
 import { useTaskSync } from '@/hooks/useTaskSync';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 // 256px expanded, 48px collapsed — per UI-SPEC
 const SIDEBAR_WIDTH = '256px';
@@ -47,7 +48,10 @@ export function ProjectLayout() {
     >
       <AppSidebar onCreateProject={() => setCreateProjectOpen(true)} />
       <SidebarInset>
-        <main className={fullWidth ? 'px-4 pt-4 pb-4 w-full' : 'px-8 pt-6 pb-8 max-w-[1280px] w-full mx-auto'}>
+        <div className="flex justify-end px-4 pt-2">
+          <NotificationBell />
+        </div>
+        <main className={fullWidth ? 'px-4 pt-2 pb-4 w-full' : 'px-8 pt-4 pb-8 max-w-[1280px] w-full mx-auto'}>
           <Outlet />
         </main>
       </SidebarInset>

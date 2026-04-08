@@ -13,6 +13,7 @@ import { TaskDetailPage } from './pages/TaskDetailPage';
 import { BugDetailPage } from './pages/BugDetailPage';
 import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { MyTasksPage } from './pages/MyTasksPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/" element={<ProjectsPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/my-tasks" element={<MyTasksPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/projects/:projectPrefix/dashboard" element={<ProjectDashboardPage />} />
         <Route path="/projects/:projectPrefix/backlog" element={<BacklogPage />} />
         <Route path="/projects/:projectPrefix/sprints" element={<SprintsPage />} />
