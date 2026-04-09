@@ -37,6 +37,7 @@ import {
 import {
   useTestSuites,
   useCreateTestSuite,
+  useUpdateTestSuite,
   useDeleteTestSuite,
 } from '@/hooks/useTestSuites';
 import type { TestModule, TestSuite } from '@/lib/types';
@@ -91,6 +92,7 @@ export function ModuleTree({
   const deleteModule = useDeleteTestModule(projectId);
   const createSuite = useCreateTestSuite(projectId);
   const deleteSuite = useDeleteTestSuite(projectId);
+  const updateSuite = useUpdateTestSuite(projectId);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [createModuleOpen, setCreateModuleOpen] = useState(false);
@@ -133,6 +135,13 @@ export function ModuleTree({
   const handleRename = (moduleId: string) => {
     if (!editName.trim()) return;
     updateModule.mutate({ moduleId, data: { name: editName.trim() } }, {
+      onSuccess: () => setEditingId(null),
+    });
+  };
+
+  const handleRenameSuite = (suiteId: string) => {
+    if (!editName.trim()) return;
+    updateSuite.mutate({ suiteId, data: { name: editName.trim() } }, {
       onSuccess: () => setEditingId(null),
     });
   };
@@ -271,40 +280,66 @@ export function ModuleTree({
         </Button>
       </div>
 
-      {suites.map((suite: TestSuite) => (
-        <div
-          key={suite.id}
-          className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer hover:bg-muted/50 group',
-            selectedSuiteId === suite.id && 'bg-muted',
-          )}
-          onClick={() => handleSelectSuite(suite.id)}
-        >
-          <ListChecks className="size-3.5 text-muted-foreground shrink-0" />
-          <span className="truncate flex-1">{suite.name}</span>
-          <span className="text-xs text-muted-foreground">{suite._count?.members ?? 0}</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="p-0.5 hover:bg-muted rounded opacity-0 group-hover:opacity-100"
+      {suites.map((suite: TestSuite) => {
+        const isSuiteEditing = editingId === suite.id;
+        return (
+          <div
+            key={suite.id}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm cursor-pointer hover:bg-muted/50 group',
+              selectedSuiteId === suite.id && 'bg-muted',
+            )}
+            onClick={() => handleSelectSuite(suite.id)}
+            onDoubleClick={() => {
+              setEditingId(suite.id);
+              setEditName(suite.name);
+            }}
+          >
+            <ListChecks className="size-3.5 text-muted-foreground shrink-0" />
+            {isSuiteEditing ? (
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={() => handleRenameSuite(suite.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameSuite(suite.id);
+                  if (e.key === 'Escape') setEditingId(null);
+                }}
+                className="h-6 text-sm flex-1"
+                autoFocus
                 onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="size-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => deleteSuite.mutate(suite.id)}
-              >
-                <Trash2 className="size-3.5 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ))}
+              />
+            ) : (
+              <span className="truncate flex-1">{suite.name}</span>
+            )}
+            <span className="text-xs text-muted-foreground">{suite._count?.members ?? 0}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="p-0.5 hover:bg-muted rounded opacity-0 group-hover:opacity-100"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="size-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36">
+                <DropdownMenuItem onClick={() => { setEditingId(suite.id); setEditName(suite.name); }}>
+                  <Pencil className="size-3.5 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => deleteSuite.mutate(suite.id)}
+                >
+                  <Trash2 className="size-3.5 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      })}
 
       {/* Create Module Dialog */}
       <Dialog open={createModuleOpen} onOpenChange={setCreateModuleOpen}>
