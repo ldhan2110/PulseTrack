@@ -7,6 +7,7 @@ import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { TestCasesService } from './test-cases.service';
 import { CreateTestCaseDto } from './dto/create-test-case.dto';
 import { UpdateTestCaseDto } from './dto/update-test-case.dto';
+import { BulkImportTestCasesDto } from './dto/bulk-import-test-cases.dto';
 
 @Controller('projects/:projectId/test-cases')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -26,6 +27,11 @@ export class TestCasesController {
     return this.service.findAll(projectId, {
       moduleId, suiteId, status, priority, tags, search,
     });
+  }
+
+  @Get('by-key/:testCaseKey')
+  findByKey(@Param('testCaseKey') testCaseKey: string) {
+    return this.service.findByKey(testCaseKey);
   }
 
   @Get(':testCaseId')
@@ -53,6 +59,15 @@ export class TestCasesController {
   @Delete(':testCaseId')
   delete(@Param('testCaseId') testCaseId: string) {
     return this.service.delete(testCaseId);
+  }
+
+  @Post('bulk-import')
+  bulkImport(
+    @Param('projectId') projectId: string,
+    @Req() req: any,
+    @Body() dto: BulkImportTestCasesDto,
+  ) {
+    return this.service.bulkImport(projectId, req.user.id, dto);
   }
 
   @Post('bulk-suite')
