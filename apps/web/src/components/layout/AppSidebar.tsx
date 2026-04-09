@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   CheckSquare,
+  BookOpen,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const PROJECT_NAV_ITEMS = [
   { label: 'Test Executions', icon: Play, path: 'test-executions' },
   { label: 'Bugs', icon: Bug, path: 'bugs' },
   { label: 'Members', icon: Users, path: 'members' },
+  { label: 'Wiki', icon: BookOpen, path: 'wiki' },
   { label: 'Settings', icon: Settings, path: 'settings' },
 ];
 
