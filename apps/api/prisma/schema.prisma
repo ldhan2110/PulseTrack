@@ -68,6 +68,27 @@ enum EntityType {
   BUG
 }
 
+enum TestCaseStatus {
+  DRAFT
+  ACTIVE
+  DEPRECATED
+}
+
+enum TestResultStatus {
+  NOT_RUN
+  IN_PROGRESS
+  PASS
+  FAIL
+  BLOCKED
+  SKIP
+}
+
+enum TestExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
 model WorkflowStatus {
   id        String       @id @default(cuid())
   projectId String
@@ -163,9 +184,14 @@ model User {
   uploadedAttachments     Attachment[]      @relation("AttachmentUploader")
   bugAttachments          BugAttachment[]   @relation("BugAttachmentUploader")
   taskHistories           TaskHistory[]     @relation("TaskHistoryActor")
+  bugHistories            BugHistory[]      @relation("BugHistoryActor")
   notifications           Notification[]    @relation("NotificationRecipient")
   actedNotifications      Notification[]    @relation("NotificationActor")
   ticketWatches           TicketWatcher[]
+  createdTestCases        TestCase[]               @relation("TestCaseCreator")
+  assignedTestExecutions  TestExecution[]           @relation("TestExecutionAssignee")
+  executedTestCases       TestExecutionCase[]       @relation("TestExecutionCaseExecutor")
+  uploadedTestEvidence    TestExecutionAttachment[] @relation("TestExecutionAttachmentUploader")
 }
 
 model Project {
@@ -178,6 +204,7 @@ model Project {
   prefix      String?   @unique   // 2-10 uppercase letters, URL slug + task key prefix
   taskSeq     Int       @default(0) // Auto-incrementing counter for task keys
   bugSeq      Int       @default(0)
+  testCaseSeq Int       @default(0)
   avatarUrl          String?   // Path to uploaded avatar image
   bugReporterRoles   String[]  @default(["pm", "ba", "qc"])
   emailNotificationsEnabled Boolean @default(false)
@@ -197,6 +224,10 @@ model Project {
   repositoryConfig    RepositoryConfig?
   aiConfig            AiConfig?
   notifications       Notification[]
+  testModules    TestModule[]
+  testCases      TestCase[]
+  testSuites     TestSuite[]
+  testExecutions TestExecution[]
 }
 
 model ProjectMember {
@@ -224,6 +255,7 @@ model Sprint {
 
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       Task[]
+  testExecutions TestExecution[]
 }
 
 model Task {
@@ -383,6 +415,7 @@ model Bug {
   reproSteps     BugReproStep[]
   attachments    BugAttachment[]
   comments       Comment[]
+  history        BugHistory[]
 }
 
 // =====================
@@ -448,6 +481,19 @@ model TaskHistory {
 
   task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   actor User @relation("TaskHistoryActor", fields: [actorId], references: [id])
+}
+
+model BugHistory {
+  id        String   @id @default(cuid())
+  bugId     String
+  actorId   String
+  field     String
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+
+  bug   Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  actor User @relation("BugHistoryActor", fields: [actorId], references: [id])
 }
 
 // =====================
@@ -519,4 +565,142 @@ model AiConfig {
   updatedAt      DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// =====================
+// TEST CASE MANAGEMENT
+// =====================
+
+model TestModule {
+  id        String       @id @default(cuid())
+  name      String
+  position  Int
+  projectId String
+  parentId  String?
+
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent    TestModule?  @relation("TestModuleChildren", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  children  TestModule[] @relation("TestModuleChildren")
+  testCases TestCase[]
+
+  @@unique([projectId, parentId, name])
+}
+
+model TestCase {
+  id               String         @id @default(cuid())
+  testCaseKey      String?        @unique
+  title            String
+  preconditions    String?
+  expectedResult   String?
+  priority         Priority?
+  status           TestCaseStatus @default(DRAFT)
+  tags             String[]
+  estimatedMinutes Int?
+  moduleId         String
+  projectId        String
+  creatorId        String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  module          TestModule          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator         User                @relation("TestCaseCreator", fields: [creatorId], references: [id])
+  steps           TestCaseStep[]
+  links           TestCaseLink[]
+  suiteMemberships TestSuiteMember[]
+  executionCases  TestExecutionCase[]
+}
+
+model TestCaseStep {
+  id             String   @id @default(cuid())
+  testCaseId     String
+  position       Int
+  action         String
+  expectedResult String
+
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@unique([testCaseId, position])
+}
+
+model TestCaseLink {
+  id         String     @id @default(cuid())
+  testCaseId String
+  entityType EntityType
+  entityId   String
+
+  testCase TestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@unique([testCaseId, entityType, entityId])
+}
+
+model TestSuite {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members TestSuiteMember[]
+}
+
+model TestSuiteMember {
+  id         String @id @default(cuid())
+  suiteId    String
+  testCaseId String
+  position   Int
+
+  suite    TestSuite @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+  testCase TestCase  @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@unique([suiteId, testCaseId])
+}
+
+model TestExecution {
+  id         String              @id @default(cuid())
+  name       String
+  status     TestExecutionStatus @default(PENDING)
+  assigneeId String
+  projectId  String
+  sprintId   String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  assignee User                @relation("TestExecutionAssignee", fields: [assigneeId], references: [id])
+  project  Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint   Sprint?             @relation(fields: [sprintId], references: [id])
+  cases    TestExecutionCase[]
+}
+
+model TestExecutionCase {
+  id           String           @id @default(cuid())
+  executionId  String
+  testCaseId   String
+  result       TestResultStatus @default(NOT_RUN)
+  notes        String?
+  executedById String?
+  executedAt   DateTime?
+
+  execution   TestExecution            @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  testCase    TestCase                 @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  executedBy  User?                    @relation("TestExecutionCaseExecutor", fields: [executedById], references: [id])
+  attachments TestExecutionAttachment[]
+
+  @@unique([executionId, testCaseId])
+}
+
+model TestExecutionAttachment {
+  id              String   @id @default(cuid())
+  executionCaseId String
+  filename        String
+  storedName      String
+  mimeType        String
+  size            Int
+  uploaderId      String
+  createdAt       DateTime @default(now())
+
+  executionCase TestExecutionCase @relation(fields: [executionCaseId], references: [id], onDelete: Cascade)
+  uploader      User              @relation("TestExecutionAttachmentUploader", fields: [uploaderId], references: [id])
 }
