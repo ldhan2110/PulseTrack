@@ -28,15 +28,17 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useBugByKey, useUpdateBug, useDeleteBug } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
-import { useProjectRole } from '@/hooks/useProjectRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useProject } from '@/hooks/useProjects';
 import { useWorkflow, useValidTransitions } from '@/hooks/useWorkflow';
 import { useAuth } from '@/auth/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import type { BugSeverity } from '@/lib/types';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ReproStepsList } from '@/components/bugs/ReproStepsList';
 import { BugAttachments } from '@/components/bugs/BugAttachments';
 import { BugCommentThread } from '@/components/bugs/BugCommentThread';
+import { BugActivityLog } from '@/components/bugs/BugActivityLog';
 import { WatcherSelect } from '@/components/tasks/WatcherSelect';
 
 function SidebarLabel({ children }: { children: React.ReactNode }) {
@@ -81,7 +83,7 @@ export function BugDetailPage() {
   const { data: bug, isLoading, isError } = useBugByKey(projectId, bugKey);
   const bugId = bug?.id ?? '';
   const { data: members = [] } = useMembers(projectId);
-  const { canManage } = useProjectRole(projectId);
+  const { can } = usePermissions(projectId);
   const { data: project } = useProject(projectId);
   const updateBug = useUpdateBug(projectId);
   const deleteBug = useDeleteBug(projectId);
@@ -399,18 +401,32 @@ export function BugDetailPage() {
             projectId={projectId}
             bugId={bugId}
             attachments={bug.attachments ?? []}
-            canEdit={canManage}
+            canEdit={can('attachments', 'create')}
           />
 
-          {/* Comments */}
+          {/* Comments & Activity */}
           <div className="rounded-lg border p-5">
-            <h2 className="text-sm font-semibold mb-4">Comments</h2>
-            <BugCommentThread
-              projectId={projectId}
-              bugId={bugId}
-              currentUserId={currentUserId}
-              canManage={canManage}
-            />
+            <Tabs defaultValue="comments">
+              <TabsList variant="line" className="mb-4">
+                <TabsTrigger value="comments">Comments</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+              </TabsList>
+              <TabsContent value="comments">
+                <BugCommentThread
+                  projectId={projectId}
+                  bugId={bugId}
+                  currentUserId={currentUserId}
+                  canManage={can('comments', 'delete')}
+                />
+              </TabsContent>
+              <TabsContent value="activity" className="max-h-[500px] overflow-y-auto">
+                <BugActivityLog
+                  projectId={projectId}
+                  bugId={bugId}
+                  members={members}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
@@ -587,8 +603,8 @@ export function BugDetailPage() {
                 <span className="text-sm text-muted-foreground">{formatRelative(bug.updatedAt)}</span>
               </div>
 
-              {/* Delete action — PM only */}
-              {canManage && (
+              {/* Delete action */}
+              {can('bugs', 'delete') && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm" className="w-full gap-2">

@@ -32,16 +32,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useChangeMemberRole, useRemoveMember, useMemberActiveWork } from '@/hooks/useMembers';
-import type { Member, ProjectRole } from '@/lib/types';
-
-const ROLES: ProjectRole[] = ['pm', 'ba', 'qc', 'developer'];
-
-const ROLE_LABELS: Record<ProjectRole, string> = {
-  pm: 'PM',
-  ba: 'BA',
-  qc: 'QC',
-  developer: 'Developer',
-};
+import { useRoles } from '@/hooks/useRoles';
+import type { Member } from '@/lib/types';
 
 function getInitials(name: string | undefined | null): string {
   if (!name) return '?';
@@ -63,6 +55,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
   const [removingMember, setRemovingMember] = useState<Member | null>(null);
   const changeMemberRole = useChangeMemberRole(projectId);
   const removeMember = useRemoveMember(projectId);
+  const { data: roles = [] } = useRoles(projectId);
   const activeWork = useMemberActiveWork(projectId, removingMember?.id ?? null);
 
   const getRemovalDescription = () => {
@@ -96,7 +89,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
 
   return (
     <>
-      <Table>
+      <Table containerClassName="max-h-[calc(100vh-220px)]">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
@@ -122,7 +115,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
                 {member.user.email}
               </TableCell>
               <TableCell>
-                <Badge variant="secondary">{ROLE_LABELS[member.role]}</Badge>
+                <Badge variant="secondary">{member.customRole?.name ?? 'Unknown'}</Badge>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
@@ -139,15 +132,15 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Change Role</DropdownMenuLabel>
                       <DropdownMenuGroup>
-                        {ROLES.map((role) => (
+                        {roles.map((role) => (
                           <DropdownMenuItem
-                            key={role}
+                            key={role.id}
                             onSelect={() =>
-                              changeMemberRole.mutate({ memberId: member.id, data: { role } })
+                              changeMemberRole.mutate({ memberId: member.id, data: { roleId: role.id } })
                             }
                           >
-                            {ROLE_LABELS[role]}
-                            {member.role === role && (
+                            {role.name}
+                            {member.roleId === role.id && (
                               <span className="ml-auto text-xs text-muted-foreground">
                                 Current
                               </span>

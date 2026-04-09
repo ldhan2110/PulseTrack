@@ -6,7 +6,7 @@ import { Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useBugs } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
-import { useProjectRole } from '@/hooks/useProjectRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { BugsTable } from '@/components/bugs/BugsTable';
 import { BugFilters } from '@/components/bugs/BugFilters';
 import { CreateBugDialog } from '@/components/bugs/CreateBugDialog';
@@ -16,7 +16,7 @@ export function BugsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: bugs, isLoading } = useBugs(projectId);
   const { data: members = [] } = useMembers(projectId);
-  const { role } = useProjectRole(projectId);
+  const { can } = usePermissions(projectId);
   const [createOpen, setCreateOpen] = useState(false);
 
   // Filter/sort state owned at page level so filters wire into the table
@@ -24,8 +24,7 @@ export function BugsPage() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
 
-  // Per D-33: PM, BA, or QC can report bugs
-  const canReport = role === 'pm' || role === 'ba' || role === 'qc';
+  const canReport = can('bugs', 'create');
 
   const bugList = bugs ?? [];
 

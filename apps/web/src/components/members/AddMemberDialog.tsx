@@ -27,7 +27,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { useSearchUsers, useAddMembers } from '@/hooks/useMembers';
-import type { ProjectRole, UserSearchResult } from '@/lib/types';
+import { useRoles } from '@/hooks/useRoles';
+import type { CustomRole, UserSearchResult } from '@/lib/types';
 
 function FieldGroup({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-4">{children}</div>;
@@ -45,14 +46,6 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.R
   );
 }
 
-const ROLES: { value: ProjectRole; label: string }[] = [
-  { value: 'pm', label: 'PM' },
-  { value: 'ba', label: 'BA' },
-  { value: 'qc', label: 'QC' },
-  { value: 'developer', label: 'Developer' },
-];
-
-const ROLE_LABELS = Object.fromEntries(ROLES.map((r) => [r.value, r.label])) as Record<ProjectRole, string>;
 
 function getInitials(name: string): string {
   return name
@@ -65,7 +58,8 @@ function getInitials(name: string): string {
 
 interface QueueEntry {
   user: UserSearchResult;
-  role: ProjectRole;
+  roleId: string;
+  roleName: string;
 }
 
 interface AddMemberDialogProps {
@@ -77,22 +71,28 @@ interface AddMemberDialogProps {
 export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
-  const [selectedRole, setSelectedRole] = useState<ProjectRole>('developer');
+  const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [queue, setQueue] = useState<QueueEntry[]>([]);
 
   const { data: searchResults = [], isFetching } = useSearchUsers(projectId, searchQuery);
   const addMembers = useAddMembers(projectId);
+  const { data: roles = [] } = useRoles(projectId);
+
+  // Set default role to the project's default role
+  const defaultRole = roles.find((r) => r.isDefault) ?? roles[0];
+  const effectiveRoleId = selectedRoleId || defaultRole?.id || '';
 
   // Exclude users already in queue from search results
   const queuedUserIds = new Set(queue.map((e) => e.user.id));
   const filteredResults = searchResults.filter((u) => !queuedUserIds.has(u.id));
 
   const handleAddToQueue = () => {
-    if (!selectedUser) return;
-    setQueue((prev) => [...prev, { user: selectedUser, role: selectedRole }]);
+    if (!selectedUser || !effectiveRoleId) return;
+    const role = roles.find((r) => r.id === effectiveRoleId);
+    setQueue((prev) => [...prev, { user: selectedUser, roleId: effectiveRoleId, roleName: role?.name ?? 'Unknown' }]);
     setSearchQuery('');
     setSelectedUser(null);
-    setSelectedRole('developer');
+    setSelectedRoleId('');
   };
 
   const handleRemoveFromQueue = (userId: string) => {
@@ -102,7 +102,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
   const handleSubmit = () => {
     if (queue.length === 0) return;
     addMembers.mutate(
-      { members: queue.map((e) => ({ userId: e.user.id, role: e.role })) },
+      { members: queue.map((e) => ({ userId: e.user.id, roleId: e.roleId })) },
       { onSuccess: () => handleClose() },
     );
   };
@@ -110,7 +110,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
   const handleClose = useCallback(() => {
     setSearchQuery('');
     setSelectedUser(null);
-    setSelectedRole('developer');
+    setSelectedRoleId('');
     setQueue([]);
     onOpenChange(false);
   }, [onOpenChange]);
@@ -177,17 +177,17 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
             <div className="flex flex-1 flex-col gap-1.5">
               <FieldLabel htmlFor="member-role">Role</FieldLabel>
               <Select
-                value={selectedRole}
-                onValueChange={(v) => setSelectedRole(v as ProjectRole)}
+                value={effectiveRoleId}
+                onValueChange={(v) => setSelectedRoleId(v)}
               >
                 <SelectTrigger id="member-role" className="w-full">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {ROLES.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -209,7 +209,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
             <Field>
               <FieldLabel>Members to add ({queue.length})</FieldLabel>
               <div className="flex flex-col gap-2 rounded-lg border border-input p-2">
-                {queue.map(({ user, role }) => (
+                {queue.map(({ user, roleName }) => (
                   <div
                     key={user.id}
                     className="flex items-center gap-2 rounded-md px-2 py-1.5"
@@ -223,7 +223,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                       <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                     </div>
                     <Badge variant="secondary" className="shrink-0 text-xs">
-                      {ROLE_LABELS[role]}
+                      {roleName}
                     </Badge>
                     <button
                       type="button"

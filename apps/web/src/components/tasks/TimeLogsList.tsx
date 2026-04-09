@@ -5,12 +5,12 @@ import type { TimeLog } from '../../lib/types';
 interface TimeLogsListProps {
   timeLogs: TimeLog[];
   currentUserId: string;
-  userRole: string;
+  canDeleteAny?: boolean;
   onDelete: (timeLogId: string) => void;
   isDeleting?: boolean;
 }
 
-export function TimeLogsList({ timeLogs, currentUserId, userRole, onDelete, isDeleting }: TimeLogsListProps) {
+export function TimeLogsList({ timeLogs, currentUserId, canDeleteAny, onDelete, isDeleting }: TimeLogsListProps) {
   const totalMinutes = timeLogs.reduce((sum, tl) => sum + tl.minutes, 0);
 
   return (
@@ -54,7 +54,7 @@ export function TimeLogsList({ timeLogs, currentUserId, userRole, onDelete, isDe
                   <p className="text-xs text-muted-foreground mt-0.5 truncate">{tl.comment}</p>
                 )}
               </div>
-              {(tl.userId === currentUserId || userRole === 'pm') && (
+              {(tl.userId === currentUserId || canDeleteAny) && (
                 <button
                   onClick={() => onDelete(tl.id)}
                   disabled={isDeleting}

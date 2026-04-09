@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MembersTable } from '@/components/members/MembersTable';
 import { AddMemberDialog } from '@/components/members/AddMemberDialog';
 import { useMembers } from '@/hooks/useMembers';
-import { useProjectRole } from '@/hooks/useProjectRole';
+import { usePermissions } from '@/hooks/usePermissions';
 
 function MembersTableSkeleton() {
   return (
@@ -29,14 +29,16 @@ export function MembersPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const { data: members, isLoading } = useMembers(projectId);
-  const { canManage } = useProjectRole(projectId);
+  const { can } = usePermissions(projectId);
+  const canManage = can('members', 'update');
+  const canAdd = can('members', 'create');
 
   return (
     <div className="flex flex-col gap-6 px-8 py-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Members</h1>
-        {canManage && (
+        {canAdd && (
           <Button onClick={() => setAddDialogOpen(true)}>
             <UserPlus data-icon="inline-start" />
             Add Member
@@ -63,7 +65,7 @@ export function MembersPage() {
               Add team members to collaborate on this project.
             </p>
           </div>
-          {canManage && (
+          {canAdd && (
             <Button onClick={() => setAddDialogOpen(true)}>
               <UserPlus data-icon="inline-start" />
               Add Member

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSprints, useActivateSprint, useCloseSprint } from '@/hooks/useSprints';
 import { useTasks } from '@/hooks/useTasks';
-import { useProjectRole } from '@/hooks/useProjectRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { SprintListItem } from '@/components/sprints/SprintListItem';
 import { CreateSprintDialog } from '@/components/sprints/CreateSprintDialog';
 import type { Sprint } from '@/lib/types';
@@ -16,7 +16,9 @@ export function SprintsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: sprints, isLoading } = useSprints(projectId);
   const { data: tasks = [] } = useTasks(projectId);
-  const { canManage } = useProjectRole(projectId);
+  const { can } = usePermissions(projectId);
+  const canManage = can('sprints', 'update');
+  const canCreate = can('sprints', 'create');
   const activateSprint = useActivateSprint(projectId);
   const closeSprint = useCloseSprint(projectId);
   const [createOpen, setCreateOpen] = useState(false);
@@ -82,7 +84,7 @@ export function SprintsPage() {
       <div className="flex flex-col gap-4 p-8">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Sprints</h1>
-          {canManage && (
+          {canCreate && (
             <Button onClick={() => setCreateOpen(true)}>Create Sprint</Button>
           )}
         </div>
@@ -95,7 +97,7 @@ export function SprintsPage() {
                 Create your first sprint to organize work into time-boxed iterations.
               </p>
             </div>
-            {canManage && (
+            {canCreate && (
               <Button onClick={() => setCreateOpen(true)}>Create Sprint</Button>
             )}
           </div>
@@ -114,7 +116,7 @@ export function SprintsPage() {
     <div className="flex flex-col gap-4 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Sprints</h1>
-        {canManage && (
+        {canCreate && (
           <Button onClick={() => setCreateOpen(true)}>Create Sprint</Button>
         )}
       </div>

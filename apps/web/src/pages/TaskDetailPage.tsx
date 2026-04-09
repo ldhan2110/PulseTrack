@@ -38,7 +38,7 @@ import { useUiStore } from '@/store/uiStore';
 import { useBugs } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
-import { useProjectRole } from '@/hooks/useProjectRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useProject } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
@@ -179,7 +179,9 @@ export function TaskDetailPage() {
   const taskId = task?.id ?? '';
   const { data: members = [] } = useMembers(projectId);
   const { data: sprints = [] } = useSprints(projectId);
-  const { canManage, canEdit } = useProjectRole(projectId);
+  const { can } = usePermissions(projectId);
+  const canEdit = can('tasks', 'update');
+  const canManage = can('tasks', 'delete');
   const { data: project } = useProject(projectId);
   const updateTask = useUpdateTask(projectId);
   const descriptionUpdate = useUpdateTask(projectId);
@@ -557,7 +559,7 @@ export function TaskDetailPage() {
                 projectId={projectId}
                 taskId={taskId}
                 currentUserId={currentUserId}
-                canManage={canManage}
+                canManage={can('attachments', 'delete')}
               />
             </section>
           </div>
@@ -649,19 +651,19 @@ export function TaskDetailPage() {
                   projectId={projectId}
                   taskId={taskId}
                   currentUserId={currentUserId}
-                  canManage={canManage}
+                  canManage={can('comments', 'delete')}
                 />
               </TabsContent>
-              <TabsContent value="timelogs">
+              <TabsContent value="timelogs" className="max-h-[500px] overflow-y-auto">
                 <TimeLogsList
                   timeLogs={task.timeLogs ?? []}
                   currentUserId={currentUserId}
-                  userRole={canManage ? 'pm' : ''}
+                  canDeleteAny={can('tasks', 'delete')}
                   onDelete={(timeLogId) => deleteTimeLog.mutate({ taskId: task.id, timeLogId })}
                   isDeleting={deleteTimeLog.isPending}
                 />
               </TabsContent>
-              <TabsContent value="activity">
+              <TabsContent value="activity" className="max-h-[500px] overflow-y-auto">
                 <ActivityLog
                   projectId={projectId}
                   taskId={taskId}

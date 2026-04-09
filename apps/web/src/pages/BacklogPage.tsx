@@ -12,7 +12,7 @@ import { TaskGenerationWizard } from '@/components/tasks/TaskGenerationWizard';
 import { useTasks, useDeleteTask } from '@/hooks/useTasks';
 import { useSprints } from '@/hooks/useSprints';
 import { useMembers } from '@/hooks/useMembers';
-import { useProjectRole } from '@/hooks/useProjectRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useUiStore } from '@/store/uiStore';
 import { useUpdateTask } from '@/hooks/useTasks';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
@@ -26,7 +26,8 @@ export function BacklogPage() {
   const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
   const { data: sprints = [] } = useSprints(projectId);
   const { data: members = [] } = useMembers(projectId);
-  const { canEdit } = useProjectRole(projectId);
+  const { can } = usePermissions(projectId);
+  const canEdit = can('tasks', 'create');
   const backlogView = useUiStore((s) => s.backlogView);
   const setBacklogView = useUiStore((s) => s.setBacklogView);
   const setFullWidth = useUiStore((s) => s.setFullWidth);
