@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
 import { Settings, Upload, X } from 'lucide-react';
 import { useProject, useUpdateProjectSettings, useUploadProjectAvatar, useRemoveProjectAvatar } from '@/hooks/useProjects';
-import { useProjectRole } from '@/hooks/useProjectRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,11 +14,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WorkflowEditor } from '@/components/workflow/WorkflowEditor';
 import { RepositorySettingsCard } from '@/components/settings/RepositorySettingsCard';
 import { AiConfigCard } from '@/components/settings/AiConfigCard';
+import { RolesPermissionsTab } from '@/components/settings/RolesPermissionsTab';
 
 export function ProjectSettingsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const { data: project, isLoading } = useProject(projectId);
-  const { canManage } = useProjectRole(projectId);
+  const { can } = usePermissions(projectId);
+  const canManage = can('projectSettings', 'update');
   const updateSettings = useUpdateProjectSettings(projectId);
   const uploadAvatar = useUploadProjectAvatar(projectId);
   const removeAvatar = useRemoveProjectAvatar(projectId);
@@ -84,6 +86,7 @@ export function ProjectSettingsPage() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           {canManage && <TabsTrigger value="workflow">Workflow</TabsTrigger>}
+          {can('members', 'update') && <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="general" className="space-y-6 mt-6">
@@ -240,6 +243,12 @@ export function ProjectSettingsPage() {
                 <WorkflowEditor projectId={projectId} canManage={canManage} kind="BUG" />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+        )}
+
+        {can('members', 'update') && (
+          <TabsContent value="roles" className="mt-6">
+            <RolesPermissionsTab projectId={projectId} />
           </TabsContent>
         )}
       </Tabs>
