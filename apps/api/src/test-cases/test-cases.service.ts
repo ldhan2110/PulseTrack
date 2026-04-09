@@ -259,7 +259,7 @@ export class TestCasesService {
             priority: item.priority,
             tags: item.tags ?? [],
             estimatedMinutes: item.estimatedMinutes,
-            moduleId: moduleId ?? null,
+            ...(moduleId ? { moduleId } : {}),
           },
         });
 
