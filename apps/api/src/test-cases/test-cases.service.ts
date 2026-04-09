@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTestCaseDto } from './dto/create-test-case.dto';
 import { UpdateTestCaseDto } from './dto/update-test-case.dto';
+import { BulkImportTestCasesDto } from './dto/bulk-import-test-cases.dto';
 import type { EntityType } from '@prisma/client';
 
 const USER_SELECT = { id: true, username: true, email: true, name: true, imageUrl: true };
@@ -50,6 +51,13 @@ export class TestCasesService {
   async findOne(testCaseId: string) {
     return this.prisma.testCase.findUnique({
       where: { id: testCaseId },
+      include: TEST_CASE_INCLUDE,
+    });
+  }
+
+  async findByKey(testCaseKey: string) {
+    return this.prisma.testCase.findFirst({
+      where: { testCaseKey },
       include: TEST_CASE_INCLUDE,
     });
   }
@@ -189,5 +197,87 @@ export class TestCasesService {
     });
 
     return { added: newIds.length };
+  }
+
+  async bulkImport(projectId: string, creatorId: string, dto: BulkImportTestCasesDto) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Collect unique module names
+      const moduleNames = [...new Set(
+        dto.items.map((item) => item.moduleName?.trim()).filter(Boolean) as string[],
+      )];
+
+      // 2. Resolve existing modules
+      const existingModules = moduleNames.length > 0
+        ? await tx.testModule.findMany({
+            where: { projectId, name: { in: moduleNames, mode: 'insensitive' } },
+            select: { id: true, name: true },
+          })
+        : [];
+
+      const moduleMap = new Map<string, string>();
+      for (const m of existingModules) {
+        moduleMap.set(m.name.toLowerCase(), m.id);
+      }
+
+      // 3. Auto-create missing modules
+      const modulesCreated: string[] = [];
+      for (const name of moduleNames) {
+        if (!moduleMap.has(name.toLowerCase())) {
+          const created = await tx.testModule.create({
+            data: { projectId, name, position: 0 },
+          });
+          moduleMap.set(name.toLowerCase(), created.id);
+          modulesCreated.push(name);
+        }
+      }
+
+      // 4. Create test cases
+      let created = 0;
+      for (const item of dto.items) {
+        // Increment testCaseSeq
+        const project = await tx.project.update({
+          where: { id: projectId },
+          data: { testCaseSeq: { increment: 1 } },
+          select: { prefix: true, testCaseSeq: true },
+        });
+        const testCaseKey = project.prefix
+          ? `${project.prefix}-TC-${project.testCaseSeq}`
+          : null;
+
+        const moduleId = item.moduleName
+          ? moduleMap.get(item.moduleName.trim().toLowerCase())
+          : undefined;
+
+        const testCase = await tx.testCase.create({
+          data: {
+            projectId,
+            creatorId,
+            testCaseKey,
+            title: item.title,
+            preconditions: item.preconditions,
+            expectedResult: item.expectedResult,
+            priority: item.priority,
+            tags: item.tags ?? [],
+            estimatedMinutes: item.estimatedMinutes,
+            moduleId: moduleId ?? null,
+          },
+        });
+
+        if (item.steps?.length) {
+          await tx.testCaseStep.createMany({
+            data: item.steps.map((s) => ({
+              testCaseId: testCase.id,
+              position: s.position,
+              action: s.action,
+              expectedResult: s.expectedResult,
+            })),
+          });
+        }
+
+        created++;
+      }
+
+      return { created, modulesCreated };
+    });
   }
 }
