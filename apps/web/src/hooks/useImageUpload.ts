@@ -5,10 +5,11 @@ import { api } from '@/lib/api';
 
 interface UseImageUploadOptions {
   projectId: string;
-  taskId: string;
+  entityType: 'task' | 'bug';
+  entityId: string;
 }
 
-export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
+export function useImageUpload({ projectId, entityType, entityId }: UseImageUploadOptions) {
   // Map from base64 src → Promise resolving to server URL (or rejecting)
   const pendingUploads = useRef<Map<string, Promise<string>>>(new Map());
 
@@ -62,10 +63,15 @@ export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
    */
   const handleImagePaste = useCallback(
     (file: File, editor: Editor, base64Src: string) => {
-      const uploadPromise = api
-        .uploadAttachment(projectId, taskId, file, true)
+      const uploadFn =
+        entityType === 'bug'
+          ? api.uploadBugAttachment(projectId, entityId, file, true)
+          : api.uploadAttachment(projectId, entityId, file, true);
+
+      const uploadPromise = uploadFn
         .then((attachment) => {
-          const serverUrl = `/api/uploads/tasks/${taskId}/${attachment.storedName}`;
+          const folder = entityType === 'bug' ? 'bugs' : 'tasks';
+          const serverUrl = `/api/uploads/${folder}/${entityId}/${attachment.storedName}`;
           swapSrcInEditor(editor, base64Src, serverUrl);
           pendingUploads.current.delete(base64Src);
           return serverUrl;
@@ -79,7 +85,7 @@ export function useImageUpload({ projectId, taskId }: UseImageUploadOptions) {
 
       pendingUploads.current.set(base64Src, uploadPromise);
     },
-    [projectId, taskId, swapSrcInEditor, removeImageFromEditor],
+    [projectId, entityType, entityId, swapSrcInEditor, removeImageFromEditor],
   );
 
   /** Await all in-flight uploads. Call before getHTML() on save. */

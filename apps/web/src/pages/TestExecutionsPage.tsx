@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
+import { type SortingState, type ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,19 +17,22 @@ import { ExecutionList } from '@/components/test-executions/ExecutionList';
 import { ExecutionDetail } from '@/components/test-executions/ExecutionDetail';
 import { ExecutionRunner } from '@/components/test-executions/ExecutionRunner';
 import { CreateExecutionDialog } from '@/components/test-executions/CreateExecutionDialog';
-import type { TestExecution, TestExecutionStatus } from '@/lib/types';
+import type { TestExecution } from '@/lib/types';
 
 export function TestExecutionsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
-  const { data: executions = [], isLoading } = useTestExecutions(projectId);
+  const { data: executions = [] } = useTestExecutions(projectId);
   const { data: members = [] } = useMembers(projectId);
 
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(null);
   const [runnerMode, setRunnerMode] = useState(false);
   const [runnerCaseIndex, setRunnerCaseIndex] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+
+  // Table state
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = useState('');
 
   const { data: selectedExecution } = useTestExecution(
     projectId,
@@ -37,17 +41,28 @@ export function TestExecutionsPage() {
 
   const executionList = (executions ?? []) as TestExecution[];
 
-  const filteredExecutions = useMemo(() => {
-    let list = executionList;
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((e) => e.name.toLowerCase().includes(q));
+  // Derive unique sprints from execution data for the sprint filter
+  const sprintOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const exec of executionList) {
+      if (exec.sprint) {
+        map.set(exec.sprint.id, exec.sprint.name);
+      }
     }
-    if (statusFilter) {
-      list = list.filter((e) => e.status === statusFilter);
-    }
-    return list;
-  }, [executionList, search, statusFilter]);
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [executionList]);
+
+  // Helper to get/set a specific column filter value
+  const getColumnFilterValue = (columnId: string): string =>
+    (columnFilters.find((f) => f.id === columnId)?.value as string) ?? '';
+
+  const setColumnFilter = (columnId: string, value: string) => {
+    setColumnFilters((prev) => {
+      const existing = prev.filter((f) => f.id !== columnId);
+      if (!value) return existing;
+      return [...existing, { id: columnId, value }];
+    });
+  };
 
   // Runner view
   if (runnerMode && selectedExecution && selectedExecution.cases) {
@@ -91,15 +106,15 @@ export function TestExecutionsPage() {
         <div className="relative flex-1 max-w-[280px]">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder="Search executions..."
             className="h-8 pl-7 text-sm"
           />
         </div>
         <Select
-          value={statusFilter}
-          onValueChange={(val) => setStatusFilter(val === 'ALL' ? '' : val)}
+          value={getColumnFilterValue('status') || 'ALL'}
+          onValueChange={(val) => setColumnFilter('status', val === 'ALL' ? '' : val)}
         >
           <SelectTrigger className="h-8 w-[150px]">
             <SelectValue placeholder="Status" />
@@ -111,11 +126,51 @@ export function TestExecutionsPage() {
             <SelectItem value="COMPLETED">Completed</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={getColumnFilterValue('assignee') || 'ALL'}
+          onValueChange={(val) => setColumnFilter('assignee', val === 'ALL' ? '' : val)}
+        >
+          <SelectTrigger className="h-8 w-[150px]">
+            <SelectValue placeholder="Assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All assignees</SelectItem>
+            {members.map((m) => (
+              <SelectItem key={m.userId} value={m.userId}>
+                {m.user.name ?? m.user.username}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {sprintOptions.length > 0 && (
+          <Select
+            value={getColumnFilterValue('sprint') || 'ALL'}
+            onValueChange={(val) => setColumnFilter('sprint', val === 'ALL' ? '' : val)}
+          >
+            <SelectTrigger className="h-8 w-[150px]">
+              <SelectValue placeholder="Sprint" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All sprints</SelectItem>
+              {sprintOptions.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <ExecutionList
-        executions={filteredExecutions}
+        executions={executionList}
         onSelectExecution={setSelectedExecutionId}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        columnFilters={columnFilters}
+        onColumnFiltersChange={setColumnFilters}
+        globalFilter={globalFilter}
+        onGlobalFilterChange={setGlobalFilter}
       />
 
       <CreateExecutionDialog

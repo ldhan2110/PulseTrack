@@ -52,7 +52,7 @@ const mockAttachment: Attachment = {
   uploaderId: 'user-1',
   isInline: true,
   createdAt: '2026-04-07T00:00:00Z',
-  uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com' },
+  uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com', name: null, imageUrl: null },
 };
 
 describe('useImageUpload', () => {
@@ -65,7 +65,7 @@ describe('useImageUpload', () => {
     const editor = makeEditorMock('data:image/png;base64,abc123');
 
     const { result } = renderHook(() =>
-      useImageUpload({ projectId: 'proj-1', taskId: 'task-1' }),
+      useImageUpload({ projectId: 'proj-1', entityType: 'task', entityId: 'task-1' }),
     );
 
     const file = new File(['data'], 'screenshot.png', { type: 'image/png' });
@@ -75,7 +75,7 @@ describe('useImageUpload', () => {
       await result.current.awaitPendingUploads();
     });
 
-    expect(apiModule.api.uploadAttachment).toHaveBeenCalledWith('proj-1', 'task-1', file);
+    expect(apiModule.api.uploadAttachment).toHaveBeenCalledWith('proj-1', 'task-1', file, true);
     // setNodeMarkup called to swap src → static URL
     expect(editor.mockTr.setNodeMarkup).toHaveBeenCalledWith(
       0,
@@ -89,7 +89,7 @@ describe('useImageUpload', () => {
     const editor = makeEditorMock('data:image/png;base64,abc123');
 
     const { result } = renderHook(() =>
-      useImageUpload({ projectId: 'proj-1', taskId: 'task-1' }),
+      useImageUpload({ projectId: 'proj-1', entityType: 'task', entityId: 'task-1' }),
     );
 
     const file = new File(['data'], 'screenshot.png', { type: 'image/png' });
@@ -105,7 +105,7 @@ describe('useImageUpload', () => {
 
   it('awaitPendingUploads resolves immediately when no uploads are pending', async () => {
     const { result } = renderHook(() =>
-      useImageUpload({ projectId: 'proj-1', taskId: 'task-1' }),
+      useImageUpload({ projectId: 'proj-1', entityType: 'task', entityId: 'task-1' }),
     );
     await expect(result.current.awaitPendingUploads()).resolves.toBeUndefined();
   });

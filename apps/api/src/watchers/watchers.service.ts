@@ -21,21 +21,33 @@ export class WatchersService {
       skipDuplicates: true,
     });
 
-    if (actorId && entityType === 'TASK' && userIds.length > 0) {
+    if (actorId && userIds.length > 0) {
       const users = await this.prisma.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true, name: true, username: true },
       });
       const names = users.map((u) => u.name ?? u.username).join(', ');
-      await this.prisma.taskHistory.create({
-        data: {
-          taskId: entityId,
-          actorId,
-          field: 'watcher_added',
-          oldValue: null,
-          newValue: names,
-        },
-      });
+      if (entityType === 'TASK') {
+        await this.prisma.taskHistory.create({
+          data: {
+            taskId: entityId,
+            actorId,
+            field: 'watcher_added',
+            oldValue: null,
+            newValue: names,
+          },
+        });
+      } else if (entityType === 'BUG') {
+        await this.prisma.bugHistory.create({
+          data: {
+            bugId: entityId,
+            actorId,
+            field: 'watcher_added',
+            oldValue: null,
+            newValue: names,
+          },
+        });
+      }
     }
 
     return result;
@@ -43,7 +55,7 @@ export class WatchersService {
 
   async removeWatcher(entityType: EntityType, entityId: string, userId: string, actorId?: string) {
     let removedUserName: string | null = null;
-    if (actorId && entityType === 'TASK') {
+    if (actorId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { name: true, username: true },
@@ -55,16 +67,28 @@ export class WatchersService {
       where: { entityType, entityId, userId },
     });
 
-    if (actorId && entityType === 'TASK' && removedUserName) {
-      await this.prisma.taskHistory.create({
-        data: {
-          taskId: entityId,
-          actorId,
-          field: 'watcher_removed',
-          oldValue: removedUserName,
-          newValue: null,
-        },
-      });
+    if (actorId && removedUserName) {
+      if (entityType === 'TASK') {
+        await this.prisma.taskHistory.create({
+          data: {
+            taskId: entityId,
+            actorId,
+            field: 'watcher_removed',
+            oldValue: removedUserName,
+            newValue: null,
+          },
+        });
+      } else if (entityType === 'BUG') {
+        await this.prisma.bugHistory.create({
+          data: {
+            bugId: entityId,
+            actorId,
+            field: 'watcher_removed',
+            oldValue: removedUserName,
+            newValue: null,
+          },
+        });
+      }
     }
 
     return result;

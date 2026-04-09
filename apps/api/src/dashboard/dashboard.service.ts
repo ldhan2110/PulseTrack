@@ -15,7 +15,7 @@ export class DashboardService {
     const [workflowStatuses, tasksByStatus, activeSprint, recentTasks, recentBugs, bugCounts] =
       await Promise.all([
         this.prisma.workflowStatus.findMany({
-          where: { projectId },
+          where: { projectId, kind: 'TASK' },
           orderBy: { position: 'asc' },
           select: { id: true, name: true, key: true, color: true, isClosed: true },
         }),

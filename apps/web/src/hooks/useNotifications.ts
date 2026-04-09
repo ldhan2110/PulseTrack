@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useSocket } from '../socket/useSocket';
 
-export function useNotifications(params?: { page?: number; isRead?: boolean; type?: string }) {
+export function useNotifications(params?: { page?: number; isRead?: boolean; type?: string; limit?: number }) {
   return useQuery({
     queryKey: ['notifications', params],
     queryFn: () => api.getNotifications(params),

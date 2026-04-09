@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardStatusStrip } from '@/components/dashboard/DashboardStatusStrip';
 import { BurndownChart } from '@/components/dashboard/BurndownChart';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
+import { BugSummaryBanner } from '@/components/dashboard/BugSummaryBanner';
 import { useDashboard } from '@/hooks/useDashboard';
 
 function DashboardSkeleton() {
@@ -44,6 +45,7 @@ export function ProjectDashboardPage() {
   const activeSprint = data?.activeSprint ?? null;
   const burndownData = data?.burndown ?? [];
   const activities = data?.recentActivity ?? [];
+  const bugCounts = data?.bugCounts ?? { total: 0, open: 0, critical: 0 };
 
   const sprintProgress =
     activeSprint && activeSprint.totalPoints > 0
@@ -88,7 +90,10 @@ export function ProjectDashboardPage() {
         </Card>
       </div>
 
-      {/* Row 3: Recent activity */}
+      {/* Row 3: Bug summary banner */}
+      <BugSummaryBanner bugCounts={bugCounts} />
+
+      {/* Row 4: Recent activity */}
       <RecentActivity activities={activities} />
     </div>
   );

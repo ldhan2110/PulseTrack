@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/select';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
 import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '@/hooks/useNotifications';
+import { getNotificationUrl } from '@/lib/notifications';
+import { useNavigate } from 'react-router-dom';
 import type { Notification } from '@/lib/types';
 
 const TYPE_OPTIONS = [
@@ -27,6 +29,7 @@ export function NotificationsPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const navigate = useNavigate();
 
   const { data, isLoading } = useNotifications({
     page,
@@ -40,6 +43,8 @@ export function NotificationsPage() {
 
   const handleClick = (notification: Notification) => {
     if (!notification.isRead) markRead.mutate(notification.id);
+    const url = getNotificationUrl(notification);
+    if (url) navigate(url);
   };
 
   return (
@@ -54,7 +59,7 @@ export function NotificationsPage() {
         </Button>
       </div>
 
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <Tabs
           value={isReadFilter === undefined ? 'all' : isReadFilter ? 'read' : 'unread'}
           onValueChange={(v) => {
@@ -70,7 +75,7 @@ export function NotificationsPage() {
         </Tabs>
 
         <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-40 h-8">
+          <SelectTrigger className="w-full sm:w-40 h-8">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>

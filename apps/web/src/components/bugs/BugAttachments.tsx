@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, X, FileText, Image, Film, File } from 'lucide-react';
+import { toast } from 'sonner';
 import { useUploadBugAttachment, useDeleteBugAttachment } from '@/hooks/useBugAttachments';
 import { api } from '@/lib/api';
 import type { BugAttachment } from '@/lib/types';
@@ -39,9 +40,20 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
     }
   };
 
-  const handleDownload = (attachment: BugAttachment) => {
-    const url = api.getBugAttachmentDownloadUrl(projectId, bugId, attachment.id);
-    window.open(url, '_blank');
+  const handleDownload = async (attachment: BugAttachment) => {
+    try {
+      const blob = await api.downloadBugAttachment(projectId, bugId, attachment.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download file.');
+    }
   };
 
   return (
@@ -76,7 +88,7 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
             <div
               key={att.id}
               className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs cursor-pointer hover:bg-muted/50"
-              onClick={() => handleDownload(att)}
+              onClick={() => { void handleDownload(att); }}
             >
               {fileIcon(att.mimeType)}
               <span className="truncate max-w-[140px]">{att.filename}</span>

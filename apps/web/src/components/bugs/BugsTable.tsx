@@ -130,7 +130,7 @@ interface BugsTableProps {
 
 export function BugsTable({
   bugs,
-  projectId,
+  projectId: _projectId,
   projectPrefix,
   isLoading,
   sorting,
@@ -279,7 +279,7 @@ export function BugsTable({
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <Table>
+      <Table containerClassName="max-h-[calc(100vh-220px)]">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">

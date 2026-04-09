@@ -231,6 +231,24 @@ export class TestCasesService {
         }
       }
 
+      // 3b. Ensure a default module for items without moduleName
+      const defaultModuleName = 'General';
+      if (!moduleMap.has(defaultModuleName.toLowerCase())) {
+        const existing = await tx.testModule.findFirst({
+          where: { projectId, name: { equals: defaultModuleName, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (existing) {
+          moduleMap.set(defaultModuleName.toLowerCase(), existing.id);
+        } else {
+          const created = await tx.testModule.create({
+            data: { projectId, name: defaultModuleName, position: 0 },
+          });
+          moduleMap.set(defaultModuleName.toLowerCase(), created.id);
+          modulesCreated.push(defaultModuleName);
+        }
+      }
+
       // 4. Create test cases
       let created = 0;
       for (const item of dto.items) {
@@ -245,8 +263,8 @@ export class TestCasesService {
           : null;
 
         const moduleId = item.moduleName
-          ? moduleMap.get(item.moduleName.trim().toLowerCase())
-          : undefined;
+          ? moduleMap.get(item.moduleName.trim().toLowerCase())!
+          : moduleMap.get(defaultModuleName.toLowerCase())!;
 
         const testCase = await tx.testCase.create({
           data: {
@@ -259,7 +277,7 @@ export class TestCasesService {
             priority: item.priority,
             tags: item.tags ?? [],
             estimatedMinutes: item.estimatedMinutes,
-            ...(moduleId ? { moduleId } : {}),
+            moduleId,
           },
         });
 

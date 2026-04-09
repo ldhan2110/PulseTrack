@@ -68,7 +68,7 @@ export function SprintListItem({
   canManage,
   onActivate,
   onClose,
-  projectId,
+  projectId: _projectId,
   projectPrefix,
   sprintTasks,
   completedCount,

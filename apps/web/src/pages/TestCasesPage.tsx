@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+
 import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
 import { ClipboardList, Search, FileSpreadsheet } from 'lucide-react';
@@ -22,7 +22,6 @@ import { ImportTestCasesDialog } from '@/components/test-cases/ImportTestCasesDi
 import type { TestCase } from '@/lib/types';
 
 export function TestCasesPage() {
-  const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
 
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);

@@ -46,8 +46,11 @@ export function useUpdateBug(projectId: string) {
   return useMutation({
     mutationFn: ({ bugId, data }: { bugId: string; data: UpdateBugPayload }) =>
       api.updateBug(projectId, bugId, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug', projectId, variables.bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, variables.bugId] });
       toast.success('Bug updated');
     },
     onError: (err: Error) => {
@@ -60,8 +63,10 @@ export function useDeleteBug(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (bugId: string) => api.deleteBug(projectId, bugId),
-    onSuccess: () => {
+    onSuccess: (_data, bugId) => {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-by-key', projectId] });
       toast.success('Bug deleted');
     },
     onError: (err: Error) => {

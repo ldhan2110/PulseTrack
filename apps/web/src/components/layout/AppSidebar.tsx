@@ -38,9 +38,9 @@ const PROJECT_NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
   { label: 'Backlog', icon: ListTodo, path: 'backlog' },
   { label: 'Sprints', icon: Zap, path: 'sprints' },
-  { label: 'Bugs', icon: Bug, path: 'bugs' },
   { label: 'Test Cases', icon: ClipboardList, path: 'test-cases' },
-  { label: 'Test Runs', icon: Play, path: 'test-executions' },
+  { label: 'Test Executions', icon: Play, path: 'test-executions' },
+  { label: 'Bugs', icon: Bug, path: 'bugs' },
   { label: 'Members', icon: Users, path: 'members' },
   { label: 'Settings', icon: Settings, path: 'settings' },
 ];

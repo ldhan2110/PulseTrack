@@ -9,12 +9,108 @@ import {
 import { useMembers } from '@/hooks/useMembers';
 import { CommentItem } from './CommentItem';
 import { CommentComposer } from './CommentComposer';
+import type { Comment } from '@/lib/types';
+
+const MAX_VISUAL_DEPTH = 4;
 
 interface CommentThreadProps {
   projectId: string;
   taskId: string;
   currentUserId: string;
   canManage: boolean;
+}
+
+function RecursiveComment({
+  comment,
+  depth,
+  currentUserId,
+  canManage,
+  projectId,
+  taskId,
+  replyingTo,
+  onReply,
+  onDelete,
+  onEdit,
+  onPostReply,
+  isReplyPending,
+  mentionMembers,
+  onCancelReply,
+}: {
+  comment: Comment;
+  depth: number;
+  currentUserId: string;
+  canManage: boolean;
+  projectId: string;
+  taskId: string;
+  replyingTo: string | null;
+  onReply: (commentId: string) => void;
+  onDelete: (commentId: string) => void;
+  onEdit: (commentId: string, content: string) => void;
+  onPostReply: (commentId: string, content: string) => void;
+  isReplyPending: boolean;
+  mentionMembers: { id: string; label: string; imageUrl: string | null }[];
+  onCancelReply: () => void;
+}) {
+  return (
+    <div
+      className={depth > 0 ? 'ml-5 border-l-2 border-border pl-4' : ''}
+      style={depth > MAX_VISUAL_DEPTH ? { marginLeft: 0 } : undefined}
+    >
+      {depth > MAX_VISUAL_DEPTH && (
+        <div className="text-xs text-muted-foreground mb-1 italic">
+          replying to @{(comment as any)._parentAuthorName ?? 'someone'}
+        </div>
+      )}
+      <CommentItem
+        comment={comment}
+        currentUserId={currentUserId}
+        canManage={canManage}
+        projectId={projectId}
+        taskId={taskId}
+        onReply={onReply}
+        onDelete={onDelete}
+        onEdit={onEdit}
+      />
+
+      {replyingTo === comment.id && (
+        <div className="mt-2">
+          <CommentComposer
+            onSubmit={(content) => onPostReply(comment.id, content)}
+            isPending={isReplyPending}
+            projectId={projectId}
+            taskId={taskId}
+            placeholder="Write a reply..."
+            onCancel={onCancelReply}
+            members={mentionMembers}
+          />
+        </div>
+      )}
+
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="flex flex-col gap-2 mt-2">
+          {comment.replies.map((reply) => (
+            <RecursiveComment
+              key={reply.id}
+              comment={reply}
+              depth={depth + 1}
+              currentUserId={currentUserId}
+              canManage={canManage}
+              projectId={projectId}
+              taskId={taskId}
+              replyingTo={replyingTo}
+              onReply={onReply}
+              onDelete={onDelete}
+              onEdit={onEdit}
+              onPostReply={onPostReply}
+              isReplyPending={isReplyPending}
+              mentionMembers={mentionMembers}
+              onCancelReply={onCancelReply}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function CommentThread({
@@ -37,9 +133,6 @@ export function CommentThread({
   }));
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-
-  // Top-level comments only (no parentId)
-  const topLevelComments = comments.filter((c) => c.parentId === null);
 
   const handleReply = (commentId: string) => {
     setReplyingTo(replyingTo === commentId ? null : commentId);
@@ -64,75 +157,69 @@ export function CommentThread({
     );
   };
 
+  // Annotate comments with parent author names for deep nesting display
+  function annotateParentNames(comments: Comment[], parentMap: Map<string, string>): Comment[] {
+    return comments.map((c) => {
+      const annotated = { ...c, _parentAuthorName: parentMap.get(c.id) } as any;
+      if (c.replies?.length) {
+        const childMap = new Map(parentMap);
+        for (const reply of c.replies) {
+          childMap.set(reply.id, c.author.name ?? c.author.username);
+        }
+        annotated.replies = annotateParentNames(c.replies, childMap);
+      }
+      return annotated;
+    });
+  }
+
+  const parentMap = new Map<string, string>();
+  const annotatedComments = annotateParentNames(comments, parentMap);
+
   return (
-    <div className="flex flex-col gap-3">
-      {topLevelComments.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-2">
-          No comments yet. Start the conversation.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {topLevelComments.map((comment) => (
-            <div key={comment.id} className="rounded-lg border p-3 flex flex-col gap-2">
-              <CommentItem
-                comment={comment}
-                currentUserId={currentUserId}
-                canManage={canManage}
-                projectId={projectId}
-                taskId={taskId}
-                onReply={handleReply}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-              />
+    <div className="flex flex-col">
+      {/* Scrollable comment list */}
+      <div className="flex-1 overflow-y-auto max-h-[400px] pr-1">
+        {annotatedComments.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-2">
+            No comments yet. Start the conversation.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {annotatedComments.map((comment) => (
+              <div key={comment.id} className="rounded-lg border p-3 flex flex-col gap-2">
+                <RecursiveComment
+                  comment={comment}
+                  depth={0}
+                  currentUserId={currentUserId}
+                  canManage={canManage}
+                  projectId={projectId}
+                  taskId={taskId}
+                  replyingTo={replyingTo}
+                  onReply={handleReply}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  onPostReply={handlePostReply}
+                  isReplyPending={createReply.isPending}
+                  mentionMembers={mentionMembers}
+                  onCancelReply={() => setReplyingTo(null)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-              {/* Replies */}
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-5 border-l-2 border-border pl-4 flex flex-col gap-2">
-                  {comment.replies.map((reply) => (
-                    <CommentItem
-                      key={reply.id}
-                      comment={reply}
-                      currentUserId={currentUserId}
-                      canManage={canManage}
-                      projectId={projectId}
-                      taskId={taskId}
-                      onReply={handleReply}
-                      onDelete={handleDelete}
-                      onEdit={handleEdit}
-                      isReply
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Inline reply composer */}
-              {replyingTo === comment.id && (
-                <div className="ml-5 border-l-2 border-border pl-4">
-                  <CommentComposer
-                    onSubmit={(content) => handlePostReply(comment.id, content)}
-                    isPending={createReply.isPending}
-                    projectId={projectId}
-                    taskId={taskId}
-                    placeholder="Write a reply..."
-                    onCancel={() => setReplyingTo(null)}
-                    members={mentionMembers}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* New top-level comment composer */}
-      <CommentComposer
-        onSubmit={handlePostComment}
-        isPending={createComment.isPending}
-        projectId={projectId}
-        taskId={taskId}
-        placeholder="Add a comment..."
-        members={mentionMembers}
-      />
+      {/* Fixed comment composer at bottom */}
+      <div className="sticky bottom-0 bg-background pt-3 border-t mt-3">
+        <CommentComposer
+          onSubmit={handlePostComment}
+          isPending={createComment.isPending}
+          projectId={projectId}
+          taskId={taskId}
+          placeholder="Add a comment..."
+          members={mentionMembers}
+        />
+      </div>
     </div>
   );
 }

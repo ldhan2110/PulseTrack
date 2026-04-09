@@ -17,6 +17,7 @@ export function useUploadBugAttachment(projectId: string, bugId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bug-attachments', projectId, bugId] });
       void queryClient.invalidateQueries({ queryKey: ['bug', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, bugId] });
       toast.success('File uploaded');
     },
     onError: (err: Error) => {
@@ -32,6 +33,7 @@ export function useDeleteBugAttachment(projectId: string, bugId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bug-attachments', projectId, bugId] });
       void queryClient.invalidateQueries({ queryKey: ['bug', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, bugId] });
       toast.success('File deleted');
     },
     onError: (err: Error) => {

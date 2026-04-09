@@ -116,7 +116,7 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
         {orphanedTasks.length > 0 && (
           <KanbanColumn
             key="__orphan__"
-            status={{ id: '__orphan__', name: 'No Status', key: '__ORPHAN__', color: '#ef4444', position: 999, isDefault: false, isClosed: false, projectId }}
+            status={{ id: '__orphan__', name: 'No Status', key: '__ORPHAN__', color: '#ef4444', position: 999, isDefault: false, isClosed: false, projectId, autoDateField: null, autoDateAction: null }}
             tasks={orphanedTasks}
             projectId={projectId}
             projectPrefix={projectPrefix}

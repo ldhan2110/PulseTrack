@@ -25,6 +25,8 @@ export function useAddWatchers(projectId: string, entityType: EntityType, entity
       void qc.invalidateQueries({ queryKey: ['watchers', projectId, entityType, entityId] });
       if (isTask) {
         void qc.invalidateQueries({ queryKey: ['task-history', projectId, entityId] });
+      } else {
+        void qc.invalidateQueries({ queryKey: ['bug-history', projectId, entityId] });
       }
       toast.success('Watcher added');
     },
@@ -45,6 +47,8 @@ export function useRemoveWatcher(projectId: string, entityType: EntityType, enti
       void qc.invalidateQueries({ queryKey: ['watchers', projectId, entityType, entityId] });
       if (isTask) {
         void qc.invalidateQueries({ queryKey: ['task-history', projectId, entityId] });
+      } else {
+        void qc.invalidateQueries({ queryKey: ['bug-history', projectId, entityId] });
       }
       toast.success('Watcher removed');
     },

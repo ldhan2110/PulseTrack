@@ -19,6 +19,14 @@ export function useTestExecution(projectId: string, executionId: string) {
   });
 }
 
+export function useTestExecutionByKey(projectId: string, executionKey: string) {
+  return useQuery({
+    queryKey: ['test-execution-by-key', projectId, executionKey],
+    queryFn: () => api.getTestExecutionByKey(projectId, executionKey),
+    enabled: !!projectId && !!executionKey,
+  });
+}
+
 export function useCreateTestExecution(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({

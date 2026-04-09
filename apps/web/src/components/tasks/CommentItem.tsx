@@ -1,6 +1,5 @@
 // apps/web/src/components/tasks/CommentItem.tsx
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, Reply, Pencil } from 'lucide-react';
@@ -34,11 +33,13 @@ interface CommentItemProps {
   currentUserId: string;
   canManage: boolean;
   projectId: string;
-  taskId: string;
+  entityType?: 'task' | 'bug';
+  entityId?: string;
+  /** @deprecated Use entityId instead */
+  taskId?: string;
   onReply: (commentId: string) => void;
   onDelete: (commentId: string) => void;
   onEdit: (commentId: string, content: string) => void;
-  isReply?: boolean;
 }
 
 export function CommentItem({
@@ -46,12 +47,14 @@ export function CommentItem({
   currentUserId,
   canManage,
   projectId,
+  entityType = 'task',
+  entityId,
   taskId,
   onReply,
   onDelete,
   onEdit,
-  isReply = false,
 }: CommentItemProps) {
+  const resolvedEntityId = entityId ?? taskId ?? '';
   const canDelete = comment.authorId === currentUserId || canManage;
   const canEditComment = comment.authorId === currentUserId || canManage;
   const [isEditing, setIsEditing] = useState(false);
@@ -65,7 +68,7 @@ export function CommentItem({
   })();
 
   return (
-    <div className={cn('flex gap-2 group/comment', isReply && 'rounded-md bg-muted/30 p-2')}>
+    <div className="flex gap-2 group/comment">
       <Avatar className="size-6 shrink-0 mt-0.5">
         {comment.author.imageUrl && <AvatarImage src={comment.author.imageUrl} alt={comment.author.name ?? comment.author.username} />}
         <AvatarFallback className="text-[10px]">
@@ -91,7 +94,8 @@ export function CommentItem({
               editable={true}
               alwaysEditing={true}
               projectId={projectId}
-              taskId={taskId}
+              entityType={entityType}
+              entityId={resolvedEntityId}
               placeholder="Edit comment..."
             />
             <Button
@@ -110,17 +114,15 @@ export function CommentItem({
           />
         )}
         <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">
-          {!isReply && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs gap-1"
-              onClick={() => onReply(comment.id)}
-            >
-              <Reply className="size-3" />
-              Reply
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs gap-1"
+            onClick={() => onReply(comment.id)}
+          >
+            <Reply className="size-3" />
+            Reply
+          </Button>
           {canEditComment && !isEditing && (
             <Button
               variant="ghost"

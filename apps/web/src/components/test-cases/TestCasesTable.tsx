@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -136,6 +137,8 @@ export function TestCasesTable({
   globalFilter,
   onGlobalFilterChange,
 }: TestCasesTableProps) {
+  const navigate = useNavigate();
+  const { projectPrefix } = useParams<{ projectPrefix: string }>();
   const columns = useMemo<ColumnDef<TestCase>[]>(
     () => [
       {
@@ -258,7 +261,7 @@ export function TestCasesTable({
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <Table>
+      <Table containerClassName="max-h-[calc(100vh-220px)]">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">
@@ -288,7 +291,14 @@ export function TestCasesTable({
               <TableRow
                 key={row.id}
                 className="h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100"
-                onClick={() => onEditCase(row.original)}
+                onClick={() => {
+                  const key = row.original.testCaseKey;
+                  if (key && projectPrefix) {
+                    navigate(`/projects/${projectPrefix}/test-cases/${key}`);
+                  } else {
+                    onEditCase(row.original);
+                  }
+                }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className="py-0">

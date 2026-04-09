@@ -127,7 +127,30 @@ export class BugsService {
     });
   }
 
-  async update(bugId: string, dto: UpdateBugDto) {
+  async getHistory(bugId: string) {
+    return this.prisma.bugHistory.findMany({
+      where: { bugId },
+      include: {
+        actor: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async update(bugId: string, dto: UpdateBugDto, actorId?: string) {
+    // Only fetch old values when we actually need history tracking
+    const needsHistory = actorId !== undefined;
+    const oldBug = needsHistory
+      ? await this.prisma.bug.findUniqueOrThrow({
+          where: { id: bugId },
+          select: {
+            title: true, description: true, severity: true, environment: true,
+            expectedResult: true, actualResult: true, assigneeId: true,
+            workflowStatusId: true, workflowStatus: { select: { name: true } },
+          },
+        })
+      : null;
+
     return this.prisma.$transaction(async (tx) => {
       const data: Record<string, unknown> = {};
       if (dto.title !== undefined) data.title = dto.title;
@@ -146,6 +169,40 @@ export class BugsService {
         include: BUG_RELATIONS,
       });
 
+      // Record history entries for changed fields
+      if (actorId && oldBug) {
+        const historyEntries: { bugId: string; actorId: string; field: string; oldValue?: string | null; newValue?: string | null }[] = [];
+
+        if (dto.title !== undefined && dto.title !== oldBug.title) {
+          historyEntries.push({ bugId, actorId, field: 'title', oldValue: oldBug.title, newValue: dto.title });
+        }
+        if (dto.description !== undefined && dto.description !== oldBug.description) {
+          historyEntries.push({ bugId, actorId, field: 'description', oldValue: oldBug.description ?? null, newValue: dto.description ?? null });
+        }
+        if (dto.severity !== undefined && dto.severity !== oldBug.severity) {
+          historyEntries.push({ bugId, actorId, field: 'severity', oldValue: oldBug.severity, newValue: dto.severity });
+        }
+        if (dto.environment !== undefined && dto.environment !== oldBug.environment) {
+          historyEntries.push({ bugId, actorId, field: 'environment', oldValue: oldBug.environment ?? null, newValue: dto.environment ?? null });
+        }
+        if (dto.expectedResult !== undefined && dto.expectedResult !== oldBug.expectedResult) {
+          historyEntries.push({ bugId, actorId, field: 'expectedResult', oldValue: oldBug.expectedResult ?? null, newValue: dto.expectedResult ?? null });
+        }
+        if (dto.actualResult !== undefined && dto.actualResult !== oldBug.actualResult) {
+          historyEntries.push({ bugId, actorId, field: 'actualResult', oldValue: oldBug.actualResult ?? null, newValue: dto.actualResult ?? null });
+        }
+        if (dto.assigneeId !== undefined && dto.assigneeId !== oldBug.assigneeId) {
+          historyEntries.push({ bugId, actorId, field: 'assigneeId', oldValue: oldBug.assigneeId ?? null, newValue: dto.assigneeId ?? null });
+        }
+        if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== oldBug.workflowStatusId) {
+          historyEntries.push({ bugId, actorId, field: 'workflowStatusId', oldValue: oldBug.workflowStatus?.name ?? oldBug.workflowStatusId ?? null, newValue: (bug as any).workflowStatus?.name ?? dto.workflowStatusId ?? null });
+        }
+
+        if (historyEntries.length > 0) {
+          await tx.bugHistory.createMany({ data: historyEntries });
+        }
+      }
+
       if (dto.reproSteps !== undefined) {
         await tx.bugReproStep.deleteMany({ where: { bugId } });
         if (dto.reproSteps.length > 0) {
@@ -157,12 +214,14 @@ export class BugsService {
             })),
           });
         }
+        // Only re-fetch when reproSteps changed (need fresh relation data)
+        return tx.bug.findUniqueOrThrow({
+          where: { id: bugId },
+          include: BUG_RELATIONS,
+        });
       }
 
-      return tx.bug.findUniqueOrThrow({
-        where: { id: bugId },
-        include: BUG_RELATIONS,
-      });
+      return bug;
     });
   }
 
@@ -174,6 +233,7 @@ export class BugsService {
     projectId: string;
     entityId: string;
     entityTitle: string;
+    entityKey?: string | null;
     type: NotificationType;
     actorId: string;
     summary: string;
@@ -182,6 +242,17 @@ export class BugsService {
     const watcherIds = await this.watchersService.getWatcherUserIds('BUG' as EntityType, opts.entityId);
     const recipientIds = watcherIds.filter((id) => id !== opts.actorId);
     if (recipientIds.length === 0) return;
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: opts.projectId },
+      select: { prefix: true, emailNotificationsEnabled: true },
+    });
+
+    const enrichedMetadata = {
+      ...opts.metadata,
+      ...(project?.prefix && { projectPrefix: project.prefix }),
+      ...(opts.entityKey && { entityKey: opts.entityKey }),
+    };
 
     const data = recipientIds.map((recipientId) => ({
       recipientId,
@@ -192,14 +263,9 @@ export class BugsService {
       entityTitle: opts.entityTitle,
       actorId: opts.actorId,
       summary: opts.summary,
-      metadata: opts.metadata ?? undefined,
-    })) as Prisma.NotificationCreateManyInput[]; 
+      metadata: enrichedMetadata ?? undefined,
+    })) as Prisma.NotificationCreateManyInput[];
     await this.notifications.createMany(data);
-
-    const project = await this.prisma.project.findUnique({
-      where: { id: opts.projectId },
-      select: { emailNotificationsEnabled: true },
-    });
     if (project?.emailNotificationsEnabled) {
       const users = await this.prisma.user.findMany({
         where: { id: { in: recipientIds } },

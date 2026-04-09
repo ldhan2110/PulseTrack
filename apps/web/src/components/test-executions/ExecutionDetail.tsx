@@ -54,6 +54,7 @@ interface ExecutionDetailProps {
   onStartRunner: (caseIndex: number) => void;
   onBack: () => void;
   members: Member[];
+  deleteButton?: React.ReactNode;
 }
 
 export function ExecutionDetail({
@@ -62,6 +63,7 @@ export function ExecutionDetail({
   onStartRunner,
   onBack,
   members,
+  deleteButton,
 }: ExecutionDetailProps) {
   const [bugDialogCase, setBugDialogCase] = useState<TestExecutionCase | null>(null);
   const updateResult = useUpdateExecutionCaseResult(projectId);
@@ -108,6 +110,7 @@ export function ExecutionDetail({
               Resume Testing
             </Button>
           )}
+          {deleteButton}
         </div>
       </div>
 

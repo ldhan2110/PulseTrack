@@ -13,6 +13,8 @@ import { TestExecutionsPage } from './pages/TestExecutionsPage';
 import { MembersPage } from './pages/MembersPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { BugDetailPage } from './pages/BugDetailPage';
+import { TestCaseDetailPage } from './pages/TestCaseDetailPage';
+import { TestExecutionDetailPage } from './pages/TestExecutionDetailPage';
 import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { MyTasksPage } from './pages/MyTasksPage';
 import { NotificationsPage } from './pages/NotificationsPage';
@@ -43,6 +45,8 @@ function App() {
         <Route path="/projects/:projectPrefix/settings" element={<ProjectSettingsPage />} />
         <Route path="/projects/:projectPrefix/tasks/:taskKey" element={<TaskDetailPage />} />
         <Route path="/projects/:projectPrefix/bugs/:bugKey" element={<BugDetailPage />} />
+        <Route path="/projects/:projectPrefix/test-cases/:testCaseKey" element={<TestCaseDetailPage />} />
+        <Route path="/projects/:projectPrefix/test-executions/:executionKey" element={<TestExecutionDetailPage />} />
       </Route>
     </Routes>
   );

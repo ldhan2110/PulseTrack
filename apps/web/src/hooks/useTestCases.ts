@@ -19,6 +19,14 @@ export function useTestCase(projectId: string, testCaseId: string) {
   });
 }
 
+export function useTestCaseByKey(projectId: string, testCaseKey: string) {
+  return useQuery({
+    queryKey: ['test-case-by-key', projectId, testCaseKey],
+    queryFn: () => api.getTestCaseByKey(projectId, testCaseKey),
+    enabled: !!projectId && !!testCaseKey,
+  });
+}
+
 export function useCreateTestCase(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -41,6 +49,7 @@ export function useUpdateTestCase(projectId: string) {
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['test-case', projectId, variables.testCaseId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-case-by-key', projectId] });
       toast.success('Test case updated');
     },
     onError: (err: Error) => {
@@ -55,6 +64,7 @@ export function useDeleteTestCase(projectId: string) {
     mutationFn: (testCaseId: string) => api.deleteTestCase(projectId, testCaseId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-case-by-key', projectId] });
       toast.success('Test case deleted');
     },
     onError: (err: Error) => {

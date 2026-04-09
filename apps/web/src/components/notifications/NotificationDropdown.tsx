@@ -2,6 +2,7 @@ import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead 
 import { NotificationItem } from './NotificationItem';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { getNotificationUrl } from '@/lib/notifications';
 import type { Notification } from '@/lib/types';
 
 interface NotificationDropdownProps {
@@ -18,11 +19,13 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
 
   const handleClick = (notification: Notification) => {
     if (!notification.isRead) markRead.mutate(notification.id);
+    const url = getNotificationUrl(notification);
+    if (url) navigate(url);
     onClose();
   };
 
   return (
-    <div className="w-80 max-h-96 flex flex-col">
+    <div className="w-[min(320px,calc(100vw-2rem))] max-h-96 flex flex-col">
       <div className="flex items-center justify-between px-3 py-2 border-b">
         <span className="text-sm font-semibold">Notifications</span>
         <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => markAllRead.mutate()}>

@@ -397,6 +397,7 @@ export class TasksService {
         projectId: current.projectId,
         entityId: taskId,
         entityTitle: taskTitle,
+        entityKey: updatedTask.taskKey,
         type: notifType,
         actorId,
         summary: summaryMap[entry.field],
@@ -457,6 +458,7 @@ export class TasksService {
     projectId: string;
     entityId: string;
     entityTitle: string;
+    entityKey?: string | null;
     type: NotificationType;
     actorId: string;
     summary: string;
@@ -465,6 +467,17 @@ export class TasksService {
     const watcherIds = await this.watchersService.getWatcherUserIds('TASK' as EntityType, opts.entityId);
     const recipientIds = watcherIds.filter((id) => id !== opts.actorId);
     if (recipientIds.length === 0) return;
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: opts.projectId },
+      select: { prefix: true, emailNotificationsEnabled: true },
+    });
+
+    const enrichedMetadata = {
+      ...opts.metadata,
+      ...(project?.prefix && { projectPrefix: project.prefix }),
+      ...(opts.entityKey && { entityKey: opts.entityKey }),
+    };
 
     const data = recipientIds.map((recipientId) => ({
       recipientId,
@@ -475,14 +488,9 @@ export class TasksService {
       entityTitle: opts.entityTitle,
       actorId: opts.actorId,
       summary: opts.summary,
-      metadata: opts.metadata as Prisma.InputJsonValue | undefined,
+      metadata: enrichedMetadata as Prisma.InputJsonValue | undefined,
     }));
     await this.notifications.createMany(data);
-
-    const project = await this.prisma.project.findUnique({
-      where: { id: opts.projectId },
-      select: { emailNotificationsEnabled: true },
-    });
     if (project?.emailNotificationsEnabled) {
       const users = await this.prisma.user.findMany({
         where: { id: { in: recipientIds } },

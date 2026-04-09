@@ -19,6 +19,9 @@ describe('WatchersService', () => {
       taskHistory: {
         create: vi.fn(),
       },
+      bugHistory: {
+        create: vi.fn(),
+      },
     };
     service = new WatchersService(prisma);
   });
@@ -75,10 +78,25 @@ describe('WatchersService', () => {
     });
   });
 
-  it('addWatchers skips history for BUG entity type', async () => {
+  it('addWatchers records bug history for BUG entity type', async () => {
     prisma.ticketWatcher.createMany.mockResolvedValue({ count: 1 });
+    prisma.user.findMany.mockResolvedValue([
+      { id: 'u1', name: 'Alice', username: 'alice' },
+    ]);
+    prisma.bugHistory.create.mockResolvedValue({});
+
     await service.addWatchers('BUG' as any, 'b1', ['u1'], 'actor1');
+
     expect(prisma.taskHistory.create).not.toHaveBeenCalled();
+    expect(prisma.bugHistory.create).toHaveBeenCalledWith({
+      data: {
+        bugId: 'b1',
+        actorId: 'actor1',
+        field: 'watcher_added',
+        oldValue: null,
+        newValue: 'Alice',
+      },
+    });
   });
 
   it('removeWatcher records task history when actorId is provided', async () => {
@@ -99,10 +117,23 @@ describe('WatchersService', () => {
     });
   });
 
-  it('removeWatcher skips history for BUG entity type', async () => {
+  it('removeWatcher records bug history for BUG entity type', async () => {
+    prisma.user.findUnique.mockResolvedValue({ name: 'Bob', username: 'bob' });
     prisma.ticketWatcher.deleteMany.mockResolvedValue({ count: 1 });
+    prisma.bugHistory.create.mockResolvedValue({});
+
     await service.removeWatcher('BUG' as any, 'b1', 'u1', 'actor1');
+
     expect(prisma.taskHistory.create).not.toHaveBeenCalled();
+    expect(prisma.bugHistory.create).toHaveBeenCalledWith({
+      data: {
+        bugId: 'b1',
+        actorId: 'actor1',
+        field: 'watcher_removed',
+        oldValue: 'Bob',
+        newValue: null,
+      },
+    });
   });
 
   it('getWatcherUserIds returns just user IDs', async () => {

@@ -22,6 +22,9 @@ interface RichTextEditorProps {
   onSave: (html: string) => void;
   editable: boolean;
   projectId?: string;
+  entityType?: 'task' | 'bug';
+  entityId?: string;
+  /** @deprecated Use entityId instead */
   taskId?: string;
   /** Always show editor (no read/edit toggle). Used by CommentComposer. */
   alwaysEditing?: boolean;
@@ -119,18 +122,21 @@ export function RichTextEditor({
   onSave,
   editable,
   projectId,
+  entityType = 'task',
+  entityId,
   taskId,
   alwaysEditing = false,
   placeholder: placeholderText = 'Add a description...',
 }: RichTextEditorProps) {
+  const resolvedEntityId = entityId ?? taskId ?? '';
   const [isEditing, setIsEditing] = useState(alwaysEditing);
   const [isSaving, setIsSaving] = useState(false);
   const initialContentRef = useRef(initialContent);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
 
-  const supportsImages = Boolean(projectId && taskId);
-  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId: projectId ?? '', taskId: taskId ?? '' });
+  const supportsImages = Boolean(projectId && resolvedEntityId);
+  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId: projectId ?? '', entityType, entityId: resolvedEntityId });
 
   // Keep initialContentRef in sync for read-mode rendering
   useEffect(() => {

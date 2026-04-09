@@ -324,8 +324,8 @@ export function TasksTable({
           }
           return row.estimatedMinutes ?? 0;
         },
-        cell: ({ getValue }: { getValue: () => number }) => {
-          const val = getValue();
+        cell: ({ getValue }: { getValue: () => unknown }) => {
+          const val = getValue() as number;
           return <span className="text-xs">{val > 0 ? formatMinutes(val) : '—'}</span>;
         },
         size: 70,
@@ -341,8 +341,8 @@ export function TasksTable({
           }
           return row.timeLogs?.reduce((s, tl) => s + tl.minutes, 0) ?? 0;
         },
-        cell: ({ getValue, row }: { getValue: () => number; row: { original: Task } }) => {
-          const logged = getValue();
+        cell: ({ getValue, row }: { getValue: () => unknown; row: { original: Task } }) => {
+          const logged = getValue() as number;
           const task = row.original;
           const estimated = (task.children?.length ?? 0) > 0
             ? task.children!.reduce((sum, c) => sum + (c.estimatedMinutes ?? 0), 0)
@@ -410,7 +410,7 @@ export function TasksTable({
       />
 
       <div className="rounded-lg border overflow-hidden">
-        <Table>
+        <Table containerClassName="max-h-[calc(100vh-220px)]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">

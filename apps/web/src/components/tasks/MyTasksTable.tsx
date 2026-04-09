@@ -388,7 +388,7 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
       </AlertDialog>
 
       <div className="border rounded-lg overflow-hidden">
-        <Table>
+        <Table containerClassName="max-h-[calc(100vh-220px)]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">

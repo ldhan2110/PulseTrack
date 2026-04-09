@@ -20,7 +20,7 @@ const mockAttachment: Attachment = {
   uploaderId: 'user-1',
   isInline: false,
   createdAt: '2026-04-07T00:00:00Z',
-  uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com' },
+  uploader: { id: 'user-1', username: 'alice', email: 'alice@test.com', name: null, imageUrl: null },
 };
 
 describe('ImagePreviewModal', () => {

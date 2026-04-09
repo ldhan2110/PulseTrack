@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+
 import { useCreateTestCase, useUpdateTestCase } from '@/hooks/useTestCases';
 import { StepsBuilder, type TestStep } from '@/components/test-cases/StepsBuilder';
 import type { TestCase, TestModule, Priority } from '@/lib/types';
@@ -144,7 +144,7 @@ export function TestCaseForm({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[560px] max-w-full max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-2xl max-h-[85vh] max-w-0 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Test Case' : 'New Test Case'}</DialogTitle>
         </DialogHeader>

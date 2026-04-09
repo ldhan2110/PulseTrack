@@ -245,7 +245,7 @@ export function ImportTestCasesDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col">
+      <DialogContent className="w-fit max-w-0 max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Import Test Cases from Excel</DialogTitle>
         </DialogHeader>
@@ -356,7 +356,7 @@ export function ImportTestCasesDialog({
                       </TableCell>
                       <TableCell className="py-1.5 text-sm">
                         {row.valid ? (
-                          <span className="truncate block max-w-[280px]">{row.item.title}</span>
+                          <span className="truncate block max-w-70">{row.item.title}</span>
                         ) : (
                           <span className="text-destructive italic">{row.error}</span>
                         )}

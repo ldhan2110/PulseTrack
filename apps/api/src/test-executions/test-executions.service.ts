@@ -72,22 +72,62 @@ export class TestExecutionsService {
 
     const testCaseIds = Array.from(testCaseIdSet);
 
-    return this.prisma.testExecution.create({
-      data: {
-        projectId,
-        name: dto.name,
-        assigneeId: dto.assigneeId,
-        sprintId: dto.sprintId,
-        cases: {
-          create: testCaseIds.map((testCaseId) => ({ testCaseId })),
+    return this.prisma.$transaction(async (tx) => {
+      // Atomically increment testExecutionSeq to generate executionKey
+      const project = await tx.project.update({
+        where: { id: projectId },
+        data: { testExecutionSeq: { increment: 1 } },
+        select: { prefix: true, testExecutionSeq: true },
+      });
+      const executionKey = project.prefix
+        ? `${project.prefix}-TX-${project.testExecutionSeq}`
+        : null;
+
+      return tx.testExecution.create({
+        data: {
+          projectId,
+          executionKey,
+          name: dto.name,
+          assigneeId: dto.assigneeId,
+          sprintId: dto.sprintId,
+          cases: {
+            create: testCaseIds.map((testCaseId) => ({ testCaseId })),
+          },
         },
-      },
+        include: {
+          assignee: { select: USER_SELECT },
+          sprint: { select: { id: true, name: true } },
+          cases: {
+            include: {
+              testCase: { select: { id: true, testCaseKey: true, title: true } },
+            },
+          },
+        },
+      });
+    });
+  }
+
+  async findByKey(executionKey: string) {
+    return this.prisma.testExecution.findUnique({
+      where: { executionKey },
       include: {
         assignee: { select: USER_SELECT },
         sprint: { select: { id: true, name: true } },
         cases: {
           include: {
-            testCase: { select: { id: true, testCaseKey: true, title: true } },
+            testCase: {
+              include: {
+                steps: { orderBy: { position: 'asc' as const } },
+                links: true,
+              },
+            },
+            executedBy: { select: USER_SELECT },
+            attachments: {
+              include: {
+                uploader: { select: USER_SELECT },
+              },
+              orderBy: { createdAt: 'desc' },
+            },
           },
         },
       },

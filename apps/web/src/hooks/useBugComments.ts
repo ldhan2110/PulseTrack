@@ -17,6 +17,7 @@ export function useCreateBugComment(projectId: string, bugId: string) {
       api.createBugComment(projectId, bugId, { content }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bug-comments', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, bugId] });
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -31,6 +32,7 @@ export function useCreateBugReply(projectId: string, bugId: string) {
       api.createBugReply(projectId, bugId, commentId, { content }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bug-comments', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, bugId] });
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -45,6 +47,7 @@ export function useDeleteBugComment(projectId: string, bugId: string) {
       api.deleteBugComment(projectId, bugId, commentId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bug-comments', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, bugId] });
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -59,6 +62,7 @@ export function useUpdateBugComment(projectId: string, bugId: string) {
       api.updateBugComment(projectId, bugId, commentId, { content }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bug-comments', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, bugId] });
       toast.success('Comment updated');
     },
     onError: (err: Error) => {

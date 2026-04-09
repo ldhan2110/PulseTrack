@@ -23,7 +23,10 @@ interface CommentComposerProps {
   onSubmit: (content: string) => void;
   isPending: boolean;
   projectId: string;
-  taskId: string;
+  entityType?: 'task' | 'bug';
+  entityId?: string;
+  /** @deprecated Use entityId instead */
+  taskId?: string;
   placeholder?: string;
   onCancel?: () => void;
   members?: Array<{ id: string; label: string, imageUrl?: string | null }>;
@@ -66,17 +69,20 @@ export function CommentComposer({
   onSubmit,
   isPending,
   projectId,
+  entityType = 'task',
+  entityId,
   taskId,
   placeholder = 'Add a comment...',
   onCancel,
   members,
 }: CommentComposerProps) {
+  const resolvedEntityId = entityId ?? taskId ?? '';
   const editorRef = useRef<Editor | null>(null);
   const handleSubmitRef = useRef<() => void>(() => {});
   const [isContentEmpty, setIsContentEmpty] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId, taskId });
+  const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId, entityType, entityId: resolvedEntityId });
 
   const editor = useEditor({
     extensions: [
