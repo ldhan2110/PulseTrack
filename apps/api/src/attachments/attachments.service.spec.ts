@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AttachmentsService } from './attachments.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { SYSTEM_ROLE_PERMISSIONS, DEFAULT_MEMBER_PERMISSIONS } from '../auth/permissions';
 
 vi.mock('fs', () => ({
   unlinkSync: vi.fn(),
@@ -105,7 +106,7 @@ describe('AttachmentsService', () => {
       mockPrisma.attachment.delete.mockResolvedValue(mockAttachment);
       mockPrisma.taskHistory.create.mockResolvedValue({});
 
-      await expect(service.delete('attachment-1', 'user-1', 'developer')).resolves.toBeDefined();
+      await expect(service.delete('attachment-1', 'user-1', DEFAULT_MEMBER_PERMISSIONS)).resolves.toBeDefined();
       expect(mockPrisma.attachment.delete).toHaveBeenCalledWith({ where: { id: 'attachment-1' } });
     });
 
@@ -114,19 +115,19 @@ describe('AttachmentsService', () => {
       mockPrisma.attachment.delete.mockResolvedValue(mockAttachment);
       mockPrisma.taskHistory.create.mockResolvedValue({});
 
-      await expect(service.delete('attachment-1', 'other-user', 'pm')).resolves.toBeDefined();
+      await expect(service.delete('attachment-1', 'other-user', SYSTEM_ROLE_PERMISSIONS)).resolves.toBeDefined();
     });
 
     it('should reject delete from non-uploader non-PM', async () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(mockAttachment);
 
-      await expect(service.delete('attachment-1', 'other-user', 'developer')).rejects.toThrow(ForbiddenException);
+      await expect(service.delete('attachment-1', 'other-user', DEFAULT_MEMBER_PERMISSIONS)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException when attachment does not exist', async () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(null);
 
-      await expect(service.delete('nonexistent', 'user-1', 'pm')).rejects.toThrow(NotFoundException);
+      await expect(service.delete('nonexistent', 'user-1', SYSTEM_ROLE_PERMISSIONS)).rejects.toThrow(NotFoundException);
     });
   });
 });

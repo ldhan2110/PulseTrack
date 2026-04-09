@@ -29,7 +29,7 @@ export class ProjectRolesGuard implements CanActivate {
     const role = member.customRole;
     const permissions: RolePermissions = role.isSystem
       ? SYSTEM_ROLE_PERMISSIONS
-      : (role.permissions as RolePermissions);
+      : (role.permissions as unknown as RolePermissions);
 
     // Attach to request for downstream use
     request.user.permissions = permissions;

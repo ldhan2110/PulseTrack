@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CommentsService } from './comments.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { SYSTEM_ROLE_PERMISSIONS, DEFAULT_MEMBER_PERMISSIONS } from '../auth/permissions';
 
 const mockComment = {
   id: 'comment-1',
@@ -84,7 +85,7 @@ describe('CommentsService', () => {
       mockPrisma.comment.delete.mockResolvedValue(mockComment);
       mockPrisma.taskHistory.create.mockResolvedValue({});
 
-      await expect(service.delete('comment-1', 'user-1', 'developer')).resolves.toBeUndefined();
+      await expect(service.delete('comment-1', 'user-1', DEFAULT_MEMBER_PERMISSIONS)).resolves.toBeUndefined();
       expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
 
@@ -94,19 +95,19 @@ describe('CommentsService', () => {
       mockPrisma.comment.delete.mockResolvedValue(mockComment);
       mockPrisma.taskHistory.create.mockResolvedValue({});
 
-      await expect(service.delete('comment-1', 'other-user', 'pm')).resolves.toBeUndefined();
+      await expect(service.delete('comment-1', 'other-user', SYSTEM_ROLE_PERMISSIONS)).resolves.toBeUndefined();
     });
 
     it('should reject delete from non-author non-PM', async () => {
       mockPrisma.comment.findUnique.mockResolvedValue(mockComment);
 
-      await expect(service.delete('comment-1', 'other-user', 'developer')).rejects.toThrow(ForbiddenException);
+      await expect(service.delete('comment-1', 'other-user', DEFAULT_MEMBER_PERMISSIONS)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException when comment does not exist', async () => {
       mockPrisma.comment.findUnique.mockResolvedValue(null);
 
-      await expect(service.delete('nonexistent', 'user-1', 'pm')).rejects.toThrow(NotFoundException);
+      await expect(service.delete('nonexistent', 'user-1', SYSTEM_ROLE_PERMISSIONS)).rejects.toThrow(NotFoundException);
     });
   });
 });

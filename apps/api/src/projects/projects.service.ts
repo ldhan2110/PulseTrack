@@ -28,7 +28,7 @@ export class ProjectsService {
         data: {
           projectId: p.id,
           name: 'PM',
-          permissions: SYSTEM_ROLE_PERMISSIONS,
+          permissions: SYSTEM_ROLE_PERMISSIONS as any,
           isSystem: true,
           isDefault: false,
         },
@@ -38,7 +38,7 @@ export class ProjectsService {
         data: {
           projectId: p.id,
           name: 'Member',
-          permissions: DEFAULT_MEMBER_PERMISSIONS,
+          permissions: DEFAULT_MEMBER_PERMISSIONS as any,
           isSystem: false,
           isDefault: true,
         },
@@ -65,6 +65,7 @@ export class ProjectsService {
     const memberships = await this.prisma.projectMember.findMany({
       where: { userId },
       include: {
+        customRole: true,
         project: {
           include: {
             _count: {
@@ -101,7 +102,7 @@ export class ProjectsService {
           avatarUrl: m.project.avatarUrl,
           archived: m.project.archived,
           createdAt: m.project.createdAt,
-          userRole: m.role,
+          userRole: m.customRole.name,
           taskSummary: {
             total: m.project._count.tasks,
             active: activeCount,
