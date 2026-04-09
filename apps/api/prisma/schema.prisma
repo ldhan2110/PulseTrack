@@ -201,6 +201,7 @@ model User {
   assignedTestExecutions  TestExecution[]           @relation("TestExecutionAssignee")
   executedTestCases       TestExecutionCase[]       @relation("TestExecutionCaseExecutor")
   uploadedTestEvidence    TestExecutionAttachment[] @relation("TestExecutionAttachmentUploader")
+  wikiAnnotations         WikiAnnotation[]          @relation("WikiAnnotationAuthor")
 }
 
 model Project {
@@ -239,6 +240,8 @@ model Project {
   testSuites     TestSuite[]
   testExecutions TestExecution[]
   customRoles    CustomRole[]
+  wikiConfig       WikiConfig?
+  wikiAnnotations  WikiAnnotation[]
 }
 
 model ProjectMember {
@@ -577,6 +580,35 @@ model AiConfig {
   updatedAt      DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model WikiConfig {
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  wikiPath        String
+  autoUpdate      String   @default("manual")
+  sections        String[] @default(["architecture", "modules", "features", "business-logic", "api-reference", "data-models", "glossary"])
+  lastGeneratedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model WikiAnnotation {
+  id         String   @id @default(cuid())
+  projectId  String
+  pagePath   String
+  sectionRef String?
+  content    String
+  authorId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User    @relation("WikiAnnotationAuthor", fields: [authorId], references: [id])
+
+  @@index([projectId, pagePath])
 }
 
 // =====================
