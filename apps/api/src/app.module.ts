@@ -29,6 +29,7 @@ import { TestCasesModule } from './test-cases/test-cases.module';
 import { TestSuitesModule } from './test-suites/test-suites.module';
 import { TestExecutionsModule } from './test-executions/test-executions.module';
 import { RolesModule } from './roles/roles.module';
+import { WikiConfigModule } from './wiki-config/wiki-config.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { RolesModule } from './roles/roles.module';
     TestSuitesModule,
     TestExecutionsModule,
     RolesModule,
+    WikiConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],
