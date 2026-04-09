@@ -31,6 +31,7 @@ import { TestExecutionsModule } from './test-executions/test-executions.module';
 import { RolesModule } from './roles/roles.module';
 import { WikiConfigModule } from './wiki-config/wiki-config.module';
 import { WikiGenerationModule } from './wiki-generation/wiki-generation.module';
+import { WikiModule } from './wiki/wiki.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { WikiGenerationModule } from './wiki-generation/wiki-generation.module';
     RolesModule,
     WikiConfigModule,
     WikiGenerationModule,
+    WikiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
