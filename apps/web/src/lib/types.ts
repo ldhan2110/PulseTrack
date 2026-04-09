@@ -123,6 +123,7 @@ export interface Project {
   prefix: string | null;
   avatarUrl: string | null;
   archived: boolean;
+  emailNotificationsEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
   members?: Member[];
@@ -182,7 +183,7 @@ export interface TimeLog {
   comment: string | null;
   taskId: string;
   userId: string;
-  user?: Pick<User, 'id' | 'username' | 'email'>;
+  user?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
 }
 
 export interface Task {
@@ -415,7 +416,7 @@ export interface Comment {
   isEdited: boolean;
   createdAt: string;
   updatedAt: string;
-  author: Pick<User, 'id' | 'username' | 'email'>;
+  author: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
   replies?: Comment[];
 }
 
@@ -435,7 +436,7 @@ export interface Attachment {
   uploaderId: string;
   isInline: boolean;
   createdAt: string;
-  uploader: Pick<User, 'id' | 'username' | 'email'>;
+  uploader: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
 }
 
 // ─── Task History ────────────────────────────────────────────────────────────
@@ -448,7 +449,20 @@ export interface TaskHistoryEntry {
   oldValue: string | null;
   newValue: string | null;
   createdAt: string;
-  actor: Pick<User, 'id' | 'username' | 'email'>;
+  actor: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+}
+
+// ─── Bug History ─────────────────────────────────────────────────────────────
+
+export interface BugHistoryEntry {
+  id: string;
+  bugId: string;
+  actorId: string;
+  field: string;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+  actor: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
 }
 
 // ─── Repository Config ──────────────────────────────────────────────────────
@@ -518,6 +532,8 @@ export interface AiGenerationJobResult {
   tasks?: GeneratedTask[];
   error?: string;
   streamText?: string;
+  displayLines?: string[];
+  rawText?: string;
 }
 
 export type AiGenerationStep = 'pulling' | 'building-graph' | 'scanning' | 'generating' | 'parsing';
@@ -584,4 +600,171 @@ export interface TicketWatcher {
   userId: string;
   createdAt: string;
   user: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+}
+
+// ─── Test Case Management ────────────────────────────────────────────────────
+
+export type TestCaseStatus = 'DRAFT' | 'ACTIVE' | 'DEPRECATED';
+export type TestResultStatus = 'NOT_RUN' | 'IN_PROGRESS' | 'PASS' | 'FAIL' | 'BLOCKED' | 'SKIP';
+export type TestExecutionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface TestModule {
+  id: string;
+  name: string;
+  position: number;
+  projectId: string;
+  parentId: string | null;
+  _count?: { testCases: number };
+}
+
+export interface TestCaseStep {
+  id: string;
+  testCaseId: string;
+  position: number;
+  action: string;
+  expectedResult: string;
+}
+
+export interface TestCaseLink {
+  id: string;
+  testCaseId: string;
+  entityType: EntityType;
+  entityId: string;
+}
+
+export interface TestCase {
+  id: string;
+  testCaseKey: string | null;
+  title: string;
+  preconditions: string | null;
+  expectedResult: string | null;
+  priority: Priority | null;
+  status: TestCaseStatus;
+  tags: string[];
+  estimatedMinutes: number | null;
+  moduleId: string;
+  projectId: string;
+  creatorId: string;
+  createdAt: string;
+  updatedAt: string;
+  steps?: TestCaseStep[];
+  links?: TestCaseLink[];
+  module?: { id: string; name: string };
+  creator?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+  _count?: { steps: number };
+}
+
+export interface CreateTestCasePayload {
+  title: string;
+  preconditions?: string;
+  expectedResult?: string;
+  priority?: Priority;
+  tags?: string[];
+  estimatedMinutes?: number;
+  moduleId: string;
+  steps?: { position: number; action: string; expectedResult: string }[];
+  links?: { entityType: EntityType; entityId: string }[];
+}
+
+export interface UpdateTestCasePayload {
+  title?: string;
+  preconditions?: string;
+  expectedResult?: string;
+  priority?: Priority;
+  status?: TestCaseStatus;
+  tags?: string[];
+  estimatedMinutes?: number;
+  moduleId?: string;
+  steps?: { position: number; action: string; expectedResult: string }[];
+  links?: { entityType: EntityType; entityId: string }[];
+}
+
+export interface TestSuite {
+  id: string;
+  name: string;
+  description: string | null;
+  projectId: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { members: number };
+  members?: {
+    id: string;
+    position: number;
+    testCase: Pick<TestCase, 'id' | 'testCaseKey' | 'title' | 'priority' | 'status'> & {
+      _count?: { steps: number };
+    };
+  }[];
+}
+
+export interface CreateTestSuitePayload {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateTestSuitePayload {
+  name?: string;
+  description?: string;
+}
+
+export interface TestExecutionStats {
+  total: number;
+  PASS: number;
+  FAIL: number;
+  BLOCKED: number;
+  SKIP: number;
+  NOT_RUN: number;
+  IN_PROGRESS: number;
+  completed: number;
+  completionPercent: number;
+}
+
+export interface TestExecutionAttachment {
+  id: string;
+  executionCaseId: string;
+  filename: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  uploaderId: string;
+  createdAt: string;
+  uploader?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+}
+
+export interface TestExecutionCase {
+  id: string;
+  executionId: string;
+  testCaseId: string;
+  result: TestResultStatus;
+  notes: string | null;
+  executedById: string | null;
+  executedAt: string | null;
+  testCase: Pick<TestCase, 'id' | 'testCaseKey' | 'title' | 'priority' | 'expectedResult' | 'preconditions'> & {
+    steps: TestCaseStep[];
+    links: TestCaseLink[];
+  };
+  executedBy?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'> | null;
+  attachments?: TestExecutionAttachment[];
+}
+
+export interface TestExecution {
+  id: string;
+  name: string;
+  status: TestExecutionStatus;
+  assigneeId: string;
+  projectId: string;
+  sprintId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignee?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+  sprint?: { id: string; name: string } | null;
+  cases?: TestExecutionCase[];
+  stats?: TestExecutionStats;
+}
+
+export interface CreateTestExecutionPayload {
+  name: string;
+  assigneeId: string;
+  sprintId?: string;
+  suiteId?: string;
+  testCaseIds?: string[];
 }

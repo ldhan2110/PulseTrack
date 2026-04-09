@@ -24,6 +24,7 @@ import type {
   CreateCommentPayload,
   Attachment,
   TaskHistoryEntry,
+  BugHistoryEntry,
   UpdateSettingsPayload,
   WorkflowData,
   WorkflowStatus,
@@ -39,6 +40,17 @@ import type {
   WorkflowKind,
   NotificationPage,
   TicketWatcher,
+  TestModule,
+  TestCase,
+  CreateTestCasePayload,
+  UpdateTestCasePayload,
+  TestSuite,
+  CreateTestSuitePayload,
+  UpdateTestSuitePayload,
+  TestExecution,
+  CreateTestExecutionPayload,
+  TestExecutionCase,
+  TestExecutionAttachment,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -179,11 +191,11 @@ export const api = {
   // ─── Bug Attachments ──────────────────────────────────────────────────────
   getBugAttachments: (projectId: string, bugId: string) =>
     request<BugAttachment[]>(`/projects/${projectId}/bugs/${bugId}/attachments`),
-  uploadBugAttachment: async (projectId: string, bugId: string, file: File): Promise<BugAttachment> => {
+  uploadBugAttachment: async (projectId: string, bugId: string, file: File, inline = false): Promise<BugAttachment> => {
     const form = new FormData();
     form.append('file', file);
     const token = keycloak.token;
-    const url = `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments`;
+    const url = `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments${inline ? '?inline=true' : ''}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -197,6 +209,15 @@ export const api = {
   },
   getBugAttachmentDownloadUrl: (projectId: string, bugId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}/download`,
+  downloadBugAttachment: async (projectId: string, bugId: string, attachmentId: string): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(
+      `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}/download`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    return res.blob();
+  },
   deleteBugAttachment: (projectId: string, bugId: string, attachmentId: string) =>
     request<void>(`/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 
@@ -327,6 +348,10 @@ export const api = {
   getTaskHistory: (projectId: string, taskId: string) =>
     request<TaskHistoryEntry[]>(`/projects/${projectId}/tasks/${taskId}/history`),
 
+  // ─── Bug History ──────────────────────────────────────────────────────────
+  getBugHistory: (projectId: string, bugId: string) =>
+    request<BugHistoryEntry[]>(`/projects/${projectId}/bugs/${bugId}/history`),
+
   // ─── Notifications ──────────────────────────────────────────────────────────
   getNotifications: (params?: { page?: number; limit?: number; isRead?: boolean; type?: string }) => {
     const sp = new URLSearchParams();
@@ -379,4 +404,93 @@ export const api = {
     request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, {
       method: 'PATCH', body: JSON.stringify(data),
     }),
+
+  // ─── Test Modules ──────────────────────────────────────────────────────────
+  getTestModules: (projectId: string) =>
+    request<TestModule[]>(`/projects/${projectId}/test-modules`),
+  createTestModule: (projectId: string, data: { name: string; parentId?: string }) =>
+    request<TestModule>(`/projects/${projectId}/test-modules`, { method: 'POST', body: JSON.stringify(data) }),
+  updateTestModule: (moduleId: string, projectId: string, data: { name?: string; position?: number; parentId?: string }) =>
+    request<TestModule>(`/projects/${projectId}/test-modules/${moduleId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTestModule: (moduleId: string, projectId: string) =>
+    request<void>(`/projects/${projectId}/test-modules/${moduleId}`, { method: 'DELETE' }),
+
+  // ─── Test Cases ────────────────────────────────────────────────────────────
+  getTestCases: (projectId: string, params?: Record<string, string>) => {
+    const sp = new URLSearchParams();
+    if (params) Object.entries(params).forEach(([k, v]) => { if (v) sp.set(k, v); });
+    const qs = sp.toString();
+    return request<TestCase[]>(`/projects/${projectId}/test-cases${qs ? `?${qs}` : ''}`);
+  },
+  getTestCase: (projectId: string, testCaseId: string) =>
+    request<TestCase>(`/projects/${projectId}/test-cases/${testCaseId}`),
+  createTestCase: (projectId: string, data: CreateTestCasePayload) =>
+    request<TestCase>(`/projects/${projectId}/test-cases`, { method: 'POST', body: JSON.stringify(data) }),
+  updateTestCase: (projectId: string, testCaseId: string, data: UpdateTestCasePayload) =>
+    request<TestCase>(`/projects/${projectId}/test-cases/${testCaseId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTestCase: (projectId: string, testCaseId: string) =>
+    request<void>(`/projects/${projectId}/test-cases/${testCaseId}`, { method: 'DELETE' }),
+  bulkAddToSuite: (projectId: string, suiteId: string, testCaseIds: string[]) =>
+    request<{ added: number }>(`/projects/${projectId}/test-cases/bulk-suite`, {
+      method: 'POST', body: JSON.stringify({ suiteId, testCaseIds }),
+    }),
+
+  // ─── Test Suites ──────────────────────────────────────────────────────────
+  getTestSuites: (projectId: string) =>
+    request<TestSuite[]>(`/projects/${projectId}/test-suites`),
+  getTestSuite: (projectId: string, suiteId: string) =>
+    request<TestSuite>(`/projects/${projectId}/test-suites/${suiteId}`),
+  createTestSuite: (projectId: string, data: CreateTestSuitePayload) =>
+    request<TestSuite>(`/projects/${projectId}/test-suites`, { method: 'POST', body: JSON.stringify(data) }),
+  updateTestSuite: (projectId: string, suiteId: string, data: UpdateTestSuitePayload) =>
+    request<TestSuite>(`/projects/${projectId}/test-suites/${suiteId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTestSuite: (projectId: string, suiteId: string) =>
+    request<void>(`/projects/${projectId}/test-suites/${suiteId}`, { method: 'DELETE' }),
+  addSuiteMembers: (projectId: string, suiteId: string, testCaseIds: string[]) =>
+    request<{ added: number }>(`/projects/${projectId}/test-suites/${suiteId}/members`, {
+      method: 'POST', body: JSON.stringify({ testCaseIds }),
+    }),
+  removeSuiteMember: (projectId: string, suiteId: string, testCaseId: string) =>
+    request<void>(`/projects/${projectId}/test-suites/${suiteId}/members/${testCaseId}`, { method: 'DELETE' }),
+
+  // ─── Test Executions ──────────────────────────────────────────────────────
+  getTestExecutions: (projectId: string) =>
+    request<TestExecution[]>(`/projects/${projectId}/test-executions`),
+  getTestExecution: (projectId: string, executionId: string) =>
+    request<TestExecution>(`/projects/${projectId}/test-executions/${executionId}`),
+  createTestExecution: (projectId: string, data: CreateTestExecutionPayload) =>
+    request<TestExecution>(`/projects/${projectId}/test-executions`, { method: 'POST', body: JSON.stringify(data) }),
+  updateTestExecutionStatus: (projectId: string, executionId: string, status: string) =>
+    request<void>(`/projects/${projectId}/test-executions/${executionId}/status`, {
+      method: 'PATCH', body: JSON.stringify({ status }),
+    }),
+  addExecutionCases: (projectId: string, executionId: string, testCaseIds: string[]) =>
+    request<{ added: number }>(`/projects/${projectId}/test-executions/${executionId}/cases`, {
+      method: 'POST', body: JSON.stringify({ testCaseIds }),
+    }),
+  deleteTestExecution: (projectId: string, executionId: string) =>
+    request<void>(`/projects/${projectId}/test-executions/${executionId}`, { method: 'DELETE' }),
+  updateExecutionCaseResult: (projectId: string, executionCaseId: string, data: { result: string; notes?: string }) =>
+    request<TestExecutionCase>(`/projects/${projectId}/test-executions/cases/${executionCaseId}/result`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+  uploadExecutionEvidence: async (projectId: string, executionCaseId: string, file: File): Promise<TestExecutionAttachment> => {
+    const form = new FormData();
+    form.append('file', file);
+    const token = keycloak.token;
+    const res = await fetch(`${API_BASE}/projects/${projectId}/test-executions/cases/${executionCaseId}/attachments`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Upload failed: ${res.status}`);
+    }
+    return res.json() as Promise<TestExecutionAttachment>;
+  },
+  deleteExecutionEvidence: (projectId: string, attachmentId: string) =>
+    request<void>(`/projects/${projectId}/test-executions/attachments/${attachmentId}`, { method: 'DELETE' }),
+  getExecutionEvidenceDownloadUrl: (projectId: string, attachmentId: string) =>
+    `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
 };
