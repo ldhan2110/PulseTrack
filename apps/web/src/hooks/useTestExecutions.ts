@@ -63,6 +63,20 @@ export function useUploadExecutionEvidence(projectId: string) {
   });
 }
 
+export function useDeleteExecutionEvidence(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (attachmentId: string) => api.deleteExecutionEvidence(projectId, attachmentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['test-execution', projectId] });
+      toast.success('Evidence deleted');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
 export function useDeleteTestExecution(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
