@@ -1,0 +1,219 @@
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Logger } from '@nestjs/common';
+import { Job } from 'bullmq';
+import { spawn } from 'child_process';
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { NotificationsService } from '../notifications/notifications.service';
+import { WikiGenerationService } from './wiki-generation.service';
+import type { WikiGenerationJobData, WikiGenerationJobResult } from './dto/generate-wiki.dto';
+
+@Processor('wiki-generation', { concurrency: 2 })
+export class WikiGenerationProcessor extends WorkerHost {
+  private readonly logger = new Logger(WikiGenerationProcessor.name);
+
+  constructor(
+    private readonly wikiService: WikiGenerationService,
+    private readonly notifications: NotificationsService,
+  ) {
+    super();
+  }
+
+  private runCliStreaming(
+    command: string,
+    args: string[],
+    opts: { cwd: string; timeout: number; env?: Record<string, string | undefined> },
+    jobId: string | undefined,
+    onChunk?: (text: string) => void,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const child = spawn(command, args, {
+        cwd: opts.cwd,
+        env: opts.env as NodeJS.ProcessEnv,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      const stdoutChunks: string[] = [];
+      let killed = false;
+
+      const timer = setTimeout(() => {
+        killed = true;
+        child.kill('SIGTERM');
+        reject(new Error(`CLI timed out after ${opts.timeout}ms`));
+      }, opts.timeout);
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        stdoutChunks.push(text);
+        onChunk?.(text);
+        for (const line of text.split('\n').filter(Boolean)) {
+          this.logger.log(`[Wiki ${jobId}] ${line}`);
+        }
+      });
+
+      child.stderr.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        onChunk?.(text);
+        for (const line of text.split('\n').filter(Boolean)) {
+          this.logger.warn(`[Wiki ${jobId}] ${line}`);
+        }
+      });
+
+      child.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        if (killed) return;
+        if (code === 0 || code === null) {
+          resolve(stdoutChunks.join(''));
+        } else {
+          reject(new Error(`CLI exited with code ${code}`));
+        }
+      });
+    });
+  }
+
+  private emitStep(userId: string, job: Job<WikiGenerationJobData>, step: string): void {
+    this.notifications.notifyUser(userId, 'wiki-generation:progress', {
+      jobId: job.id,
+      step,
+    });
+    void job.updateProgress({ step });
+    this.logger.log(`[Wiki ${job.id}] Step: ${step}`);
+  }
+
+  async process(job: Job<WikiGenerationJobData>): Promise<WikiGenerationJobResult> {
+    const { projectId, userId, sections } = job.data;
+
+    let logBuffer = '';
+    let currentStep = 'queued';
+    const emitStream = (chunk: string) => {
+      logBuffer += chunk;
+      this.notifications.notifyUser(userId, 'wiki-generation:stream', {
+        jobId: job.id,
+        text: logBuffer,
+      });
+      void job.updateProgress({ step: currentStep, streamText: logBuffer });
+    };
+
+    try {
+      const config = await this.wikiService.getProjectConfig(projectId);
+
+      // Step 1: git pull
+      currentStep = 'pulling';
+      this.emitStep(userId, job, 'pulling');
+      emitStream('$ git pull\n');
+
+      const pullOutput = await this.runCliStreaming('git', ['pull'], {
+        cwd: config.workspacePath,
+        timeout: 60_000,
+      }, job.id, emitStream);
+
+      if (!pullOutput.trim()) emitStream('Already up to date.\n');
+      emitStream('\n');
+
+      // Step 2: Build code graph
+      currentStep = 'building-graph';
+      this.emitStep(userId, job, 'building-graph');
+      emitStream(`$ ${config.cli} (building code graph)\n`);
+
+      const graphPrompt = this.wikiService.buildGraphPrompt();
+      const graphArgs = this.wikiService.buildCliArgs(config.provider, config.model, graphPrompt);
+      const graphEnv = this.wikiService.buildCliEnv(config.provider, config.apiKey);
+
+      await this.runCliStreaming(config.cli, graphArgs, {
+        cwd: config.workspacePath,
+        timeout: 300_000,
+        env: { ...process.env, ...graphEnv },
+      }, job.id, emitStream);
+
+      emitStream('\n');
+
+      // Step 3: Generate each section
+      const result: WikiGenerationJobResult = { pagesGenerated: 0, sections: {}, errors: [] };
+
+      for (const section of sections) {
+        currentStep = `generating-${section}`;
+        this.emitStep(userId, job, `generating-${section}`);
+        emitStream(`\n$ ${config.cli} (generating ${section} pages)\n`);
+
+        try {
+          const sectionPrompt = this.wikiService.buildSectionPrompt(section, config.projectContext);
+          const sectionArgs = this.wikiService.buildCliArgs(config.provider, config.model, sectionPrompt);
+          const sectionEnv = this.wikiService.buildCliEnv(config.provider, config.apiKey);
+
+          const rawOutput = await this.runCliStreaming(config.cli, sectionArgs, {
+            cwd: config.workspacePath,
+            timeout: 600_000,
+            env: { ...process.env, ...sectionEnv },
+          }, job.id, emitStream);
+
+          const files = this.wikiService.parseGeneratedFiles(rawOutput);
+          const sectionDir = join(config.wikiPath, section);
+          await mkdir(sectionDir, { recursive: true });
+
+          for (const file of files) {
+            const filePath = join(config.wikiPath, file.path);
+            const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+            await mkdir(dir, { recursive: true });
+            await writeFile(filePath, file.content, 'utf-8');
+          }
+
+          result.sections[section] = files.length;
+          result.pagesGenerated += files.length;
+          emitStream(`\n${section}: ${files.length} page(s) generated.\n`);
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`${section}: ${msg}`);
+          emitStream(`\nError generating ${section}: ${msg}\n`);
+          this.logger.error(`[Wiki ${job.id}] Section ${section} failed: ${msg}`);
+        }
+      }
+
+      // Step 4: Write _meta.json
+      currentStep = 'writing-meta';
+      this.emitStep(userId, job, 'writing-meta');
+
+      const meta = {
+        generatedAt: new Date().toISOString(),
+        sections: sections,
+        stats: {
+          totalPages: result.pagesGenerated,
+          pagesPerSection: result.sections,
+        },
+        generationLog: {
+          provider: config.provider,
+          model: config.model,
+          errors: result.errors,
+        },
+      };
+      await mkdir(config.wikiPath, { recursive: true });
+      await writeFile(join(config.wikiPath, '_meta.json'), JSON.stringify(meta, null, 2), 'utf-8');
+
+      await this.wikiService.updateLastGenerated(projectId);
+
+      emitStream(`\nDone — generated ${result.pagesGenerated} page(s) across ${sections.length} section(s).\n`);
+
+      this.notifications.notifyUser(userId, 'wiki-generation:completed', {
+        jobId: job.id,
+        pagesGenerated: result.pagesGenerated,
+      });
+
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`[Wiki ${job.id}] Failed: ${message}`, error instanceof Error ? error.stack : undefined);
+      emitStream(`\nError: ${message}\n`);
+
+      this.notifications.notifyUser(userId, 'wiki-generation:failed', {
+        jobId: job.id,
+        error: message,
+      });
+
+      throw error;
+    }
+  }
+}
