@@ -55,6 +55,7 @@ import type {
   BulkImportTestCasesPayload,
   BulkImportResult,
 } from './types';
+import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
 
 const API_BASE = '/api';
@@ -134,9 +135,9 @@ export const api = {
   // ─── Roles ──────────────────────────────────────────────────────────────────
   getRoles: (projectId: string) =>
     request<CustomRole[]>(`/projects/${projectId}/roles`),
-  createRole: (projectId: string, data: { name: string; permissions: Record<string, Record<string, boolean>> }) =>
+  createRole: (projectId: string, data: { name: string; permissions: RolePermissions }) =>
     request<CustomRole>(`/projects/${projectId}/roles`, { method: 'POST', body: JSON.stringify(data) }),
-  updateRole: (projectId: string, roleId: string, data: Partial<{ name: string; permissions: Record<string, Record<string, boolean>>; isDefault: boolean }>) =>
+  updateRole: (projectId: string, roleId: string, data: Partial<{ name: string; permissions: RolePermissions; isDefault: boolean }>) =>
     request<CustomRole>(`/projects/${projectId}/roles/${roleId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteRole: (projectId: string, roleId: string) =>
     request<{ deleted: boolean }>(`/projects/${projectId}/roles/${roleId}`, { method: 'DELETE' }),

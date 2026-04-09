@@ -28,7 +28,7 @@ function ProjectCard({ project }: { project: Project }) {
   const { user } = useAuth();
 
   const member = project.members?.find((m) => m.userId === user?.id);
-  const role = member?.role;
+  const role = member?.customRole?.name;
 
   const taskCount = project._count?.tasks ?? 0;
 

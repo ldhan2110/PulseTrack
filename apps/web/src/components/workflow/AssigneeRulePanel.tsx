@@ -51,7 +51,7 @@ export function AssigneeRulePanel({
               />
               <div className="flex flex-col">
                 <span className="text-sm">{m.user.name ?? m.user.username}</span>
-                <span className="text-xs text-muted-foreground capitalize">{m.role}</span>
+                <span className="text-xs text-muted-foreground capitalize">{m.customRole?.name}</span>
               </div>
             </label>
           ))}

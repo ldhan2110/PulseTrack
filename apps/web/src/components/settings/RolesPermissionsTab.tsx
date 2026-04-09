@@ -40,7 +40,7 @@ export function RolesPermissionsTab({ projectId }: Props) {
     setIsDirty(false);
   }
 
-  function togglePermission(area: string, action: string) {
+  function togglePermission(area: keyof RolePermissions, action: string) {
     if (!editPermissions || selectedRole?.isSystem) return;
     setEditPermissions((prev) => {
       if (!prev) return prev;

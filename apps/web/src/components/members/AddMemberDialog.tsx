@@ -28,7 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { useSearchUsers, useAddMembers } from '@/hooks/useMembers';
 import { useRoles } from '@/hooks/useRoles';
-import type { CustomRole, UserSearchResult } from '@/lib/types';
+import type { UserSearchResult } from '@/lib/types';
 
 function FieldGroup({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-4">{children}</div>;
