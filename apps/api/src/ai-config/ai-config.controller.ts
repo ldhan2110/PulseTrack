@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { AiConfigService } from './ai-config.service';
 import { AiContextGeneratorService } from './ai-context-generator.service';
 import { UpsertAiConfigDto } from './dto/upsert-ai-config.dto';
@@ -32,7 +32,7 @@ export class AiConfigController {
 
   @Put()
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   upsert(
     @Param('projectId') projectId: string,
     @Body() dto: UpsertAiConfigDto,
@@ -42,7 +42,7 @@ export class AiConfigController {
 
   @Patch('context')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   updateContext(
     @Param('projectId') projectId: string,
     @Body() dto: UpdateProjectContextDto,
@@ -52,7 +52,7 @@ export class AiConfigController {
 
   @Post('context/generate')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   generateContext(@Param('projectId') projectId: string) {
     return this.contextGenerator.generate(projectId);
   }

@@ -68,6 +68,6 @@ export class AttachmentsController {
     @Param('attachmentId') attachmentId: string,
     @Req() req: any,
   ) {
-    return this.attachmentsService.delete(attachmentId, req.user.id, req.user.projectRole);
+    return this.attachmentsService.delete(attachmentId, req.user.id, req.user.permissions);
   }
 }

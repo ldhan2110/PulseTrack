@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -27,7 +27,7 @@ export class TasksController {
   }
 
   @Post()
-  @ProjectRoles('pm', 'ba')
+  @RequirePermission('tasks', 'create')
   create(
     @Param('projectId') projectId: string,
     @Req() req: any,
@@ -52,7 +52,7 @@ export class TasksController {
   }
 
   @Patch(':taskId')
-  @ProjectRoles('pm', 'ba', 'developer')
+  @RequirePermission('tasks', 'update')
   update(
     @Param('taskId') taskId: string,
     @Req() req: any,
@@ -62,7 +62,7 @@ export class TasksController {
   }
 
   @Delete(':taskId')
-  @ProjectRoles('pm')
+  @RequirePermission('tasks', 'delete')
   delete(@Param('taskId') taskId: string) {
     return this.tasksService.delete(taskId);
   }

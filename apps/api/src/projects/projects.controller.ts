@@ -19,7 +19,7 @@ import { extname, join } from 'path';
 import { mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -53,28 +53,28 @@ export class ProjectsController {
 
   @Patch(':projectId')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   update(@Param('projectId') projectId: string, @Body() dto: UpdateProjectDto) {
     return this.projectsService.update(projectId, dto);
   }
 
   @Post(':projectId/archive')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   archive(@Param('projectId') projectId: string) {
     return this.projectsService.archive(projectId);
   }
 
   @Post(':projectId/unarchive')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   unarchive(@Param('projectId') projectId: string) {
     return this.projectsService.unarchive(projectId);
   }
 
   @Patch(':projectId/settings')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   updateSettings(
     @Param('projectId') projectId: string,
     @Body() dto: UpdateSettingsDto,
@@ -84,7 +84,7 @@ export class ProjectsController {
 
   @Post(':projectId/avatar')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -118,7 +118,7 @@ export class ProjectsController {
 
   @Delete(':projectId/avatar')
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   removeAvatar(@Param('projectId') projectId: string) {
     return this.projectsService.updateAvatar(projectId, null);
   }

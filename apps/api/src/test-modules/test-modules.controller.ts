@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { TestModulesService } from './test-modules.service';
 import { CreateTestModuleDto } from './dto/create-test-module.dto';
 import { UpdateTestModuleDto } from './dto/update-test-module.dto';
@@ -19,6 +20,7 @@ export class TestModulesController {
   }
 
   @Post()
+  @RequirePermission('testCases', 'create')
   create(
     @Param('projectId') projectId: string,
     @Body() dto: CreateTestModuleDto,
@@ -27,6 +29,7 @@ export class TestModulesController {
   }
 
   @Patch(':moduleId')
+  @RequirePermission('testCases', 'update')
   update(
     @Param('moduleId') moduleId: string,
     @Body() dto: UpdateTestModuleDto,
@@ -35,6 +38,7 @@ export class TestModulesController {
   }
 
   @Delete(':moduleId')
+  @RequirePermission('testCases', 'delete')
   delete(@Param('moduleId') moduleId: string) {
     return this.service.delete(moduleId);
   }

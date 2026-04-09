@@ -3,7 +3,6 @@ import { TimeLogsService } from './time-logs.service';
 import { CreateTimeLogDto } from './dto/create-time-log.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
 
 @Controller('projects/:projectId/tasks/:taskId/time-logs')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -11,7 +10,6 @@ export class TimeLogsController {
   constructor(private readonly timeLogsService: TimeLogsService) {}
 
   @Post()
-  @ProjectRoles('pm', 'ba', 'developer', 'qc')
   create(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -27,7 +25,6 @@ export class TimeLogsController {
   }
 
   @Delete(':timeLogId')
-  @ProjectRoles('pm', 'ba', 'developer', 'qc')
   remove(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { RepositoryConfigService } from './repository-config.service';
 import { UpsertRepositoryConfigDto } from './dto/upsert-repository-config.dto';
 
@@ -26,7 +26,7 @@ export class RepositoryConfigController {
 
   @Put()
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   upsert(
     @Param('projectId') projectId: string,
     @Body() dto: UpsertRepositoryConfigDto,
@@ -36,7 +36,7 @@ export class RepositoryConfigController {
 
   @Delete()
   @UseGuards(ProjectRolesGuard)
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   remove(@Param('projectId') projectId: string) {
     return this.service.remove(projectId);
   }

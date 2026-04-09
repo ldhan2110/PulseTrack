@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { MembersService } from './members.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { AddMembersDto } from './dto/add-members.dto';
@@ -37,7 +37,7 @@ export class MembersController {
   }
 
   @Post()
-  @ProjectRoles('pm')
+  @RequirePermission('members', 'create')
   addMember(
     @Param('projectId') projectId: string,
     @Body() dto: AddMemberDto,
@@ -46,7 +46,7 @@ export class MembersController {
   }
 
   @Post('batch')
-  @ProjectRoles('pm')
+  @RequirePermission('members', 'create')
   addMembers(
     @Param('projectId') projectId: string,
     @Body() dto: AddMembersDto,
@@ -55,7 +55,7 @@ export class MembersController {
   }
 
   @Patch(':memberId/role')
-  @ProjectRoles('pm')
+  @RequirePermission('members', 'update')
   changeMemberRole(
     @Param('projectId') projectId: string,
     @Param('memberId') memberId: string,
@@ -65,7 +65,7 @@ export class MembersController {
   }
 
   @Get(':memberId/active-work')
-  @ProjectRoles('pm')
+  @RequirePermission('members', 'view')
   getActiveWork(
     @Param('projectId') projectId: string,
     @Param('memberId') memberId: string,
@@ -74,7 +74,7 @@ export class MembersController {
   }
 
   @Delete(':memberId')
-  @ProjectRoles('pm')
+  @RequirePermission('members', 'delete')
   removeMember(
     @Param('projectId') projectId: string,
     @Param('memberId') memberId: string,

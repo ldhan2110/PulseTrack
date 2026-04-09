@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { TestSuitesService } from './test-suites.service';
 import { CreateTestSuiteDto } from './dto/create-test-suite.dto';
 import { UpdateTestSuiteDto } from './dto/update-test-suite.dto';
@@ -24,6 +25,7 @@ export class TestSuitesController {
   }
 
   @Post()
+  @RequirePermission('testCases', 'create')
   create(
     @Param('projectId') projectId: string,
     @Body() dto: CreateTestSuiteDto,
@@ -32,6 +34,7 @@ export class TestSuitesController {
   }
 
   @Patch(':suiteId')
+  @RequirePermission('testCases', 'update')
   update(
     @Param('suiteId') suiteId: string,
     @Body() dto: UpdateTestSuiteDto,
@@ -40,11 +43,13 @@ export class TestSuitesController {
   }
 
   @Delete(':suiteId')
+  @RequirePermission('testCases', 'delete')
   delete(@Param('suiteId') suiteId: string) {
     return this.service.delete(suiteId);
   }
 
   @Post(':suiteId/members')
+  @RequirePermission('testCases', 'update')
   addMembers(
     @Param('suiteId') suiteId: string,
     @Body() body: { testCaseIds: string[] },
@@ -53,6 +58,7 @@ export class TestSuitesController {
   }
 
   @Delete(':suiteId/members/:testCaseId')
+  @RequirePermission('testCases', 'update')
   removeMember(
     @Param('suiteId') suiteId: string,
     @Param('testCaseId') testCaseId: string,

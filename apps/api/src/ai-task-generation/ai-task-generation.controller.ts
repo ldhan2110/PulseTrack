@@ -21,7 +21,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { GenerateTasksDto } from './dto/generate-tasks.dto';
 import type { GenerationJobData } from './dto/generate-tasks.dto';
 
@@ -33,7 +33,7 @@ export class AiTaskGenerationController {
   ) {}
 
   @Post()
-  @ProjectRoles('pm', 'ba')
+  @RequirePermission('tasks', 'create')
   @UseInterceptors(
     FilesInterceptor('documents', 5, {
       storage: diskStorage({

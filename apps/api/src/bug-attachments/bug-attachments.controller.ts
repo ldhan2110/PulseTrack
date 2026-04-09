@@ -1,5 +1,5 @@
 import {
-  Controller, Delete, Get, Param, Post, Req, Res,
+  Controller, Delete, Get, Param, Post, Query, Req, Res,
   UseGuards, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -39,10 +39,12 @@ export class BugAttachmentsController {
   )
   upload(
     @Param('bugId') bugId: string,
+    @Query('inline') inline: string | undefined,
     @Req() req: any,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.service.create(bugId, req.user.id, file);
+    const isInline = inline === 'true';
+    return this.service.create(bugId, req.user.id, file, isInline);
   }
 
   @Get()
@@ -55,7 +57,7 @@ export class BugAttachmentsController {
     @Param('attachmentId') attachmentId: string,
     @Req() req: any,
   ) {
-    return this.service.delete(attachmentId, req.user.id, req.userProjectRole);
+    return this.service.delete(attachmentId, req.user.id, req.user.permissions);
   }
 
   @Get(':attachmentId/download')

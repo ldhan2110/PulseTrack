@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { TestCasesService } from './test-cases.service';
 import { CreateTestCaseDto } from './dto/create-test-case.dto';
 import { UpdateTestCaseDto } from './dto/update-test-case.dto';
@@ -40,6 +41,7 @@ export class TestCasesController {
   }
 
   @Post()
+  @RequirePermission('testCases', 'create')
   create(
     @Param('projectId') projectId: string,
     @Req() req: any,
@@ -49,6 +51,7 @@ export class TestCasesController {
   }
 
   @Patch(':testCaseId')
+  @RequirePermission('testCases', 'update')
   update(
     @Param('testCaseId') testCaseId: string,
     @Body() dto: UpdateTestCaseDto,
@@ -57,11 +60,13 @@ export class TestCasesController {
   }
 
   @Delete(':testCaseId')
+  @RequirePermission('testCases', 'delete')
   delete(@Param('testCaseId') testCaseId: string) {
     return this.service.delete(testCaseId);
   }
 
   @Post('bulk-import')
+  @RequirePermission('testCases', 'create')
   bulkImport(
     @Param('projectId') projectId: string,
     @Req() req: any,
@@ -71,6 +76,7 @@ export class TestCasesController {
   }
 
   @Post('bulk-suite')
+  @RequirePermission('testCases', 'update')
   bulkAddToSuite(
     @Body() body: { suiteId: string; testCaseIds: string[] },
   ) {

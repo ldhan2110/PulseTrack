@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { WorkflowService } from './workflow.service';
 import { SaveWorkflowDto } from './dto/save-workflow.dto';
 
@@ -19,7 +19,7 @@ export class WorkflowController {
   }
 
   @Put()
-  @ProjectRoles('pm')
+  @RequirePermission('projectSettings', 'update')
   saveWorkflow(
     @Param('projectId') projectId: string,
     @Body() dto: SaveWorkflowDto,

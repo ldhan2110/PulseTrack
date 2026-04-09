@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
-import { ProjectRoles } from '../auth/project-roles.decorator';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { SprintsService } from './sprints.service';
 import { CreateSprintDto } from './dto/create-sprint.dto';
 import { UpdateSprintDto } from './dto/update-sprint.dto';
@@ -25,7 +25,7 @@ export class SprintsController {
   }
 
   @Post()
-  @ProjectRoles('pm')
+  @RequirePermission('sprints', 'create')
   create(
     @Param('projectId') projectId: string,
     @Body() dto: CreateSprintDto,
@@ -39,7 +39,7 @@ export class SprintsController {
   }
 
   @Patch(':sprintId')
-  @ProjectRoles('pm')
+  @RequirePermission('sprints', 'update')
   update(
     @Param('sprintId') sprintId: string,
     @Body() dto: UpdateSprintDto,
@@ -48,13 +48,13 @@ export class SprintsController {
   }
 
   @Post(':sprintId/activate')
-  @ProjectRoles('pm')
+  @RequirePermission('sprints', 'update')
   activate(@Param('sprintId') sprintId: string) {
     return this.sprintsService.activate(sprintId);
   }
 
   @Post(':sprintId/close')
-  @ProjectRoles('pm')
+  @RequirePermission('sprints', 'update')
   closeSprint(@Param('sprintId') sprintId: string) {
     return this.sprintsService.closeSprint(sprintId);
   }

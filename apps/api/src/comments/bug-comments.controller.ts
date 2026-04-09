@@ -43,7 +43,7 @@ export class BugCommentsController {
     @Req() req: any,
     @Body() dto: UpdateCommentDto,
   ) {
-    return this.commentsService.update(commentId, req.user.id, req.user.projectRole, dto.content);
+    return this.commentsService.update(commentId, req.user.id, req.user.permissions, dto.content);
   }
 
   @Delete(':commentId')
@@ -51,6 +51,6 @@ export class BugCommentsController {
     @Param('commentId') commentId: string,
     @Req() req: any,
   ) {
-    return this.commentsService.delete(commentId, req.user.id, req.user.projectRole);
+    return this.commentsService.delete(commentId, req.user.id, req.user.permissions);
   }
 }

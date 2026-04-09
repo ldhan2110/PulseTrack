@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { TestExecutionsService } from './test-executions.service';
 import { CreateTestExecutionDto } from './dto/create-test-execution.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
@@ -27,12 +28,18 @@ export class TestExecutionsController {
     return this.service.findAll(projectId);
   }
 
+  @Get('by-key/:executionKey')
+  findByKey(@Param('executionKey') executionKey: string) {
+    return this.service.findByKey(executionKey);
+  }
+
   @Get(':executionId')
   findOne(@Param('executionId') executionId: string) {
     return this.service.findOne(executionId);
   }
 
   @Post()
+  @RequirePermission('testExecutions', 'create')
   create(
     @Param('projectId') projectId: string,
     @Body() dto: CreateTestExecutionDto,
@@ -41,6 +48,7 @@ export class TestExecutionsController {
   }
 
   @Patch(':executionId/status')
+  @RequirePermission('testExecutions', 'update')
   updateStatus(
     @Param('executionId') executionId: string,
     @Body() body: { status: TestExecutionStatus },
@@ -49,6 +57,7 @@ export class TestExecutionsController {
   }
 
   @Post(':executionId/cases')
+  @RequirePermission('testExecutions', 'update')
   addCases(
     @Param('executionId') executionId: string,
     @Body() body: { testCaseIds: string[] },
@@ -57,11 +66,13 @@ export class TestExecutionsController {
   }
 
   @Delete(':executionId')
+  @RequirePermission('testExecutions', 'delete')
   delete(@Param('executionId') executionId: string) {
     return this.service.delete(executionId);
   }
 
   @Patch('cases/:executionCaseId/result')
+  @RequirePermission('testExecutions', 'update')
   updateResult(
     @Param('executionCaseId') executionCaseId: string,
     @Req() req: any,
@@ -71,6 +82,7 @@ export class TestExecutionsController {
   }
 
   @Post('cases/:executionCaseId/attachments')
+  @RequirePermission('testExecutions', 'update')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -97,6 +109,7 @@ export class TestExecutionsController {
   }
 
   @Delete('attachments/:attachmentId')
+  @RequirePermission('testExecutions', 'delete')
   deleteAttachment(@Param('attachmentId') attachmentId: string) {
     return this.service.deleteAttachment(attachmentId);
   }
