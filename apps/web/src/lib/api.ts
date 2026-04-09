@@ -51,6 +51,8 @@ import type {
   CreateTestExecutionPayload,
   TestExecutionCase,
   TestExecutionAttachment,
+  BulkImportTestCasesPayload,
+  BulkImportResult,
 } from './types';
 import keycloak from '../auth/keycloak';
 
@@ -424,6 +426,8 @@ export const api = {
   },
   getTestCase: (projectId: string, testCaseId: string) =>
     request<TestCase>(`/projects/${projectId}/test-cases/${testCaseId}`),
+  getTestCaseByKey: (projectId: string, testCaseKey: string) =>
+    request<TestCase>(`/projects/${projectId}/test-cases/by-key/${testCaseKey}`),
   createTestCase: (projectId: string, data: CreateTestCasePayload) =>
     request<TestCase>(`/projects/${projectId}/test-cases`, { method: 'POST', body: JSON.stringify(data) }),
   updateTestCase: (projectId: string, testCaseId: string, data: UpdateTestCasePayload) =>
@@ -433,6 +437,10 @@ export const api = {
   bulkAddToSuite: (projectId: string, suiteId: string, testCaseIds: string[]) =>
     request<{ added: number }>(`/projects/${projectId}/test-cases/bulk-suite`, {
       method: 'POST', body: JSON.stringify({ suiteId, testCaseIds }),
+    }),
+  bulkImportTestCases: (projectId: string, data: BulkImportTestCasesPayload) =>
+    request<BulkImportResult>(`/projects/${projectId}/test-cases/bulk-import`, {
+      method: 'POST', body: JSON.stringify(data),
     }),
 
   // ─── Test Suites ──────────────────────────────────────────────────────────
