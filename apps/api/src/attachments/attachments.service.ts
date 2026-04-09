@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
+import { hasPermission, type RolePermissions } from '../auth/permissions';
 
 @Injectable()
 export class AttachmentsService {
@@ -58,12 +59,12 @@ export class AttachmentsService {
     return attachment;
   }
 
-  async delete(attachmentId: string, userId: string, userRole: string) {
+  async delete(attachmentId: string, userId: string, permissions: RolePermissions) {
     const attachment = await this.prisma.attachment.findUnique({
       where: { id: attachmentId },
     });
     if (!attachment) throw new NotFoundException('Attachment not found');
-    if (attachment.uploaderId !== userId && userRole !== 'pm') {
+    if (attachment.uploaderId !== userId && !hasPermission(permissions, 'attachments', 'delete')) {
       throw new ForbiddenException('Only the uploader or a PM can delete this attachment');
     }
     try {

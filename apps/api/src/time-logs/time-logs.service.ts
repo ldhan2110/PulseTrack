@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, ForbiddenException, NotFoundException 
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTimeLogDto } from './dto/create-time-log.dto';
+import { hasPermission, type RolePermissions } from '../auth/permissions';
 
 @Injectable()
 export class TimeLogsService {
@@ -66,7 +67,7 @@ export class TimeLogsService {
     });
   }
 
-  async remove(projectId: string, taskId: string, timeLogId: string, userId: string, userRole: string) {
+  async remove(projectId: string, taskId: string, timeLogId: string, userId: string, permissions: RolePermissions) {
     const timeLog = await this.prisma.timeLog.findUnique({
       where: { id: timeLogId },
       select: { id: true, userId: true, taskId: true, task: { select: { projectId: true } } },
@@ -76,7 +77,7 @@ export class TimeLogsService {
       throw new NotFoundException('Time log not found');
     }
 
-    if (timeLog.userId !== userId && userRole !== 'pm') {
+    if (timeLog.userId !== userId && !hasPermission(permissions, 'tasks', 'delete')) {
       throw new ForbiddenException('Only the author or a PM can delete time logs');
     }
 

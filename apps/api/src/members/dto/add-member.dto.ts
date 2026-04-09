@@ -1,10 +1,9 @@
-import { IsEnum, IsString } from 'class-validator';
-import { ProjectRole } from '@prisma/client';
+import { IsString } from 'class-validator';
 
 export class AddMemberDto {
   @IsString()
   userId: string;
 
-  @IsEnum(ProjectRole)
-  role: ProjectRole;
+  @IsString()
+  roleId: string;
 }

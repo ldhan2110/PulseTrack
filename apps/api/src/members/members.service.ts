@@ -21,6 +21,7 @@ export class MembersService {
     return this.prisma.projectMember.findMany({
       where: { projectId },
       include: {
+        customRole: true,
         user: {
           select: { id: true, email: true, username: true, name: true, imageUrl: true },
         },
@@ -41,7 +42,7 @@ export class MembersService {
       data: {
         projectId,
         userId: dto.userId,
-        role: dto.role,
+        roleId: dto.roleId,
       },
       include: {
         user: {
@@ -86,7 +87,7 @@ export class MembersService {
           data: {
             projectId,
             userId: entry.userId,
-            role: entry.role,
+            roleId: entry.roleId,
           },
           include: {
             user: {
@@ -126,7 +127,7 @@ export class MembersService {
 
     return this.prisma.projectMember.update({
       where: { id: memberId },
-      data: { role: dto.role },
+      data: { roleId: dto.roleId },
       include: {
         user: {
           select: { id: true, email: true, username: true, name: true, imageUrl: true },
@@ -139,6 +140,7 @@ export class MembersService {
     const member = await this.prisma.projectMember.findFirst({
       where: { id: memberId, projectId },
       include: {
+        customRole: true,
         user: { select: { id: true, username: true, name: true, imageUrl: true } },
       },
     });
@@ -147,10 +149,10 @@ export class MembersService {
       throw new NotFoundException('Member not found in this project');
     }
 
-    // Prevent removing the last PM
-    if (member.role === 'pm') {
+    // Prevent removing the last system-role (PM) member
+    if (member.customRole.isSystem) {
       const pmCount = await this.prisma.projectMember.count({
-        where: { projectId, role: 'pm' },
+        where: { projectId, customRole: { isSystem: true } },
       });
 
       if (pmCount <= 1) {
@@ -217,7 +219,7 @@ export class MembersService {
     const totalUnassigned = taskCount + subTaskCount + bugCount;
     if (totalUnassigned > 0) {
       const pmMembers = await this.prisma.projectMember.findMany({
-        where: { projectId, role: 'pm', userId: { not: actorId } },
+        where: { projectId, customRole: { isSystem: true }, userId: { not: actorId } },
         select: { userId: true },
       });
 

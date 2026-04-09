@@ -1,13 +1,12 @@
-import { ArrayMinSize, IsArray, IsEnum, IsString, ValidateNested } from 'class-validator';
+import { ArrayMinSize, IsArray, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ProjectRole } from '@prisma/client';
 
 export class MemberEntryDto {
   @IsString()
   userId: string;
 
-  @IsEnum(ProjectRole)
-  role: ProjectRole;
+  @IsString()
+  roleId: string;
 }
 
 export class AddMembersDto {
