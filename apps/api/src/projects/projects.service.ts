@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkflowService } from '../workflow/workflow.service';
+import { SYSTEM_ROLE_PERMISSIONS, DEFAULT_MEMBER_PERMISSIONS } from '../auth/permissions';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
@@ -23,11 +24,31 @@ export class ProjectsService {
         },
       });
 
+      const pmRole = await tx.customRole.create({
+        data: {
+          projectId: p.id,
+          name: 'PM',
+          permissions: SYSTEM_ROLE_PERMISSIONS,
+          isSystem: true,
+          isDefault: false,
+        },
+      });
+
+      await tx.customRole.create({
+        data: {
+          projectId: p.id,
+          name: 'Member',
+          permissions: DEFAULT_MEMBER_PERMISSIONS,
+          isSystem: false,
+          isDefault: true,
+        },
+      });
+
       await tx.projectMember.create({
         data: {
           projectId: p.id,
           userId,
-          role: 'pm',
+          roleId: pmRole.id,
         },
       });
 
