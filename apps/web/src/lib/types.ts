@@ -91,7 +91,15 @@ export interface BugAttachment {
 
 export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED';
 
-export type ProjectRole = 'pm' | 'ba' | 'qc' | 'developer';
+export interface CustomRole {
+  id: string;
+  projectId: string;
+  name: string;
+  permissions: import('./permissions').RolePermissions;
+  isDefault: boolean;
+  isSystem: boolean;
+  _count?: { members: number };
+}
 
 // ─── User ─────────────────────────────────────────────────────────────────────
 
@@ -156,14 +164,15 @@ export interface Member {
   id: string;
   userId: string;
   projectId: string;
-  role: ProjectRole;
+  roleId: string;
   joinedAt: string;
   user: User;
+  customRole: CustomRole;
 }
 
 export interface AddMemberPayload {
   userId: string;
-  role: ProjectRole;
+  roleId: string;
 }
 
 export interface AddMembersPayload {
@@ -171,7 +180,7 @@ export interface AddMembersPayload {
 }
 
 export interface ChangeRolePayload {
-  role: ProjectRole;
+  roleId: string;
 }
 
 // ─── Task ─────────────────────────────────────────────────────────────────────
@@ -748,6 +757,7 @@ export interface TestExecutionCase {
 
 export interface TestExecution {
   id: string;
+  executionKey: string | null;
   name: string;
   status: TestExecutionStatus;
   assigneeId: string;

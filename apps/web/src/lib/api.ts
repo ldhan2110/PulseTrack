@@ -6,6 +6,7 @@ import type {
   AddMemberPayload,
   AddMembersPayload,
   ChangeRolePayload,
+  CustomRole,
   UserSearchResult,
   Task,
   CreateTaskPayload,
@@ -129,6 +130,16 @@ export const api = {
     request<void>(`/projects/${projectId}/members/${memberId}`, { method: 'DELETE' }),
   getMemberActiveWork: (projectId: string, memberId: string) =>
     request<{ tasks: number; subTasks: number; bugs: number }>(`/projects/${projectId}/members/${memberId}/active-work`),
+
+  // ─── Roles ──────────────────────────────────────────────────────────────────
+  getRoles: (projectId: string) =>
+    request<CustomRole[]>(`/projects/${projectId}/roles`),
+  createRole: (projectId: string, data: { name: string; permissions: Record<string, Record<string, boolean>> }) =>
+    request<CustomRole>(`/projects/${projectId}/roles`, { method: 'POST', body: JSON.stringify(data) }),
+  updateRole: (projectId: string, roleId: string, data: Partial<{ name: string; permissions: Record<string, Record<string, boolean>>; isDefault: boolean }>) =>
+    request<CustomRole>(`/projects/${projectId}/roles/${roleId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRole: (projectId: string, roleId: string) =>
+    request<{ deleted: boolean }>(`/projects/${projectId}/roles/${roleId}`, { method: 'DELETE' }),
 
   // ─── Tasks ─────────────────────────────────────────────────────────────────
   getTasks: (projectId: string) =>
@@ -466,6 +477,8 @@ export const api = {
     request<TestExecution[]>(`/projects/${projectId}/test-executions`),
   getTestExecution: (projectId: string, executionId: string) =>
     request<TestExecution>(`/projects/${projectId}/test-executions/${executionId}`),
+  getTestExecutionByKey: (projectId: string, executionKey: string) =>
+    request<TestExecution>(`/projects/${projectId}/test-executions/by-key/${executionKey}`),
   createTestExecution: (projectId: string, data: CreateTestExecutionPayload) =>
     request<TestExecution>(`/projects/${projectId}/test-executions`, { method: 'POST', body: JSON.stringify(data) }),
   updateTestExecutionStatus: (projectId: string, executionId: string, status: string) =>
