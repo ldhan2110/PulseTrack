@@ -800,3 +800,57 @@ export interface BulkImportResult {
   created: number;
   modulesCreated: string[];
 }
+
+// ─── Wiki ──────────────────────────────────────────────────────────────
+export interface WikiConfig {
+  id: string;
+  projectId: string;
+  wikiPath: string;
+  autoUpdate: 'manual' | 'on-pull' | 'scheduled';
+  sections: string[];
+  lastGeneratedAt: string | null;
+}
+
+export interface UpsertWikiConfigPayload {
+  wikiPath: string;
+  autoUpdate?: string;
+  sections?: string[];
+}
+
+export interface WikiTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: WikiTreeNode[];
+}
+
+export interface WikiPageContent {
+  path: string;
+  content: string;
+}
+
+export interface WikiSearchResult {
+  path: string;
+  title: string;
+  snippet: string;
+}
+
+export interface WikiAnnotation {
+  id: string;
+  projectId: string;
+  pagePath: string;
+  sectionRef: string | null;
+  content: string;
+  authorId: string;
+  author: { id: string; username: string; email: string; name: string | null; imageUrl: string | null };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WikiGenerationStatus {
+  status: string;
+  step?: string;
+  streamText?: string;
+  result?: { pagesGenerated: number; sections: Record<string, number>; errors: string[] };
+  error?: string;
+}

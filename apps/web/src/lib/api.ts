@@ -54,6 +54,13 @@ import type {
   TestExecutionAttachment,
   BulkImportTestCasesPayload,
   BulkImportResult,
+  WikiConfig,
+  UpsertWikiConfigPayload,
+  WikiTreeNode,
+  WikiPageContent,
+  WikiSearchResult,
+  WikiAnnotation,
+  WikiGenerationStatus,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -515,4 +522,47 @@ export const api = {
     request<void>(`/projects/${projectId}/test-executions/attachments/${attachmentId}`, { method: 'DELETE' }),
   getExecutionEvidenceDownloadUrl: (projectId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
+
+  // ─── Wiki Config ──────────────────────────────────────────────────────
+  getWikiConfig: (projectId: string) =>
+    request<WikiConfig | null>(`/projects/${projectId}/wiki/config`),
+  upsertWikiConfig: (projectId: string, data: UpsertWikiConfigPayload) =>
+    request<WikiConfig>(`/projects/${projectId}/wiki/config`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  // ─── Wiki Generation ─────────────────────────────────────────────────
+  triggerWikiGeneration: (projectId: string, section?: string) =>
+    request<{ jobId: string }>(
+      section
+        ? `/projects/${projectId}/wiki/generate/${section}`
+        : `/projects/${projectId}/wiki/generate`,
+      { method: 'POST', body: JSON.stringify(section ? { section } : {}) },
+    ),
+  getWikiGenerationStatus: (projectId: string, jobId: string) =>
+    request<WikiGenerationStatus>(`/projects/${projectId}/wiki/generate/status/${jobId}`),
+
+  // ─── Wiki Content ────────────────────────────────────────────────────
+  getWikiPages: (projectId: string) =>
+    request<WikiTreeNode[]>(`/projects/${projectId}/wiki/pages`),
+  getWikiPage: (projectId: string, pagePath: string) =>
+    request<WikiPageContent>(`/projects/${projectId}/wiki/pages/${pagePath}`),
+  searchWiki: (projectId: string, query: string) =>
+    request<WikiSearchResult[]>(`/projects/${projectId}/wiki/search?q=${encodeURIComponent(query)}`),
+
+  // ─── Wiki Annotations ────────────────────────────────────────────────
+  getWikiAnnotations: (projectId: string, pagePath: string) =>
+    request<WikiAnnotation[]>(`/projects/${projectId}/wiki/annotations?pagePath=${encodeURIComponent(pagePath)}`),
+  createWikiAnnotation: (projectId: string, data: { pagePath: string; sectionRef?: string; content: string }) =>
+    request<WikiAnnotation>(`/projects/${projectId}/wiki/annotations`, { method: 'POST', body: JSON.stringify(data) }),
+  updateWikiAnnotation: (projectId: string, annotationId: string, content: string) =>
+    request<WikiAnnotation>(`/projects/${projectId}/wiki/annotations/${annotationId}`, { method: 'PUT', body: JSON.stringify({ content }) }),
+  deleteWikiAnnotation: (projectId: string, annotationId: string) =>
+    request<void>(`/projects/${projectId}/wiki/annotations/${annotationId}`, { method: 'DELETE' }),
+
+  // ─── Wiki Q&A ────────────────────────────────────────────────────────
+  askWiki: (projectId: string, question: string) =>
+    request<{ jobId: string }>(`/projects/${projectId}/wiki/qa`, { method: 'POST', body: JSON.stringify({ question }) }),
+  getWikiQaHistory: (projectId: string) =>
+    request<Array<{ id: string; question: string; answer: string; createdAt: string }>>(`/projects/${projectId}/wiki/qa/history`),
+  deleteWikiQa: (projectId: string, qaId: string) =>
+    request<void>(`/projects/${projectId}/wiki/qa/${qaId}`, { method: 'DELETE' }),
 };
