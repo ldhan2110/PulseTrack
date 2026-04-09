@@ -36,11 +36,14 @@ export class WikiGenerationProcessor extends WorkerHost {
       const stdoutChunks: string[] = [];
       let killed = false;
 
-      const timer = setTimeout(() => {
-        killed = true;
-        child.kill('SIGTERM');
-        reject(new Error(`CLI timed out after ${opts.timeout}ms`));
-      }, opts.timeout);
+      // timeout=0 means no timeout — let the process run to completion
+      const timer = opts.timeout > 0
+        ? setTimeout(() => {
+            killed = true;
+            child.kill('SIGTERM');
+            reject(new Error(`CLI timed out after ${opts.timeout}ms`));
+          }, opts.timeout)
+        : null;
 
       child.stdout.on('data', (chunk: Buffer) => {
         const text = chunk.toString();
@@ -60,12 +63,12 @@ export class WikiGenerationProcessor extends WorkerHost {
       });
 
       child.on('error', (err) => {
-        clearTimeout(timer);
+        if (timer) clearTimeout(timer);
         reject(err);
       });
 
       child.on('close', (code) => {
-        clearTimeout(timer);
+        if (timer) clearTimeout(timer);
         if (killed) return;
         if (code === 0 || code === null) {
           resolve(stdoutChunks.join(''));
@@ -139,24 +142,38 @@ export class WikiGenerationProcessor extends WorkerHost {
 
       emitStream('\n');
 
-      // Step 3: Generate each section
+      // Step 3: Generate all sections in PARALLEL — each uses a specialized voltagent sub-agent
       const result: WikiGenerationJobResult = { pagesGenerated: 0, sections: {}, errors: [] };
 
-      for (const section of sections) {
-        currentStep = `generating-${section}`;
-        this.emitStep(userId, job, `generating-${section}`);
-        emitStream(`\n$ ${config.cli} (generating ${section} pages)\n`);
+      currentStep = 'generating-sections';
+      this.emitStep(userId, job, 'generating-sections');
+      emitStream(`\nStarting parallel generation of ${sections.length} section(s): ${sections.join(', ')}\n`);
+
+      const sectionPromises = sections.map(async (section) => {
+        const sectionConfig = this.wikiService.getSectionConfig(section);
+        this.logger.log(`[Wiki ${job.id}] Dispatching ${section} → agent: ${sectionConfig.agent}`);
+        emitStream(`\n[${section}] Dispatching to ${sectionConfig.agent}...\n`);
+
+        this.notifications.notifyUser(userId, 'wiki-generation:section-start', {
+          jobId: job.id,
+          section,
+          agent: sectionConfig.agent,
+        });
 
         try {
           const sectionPrompt = this.wikiService.buildSectionPrompt(section, config.projectContext);
           const sectionArgs = this.wikiService.buildCliArgs(config.provider, config.model, sectionPrompt);
           const sectionEnv = this.wikiService.buildCliEnv(config.provider, config.apiKey);
 
+          // No hard timeout — let each agent run to completion
           const rawOutput = await this.runCliStreaming(config.cli, sectionArgs, {
             cwd: config.workspacePath,
-            timeout: 600_000,
+            timeout: 0,
             env: { ...process.env, ...sectionEnv },
-          }, job.id, emitStream);
+          }, job.id, (chunk) => {
+            // Per-section stream tagged with section name
+            emitStream(`[${section}] ${chunk}`);
+          });
 
           const files = this.wikiService.parseGeneratedFiles(rawOutput);
           const sectionDir = join(config.wikiPath, section);
@@ -171,14 +188,34 @@ export class WikiGenerationProcessor extends WorkerHost {
 
           result.sections[section] = files.length;
           result.pagesGenerated += files.length;
-          emitStream(`\n${section}: ${files.length} page(s) generated.\n`);
+          emitStream(`\n[${section}] ✓ ${files.length} page(s) generated.\n`);
+
+          // Notify frontend immediately so wiki tree refreshes
+          this.notifications.notifyUser(userId, 'wiki-generation:section-complete', {
+            jobId: job.id,
+            section,
+            pagesGenerated: files.length,
+          });
+
+          return { section, files: files.length, status: 'ok' as const };
         } catch (error) {
           const msg = error instanceof Error ? error.message : 'Unknown error';
           result.errors.push(`${section}: ${msg}`);
-          emitStream(`\nError generating ${section}: ${msg}\n`);
+          emitStream(`\n[${section}] ✗ Error: ${msg}\n`);
           this.logger.error(`[Wiki ${job.id}] Section ${section} failed: ${msg}`);
+
+          this.notifications.notifyUser(userId, 'wiki-generation:section-complete', {
+            jobId: job.id,
+            section,
+            pagesGenerated: 0,
+            error: msg,
+          });
+
+          return { section, files: 0, status: 'error' as const, error: msg };
         }
-      }
+      });
+
+      await Promise.allSettled(sectionPromises);
 
       // Step 4: Write _meta.json
       currentStep = 'writing-meta';

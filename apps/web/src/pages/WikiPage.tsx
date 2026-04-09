@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { BookOpen, RefreshCw, Settings } from 'lucide-react';
+import { BookOpen, Loader2, RefreshCw, Settings } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,8 @@ export function WikiPage() {
 
   const { data: tree = [], isLoading: treeLoading } = useWikiPages(projectId);
   const { data: config } = useWikiConfig(projectId);
-  const { generate, step, isActive } = useWikiGeneration(projectId);
+  const { generate, step, isActive, sectionProgress, completedSections, totalSections } =
+    useWikiGeneration(projectId);
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [scrollToSection, setScrollToSection] = useState<string | null>(null);
@@ -71,6 +72,31 @@ export function WikiPage() {
           )}
         </div>
       </div>
+
+      {/* Generation progress banner */}
+      {isActive && totalSections > 0 && (
+        <div className="px-4 py-2 border-b bg-blue-50 dark:bg-blue-950/30 shrink-0">
+          <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+            <Loader2 className="size-3.5 animate-spin" />
+            <span className="font-medium">
+              Wiki is being generated — {completedSections}/{totalSections} sections complete
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {sectionProgress.map((sp) => (
+              <Badge
+                key={sp.section}
+                variant={sp.status === 'done' ? 'default' : sp.status === 'error' ? 'destructive' : 'outline'}
+                className="text-xs"
+              >
+                {sp.status === 'generating' && <Loader2 className="size-2.5 animate-spin mr-1" />}
+                {sp.section}
+                {sp.pagesGenerated ? ` (${sp.pagesGenerated})` : ''}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 3-Panel Layout */}
       <div className="flex flex-1 overflow-hidden">

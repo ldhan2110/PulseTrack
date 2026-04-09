@@ -1,11 +1,12 @@
 import {
-  Controller, Post, Get, Param, Body, Req, UseGuards, NotFoundException,
+  Controller, Post, Get, Param, Body, Req, UseGuards, NotFoundException, BadRequestException,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 import { WikiConfigService } from '../wiki-config/wiki-config.service';
 import { TriggerWikiGenerationDto, WikiGenerationJobData } from './dto/generate-wiki.dto';
 
@@ -15,7 +16,21 @@ export class WikiGenerationController {
   constructor(
     @InjectQueue('wiki-generation') private readonly queue: Queue,
     private readonly wikiConfigService: WikiConfigService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  /** Fail-fast: validate repo clone + AI config before enqueueing */
+  private async validatePrerequisites(projectId: string) {
+    const repoConfig = await this.prisma.repositoryConfig.findUnique({ where: { projectId } });
+    if (!repoConfig || repoConfig.cloneStatus !== 'cloned') {
+      throw new BadRequestException('Repository must be cloned before generating wiki.');
+    }
+
+    const aiConfig = await this.prisma.aiConfig.findUnique({ where: { projectId } });
+    if (!aiConfig) {
+      throw new BadRequestException('AI configuration not found. Save AI settings first.');
+    }
+  }
 
   @Post()
   @RequirePermission('projectSettings', 'update')
@@ -24,6 +39,8 @@ export class WikiGenerationController {
     @Body() dto: TriggerWikiGenerationDto,
     @Req() req: any,
   ) {
+    await this.validatePrerequisites(projectId);
+
     const config = await this.wikiConfigService.findByProjectId(projectId);
     if (!config) throw new NotFoundException('Wiki configuration not found. Save wiki settings first.');
 
@@ -50,6 +67,8 @@ export class WikiGenerationController {
     @Param('section') section: string,
     @Req() req: any,
   ) {
+    await this.validatePrerequisites(projectId);
+
     const config = await this.wikiConfigService.findByProjectId(projectId);
     if (!config) throw new NotFoundException('Wiki configuration not found.');
 

@@ -9,10 +9,19 @@ type WikiGenerationStep =
   | 'queued'
   | 'pulling'
   | 'building-graph'
+  | 'generating-sections'
   | string
   | 'writing-meta'
   | 'completed'
   | 'failed';
+
+export interface SectionProgress {
+  section: string;
+  status: 'pending' | 'generating' | 'done' | 'error';
+  agent?: string;
+  pagesGenerated?: number;
+  error?: string;
+}
 
 export function useWikiGeneration(projectId: string) {
   const socket = useSocket();
@@ -20,8 +29,12 @@ export function useWikiGeneration(projectId: string) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [step, setStep] = useState<WikiGenerationStep>('idle');
   const [streamText, setStreamText] = useState('');
+  const [sectionProgress, setSectionProgress] = useState<SectionProgress[]>([]);
 
   const isActive = !!jobId && step !== 'idle' && step !== 'completed' && step !== 'failed';
+
+  const completedSections = sectionProgress.filter((s) => s.status === 'done').length;
+  const totalSections = sectionProgress.length;
 
   const generate = useMutation({
     mutationFn: (section?: string) => api.triggerWikiGeneration(projectId, section),
@@ -29,6 +42,7 @@ export function useWikiGeneration(projectId: string) {
       setJobId(data.jobId);
       setStep('queued');
       setStreamText('');
+      setSectionProgress([]);
       toast.success('Wiki generation started');
     },
     onError: (error: Error) => {
@@ -37,23 +51,24 @@ export function useWikiGeneration(projectId: string) {
   });
 
   // Polling fallback: check job status every 5s while in-progress
-  useQuery({
+  const { data: statusData } = useQuery({
     queryKey: ['wiki-generation-status', projectId, jobId],
     queryFn: () => api.getWikiGenerationStatus(projectId, jobId!),
     enabled: isActive,
     refetchInterval: 5_000,
-    select: (data) => {
-      if (data.step) setStep(data.step);
-      if (data.streamText) setStreamText(data.streamText);
-      if (data.status === 'completed') {
-        setStep('completed');
-        void queryClient.invalidateQueries({ queryKey: ['wikiPages', projectId] });
-        void queryClient.invalidateQueries({ queryKey: ['wikiConfig', projectId] });
-      }
-      if (data.status === 'failed') setStep('failed');
-      return data;
-    },
   });
+
+  useEffect(() => {
+    if (!statusData) return;
+    if (statusData.step) setStep(statusData.step);
+    if (statusData.streamText) setStreamText(statusData.streamText);
+    if (statusData.status === 'completed') {
+      setStep('completed');
+      void queryClient.invalidateQueries({ queryKey: ['wikiPages', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['wikiConfig', projectId] });
+    }
+    if (statusData.status === 'failed') setStep('failed');
+  }, [statusData, projectId, queryClient]);
 
   // Socket.IO listeners
   useEffect(() => {
@@ -65,6 +80,45 @@ export function useWikiGeneration(projectId: string) {
     const onStream = (data: { jobId: string; text: string }) => {
       if (data.jobId === jobId) setStreamText(data.text);
     };
+
+    const onSectionStart = (data: { jobId: string; section: string; agent: string }) => {
+      if (data.jobId !== jobId) return;
+      setSectionProgress((prev) => {
+        const exists = prev.find((s) => s.section === data.section);
+        if (exists) {
+          return prev.map((s) =>
+            s.section === data.section ? { ...s, status: 'generating' as const, agent: data.agent } : s,
+          );
+        }
+        return [...prev, { section: data.section, status: 'generating' as const, agent: data.agent }];
+      });
+    };
+
+    const onSectionComplete = (data: {
+      jobId: string;
+      section: string;
+      pagesGenerated: number;
+      error?: string;
+    }) => {
+      if (data.jobId !== jobId) return;
+      setSectionProgress((prev) =>
+        prev.map((s) =>
+          s.section === data.section
+            ? {
+                ...s,
+                status: data.error ? ('error' as const) : ('done' as const),
+                pagesGenerated: data.pagesGenerated,
+                error: data.error,
+              }
+            : s,
+        ),
+      );
+      // Refresh wiki tree as each section lands
+      if (!data.error) {
+        void queryClient.invalidateQueries({ queryKey: ['wikiPages', projectId] });
+      }
+    };
+
     const onCompleted = (data: { jobId: string }) => {
       if (data.jobId === jobId) {
         setStep('completed');
@@ -82,12 +136,16 @@ export function useWikiGeneration(projectId: string) {
 
     socket.on('wiki-generation:progress', onProgress);
     socket.on('wiki-generation:stream', onStream);
+    socket.on('wiki-generation:section-start', onSectionStart);
+    socket.on('wiki-generation:section-complete', onSectionComplete);
     socket.on('wiki-generation:completed', onCompleted);
     socket.on('wiki-generation:failed', onFailed);
 
     return () => {
       socket.off('wiki-generation:progress', onProgress);
       socket.off('wiki-generation:stream', onStream);
+      socket.off('wiki-generation:section-start', onSectionStart);
+      socket.off('wiki-generation:section-complete', onSectionComplete);
       socket.off('wiki-generation:completed', onCompleted);
       socket.off('wiki-generation:failed', onFailed);
     };
@@ -97,7 +155,17 @@ export function useWikiGeneration(projectId: string) {
     setJobId(null);
     setStep('idle');
     setStreamText('');
+    setSectionProgress([]);
   }, []);
 
-  return { generate, step, streamText, isActive, reset };
+  return {
+    generate,
+    step,
+    streamText,
+    isActive,
+    reset,
+    sectionProgress,
+    completedSections,
+    totalSections,
+  };
 }
