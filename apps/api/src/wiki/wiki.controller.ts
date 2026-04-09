@@ -1,14 +1,21 @@
 import {
-  Controller, Get, Post, Put, Delete, Param, Query, Body, Req, UseGuards,
+  Controller, Get, Post, Put, Delete, Param, Query, Body, Req, UseGuards, NotFoundException,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { WikiService } from './wiki.service';
+import { WikiConfigService } from '../wiki-config/wiki-config.service';
 
 @Controller('projects/:projectId/wiki')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
 export class WikiController {
-  constructor(private readonly service: WikiService) {}
+  constructor(
+    private readonly service: WikiService,
+    private readonly wikiConfigService: WikiConfigService,
+    @InjectQueue('wiki-generation') private readonly queue: Queue,
+  ) {}
 
   @Get('pages')
   getPageTree(@Param('projectId') projectId: string) {
@@ -58,5 +65,37 @@ export class WikiController {
     @Req() req: any,
   ) {
     return this.service.deleteAnnotation(annotationId, req.user.id);
+  }
+
+  @Post('qa')
+  async askQuestion(
+    @Param('projectId') projectId: string,
+    @Req() req: any,
+    @Body() body: { question: string },
+  ) {
+    const config = await this.wikiConfigService.findByProjectId(projectId);
+    if (!config) throw new NotFoundException('Wiki configuration not found.');
+
+    const job = await this.queue.add('wiki-qa', {
+      projectId,
+      userId: req.user.id,
+      question: body.question,
+      wikiPath: config.wikiPath,
+    }, {
+      removeOnComplete: { age: 86400 },
+      removeOnFail: { age: 86400 },
+    });
+
+    return { jobId: job.id };
+  }
+
+  @Get('qa/history')
+  getQaHistory(@Param('projectId') projectId: string) {
+    return this.service.getQaHistory(projectId);
+  }
+
+  @Delete('qa/:qaId')
+  deleteQa(@Param('projectId') projectId: string, @Param('qaId') qaId: string) {
+    return this.service.deleteQa(projectId, qaId);
   }
 }

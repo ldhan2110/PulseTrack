@@ -85,7 +85,14 @@ export class WikiGenerationProcessor extends WorkerHost {
     this.logger.log(`[Wiki ${job.id}] Step: ${step}`);
   }
 
-  async process(job: Job<WikiGenerationJobData>): Promise<WikiGenerationJobResult> {
+  async process(job: Job<any>): Promise<any> {
+    if (job.name === 'wiki-qa') {
+      return this.processQa(job as Job<{ projectId: string; userId: string; question: string; wikiPath: string }>);
+    }
+    return this.processGeneration(job as Job<WikiGenerationJobData>);
+  }
+
+  private async processGeneration(job: Job<WikiGenerationJobData>): Promise<WikiGenerationJobResult> {
     const { projectId, userId, sections } = job.data;
 
     let logBuffer = '';
@@ -213,6 +220,75 @@ export class WikiGenerationProcessor extends WorkerHost {
         error: message,
       });
 
+      throw error;
+    }
+  }
+
+  private async processQa(job: Job<{ projectId: string; userId: string; question: string; wikiPath: string }>): Promise<{ answer: string }> {
+    const { projectId, userId, question, wikiPath } = job.data;
+
+    let logBuffer = '';
+    const emitStream = (chunk: string) => {
+      logBuffer += chunk;
+      this.notifications.notifyUser(userId, 'wiki-generation:stream', {
+        jobId: job.id,
+        text: logBuffer,
+      });
+      void job.updateProgress({ step: 'answering', streamText: logBuffer });
+    };
+
+    try {
+      const config = await this.wikiService.getProjectConfig(projectId);
+
+      const qaPrompt = `You have access to the code-review-graph MCP tools and wiki files at ${wikiPath}.
+Read the relevant wiki markdown files and use code-graph tools to answer this question:
+
+"${question}"
+
+Include "See: [Section Name]" references when your answer relates to specific wiki sections.
+Format your answer clearly with bullet points and code references where relevant.
+
+After answering, save the Q&A as a markdown file:
+<!-- file: qa/${Date.now()}.md -->
+---
+title: ${question.slice(0, 100)}
+question: ${question}
+section: qa
+createdAt: ${new Date().toISOString()}
+---
+
+[Your answer here]`;
+
+      const args = this.wikiService.buildCliArgs(config.provider, config.model, qaPrompt);
+      const env = this.wikiService.buildCliEnv(config.provider, config.apiKey);
+
+      const rawOutput = await this.runCliStreaming(config.cli, args, {
+        cwd: config.workspacePath,
+        timeout: 300_000,
+        env: { ...process.env, ...env },
+      }, job.id, emitStream);
+
+      // Write Q&A file if generated
+      const files = this.wikiService.parseGeneratedFiles(rawOutput);
+      for (const file of files) {
+        const filePath = join(wikiPath, file.path);
+        const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+        await mkdir(dir, { recursive: true });
+        await writeFile(filePath, file.content, 'utf-8');
+      }
+
+      this.notifications.notifyUser(userId, 'wiki-generation:completed', {
+        jobId: job.id,
+      });
+
+      return { answer: rawOutput };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      emitStream(`\nError: ${message}\n`);
+      this.notifications.notifyUser(userId, 'wiki-generation:failed', {
+        jobId: job.id,
+        error: message,
+      });
       throw error;
     }
   }

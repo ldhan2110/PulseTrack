@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { readdir, readFile, stat } from 'fs/promises';
+import { readdir, readFile, stat, unlink } from 'fs/promises';
 import { join, relative } from 'path';
 import { existsSync } from 'fs';
 import { PrismaService } from '../prisma/prisma.service';
@@ -138,5 +138,44 @@ export class WikiService {
       throw new NotFoundException('Only the author can delete this annotation');
     }
     await this.prisma.wikiAnnotation.delete({ where: { id: annotationId } });
+  }
+
+  // ─── Q&A ───────────────────────────────────────────────────────────
+
+  async getQaHistory(projectId: string): Promise<Array<{ id: string; question: string; answer: string; createdAt: string }>> {
+    const config = await this.wikiConfigService.findByProjectId(projectId);
+    if (!config || !existsSync(join(config.wikiPath, 'qa'))) return [];
+
+    const qaDir = join(config.wikiPath, 'qa');
+    const entries = await readdir(qaDir);
+    const results: Array<{ id: string; question: string; answer: string; createdAt: string }> = [];
+
+    for (const entry of entries) {
+      if (!entry.endsWith('.md')) continue;
+      const content = await readFile(join(qaDir, entry), 'utf-8');
+      const questionMatch = content.match(/^question:\s*(.+)$/m);
+      const createdAtMatch = content.match(/^generatedAt:\s*(.+)$/m) || content.match(/^createdAt:\s*(.+)$/m);
+      const answerStart = content.indexOf('---', content.indexOf('---') + 3);
+      const answer = answerStart >= 0 ? content.substring(answerStart + 3).trim() : content;
+
+      results.push({
+        id: entry.replace('.md', ''),
+        question: questionMatch?.[1]?.trim() ?? entry.replace('.md', ''),
+        answer,
+        createdAt: createdAtMatch?.[1]?.trim() ?? '',
+      });
+    }
+
+    return results.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async deleteQa(projectId: string, qaId: string): Promise<void> {
+    const config = await this.wikiConfigService.findByProjectId(projectId);
+    if (!config) throw new NotFoundException('Wiki not configured');
+
+    const filePath = join(config.wikiPath, 'qa', `${qaId}.md`);
+    if (!existsSync(filePath)) throw new NotFoundException('Q&A entry not found');
+
+    await unlink(filePath);
   }
 }
