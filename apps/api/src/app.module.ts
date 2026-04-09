@@ -24,6 +24,10 @@ import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 import { WatchersModule } from './watchers/watchers.module';
 import { NotificationEmailModule } from './notification-email/notification-email.module';
+import { TestModulesModule } from './test-modules/test-modules.module';
+import { TestCasesModule } from './test-cases/test-cases.module';
+import { TestSuitesModule } from './test-suites/test-suites.module';
+import { TestExecutionsModule } from './test-executions/test-executions.module';
 
 @Module({
   imports: [
@@ -50,6 +54,10 @@ import { NotificationEmailModule } from './notification-email/notification-email
     BugAttachmentsModule,
     WatchersModule,
     NotificationEmailModule,
+    TestModulesModule,
+    TestCasesModule,
+    TestSuitesModule,
+    TestExecutionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
