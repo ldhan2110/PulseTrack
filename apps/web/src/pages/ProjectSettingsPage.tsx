@@ -15,6 +15,7 @@ import { WorkflowEditor } from '@/components/workflow/WorkflowEditor';
 import { RepositorySettingsCard } from '@/components/settings/RepositorySettingsCard';
 import { AiConfigCard } from '@/components/settings/AiConfigCard';
 import { RolesPermissionsTab } from '@/components/settings/RolesPermissionsTab';
+import { WikiConfigCard } from '@/components/settings/WikiConfigCard';
 
 export function ProjectSettingsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
@@ -87,6 +88,7 @@ export function ProjectSettingsPage() {
           <TabsTrigger value="general">General</TabsTrigger>
           {canManage && <TabsTrigger value="workflow">Workflow</TabsTrigger>}
           {can('members', 'update') && <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>}
+          {canManage && <TabsTrigger value="wiki">Wiki</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="general" className="space-y-6 mt-6">
@@ -251,6 +253,10 @@ export function ProjectSettingsPage() {
             <RolesPermissionsTab projectId={projectId} />
           </TabsContent>
         )}
+
+        <TabsContent value="wiki" className="space-y-6 mt-6">
+          <WikiConfigCard projectId={projectId} canManage={canManage} />
+        </TabsContent>
       </Tabs>
     </div>
   );
