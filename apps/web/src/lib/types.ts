@@ -768,3 +768,25 @@ export interface CreateTestExecutionPayload {
   suiteId?: string;
   testCaseIds?: string[];
 }
+
+// ─── Bulk Import ──────────────────────────────────────────────────────────────
+
+export interface BulkImportTestCaseItem {
+  title: string;
+  preconditions?: string;
+  expectedResult?: string;
+  priority?: Priority;
+  tags?: string[];
+  estimatedMinutes?: number;
+  moduleName?: string;
+  steps?: { position: number; action: string; expectedResult: string }[];
+}
+
+export interface BulkImportTestCasesPayload {
+  items: BulkImportTestCaseItem[];
+}
+
+export interface BulkImportResult {
+  created: number;
+  modulesCreated: string[];
+}
