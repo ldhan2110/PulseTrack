@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
-import { ClipboardList, Search } from 'lucide-react';
+import { ClipboardList, Search, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,6 +18,7 @@ import { ModuleTree } from '@/components/test-cases/ModuleTree';
 import { TestCasesTable } from '@/components/test-cases/TestCasesTable';
 import { TestCaseForm } from '@/components/test-cases/TestCaseForm';
 import { SuiteManager } from '@/components/test-cases/SuiteManager';
+import { ImportTestCasesDialog } from '@/components/test-cases/ImportTestCasesDialog';
 import type { TestCase } from '@/lib/types';
 
 export function TestCasesPage() {
@@ -35,6 +36,7 @@ export function TestCasesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<TestCase | null>(null);
   const [suiteManagerOpen, setSuiteManagerOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Build query filters
   const filters: Record<string, string> = {};
@@ -70,7 +72,13 @@ export function TestCasesPage() {
       <div className="flex flex-col gap-4 p-8">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
-          <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <FileSpreadsheet className="size-3.5 mr-1.5" />
+              Import Excel
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+          </div>
         </div>
         <div className="flex">
           <div className="w-60 border-r pr-2 shrink-0">
@@ -110,6 +118,12 @@ export function TestCasesPage() {
             suiteId={selectedSuiteId}
           />
         )}
+        <ImportTestCasesDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          projectId={projectId}
+          modules={modules}
+        />
       </div>
     );
   }
@@ -118,7 +132,13 @@ export function TestCasesPage() {
     <div className="flex flex-col gap-4 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
-        <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet className="size-3.5 mr-1.5" />
+            Import Excel
+          </Button>
+          <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+        </div>
       </div>
 
       <div className="flex gap-0 min-h-0 flex-1">
@@ -203,6 +223,12 @@ export function TestCasesPage() {
           suiteId={selectedSuiteId}
         />
       )}
+      <ImportTestCasesDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        projectId={projectId}
+        modules={modules}
+      />
     </div>
   );
 }
