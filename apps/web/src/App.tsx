@@ -8,6 +8,8 @@ import { BacklogPage } from './pages/BacklogPage';
 import { SprintsPage } from './pages/SprintsPage';
 import { SprintBoardPage } from './pages/SprintBoardPage';
 import { BugsPage } from './pages/BugsPage';
+import { TestCasesPage } from './pages/TestCasesPage';
+import { TestExecutionsPage } from './pages/TestExecutionsPage';
 import { MembersPage } from './pages/MembersPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { BugDetailPage } from './pages/BugDetailPage';
@@ -35,6 +37,8 @@ function App() {
         <Route path="/projects/:projectPrefix/sprints" element={<SprintsPage />} />
         <Route path="/projects/:projectPrefix/sprints/:sprintId" element={<SprintBoardPage />} />
         <Route path="/projects/:projectPrefix/bugs" element={<BugsPage />} />
+        <Route path="/projects/:projectPrefix/test-cases" element={<TestCasesPage />} />
+        <Route path="/projects/:projectPrefix/test-executions" element={<TestExecutionsPage />} />
         <Route path="/projects/:projectPrefix/members" element={<MembersPage />} />
         <Route path="/projects/:projectPrefix/settings" element={<ProjectSettingsPage />} />
         <Route path="/projects/:projectPrefix/tasks/:taskKey" element={<TaskDetailPage />} />
