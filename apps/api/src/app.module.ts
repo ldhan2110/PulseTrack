@@ -28,6 +28,7 @@ import { TestModulesModule } from './test-modules/test-modules.module';
 import { TestCasesModule } from './test-cases/test-cases.module';
 import { TestSuitesModule } from './test-suites/test-suites.module';
 import { TestExecutionsModule } from './test-executions/test-executions.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { TestExecutionsModule } from './test-executions/test-executions.module';
     TestCasesModule,
     TestSuitesModule,
     TestExecutionsModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
