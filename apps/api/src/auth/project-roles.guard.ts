@@ -1,7 +1,9 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
-import { PROJECT_ROLES_KEY } from './project-roles.decorator';
+import { PERMISSION_KEY, RequiredPermission } from './require-permission.decorator';
+import { hasPermission, SYSTEM_ROLE_PERMISSIONS } from './permissions';
+import type { RolePermissions } from './permissions';
 
 @Injectable()
 export class ProjectRolesGuard implements CanActivate {
@@ -17,25 +19,34 @@ export class ProjectRolesGuard implements CanActivate {
 
     const member = await this.prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId, userId: user.id } },
+      include: { customRole: true },
     });
 
     if (!member) {
       throw new ForbiddenException('Not a member of this project');
     }
 
-    // Attach project role to request user so services can check it (e.g., comment/attachment delete)
-    request.user.projectRole = member.role;
+    const role = member.customRole;
+    const permissions: RolePermissions = role.isSystem
+      ? SYSTEM_ROLE_PERMISSIONS
+      : (role.permissions as RolePermissions);
 
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(PROJECT_ROLES_KEY, [
+    // Attach to request for downstream use
+    request.user.permissions = permissions;
+    request.user.isSystemRole = role.isSystem;
+
+    const required = this.reflector.getAllAndOverride<RequiredPermission>(PERMISSION_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    if (!requiredRoles || requiredRoles.length === 0) return true;
+    // No decorator = membership check only
+    if (!required) return true;
 
-    const hasRole = requiredRoles.some((role) => role === member.role);
-    if (!hasRole) {
-      throw new ForbiddenException('Insufficient project role');
+    if (role.isSystem) return true;
+
+    if (!hasPermission(permissions, required.area, required.action)) {
+      throw new ForbiddenException('Insufficient permissions');
     }
 
     return true;
