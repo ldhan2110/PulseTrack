@@ -13,7 +13,7 @@ export function useWikiConfig(projectId: string) {
 export function useUpsertWikiConfig(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { wikiPath: string; autoUpdate?: string; sections?: string[] }) =>
+    mutationFn: (data: { autoUpdate?: string; sections?: string[] }) =>
       api.upsertWikiConfig(projectId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['wikiConfig', projectId] });

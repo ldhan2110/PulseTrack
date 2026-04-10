@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,26 +28,17 @@ export function WikiConfigCard({ projectId, canManage }: Props) {
   const upsert = useUpsertWikiConfig(projectId);
   const { generate, step, isActive } = useWikiGeneration(projectId);
 
-  const [wikiPath, setWikiPath] = useState('');
   const [autoUpdate, setAutoUpdate] = useState('manual');
   const [sections, setSections] = useState<string[]>(ALL_SECTIONS);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (config && !initialized) {
-      setWikiPath(config.wikiPath);
       setAutoUpdate(config.autoUpdate);
       setSections(config.sections);
       setInitialized(true);
     }
   }, [config, initialized]);
-
-  useEffect(() => {
-    if (!config && !initialized && projectId) {
-      setWikiPath(`/wiki/${projectId}`);
-      setInitialized(true);
-    }
-  }, [config, initialized, projectId]);
 
   const toggleSection = (section: string) => {
     setSections((prev) =>
@@ -57,7 +47,7 @@ export function WikiConfigCard({ projectId, canManage }: Props) {
   };
 
   const handleSave = () => {
-    upsert.mutate({ wikiPath, autoUpdate, sections });
+    upsert.mutate({ autoUpdate, sections });
   };
 
   return (
@@ -69,15 +59,12 @@ export function WikiConfigCard({ projectId, canManage }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>Wiki Storage Path</Label>
-          <Input
-            value={wikiPath}
-            onChange={(e) => setWikiPath(e.target.value)}
-            placeholder="/wiki/project-id"
-            disabled={!canManage}
-          />
-        </div>
+        {config?.wikiPath && (
+          <div className="space-y-1">
+            <Label className="text-muted-foreground text-xs">Wiki Storage Path</Label>
+            <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{config.wikiPath}</p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Auto-Update Mode</Label>

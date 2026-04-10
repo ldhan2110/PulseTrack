@@ -812,7 +812,6 @@ export interface WikiConfig {
 }
 
 export interface UpsertWikiConfigPayload {
-  wikiPath: string;
   autoUpdate?: string;
   sections?: string[];
 }
@@ -853,4 +852,12 @@ export interface WikiGenerationStatus {
   streamText?: string;
   result?: { pagesGenerated: number; sections: Record<string, number>; errors: string[] };
   error?: string;
+}
+
+export interface ActiveWikiJob {
+  active: boolean;
+  jobId?: string;
+  status?: string;
+  step?: string;
+  sections?: string[];
 }
