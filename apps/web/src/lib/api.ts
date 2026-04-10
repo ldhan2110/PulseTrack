@@ -62,6 +62,7 @@ import type {
   WikiAnnotation,
   WikiGenerationStatus,
   ActiveWikiJob,
+  AiTestCaseGenerationJobResult,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -305,6 +306,25 @@ export const api = {
   },
   getGenerationJobResult: (projectId: string, jobId: string) =>
     request<AiGenerationJobResult>(`/projects/${projectId}/ai/generate-tasks/${jobId}`),
+
+  // ─── AI Test Case Generation ──────────────────────────────────────────────
+  generateTestCases: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {
+    const token = keycloak.token;
+    const res = await fetch(`${API_BASE}/projects/${projectId}/ai/generate-testcases`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: data,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Generation failed: ${res.status}`);
+    }
+    return res.json() as Promise<{ jobId: string }>;
+  },
+  getTestCaseGenerationJobResult: (projectId: string, jobId: string) =>
+    request<AiTestCaseGenerationJobResult>(`/projects/${projectId}/ai/generate-testcases/${jobId}`),
 
   // ─── Comments ──────────────────────────────────────────────────────────────
   getComments: (projectId: string, taskId: string) =>

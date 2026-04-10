@@ -567,6 +567,34 @@ export interface AiGenerationStreamEvent {
   text: string;
 }
 
+// ─── AI Test Case Generation ────────────────────────────────────────────────
+
+export interface GeneratedTestCaseStep {
+  position: number;
+  action: string;
+  expectedResult: string;
+}
+
+export interface GeneratedTestCase {
+  title: string;
+  preconditions: string | null;
+  expectedResult: string;
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'BLOCKER';
+  estimatedMinutes: number | null;
+  tags: string[];
+  suggestedModule: string;
+  sourceTaskTitle: string;
+  steps?: GeneratedTestCaseStep[];
+}
+
+export interface AiTestCaseGenerationJobResult {
+  status: AiGenerationStatus;
+  step?: AiGenerationStep;
+  testCases?: GeneratedTestCase[];
+  error?: string;
+  streamText?: string;
+}
+
 // ─── Notifications ────────────────────────────────────────────────────────────
 
 export type NotificationType =
