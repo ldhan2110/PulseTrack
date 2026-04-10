@@ -15,12 +15,10 @@ export class WikiConfigService {
       where: { projectId },
       create: {
         projectId,
-        wikiPath: dto.wikiPath,
         autoUpdate: dto.autoUpdate ?? 'manual',
         sections: dto.sections ?? ['architecture', 'modules', 'features', 'business-logic', 'api-reference', 'data-models', 'glossary'],
       },
       update: {
-        wikiPath: dto.wikiPath,
         ...(dto.autoUpdate !== undefined && { autoUpdate: dto.autoUpdate }),
         ...(dto.sections !== undefined && { sections: dto.sections }),
       },
