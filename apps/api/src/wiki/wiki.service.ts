@@ -49,6 +49,16 @@ export class WikiService {
     const wikiPath = this.wikiGenService.getWikiPath(projectId);
     const fullPath = join(wikiPath, pagePath);
     if (!existsSync(fullPath)) throw new NotFoundException(`Wiki page not found: ${pagePath}`);
+    const fileStat = await stat(fullPath);
+    if (fileStat.isDirectory()) {
+      // Try index.md inside the directory
+      const indexPath = join(fullPath, 'index.md');
+      if (existsSync(indexPath)) {
+        const content = await readFile(indexPath, 'utf-8');
+        return { path: join(pagePath, 'index.md'), content };
+      }
+      throw new NotFoundException(`Cannot read directory as page: ${pagePath}`);
+    }
     const content = await readFile(fullPath, 'utf-8');
     return { path: pagePath, content };
   }

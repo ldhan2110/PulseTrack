@@ -8,7 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useWikiPages, useWikiConfig } from '@/hooks/useWiki';
 import { useWikiGeneration } from '@/hooks/useWikiGeneration';
 import { useAuth } from '@/auth/useAuth';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import { WikiTree } from '@/components/wiki/WikiTree';
 import { WikiContent } from '@/components/wiki/WikiContent';
 import { WikiChat } from '@/components/wiki/WikiChat';

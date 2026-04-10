@@ -161,7 +161,7 @@ export function GenerateTestCasesModal({
 
   return (
     <Dialog open={open} onOpenChange={isProcessing ? undefined : onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[40vw] max-w-none max-h-[85vh] overflow-y-auto" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-4" />

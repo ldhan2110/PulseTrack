@@ -22,10 +22,10 @@ export class WikiController {
     return this.service.getPageTree(projectId);
   }
 
-  @Get('pages/*')
-  getPage(@Param('projectId') projectId: string, @Param() params: Record<string, string>) {
-    const pagePath = params[0] || params['0'] || '';
-    return this.service.getPage(projectId, pagePath);
+  @Get('pages/*pagePath')
+  getPage(@Param('projectId') projectId: string, @Param('pagePath') pagePath: string | string[]) {
+    const resolved = Array.isArray(pagePath) ? pagePath.join('/') : pagePath;
+    return this.service.getPage(projectId, resolved);
   }
 
   @Get('search')

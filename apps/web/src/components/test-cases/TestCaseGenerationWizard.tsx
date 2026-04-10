@@ -226,7 +226,7 @@ export function TestCaseGenerationWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[85vh] p-0 overflow-hidden" style={{ maxWidth: "none"}}>
         <DialogHeader className="px-6 pt-4 pb-2 border-b">
           <DialogTitle className="flex items-center justify-between">
             <span>Review Generated Test Cases</span>
