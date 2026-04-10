@@ -8,7 +8,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WikiGenerationService } from './wiki-generation.service';
 import type { WikiGenerationJobData, WikiGenerationJobResult } from './dto/generate-wiki.dto';
 
-@Processor('wiki-generation', { concurrency: 2 })
+@Processor('wiki-generation', { concurrency: 1 })
 export class WikiGenerationProcessor extends WorkerHost {
   private readonly logger = new Logger(WikiGenerationProcessor.name);
 

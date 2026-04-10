@@ -1,5 +1,6 @@
 import {
   Controller, Post, Get, Param, Body, Req, UseGuards, NotFoundException, BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -32,6 +33,12 @@ export class WikiGenerationController {
     }
   }
 
+  /** Check if any wiki-generation job is currently active (across all projects) */
+  private async getActiveGenerationJob() {
+    const active = await this.queue.getJobs(['active', 'waiting']);
+    return active.find((j) => j.name === 'generate-wiki') ?? null;
+  }
+
   @Post()
   @RequirePermission('projectSettings', 'update')
   async generate(
@@ -40,6 +47,11 @@ export class WikiGenerationController {
     @Req() req: any,
   ) {
     await this.validatePrerequisites(projectId);
+
+    const existingJob = await this.getActiveGenerationJob();
+    if (existingJob) {
+      throw new ConflictException('Wiki generation is already in progress. Please wait for it to complete.');
+    }
 
     const config = await this.wikiConfigService.findByProjectId(projectId);
     if (!config) throw new NotFoundException('Wiki configuration not found. Save wiki settings first.');
@@ -69,6 +81,11 @@ export class WikiGenerationController {
   ) {
     await this.validatePrerequisites(projectId);
 
+    const existingJob = await this.getActiveGenerationJob();
+    if (existingJob) {
+      throw new ConflictException('Wiki generation is already in progress. Please wait for it to complete.');
+    }
+
     const config = await this.wikiConfigService.findByProjectId(projectId);
     if (!config) throw new NotFoundException('Wiki configuration not found.');
 
@@ -84,6 +101,27 @@ export class WikiGenerationController {
     });
 
     return { jobId: job.id };
+  }
+
+  @Get('active')
+  async getActiveJob(@Param('projectId') projectId: string) {
+    const active = await this.queue.getJobs(['active', 'waiting']);
+    const job = active.find(
+      (j) => j.name === 'generate-wiki' && j.data?.projectId === projectId,
+    );
+
+    if (!job) return { active: false };
+
+    const state = await job.getState();
+    const progress = job.progress as { step?: string; streamText?: string } | undefined;
+
+    return {
+      active: true,
+      jobId: job.id,
+      status: state,
+      step: progress?.step ?? 'queued',
+      sections: job.data.sections ?? [],
+    };
   }
 
   @Get('status/:jobId')
