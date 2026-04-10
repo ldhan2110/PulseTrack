@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
@@ -20,6 +20,15 @@ import { TestCaseForm } from '@/components/test-cases/TestCaseForm';
 import { SuiteManager } from '@/components/test-cases/SuiteManager';
 import { ImportTestCasesDialog } from '@/components/test-cases/ImportTestCasesDialog';
 import type { TestCase } from '@/lib/types';
+import { Sparkles } from 'lucide-react';
+import { GenerateTestCasesModal } from '@/components/test-cases/GenerateTestCasesModal';
+import { TestCaseGenerationWizard } from '@/components/test-cases/TestCaseGenerationWizard';
+import { useAiTestCaseGeneration } from '@/hooks/useAiTestCaseGeneration';
+import { useAiConfig } from '@/hooks/useAiConfig';
+import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
+import type { Task } from '@/lib/types';
+import { api } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 export function TestCasesPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
@@ -36,6 +45,43 @@ export function TestCasesPage() {
   const [editingCase, setEditingCase] = useState<TestCase | null>(null);
   const [suiteManagerOpen, setSuiteManagerOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  const { data: aiConfig } = useAiConfig(projectId);
+  const { data: repoConfig } = useRepositoryConfig(projectId);
+  const canGenerate = !!aiConfig && repoConfig?.cloneStatus === 'cloned';
+
+  const aiGeneration = useAiTestCaseGeneration(projectId);
+
+  // Fetch project tasks for the modal task selector
+  const { data: projectTasks = [] } = useQuery({
+    queryKey: ['tasks', projectId],
+    queryFn: () => api.getTasks(projectId),
+    enabled: !!projectId && generateOpen,
+  });
+
+  const handleGenerateSubmit = (formData: FormData) => {
+    aiGeneration.generate.mutate(formData);
+  };
+
+  // Auto-open wizard when generation completes
+  useEffect(() => {
+    if (aiGeneration.isCompleted && !wizardOpen && generateOpen) {
+      setGenerateOpen(false);
+      setWizardOpen(true);
+    }
+  }, [aiGeneration.isCompleted, wizardOpen, generateOpen]);
+
+  const handleWizardClose = (open: boolean) => {
+    setWizardOpen(open);
+    if (!open) aiGeneration.reset();
+  };
+
+  const handleGenerateClose = (open: boolean) => {
+    setGenerateOpen(open);
+    if (!open && !aiGeneration.isCompleted) aiGeneration.reset();
+  };
 
   // Build query filters
   const filters: Record<string, string> = {};
@@ -72,6 +118,12 @@ export function TestCasesPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
           <div className="flex items-center gap-2">
+            {canGenerate && (
+              <Button variant="outline" onClick={() => setGenerateOpen(true)}>
+                <Sparkles className="size-3.5 mr-1.5" />
+                AI Generate
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <FileSpreadsheet className="size-3.5 mr-1.5" />
               Import Excel
@@ -123,6 +175,27 @@ export function TestCasesPage() {
           projectId={projectId}
           modules={modules}
         />
+        <GenerateTestCasesModal
+          open={generateOpen}
+          onOpenChange={handleGenerateClose}
+          tasks={projectTasks as Task[]}
+          isProcessing={aiGeneration.isLoading}
+          step={aiGeneration.step}
+          error={aiGeneration.error}
+          rawText={aiGeneration.rawText}
+          onSubmit={handleGenerateSubmit}
+          onCancel={aiGeneration.cancel}
+          onRetry={aiGeneration.retry}
+        />
+        {wizardOpen && aiGeneration.testCases.length > 0 && (
+          <TestCaseGenerationWizard
+            open={wizardOpen}
+            onOpenChange={handleWizardClose}
+            testCases={aiGeneration.testCases}
+            projectId={projectId}
+            modules={modules}
+          />
+        )}
       </div>
     );
   }
@@ -132,6 +205,12 @@ export function TestCasesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
         <div className="flex items-center gap-2">
+          {canGenerate && (
+            <Button variant="outline" onClick={() => setGenerateOpen(true)}>
+              <Sparkles className="size-3.5 mr-1.5" />
+              AI Generate
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <FileSpreadsheet className="size-3.5 mr-1.5" />
             Import Excel
@@ -228,6 +307,27 @@ export function TestCasesPage() {
         projectId={projectId}
         modules={modules}
       />
+      <GenerateTestCasesModal
+        open={generateOpen}
+        onOpenChange={handleGenerateClose}
+        tasks={projectTasks as Task[]}
+        isProcessing={aiGeneration.isLoading}
+        step={aiGeneration.step}
+        error={aiGeneration.error}
+        rawText={aiGeneration.rawText}
+        onSubmit={handleGenerateSubmit}
+        onCancel={aiGeneration.cancel}
+        onRetry={aiGeneration.retry}
+      />
+      {wizardOpen && aiGeneration.testCases.length > 0 && (
+        <TestCaseGenerationWizard
+          open={wizardOpen}
+          onOpenChange={handleWizardClose}
+          testCases={aiGeneration.testCases}
+          projectId={projectId}
+          modules={modules}
+        />
+      )}
     </div>
   );
 }
