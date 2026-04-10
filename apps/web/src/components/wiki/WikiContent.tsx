@@ -1,9 +1,30 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeSlug from 'rehype-slug';
+import mermaid from 'mermaid';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WikiAnnotations } from './WikiAnnotations';
 import { useWikiPage } from '@/hooks/useWiki';
+
+mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+function MermaidBlock({ children }: { children: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [svg, setSvg] = useState('');
+
+  useEffect(() => {
+    const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
+    mermaid.render(id, children).then(({ svg }) => setSvg(svg)).catch(() => {
+      setSvg(`<pre class="text-red-500 text-sm">Failed to render mermaid diagram</pre>`);
+    });
+  }, [children]);
+
+  return <div ref={ref} className="my-4" dangerouslySetInnerHTML={{ __html: svg }} />;
+}
 
 interface Props {
   projectId: string;
@@ -13,27 +34,6 @@ interface Props {
   onSectionScrolled: () => void;
 }
 
-function parseMarkdownToHtml(markdown: string): string {
-  const withoutFrontmatter = markdown.replace(/^---[\s\S]*?---\n*/, '');
-
-  return withoutFrontmatter
-    .replace(/^#### (.+)$/gm, '<h4 id="$1" class="text-sm font-semibold text-primary mt-6 mb-2">$1</h4>')
-    .replace(/^### (.+)$/gm, '<h3 id="$1" class="text-base font-semibold text-primary mt-6 mb-2">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 id="$1" class="text-lg font-bold mt-8 mb-3">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 id="$1" class="text-xl font-bold mb-4">$1</h1>')
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-muted p-3 rounded-md text-sm overflow-x-auto my-3"><code>$2</code></pre>')
-    .replace(/`([^`]+)`/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-sm">$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^\|(.+)\|$/gm, (match) => {
-      const cells = match.split('|').filter(Boolean).map((c) => c.trim());
-      const row = cells.map((c) => `<td class="border px-3 py-1.5 text-sm">${c}</td>`).join('');
-      return `<tr>${row}</tr>`;
-    })
-    .replace(/^- (.+)$/gm, '<li class="ml-4 text-sm">$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 text-sm">$2</li>')
-    .replace(/\n\n/g, '</p><p class="text-sm text-foreground/80 mb-3">')
-    .replace(/\n/g, '<br/>');
-}
 
 export function WikiContent({ projectId, pagePath, currentUserId, scrollToSection, onSectionScrolled }: Props) {
   const { data: page, isLoading } = useWikiPage(projectId, pagePath);
@@ -79,7 +79,7 @@ export function WikiContent({ projectId, pagePath, currentUserId, scrollToSectio
   const generatedAtMatch = page.content.match(/^generatedAt:\s*(.+)$/m);
   const generatedAt = generatedAtMatch ? generatedAtMatch[1].trim() : null;
 
-  const html = parseMarkdownToHtml(page.content);
+  const contentWithoutFrontmatter = page.content.replace(/^---[\s\S]*?---\n*/, '');
 
   return (
     <ScrollArea className="h-full">
@@ -96,10 +96,73 @@ export function WikiContent({ projectId, pagePath, currentUserId, scrollToSectio
           )}
         </div>
 
-        <div
-          className="prose prose-sm dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight, rehypeSlug]}
+            components={{
+              h1: ({ children, ...props }) => (
+                <h1 className="text-xl font-bold mb-4" {...props}>{children}</h1>
+              ),
+              h2: ({ children, ...props }) => (
+                <h2 className="text-lg font-bold mt-8 mb-3" {...props}>{children}</h2>
+              ),
+              h3: ({ children, ...props }) => (
+                <h3 className="text-base font-semibold text-primary mt-6 mb-2" {...props}>{children}</h3>
+              ),
+              h4: ({ children, ...props }) => (
+                <h4 className="text-sm font-semibold text-primary mt-6 mb-2" {...props}>{children}</h4>
+              ),
+              table: ({ children }) => (
+                <div className="overflow-x-auto my-4">
+                  <table className="w-full border-collapse">{children}</table>
+                </div>
+              ),
+              th: ({ children }) => (
+                <th className="border px-3 py-1.5 text-sm font-semibold bg-muted text-left">{children}</th>
+              ),
+              td: ({ children }) => (
+                <td className="border px-3 py-1.5 text-sm">{children}</td>
+              ),
+              li: ({ children }) => (
+                <li className="ml-4 text-sm">{children}</li>
+              ),
+              p: ({ children }) => (
+                <p className="text-sm text-foreground/80 mb-3">{children}</p>
+              ),
+              code: ({ className, children, ...props }) => {
+                const match = /language-(\w+)/.exec(className || '');
+                const lang = match?.[1];
+                const codeStr = String(children).replace(/\n$/, '');
+
+                if (lang === 'mermaid') {
+                  return <MermaidBlock>{codeStr}</MermaidBlock>;
+                }
+
+                if (!className) {
+                  return (
+                    <code className="bg-muted px-1.5 py-0.5 rounded text-sm" {...props}>
+                      {children}
+                    </code>
+                  );
+                }
+
+                return (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+              pre: ({ children }) => (
+                <pre className="bg-muted p-3 rounded-md text-sm overflow-x-auto my-3">
+                  {children}
+                </pre>
+              ),
+            }}
+          >
+            {contentWithoutFrontmatter}
+          </ReactMarkdown>
+        </div>
 
         <WikiAnnotations
           projectId={projectId}
