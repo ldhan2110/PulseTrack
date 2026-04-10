@@ -16,7 +16,7 @@ export class WikiConfigService {
       create: {
         projectId,
         autoUpdate: dto.autoUpdate ?? 'manual',
-        sections: dto.sections ?? ['architecture', 'modules', 'features', 'business-logic', 'api-reference', 'data-models', 'glossary'],
+        sections: dto.sections ?? ['architecture', 'modules', 'features', 'business-logic', 'api-reference', 'data-models', 'glossary', 'user-guide'],
       },
       update: {
         ...(dto.autoUpdate !== undefined && { autoUpdate: dto.autoUpdate }),

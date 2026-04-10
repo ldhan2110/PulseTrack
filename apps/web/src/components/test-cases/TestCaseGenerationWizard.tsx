@@ -226,7 +226,7 @@ export function TestCaseGenerationWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] p-0 overflow-hidden" style={{ maxWidth: "none"}}>
+      <DialogContent className="w-[70vw] max-h-[85vh] h-[85vh] p-0 overflow-hidden" style={{ maxWidth: "none"}}>
         <DialogHeader className="px-6 pt-4 pb-2 border-b">
           <DialogTitle className="flex items-center justify-between">
             <span>Review Generated Test Cases</span>
@@ -234,9 +234,9 @@ export function TestCaseGenerationWizard({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-h-[500px] max-h-[calc(85vh-120px)]">
+        <div className="flex min-h-125 max-h-[calc(85vh-120px)]">
           {/* Left sidebar */}
-          <div className="w-[250px] border-r overflow-y-auto shrink-0">
+          <div className="w-62.5 border-r overflow-y-auto shrink-0">
             {grouped.map((group) => (
               <div key={group.title}>
                 <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b bg-muted/30 truncate">

@@ -833,7 +833,6 @@ export interface BulkImportResult {
 export interface WikiConfig {
   id: string;
   projectId: string;
-  wikiPath: string;
   autoUpdate: 'manual' | 'on-pull' | 'scheduled';
   sections: string[];
   lastGeneratedAt: string | null;

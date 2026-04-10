@@ -28,7 +28,7 @@ export function WikiPage() {
   const { user } = useAuth();
   const { can } = usePermissions(projectId);
 
-  const { data: tree = [], isLoading: treeLoading } = useWikiPages(projectId);
+  const { data: tree = [] } = useWikiPages(projectId);
   const { data: config } = useWikiConfig(projectId);
   const { generate, step, isActive, sectionProgress, completedSections, totalSections } =
     useWikiGeneration(projectId);
@@ -65,7 +65,7 @@ export function WikiPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => generate.mutate()}
+                onClick={() => generate.mutate(undefined)}
                 disabled={isActive || generate.isPending}
               >
                 <RefreshCw className={`size-3.5 mr-1.5 ${isActive ? 'animate-spin' : ''}`} />
@@ -123,7 +123,7 @@ export function WikiPage() {
       )}
 
       {/* 3-Panel Layout */}
-      <PanelGroup direction="horizontal" autoSaveId="wiki-panels">
+      <PanelGroup orientation="horizontal" id="wiki-panels">
         {/* Panel 1: Tree */}
         <Panel defaultSize={15} minSize={10} collapsible>
           <WikiTree
@@ -152,7 +152,6 @@ export function WikiPage() {
         <Panel defaultSize={30} minSize={15} collapsible>
           <WikiChat
             projectId={projectId}
-            currentPagePath={selectedPath}
             onScrollToSection={handleScrollToSection}
           />
         </Panel>

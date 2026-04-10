@@ -16,7 +16,6 @@ interface ChatMessage {
 
 interface Props {
   projectId: string;
-  currentPagePath: string | null;
   onScrollToSection: (section: string) => void;
 }
 
@@ -26,7 +25,7 @@ const QUICK_PROMPTS = [
   { label: 'Business rules', prompt: 'What are the business rules and constraints?' },
 ];
 
-export function WikiChat({ projectId, currentPagePath, onScrollToSection }: Props) {
+export function WikiChat({ projectId, onScrollToSection }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);

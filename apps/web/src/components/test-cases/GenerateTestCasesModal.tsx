@@ -125,13 +125,13 @@ export function GenerateTestCasesModal({
   const filteredTasks = tasks.filter((t) => {
     if (taskSearch && !t.title.toLowerCase().includes(taskSearch.toLowerCase()) && !t.taskKey?.toLowerCase().includes(taskSearch.toLowerCase())) return false;
     if (sprintFilter !== 'ALL' && t.sprintId !== sprintFilter) return false;
-    if (statusFilter !== 'ALL' && t.status?.name !== statusFilter) return false;
+    if (statusFilter !== 'ALL' && t.workflowStatus?.name !== statusFilter) return false;
     return true;
   });
 
   // Collect unique sprints and statuses from tasks for filters
   const sprints = [...new Map(tasks.filter((t) => t.sprintId && t.sprint).map((t) => [t.sprintId, t.sprint!.name])).entries()];
-  const statuses = [...new Set(tasks.map((t) => t.status?.name).filter(Boolean))] as string[];
+  const statuses = [...new Set(tasks.map((t) => t.workflowStatus?.name).filter(Boolean))] as string[];
 
   const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files ?? []);

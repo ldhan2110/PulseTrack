@@ -20,7 +20,8 @@ export class WikiGenerationService {
   getWikiPath(projectId: string): string {
     const configDir = this.config.get<string>('WIKI_DIR');
     if (!configDir) {
-      return join(process.cwd(), 'wikis', projectId);
+      // Default: repo-root/wikis/{projectId} — same level as workspaces/
+      return resolve(process.cwd(), '..', '..', 'wikis', projectId);
     }
     const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), configDir);
     return join(baseDir, projectId);
@@ -61,6 +62,23 @@ export class WikiGenerationService {
       ``,
       `The wiki should include structured markdown files with YAML frontmatter (title, section, generatedAt, relatedFiles, tags).`,
       `Organize output into subdirectories per section (e.g., architecture/, modules/, features/).`,
+      ``,
+      `## IMPORTANT: Full Module Coverage`,
+      `For the following sections, you MUST generate a dedicated page for EVERY module in the codebase — not just a subset:`,
+      `- **business-logic/**: One page per module covering its core business rules, workflows, validations, and edge cases.`,
+      `- **features/**: One page per module covering all features it provides — integrations, scheduled jobs, real-time capabilities, etc.`,
+      `- **modules/**: One page per module covering its purpose, dependencies, providers, and exports.`,
+      `- **api-reference/**: One page per module covering all its API endpoints, request/response schemas, and error codes.`,
+      `- **data-models/**: One page per module covering its entities, DTOs, enums, and relationships.`,
+      `Scan the entire src/ directory to discover ALL modules. Do not skip any module.`,
+      ``,
+      `## User Guide Section`,
+      `If "user-guide" is in the sections list, generate high-level feature documentation written for non-technical end users:`,
+      `- Use plain language — no code, no architecture jargon, no technical implementation details.`,
+      `- Each page should describe WHAT the feature does, WHY it matters, and HOW to use it from the user's perspective.`,
+      `- Include typical workflows, step-by-step instructions, and expected outcomes.`,
+      `- Cover every user-facing feature across all modules.`,
+      `- Think of this as a product guide or feature spec that could be shared with stakeholders or customers.`,
     ];
     if (projectContext) {
       parts.push(`\n## Project Context\n${projectContext}`);

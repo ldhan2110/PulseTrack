@@ -12,6 +12,7 @@ const SECTION_ICONS: Record<string, string> = {
   'api-reference': '🔌',
   'data-models': '🗄️',
   glossary: '📚',
+  'user-guide': '📖',
   qa: '💬',
 };
 
@@ -36,6 +37,10 @@ function TreeNode({
 }) {
   const [expanded, setExpanded] = useState(depth === 0);
 
+  // Auto-expand directories when filter is active and matches children
+  const isFilterActive = !!filter;
+  const shouldAutoExpand = isFilterActive && node.type === 'directory' && matchesNode(node, filter);
+
   if (node.type === 'directory') {
     const matchesFilter =
       !filter ||
@@ -43,6 +48,8 @@ function TreeNode({
       node.children?.some((c) => matchesNode(c, filter));
 
     if (!matchesFilter) return null;
+
+    const isExpanded = shouldAutoExpand || expanded;
 
     const icon = SECTION_ICONS[node.name] ?? '';
 
@@ -54,10 +61,10 @@ function TreeNode({
           className="flex items-center gap-1 w-full text-left px-2 py-1 text-sm rounded hover:bg-muted/50 text-muted-foreground hover:text-foreground"
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
         >
-          {expanded ? <ChevronDown className="size-3.5 shrink-0" /> : <ChevronRight className="size-3.5 shrink-0" />}
+          {isExpanded ? <ChevronDown className="size-3.5 shrink-0" /> : <ChevronRight className="size-3.5 shrink-0" />}
           <span>{icon} {node.name}/</span>
         </button>
-        {expanded &&
+        {isExpanded &&
           node.children?.map((child) => (
             <TreeNode
               key={child.path}

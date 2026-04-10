@@ -9,7 +9,7 @@ import { useWikiGeneration } from '@/hooks/useWikiGeneration';
 
 const ALL_SECTIONS = [
   'architecture', 'modules', 'features', 'business-logic',
-  'api-reference', 'data-models', 'glossary',
+  'api-reference', 'data-models', 'glossary', 'user-guide',
 ];
 
 const AUTO_UPDATE_OPTIONS = [
@@ -59,13 +59,6 @@ export function WikiConfigCard({ projectId, canManage }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {config?.wikiPath && (
-          <div className="space-y-1">
-            <Label className="text-muted-foreground text-xs">Wiki Storage Path</Label>
-            <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{config.wikiPath}</p>
-          </div>
-        )}
-
         <div className="space-y-2">
           <Label>Auto-Update Mode</Label>
           <div className="flex gap-2">
@@ -117,7 +110,7 @@ export function WikiConfigCard({ projectId, canManage }: Props) {
             </Button>
             <Button
               variant="outline"
-              onClick={() => generate.mutate()}
+              onClick={() => generate.mutate(undefined)}
               disabled={isActive || generate.isPending}
             >
               <RefreshCw className={`size-4 mr-2 ${isActive ? 'animate-spin' : ''}`} />
