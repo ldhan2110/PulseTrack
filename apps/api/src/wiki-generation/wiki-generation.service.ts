@@ -212,8 +212,11 @@ export class WikiGenerationService {
   ) {}
 
   getWikiPath(projectId: string): string {
-    const configDir = this.config.get<string>('WIKI_DIR', 'wikis');
-    const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), '..', '..', configDir);
+    const configDir = this.config.get<string>('WIKI_DIR');
+    if (!configDir) {
+      return join(process.cwd(), 'wikis', projectId);
+    }
+    const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), configDir);
     return join(baseDir, projectId);
   }
 
