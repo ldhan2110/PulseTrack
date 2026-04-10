@@ -30,11 +30,35 @@ export function useWikiGeneration(projectId: string) {
   const [step, setStep] = useState<WikiGenerationStep>('idle');
   const [streamText, setStreamText] = useState('');
   const [sectionProgress, setSectionProgress] = useState<SectionProgress[]>([]);
+  const [recovered, setRecovered] = useState(false);
 
   const isActive = !!jobId && step !== 'idle' && step !== 'completed' && step !== 'failed';
 
   const completedSections = sectionProgress.filter((s) => s.status === 'done').length;
   const totalSections = sectionProgress.length;
+
+  // Recover active job on mount (handles page navigation + refresh)
+  const { data: activeJob } = useQuery({
+    queryKey: ['wiki-active-job', projectId],
+    queryFn: () => api.getActiveWikiJob(projectId),
+    enabled: !!projectId && !jobId && !recovered,
+    staleTime: 0,
+  });
+
+  useEffect(() => {
+    if (!activeJob || recovered) return;
+    setRecovered(true);
+    if (activeJob.active && activeJob.jobId) {
+      setJobId(activeJob.jobId);
+      setStep(activeJob.step ?? 'queued');
+      // Pre-populate sections from the recovered job data
+      if (activeJob.sections?.length) {
+        setSectionProgress(
+          activeJob.sections.map((s) => ({ section: s, status: 'pending' as const })),
+        );
+      }
+    }
+  }, [activeJob, recovered]);
 
   const generate = useMutation({
     mutationFn: (section?: string) => api.triggerWikiGeneration(projectId, section),
@@ -42,7 +66,15 @@ export function useWikiGeneration(projectId: string) {
       setJobId(data.jobId);
       setStep('queued');
       setStreamText('');
-      setSectionProgress([]);
+      // Pre-populate sections from wiki config (available via queryClient cache)
+      const config = queryClient.getQueryData<{ sections: string[] }>(['wikiConfig', projectId]);
+      if (config?.sections) {
+        setSectionProgress(
+          config.sections.map((s) => ({ section: s, status: 'pending' as const })),
+        );
+      } else {
+        setSectionProgress([]);
+      }
       toast.success('Wiki generation started');
     },
     onError: (error: Error) => {
