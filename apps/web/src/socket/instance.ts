@@ -5,7 +5,7 @@ let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
-    socket = io(import.meta.env.VITE_API_URL || '/', {
+    socket = io(import.meta.env.VITE_SOCKET_URL || '/', {
       auth: { token: keycloak.token },
       transports: ['websocket'],
       autoConnect: false,
