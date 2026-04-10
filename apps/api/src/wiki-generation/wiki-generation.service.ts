@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { isAbsolute, resolve, join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { decrypt } from '../common/encryption.util';
 
@@ -210,6 +211,12 @@ export class WikiGenerationService {
     private readonly config: ConfigService,
   ) {}
 
+  getWikiPath(projectId: string): string {
+    const configDir = this.config.get<string>('WIKI_DIR', 'wikis');
+    const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), '..', '..', configDir);
+    return join(baseDir, projectId);
+  }
+
   async getProjectConfig(projectId: string) {
     const aiConfig = await this.prisma.aiConfig.findUnique({ where: { projectId } });
     if (!aiConfig) throw new BadRequestException('AI configuration not found. Save AI settings first.');
@@ -232,7 +239,7 @@ export class WikiGenerationService {
       projectContext: aiConfig.projectContext,
       workspacePath: repoConfig.workspacePath!,
       cli: CLI_COMMANDS[aiConfig.provider] ?? aiConfig.provider,
-      wikiPath: wikiConfig.wikiPath,
+      wikiPath: this.getWikiPath(projectId),
       sections: wikiConfig.sections,
     };
   }
