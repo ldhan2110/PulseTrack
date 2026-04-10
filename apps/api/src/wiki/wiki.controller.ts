@@ -1,19 +1,19 @@
 import {
-  Controller, Get, Post, Put, Delete, Param, Query, Body, Req, UseGuards, NotFoundException,
+  Controller, Get, Post, Put, Delete, Param, Query, Body, Req, UseGuards,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { WikiService } from './wiki.service';
-import { WikiConfigService } from '../wiki-config/wiki-config.service';
+import { WikiGenerationService } from '../wiki-generation/wiki-generation.service';
 
 @Controller('projects/:projectId/wiki')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
 export class WikiController {
   constructor(
     private readonly service: WikiService,
-    private readonly wikiConfigService: WikiConfigService,
+    private readonly wikiGenService: WikiGenerationService,
     @InjectQueue('wiki-generation') private readonly queue: Queue,
   ) {}
 
@@ -73,14 +73,13 @@ export class WikiController {
     @Req() req: any,
     @Body() body: { question: string },
   ) {
-    const config = await this.wikiConfigService.findByProjectId(projectId);
-    if (!config) throw new NotFoundException('Wiki configuration not found.');
+    const wikiPath = this.wikiGenService.getWikiPath(projectId);
 
     const job = await this.queue.add('wiki-qa', {
       projectId,
       userId: req.user.id,
       question: body.question,
-      wikiPath: config.wikiPath,
+      wikiPath,
     }, {
       removeOnComplete: { age: 86400 },
       removeOnFail: { age: 86400 },

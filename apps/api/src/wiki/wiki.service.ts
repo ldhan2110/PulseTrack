@@ -3,7 +3,7 @@ import { readdir, readFile, stat, unlink } from 'fs/promises';
 import { join, relative } from 'path';
 import { existsSync } from 'fs';
 import { PrismaService } from '../prisma/prisma.service';
-import { WikiConfigService } from '../wiki-config/wiki-config.service';
+import { WikiGenerationService } from '../wiki-generation/wiki-generation.service';
 
 export interface WikiTreeNode {
   name: string;
@@ -16,13 +16,13 @@ export interface WikiTreeNode {
 export class WikiService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly wikiConfigService: WikiConfigService,
+    private readonly wikiGenService: WikiGenerationService,
   ) {}
 
   async getPageTree(projectId: string): Promise<WikiTreeNode[]> {
-    const config = await this.wikiConfigService.findByProjectId(projectId);
-    if (!config || !existsSync(config.wikiPath)) return [];
-    return this.buildTree(config.wikiPath, config.wikiPath);
+    const wikiPath = this.wikiGenService.getWikiPath(projectId);
+    if (!existsSync(wikiPath)) return [];
+    return this.buildTree(wikiPath, wikiPath);
   }
 
   private async buildTree(rootPath: string, currentPath: string): Promise<WikiTreeNode[]> {
@@ -46,20 +46,19 @@ export class WikiService {
   }
 
   async getPage(projectId: string, pagePath: string): Promise<{ path: string; content: string }> {
-    const config = await this.wikiConfigService.findByProjectId(projectId);
-    if (!config) throw new NotFoundException('Wiki not configured');
-    const fullPath = join(config.wikiPath, pagePath);
+    const wikiPath = this.wikiGenService.getWikiPath(projectId);
+    const fullPath = join(wikiPath, pagePath);
     if (!existsSync(fullPath)) throw new NotFoundException(`Wiki page not found: ${pagePath}`);
     const content = await readFile(fullPath, 'utf-8');
     return { path: pagePath, content };
   }
 
   async searchPages(projectId: string, query: string): Promise<Array<{ path: string; title: string; snippet: string }>> {
-    const config = await this.wikiConfigService.findByProjectId(projectId);
-    if (!config || !existsSync(config.wikiPath)) return [];
+    const wikiPath = this.wikiGenService.getWikiPath(projectId);
+    if (!existsSync(wikiPath)) return [];
     const results: Array<{ path: string; title: string; snippet: string }> = [];
     const lowerQuery = query.toLowerCase();
-    await this.searchDir(config.wikiPath, config.wikiPath, lowerQuery, results);
+    await this.searchDir(wikiPath, wikiPath, lowerQuery, results);
     return results.slice(0, 20);
   }
 
@@ -143,10 +142,10 @@ export class WikiService {
   // ─── Q&A ───────────────────────────────────────────────────────────
 
   async getQaHistory(projectId: string): Promise<Array<{ id: string; question: string; answer: string; createdAt: string }>> {
-    const config = await this.wikiConfigService.findByProjectId(projectId);
-    if (!config || !existsSync(join(config.wikiPath, 'qa'))) return [];
+    const wikiPath = this.wikiGenService.getWikiPath(projectId);
+    if (!existsSync(join(wikiPath, 'qa'))) return [];
 
-    const qaDir = join(config.wikiPath, 'qa');
+    const qaDir = join(wikiPath, 'qa');
     const entries = await readdir(qaDir);
     const results: Array<{ id: string; question: string; answer: string; createdAt: string }> = [];
 
@@ -170,12 +169,9 @@ export class WikiService {
   }
 
   async deleteQa(projectId: string, qaId: string): Promise<void> {
-    const config = await this.wikiConfigService.findByProjectId(projectId);
-    if (!config) throw new NotFoundException('Wiki not configured');
-
-    const filePath = join(config.wikiPath, 'qa', `${qaId}.md`);
+    const wikiPath = this.wikiGenService.getWikiPath(projectId);
+    const filePath = join(wikiPath, 'qa', `${qaId}.md`);
     if (!existsSync(filePath)) throw new NotFoundException('Q&A entry not found');
-
     await unlink(filePath);
   }
 }
