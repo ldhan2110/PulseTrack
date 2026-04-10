@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { WikiGenerationController } from './wiki-generation.controller';
 import { WikiGenerationService } from './wiki-generation.service';
@@ -9,7 +9,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [
     NotificationsModule,
-    WikiConfigModule,
+    forwardRef(() => WikiConfigModule),
     BullModule.registerQueue({ name: 'wiki-generation' }),
   ],
   controllers: [WikiGenerationController],
