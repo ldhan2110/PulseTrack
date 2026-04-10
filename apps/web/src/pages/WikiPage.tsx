@@ -8,6 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useWikiPages, useWikiConfig } from '@/hooks/useWiki';
 import { useWikiGeneration } from '@/hooks/useWikiGeneration';
 import { useAuth } from '@/auth/useAuth';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { WikiTree } from '@/components/wiki/WikiTree';
 import { WikiContent } from '@/components/wiki/WikiContent';
 import { WikiChat } from '@/components/wiki/WikiChat';
@@ -122,18 +123,20 @@ export function WikiPage() {
       )}
 
       {/* 3-Panel Layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <PanelGroup direction="horizontal" autoSaveId="wiki-panels">
         {/* Panel 1: Tree */}
-        <div className="w-56 shrink-0">
+        <Panel defaultSize={15} minSize={10} collapsible>
           <WikiTree
             tree={tree}
             selectedPath={selectedPath}
             onSelectPage={setSelectedPath}
           />
-        </div>
+        </Panel>
+
+        <PanelResizeHandle className="w-1 bg-border hover:bg-primary/20 transition-colors cursor-col-resize" />
 
         {/* Panel 2: Content */}
-        <div className="flex-1 min-w-0">
+        <Panel defaultSize={55} minSize={30}>
           <WikiContent
             projectId={projectId}
             pagePath={selectedPath}
@@ -141,17 +144,19 @@ export function WikiPage() {
             scrollToSection={scrollToSection}
             onSectionScrolled={handleSectionScrolled}
           />
-        </div>
+        </Panel>
+
+        <PanelResizeHandle className="w-1 bg-border hover:bg-primary/20 transition-colors cursor-col-resize" />
 
         {/* Panel 3: Chat */}
-        <div className="w-80 shrink-0">
+        <Panel defaultSize={30} minSize={15} collapsible>
           <WikiChat
             projectId={projectId}
             currentPagePath={selectedPath}
             onScrollToSection={handleScrollToSection}
           />
-        </div>
-      </div>
+        </Panel>
+      </PanelGroup>
     </div>
   );
 }
