@@ -12,6 +12,14 @@ import { WikiTree } from '@/components/wiki/WikiTree';
 import { WikiContent } from '@/components/wiki/WikiContent';
 import { WikiChat } from '@/components/wiki/WikiChat';
 
+const STEP_LABELS: Record<string, string> = {
+  queued: 'Waiting in queue...',
+  pulling: 'Pulling latest code...',
+  'building-graph': 'Building code graph...',
+  'generating-sections': 'Generating wiki sections...',
+  'writing-meta': 'Finalizing...',
+};
+
 export function WikiPage() {
   const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
   const navigate = useNavigate();
@@ -34,6 +42,8 @@ export function WikiPage() {
   const handleSectionScrolled = useCallback(() => {
     setScrollToSection(null);
   }, []);
+
+  const showSectionProgress = step === 'generating-sections' && totalSections > 0;
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)]">
@@ -58,7 +68,7 @@ export function WikiPage() {
                 disabled={isActive || generate.isPending}
               >
                 <RefreshCw className={`size-3.5 mr-1.5 ${isActive ? 'animate-spin' : ''}`} />
-                {isActive ? `${step}...` : 'Refresh'}
+                {isActive ? `${STEP_LABELS[step] ?? step}` : 'Refresh'}
               </Button>
               <Button
                 variant="ghost"
@@ -74,27 +84,40 @@ export function WikiPage() {
       </div>
 
       {/* Generation progress banner */}
-      {isActive && totalSections > 0 && (
+      {isActive && (
         <div className="px-4 py-2 border-b bg-blue-50 dark:bg-blue-950/30 shrink-0">
           <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
             <Loader2 className="size-3.5 animate-spin" />
             <span className="font-medium">
-              Wiki is being generated — {completedSections}/{totalSections} sections complete
+              {showSectionProgress
+                ? `Wiki is being generated — ${completedSections}/${totalSections} sections complete`
+                : STEP_LABELS[step] ?? `Processing (${step})...`}
             </span>
           </div>
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {sectionProgress.map((sp) => (
-              <Badge
-                key={sp.section}
-                variant={sp.status === 'done' ? 'default' : sp.status === 'error' ? 'destructive' : 'outline'}
-                className="text-xs"
-              >
-                {sp.status === 'generating' && <Loader2 className="size-2.5 animate-spin mr-1" />}
-                {sp.section}
-                {sp.pagesGenerated ? ` (${sp.pagesGenerated})` : ''}
-              </Badge>
-            ))}
-          </div>
+          {/* Progress bar */}
+          {totalSections > 0 && (
+            <div className="mt-1.5 h-1 bg-blue-100 dark:bg-blue-900 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${totalSections > 0 ? (completedSections / totalSections) * 100 : 0}%` }}
+              />
+            </div>
+          )}
+          {showSectionProgress && (
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {sectionProgress.map((sp) => (
+                <Badge
+                  key={sp.section}
+                  variant={sp.status === 'done' ? 'default' : sp.status === 'error' ? 'destructive' : 'outline'}
+                  className="text-xs"
+                >
+                  {sp.status === 'generating' && <Loader2 className="size-2.5 animate-spin mr-1" />}
+                  {sp.section}
+                  {sp.pagesGenerated ? ` (${sp.pagesGenerated})` : ''}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
