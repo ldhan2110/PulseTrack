@@ -239,13 +239,9 @@ export class WikiGenerationProcessor extends WorkerHost {
     try {
       const config = await this.wikiService.getProjectConfig(projectId);
 
-      const qaPrompt = `You have access to the code-review-graph MCP tools and wiki files at ${wikiPath}.
-Read the relevant wiki markdown files and use code-graph tools to answer this question:
+      const qaPrompt = `Use /llm-wiki query to answer this question: "${question}"
 
-"${question}"
-
-Include "See: [Section Name]" references when your answer relates to specific wiki sections.
-Format your answer clearly with bullet points and code references where relevant.
+The wiki directory is at: ${wikiPath}
 
 After answering, save the Q&A as a markdown file:
 <!-- file: qa/${Date.now()}.md -->
@@ -253,7 +249,7 @@ After answering, save the Q&A as a markdown file:
 title: ${question.slice(0, 100)}
 question: ${question}
 section: qa
-createdAt: ${new Date().toISOString()}
+generatedAt: ${new Date().toISOString()}
 ---
 
 [Your answer here]`;
