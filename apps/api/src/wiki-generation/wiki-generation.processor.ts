@@ -111,6 +111,7 @@ export class WikiGenerationProcessor extends WorkerHost {
 
     try {
       const config = await this.wikiService.getProjectConfig(projectId);
+      const result: WikiGenerationJobResult = { pagesGenerated: 0, sections: {}, errors: [] };
 
       // Step 1: git pull
       currentStep = 'pulling';
@@ -125,105 +126,66 @@ export class WikiGenerationProcessor extends WorkerHost {
       if (!pullOutput.trim()) emitStream('Already up to date.\n');
       emitStream('\n');
 
-      // Step 2: Build code graph
-      currentStep = 'building-graph';
-      this.emitStep(userId, job, 'building-graph');
-      emitStream(`$ ${config.cli} (building code graph)\n`);
-
-      const graphPrompt = this.wikiService.buildGraphPrompt();
-      const graphArgs = this.wikiService.buildCliArgs(config.provider, config.model, graphPrompt);
-      const graphEnv = this.wikiService.buildCliEnv(config.provider, config.apiKey);
-
-      await this.runCliStreaming(config.cli, graphArgs, {
-        cwd: config.workspacePath,
-        timeout: 300_000,
-        env: { ...process.env, ...graphEnv },
-      }, job.id, emitStream);
-
-      emitStream('\n');
-
-      // Step 3: Generate all sections in PARALLEL — each uses a specialized voltagent sub-agent
-      const result: WikiGenerationJobResult = { pagesGenerated: 0, sections: {}, errors: [] };
-
+      // Step 2: Run llm-wiki ingest via CLI
       currentStep = 'generating-sections';
       this.emitStep(userId, job, 'generating-sections');
-      emitStream(`\nStarting parallel generation of ${sections.length} section(s): ${sections.join(', ')}\n`);
+      emitStream(`$ ${config.cli} (llm-wiki ingest: ${sections.join(', ')})\n`);
 
-      const sectionPromises = sections.map(async (section) => {
-        const sectionConfig = this.wikiService.getSectionConfig(section);
-        this.logger.log(`[Wiki ${job.id}] Dispatching ${section} → agent: ${sectionConfig.agent}`);
-        emitStream(`\n[${section}] Dispatching to ${sectionConfig.agent}...\n`);
-
+      // Pre-notify all sections as generating
+      for (const section of sections) {
         this.notifications.notifyUser(userId, 'wiki-generation:section-start', {
           jobId: job.id,
           section,
-          agent: sectionConfig.agent,
+          agent: 'llm-wiki',
         });
+      }
 
-        try {
-          const sectionPrompt = this.wikiService.buildSectionPrompt(section, config.projectContext);
-          const sectionArgs = this.wikiService.buildCliArgs(config.provider, config.model, sectionPrompt);
-          const sectionEnv = this.wikiService.buildCliEnv(config.provider, config.apiKey);
+      const ingestPrompt = this.wikiService.buildLlmWikiIngestPrompt(
+        config.wikiPath,
+        sections,
+        config.projectContext,
+      );
+      const ingestArgs = this.wikiService.buildCliArgs(config.provider, config.model, ingestPrompt);
+      const ingestEnv = this.wikiService.buildCliEnv(config.provider, config.apiKey);
 
-          // No hard timeout — let each agent run to completion
-          const rawOutput = await this.runCliStreaming(config.cli, sectionArgs, {
-            cwd: config.workspacePath,
-            timeout: 0,
-            env: { ...process.env, ...sectionEnv },
-          }, job.id, (chunk) => {
-            // Per-section stream tagged with section name
-            emitStream(`[${section}] ${chunk}`);
-          });
+      const rawOutput = await this.runCliStreaming(config.cli, ingestArgs, {
+        cwd: config.workspacePath,
+        timeout: 0,
+        env: { ...process.env, ...ingestEnv },
+      }, job.id, emitStream);
 
-          const files = this.wikiService.parseGeneratedFiles(rawOutput);
-          const sectionDir = join(config.wikiPath, section);
-          await mkdir(sectionDir, { recursive: true });
-
-          for (const file of files) {
-            const filePath = join(config.wikiPath, file.path);
-            const dir = filePath.substring(0, filePath.lastIndexOf('/'));
-            await mkdir(dir, { recursive: true });
-            await writeFile(filePath, file.content, 'utf-8');
-          }
-
-          result.sections[section] = files.length;
-          result.pagesGenerated += files.length;
-          emitStream(`\n[${section}] ✓ ${files.length} page(s) generated.\n`);
-
-          // Notify frontend immediately so wiki tree refreshes
-          this.notifications.notifyUser(userId, 'wiki-generation:section-complete', {
-            jobId: job.id,
-            section,
-            pagesGenerated: files.length,
-          });
-
-          return { section, files: files.length, status: 'ok' as const };
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : 'Unknown error';
-          result.errors.push(`${section}: ${msg}`);
-          emitStream(`\n[${section}] ✗ Error: ${msg}\n`);
-          this.logger.error(`[Wiki ${job.id}] Section ${section} failed: ${msg}`);
-
-          this.notifications.notifyUser(userId, 'wiki-generation:section-complete', {
-            jobId: job.id,
-            section,
-            pagesGenerated: 0,
-            error: msg,
-          });
-
-          return { section, files: 0, status: 'error' as const, error: msg };
+      // Parse any files from CLI output as fallback
+      const files = this.wikiService.parseGeneratedFiles(rawOutput);
+      if (files.length > 0) {
+        for (const file of files) {
+          const filePath = join(config.wikiPath, file.path);
+          const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+          await mkdir(dir, { recursive: true });
+          await writeFile(filePath, file.content, 'utf-8');
         }
-      });
+        result.pagesGenerated = files.length;
+      }
 
-      await Promise.allSettled(sectionPromises);
+      // Notify all sections complete
+      for (const section of sections) {
+        const sectionFiles = files.filter((f) => f.path.startsWith(section + '/'));
+        result.sections[section] = sectionFiles.length;
+        this.notifications.notifyUser(userId, 'wiki-generation:section-complete', {
+          jobId: job.id,
+          section,
+          pagesGenerated: sectionFiles.length,
+        });
+      }
 
-      // Step 4: Write _meta.json
+      emitStream(`\n`);
+
+      // Step 3: Write _meta.json
       currentStep = 'writing-meta';
       this.emitStep(userId, job, 'writing-meta');
 
       const meta = {
         generatedAt: new Date().toISOString(),
-        sections: sections,
+        sections,
         stats: {
           totalPages: result.pagesGenerated,
           pagesPerSection: result.sections,
