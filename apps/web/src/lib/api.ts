@@ -61,6 +61,7 @@ import type {
   WikiSearchResult,
   WikiAnnotation,
   WikiGenerationStatus,
+  ActiveWikiJob,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -539,6 +540,8 @@ export const api = {
     ),
   getWikiGenerationStatus: (projectId: string, jobId: string) =>
     request<WikiGenerationStatus>(`/projects/${projectId}/wiki/generate/status/${jobId}`),
+  getActiveWikiJob: (projectId: string) =>
+    request<ActiveWikiJob>(`/projects/${projectId}/wiki/generate/active`),
 
   // ─── Wiki Content ────────────────────────────────────────────────────
   getWikiPages: (projectId: string) =>
