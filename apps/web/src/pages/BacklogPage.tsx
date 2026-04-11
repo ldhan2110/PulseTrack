@@ -18,6 +18,7 @@ import { useUpdateTask } from '@/hooks/useTasks';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
 import { TasksTable, BulkActionBar } from '@/components/tasks/TasksTable';
 import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog';
+import { ExportTasksDialog } from '@/components/tasks/ExportTasksDialog';
 import type { Task } from '@/lib/types';
 
 export function BacklogPage() {
@@ -34,6 +35,7 @@ export function BacklogPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const { data: aiConfig } = useAiConfig(projectId);
   const { data: repoConfig } = useRepositoryConfig(projectId);
   const aiGeneration = useAiTaskGeneration(projectId);
@@ -117,6 +119,9 @@ export function BacklogPage() {
           <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
           {canEdit && (
             <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setExportOpen(true)}>
+                Export Excel
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setGenerateOpen(true)}
@@ -192,6 +197,11 @@ export function BacklogPage() {
           members={members}
           sprints={sprints}
         />
+        <ExportTasksDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          projectId={projectId}
+        />
       </div>
     );
   }
@@ -202,6 +212,9 @@ export function BacklogPage() {
         <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
         {canEdit && (
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              Export Excel
+            </Button>
             <Button
               variant="outline"
               onClick={() => setGenerateOpen(true)}
@@ -261,6 +274,12 @@ export function BacklogPage() {
         projectId={projectId}
         members={members}
         sprints={sprints}
+      />
+
+      <ExportTasksDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        projectId={projectId}
       />
 
       <GenerateTasksModal
