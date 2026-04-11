@@ -3,12 +3,16 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   Patch,
   Post,
+  Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -34,6 +38,34 @@ export class TasksController {
     @Body() dto: CreateTaskDto,
   ) {
     return this.tasksService.create(projectId, req.user.id, dto);
+  }
+
+  @Get('export')
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  async exportExcel(
+    @Param('projectId') projectId: string,
+    @Query('workflowStatusId') workflowStatusId?: string,
+    @Query('assigneeId') assigneeId?: string,
+    @Query('sprintId') sprintId?: string,
+    @Query('priority') priority?: string,
+    @Query('plannedStartFrom') plannedStartFrom?: string,
+    @Query('plannedStartTo') plannedStartTo?: string,
+    @Query('plannedEndFrom') plannedEndFrom?: string,
+    @Query('plannedEndTo') plannedEndTo?: string,
+    @Query('overdue') overdue?: string,
+    @Query('search') search?: string,
+    @Res() res?: Response,
+  ) {
+    const buffer = await this.tasksService.exportExcel(projectId, {
+      workflowStatusId, assigneeId, sprintId, priority,
+      plannedStartFrom, plannedStartTo, plannedEndFrom, plannedEndTo,
+      overdue, search,
+    });
+    const date = new Date().toISOString().split('T')[0];
+    res!.set({
+      'Content-Disposition': `attachment; filename="tasks-${date}.xlsx"`,
+    });
+    res!.end(buffer);
   }
 
   @Get('by-key/:taskKey')
