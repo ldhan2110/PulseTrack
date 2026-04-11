@@ -115,7 +115,7 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetFilters(); onOpenChange(o); }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg w-120 h-[75vh]" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Export Tasks to Excel</DialogTitle>
         </DialogHeader>

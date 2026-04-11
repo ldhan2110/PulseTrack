@@ -328,7 +328,8 @@ export class BugsService {
     });
 
     const ExcelJS = await import('exceljs');
-    const workbook = new ExcelJS.Workbook();
+    const Workbook = ExcelJS.default?.Workbook ?? ExcelJS.Workbook;
+    const workbook = new Workbook();
     const sheet = workbook.addWorksheet('Bugs');
 
     sheet.columns = [

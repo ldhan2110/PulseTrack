@@ -33,6 +33,13 @@ describe('DashboardService', () => {
     bug: {
       findMany: vi.fn(),
       count: vi.fn(),
+      groupBy: vi.fn(),
+    },
+    projectMember: {
+      findMany: vi.fn(),
+    },
+    timeLog: {
+      groupBy: vi.fn(),
     },
   };
 
@@ -207,6 +214,117 @@ describe('DashboardService', () => {
         open: 7,
         critical: 3,
       });
+    });
+  });
+
+  describe('getMemberPerformance()', () => {
+    it('returns aggregated performance data per member', async () => {
+      const projectId = 'proj-1';
+
+      // Mock project members
+      mockPrismaService.projectMember.findMany.mockResolvedValue([
+        {
+          userId: 'user-1',
+          user: { id: 'user-1', name: 'John Doe', imageUrl: null },
+        },
+        {
+          userId: 'user-2',
+          user: { id: 'user-2', name: 'Sarah Adams', imageUrl: 'https://example.com/sarah.jpg' },
+        },
+      ]);
+
+      // Mock workflow statuses (TASK kind)
+      mockPrismaService.workflowStatus.findMany.mockResolvedValue([
+        { id: 'ws-backlog', isClosed: false },
+        { id: 'ws-in-progress', isClosed: false },
+        { id: 'ws-done', isClosed: true },
+      ]);
+
+      // Mock tasks grouped by [assigneeId, workflowStatusId]
+      mockPrismaService.task.groupBy.mockResolvedValue([
+        { assigneeId: 'user-1', workflowStatusId: 'ws-done', _count: 10 },
+        { assigneeId: 'user-1', workflowStatusId: 'ws-in-progress', _count: 3 },
+        { assigneeId: 'user-1', workflowStatusId: 'ws-backlog', _count: 2 },
+        { assigneeId: 'user-2', workflowStatusId: 'ws-done', _count: 7 },
+        { assigneeId: 'user-2', workflowStatusId: 'ws-in-progress', _count: 1 },
+      ]);
+
+      // Mock time logs grouped by userId
+      mockPrismaService.timeLog.groupBy.mockResolvedValue([
+        { userId: 'user-1', _sum: { minutes: 4800 } },  // 80 hours
+        { userId: 'user-2', _sum: { minutes: 2700 } },  // 45 hours
+      ]);
+
+      // Mock bugs grouped by assigneeId
+      mockPrismaService.bug.groupBy.mockResolvedValue([
+        { assigneeId: 'user-1', _count: 2 },
+        { assigneeId: 'user-2', _count: 5 },
+      ]);
+
+      const result = await service.getMemberPerformance(projectId);
+
+      expect(result.members).toHaveLength(2);
+
+      // User-1: 10 completed, 3 in-progress, 2 todo, 80h, 8h/task avg, 2 bugs
+      const user1 = result.members.find((m) => m.userId === 'user-1')!;
+      expect(user1.name).toBe('John Doe');
+      expect(user1.tasks.completed).toBe(10);
+      expect(user1.tasks.inProgress).toBe(3);
+      expect(user1.tasks.todo).toBe(2);
+      expect(user1.hoursLogged).toBe(80);
+      expect(user1.avgHoursPerTask).toBe(8);
+      expect(user1.bugCount).toBe(2);
+      expect(user1.qualityRatio).toBeCloseTo(0.2);
+
+      // User-2: 7 completed, 1 in-progress, 0 todo, 45h, ~6.43h/task avg, 5 bugs
+      const user2 = result.members.find((m) => m.userId === 'user-2')!;
+      expect(user2.tasks.completed).toBe(7);
+      expect(user2.tasks.inProgress).toBe(1);
+      expect(user2.tasks.todo).toBe(0);
+      expect(user2.hoursLogged).toBe(45);
+      expect(user2.avgHoursPerTask).toBeCloseTo(6.43, 1);
+      expect(user2.bugCount).toBe(5);
+
+      // Team avg = total hours / total completed = 125 / 17 = ~7.35
+      expect(result.teamAvgHoursPerTask).toBeCloseTo(7.35, 1);
+
+      // Default sort: by completed count descending
+      expect(result.members[0].userId).toBe('user-1');
+      expect(result.members[1].userId).toBe('user-2');
+    });
+
+    it('handles members with zero completed tasks', async () => {
+      const projectId = 'proj-1';
+
+      mockPrismaService.projectMember.findMany.mockResolvedValue([
+        {
+          userId: 'user-1',
+          user: { id: 'user-1', name: 'New Dev', imageUrl: null },
+        },
+      ]);
+
+      mockPrismaService.workflowStatus.findMany.mockResolvedValue([
+        { id: 'ws-backlog', isClosed: false },
+        { id: 'ws-done', isClosed: true },
+      ]);
+
+      mockPrismaService.task.groupBy.mockResolvedValue([
+        { assigneeId: 'user-1', workflowStatusId: 'ws-backlog', _count: 5 },
+      ]);
+
+      mockPrismaService.timeLog.groupBy.mockResolvedValue([]);
+      mockPrismaService.bug.groupBy.mockResolvedValue([]);
+
+      const result = await service.getMemberPerformance(projectId);
+
+      const user = result.members[0];
+      expect(user.tasks.completed).toBe(0);
+      expect(user.tasks.todo).toBe(5);
+      expect(user.hoursLogged).toBe(0);
+      expect(user.avgHoursPerTask).toBe(0);
+      expect(user.bugCount).toBe(0);
+      expect(user.qualityRatio).toBe(0);
+      expect(result.teamAvgHoursPerTask).toBe(0);
     });
   });
 });

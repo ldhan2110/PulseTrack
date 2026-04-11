@@ -90,7 +90,7 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetFilters(); onOpenChange(o); }}>
-      <DialogContent className="max-w-lg w-150" style={{ maxWidth: "none" }}>
+      <DialogContent className="max-w-lg w-150 max-h-[75vh]" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Export Bugs to Excel</DialogTitle>
         </DialogHeader>
