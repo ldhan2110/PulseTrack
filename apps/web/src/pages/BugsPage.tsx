@@ -10,6 +10,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { BugsTable } from '@/components/bugs/BugsTable';
 import { BugFilters } from '@/components/bugs/BugFilters';
 import { CreateBugDialog } from '@/components/bugs/CreateBugDialog';
+import { ImportBugsDialog } from '@/components/bugs/ImportBugsDialog';
 
 export function BugsPage() {
   const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
@@ -18,6 +19,7 @@ export function BugsPage() {
   const { data: members = [] } = useMembers(projectId);
   const { can } = usePermissions(projectId);
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Filter/sort state owned at page level so filters wire into the table
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -34,7 +36,10 @@ export function BugsPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Bugs</h1>
           {canReport && (
-            <Button onClick={() => setCreateOpen(true)}>Report Bug</Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>Import from Excel</Button>
+              <Button onClick={() => setCreateOpen(true)}>Report Bug</Button>
+            </div>
           )}
         </div>
         <div className="flex items-center justify-center py-24">
@@ -57,6 +62,11 @@ export function BugsPage() {
           projectId={projectId}
           members={members}
         />
+        <ImportBugsDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          projectId={projectId}
+        />
       </div>
     );
   }
@@ -66,7 +76,10 @@ export function BugsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Bugs</h1>
         {canReport && (
-          <Button onClick={() => setCreateOpen(true)}>Report Bug</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>Import from Excel</Button>
+            <Button onClick={() => setCreateOpen(true)}>Report Bug</Button>
+          </div>
         )}
       </div>
 
@@ -97,6 +110,11 @@ export function BugsPage() {
         onOpenChange={setCreateOpen}
         projectId={projectId}
         members={members}
+      />
+      <ImportBugsDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        projectId={projectId}
       />
     </div>
   );
