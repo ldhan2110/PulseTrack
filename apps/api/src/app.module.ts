@@ -33,6 +33,8 @@ import { RolesModule } from './roles/roles.module';
 import { WikiConfigModule } from './wiki-config/wiki-config.module';
 import { WikiGenerationModule } from './wiki-generation/wiki-generation.module';
 import { WikiModule } from './wiki/wiki.module';
+import { ReportConfigModule } from './report-config/report-config.module';
+import { ReportGeneratorModule } from './report-generator/report-generator.module';
 
 @Module({
   imports: [
@@ -68,6 +70,8 @@ import { WikiModule } from './wiki/wiki.module';
     WikiConfigModule,
     WikiGenerationModule,
     WikiModule,
+    ReportConfigModule,
+    ReportGeneratorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
