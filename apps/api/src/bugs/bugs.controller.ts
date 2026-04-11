@@ -8,6 +8,7 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 import { BugsService } from './bugs.service';
 import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
+import { BulkImportBugsDto } from './dto/bulk-import-bugs.dto';
 
 @Controller('projects/:projectId/bugs')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -47,6 +48,16 @@ export class BugsController {
   @Get(':bugId/history')
   getHistory(@Param('bugId') bugId: string) {
     return this.bugsService.getHistory(bugId);
+  }
+
+  @Post('bulk-import')
+  @RequirePermission('bugs', 'create')
+  bulkImport(
+    @Param('projectId') projectId: string,
+    @Req() req: any,
+    @Body() dto: BulkImportBugsDto,
+  ) {
+    return this.bugsService.bulkImport(projectId, req.user.id, dto);
   }
 
   @Get(':bugId')

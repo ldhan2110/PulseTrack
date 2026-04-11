@@ -6,6 +6,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WatchersService } from '../watchers/watchers.service';
 import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
+import { BulkImportBugsDto } from './dto/bulk-import-bugs.dto';
 import type { NotificationType, EntityType, Prisma } from '@prisma/client';
 
 const BUG_RELATIONS = {
@@ -230,6 +231,68 @@ export class BugsService {
       }
 
       return bug;
+    });
+  }
+
+  async bulkImport(projectId: string, reporterId: string, dto: BulkImportBugsDto) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Fetch all BUG workflow statuses for this project
+      const statuses = await tx.workflowStatus.findMany({
+        where: { projectId, kind: 'BUG' },
+        select: { id: true, name: true, isDefault: true },
+      });
+
+      const statusMap = new Map<string, string>();
+      for (const s of statuses) {
+        statusMap.set(s.name.toLowerCase(), s.id);
+      }
+      const defaultStatusId = statuses.find((s) => s.isDefault)?.id ?? null;
+
+      // 2. Create bugs one-by-one (need sequential bugSeq increment)
+      let created = 0;
+      for (const item of dto.items) {
+        const project = await tx.project.update({
+          where: { id: projectId },
+          data: { bugSeq: { increment: 1 } },
+          select: { prefix: true, bugSeq: true },
+        });
+        const bugKey = project.prefix ? `${project.prefix}-BUG-${project.bugSeq}` : null;
+
+        // Resolve status name to ID
+        const resolvedStatusId = item.statusName
+          ? statusMap.get(item.statusName.toLowerCase()) ?? defaultStatusId
+          : defaultStatusId;
+
+        const bug = await tx.bug.create({
+          data: {
+            projectId,
+            reporterId,
+            bugKey,
+            title: item.title,
+            description: item.description,
+            preconditions: item.preconditions,
+            severity: item.severity,
+            environment: item.environment,
+            expectedResult: item.expectedResult,
+            actualResult: item.actualResult,
+            workflowStatusId: resolvedStatusId,
+          },
+        });
+
+        if (item.reproSteps?.length) {
+          await tx.bugReproStep.createMany({
+            data: item.reproSteps.map((s) => ({
+              bugId: bug.id,
+              position: s.position,
+              content: s.content,
+            })),
+          });
+        }
+
+        created++;
+      }
+
+      return { created };
     });
   }
 
