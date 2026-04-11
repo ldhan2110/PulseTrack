@@ -296,6 +296,89 @@ export class BugsService {
     });
   }
 
+  async exportExcel(projectId: string, filters: {
+    workflowStatusId?: string;
+    severity?: string;
+    assigneeId?: string;
+    reporterId?: string;
+    search?: string;
+  }): Promise<Buffer> {
+    const where: any = { projectId };
+
+    if (filters.workflowStatusId) {
+      where.workflowStatusId = { in: filters.workflowStatusId.split(',') };
+    }
+    if (filters.severity) {
+      where.severity = { in: filters.severity.split(',') };
+    }
+    if (filters.assigneeId) {
+      where.assigneeId = { in: filters.assigneeId.split(',') };
+    }
+    if (filters.reporterId) {
+      where.reporterId = { in: filters.reporterId.split(',') };
+    }
+    if (filters.search) {
+      where.title = { contains: filters.search, mode: 'insensitive' };
+    }
+
+    const bugs = await this.prisma.bug.findMany({
+      where,
+      include: BUG_RELATIONS,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Bugs');
+
+    sheet.columns = [
+      { header: 'Bug Key', key: 'bugKey', width: 14 },
+      { header: 'Title', key: 'title', width: 40 },
+      { header: 'Description', key: 'description', width: 50 },
+      { header: 'Severity', key: 'severity', width: 12 },
+      { header: 'Status', key: 'status', width: 18 },
+      { header: 'Assignee', key: 'assignee', width: 20 },
+      { header: 'Owner', key: 'owner', width: 20 },
+      { header: 'Reporter', key: 'reporter', width: 20 },
+      { header: 'Environment', key: 'environment', width: 20 },
+      { header: 'Preconditions', key: 'preconditions', width: 30 },
+      { header: 'Expected Result', key: 'expectedResult', width: 30 },
+      { header: 'Actual Result', key: 'actualResult', width: 30 },
+      { header: 'Repro Steps', key: 'reproSteps', width: 40 },
+      { header: 'Parent Task', key: 'parentTask', width: 14 },
+      { header: 'Created At', key: 'createdAt', width: 20 },
+    ];
+
+    sheet.getRow(1).font = { bold: true };
+
+    for (const b of bugs) {
+      const reproText = (b.reproSteps ?? [])
+        .map((s: any) => `${s.position}. ${s.content}`)
+        .join('\n');
+
+      sheet.addRow({
+        bugKey: b.bugKey ?? '',
+        title: b.title,
+        description: b.description ?? '',
+        severity: b.severity,
+        status: (b as any).workflowStatus?.name ?? '',
+        assignee: (b as any).assignee?.name ?? (b as any).assignee?.username ?? '',
+        owner: (b as any).owner?.name ?? (b as any).owner?.username ?? '',
+        reporter: (b as any).reporter?.name ?? (b as any).reporter?.username ?? '',
+        environment: b.environment ?? '',
+        preconditions: b.preconditions ?? '',
+        expectedResult: b.expectedResult ?? '',
+        actualResult: b.actualResult ?? '',
+        reproSteps: reproText,
+        parentTask: (b as any).parentTask?.taskKey ?? '',
+        createdAt: b.createdAt ? new Date(b.createdAt).toISOString().replace('T', ' ').substring(0, 19) : '',
+      });
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
   async delete(bugId: string) {
     return this.prisma.bug.delete({ where: { id: bugId } });
   }
