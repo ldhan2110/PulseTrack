@@ -11,6 +11,7 @@ import { BugsTable } from '@/components/bugs/BugsTable';
 import { BugFilters } from '@/components/bugs/BugFilters';
 import { CreateBugDialog } from '@/components/bugs/CreateBugDialog';
 import { ImportBugsDialog } from '@/components/bugs/ImportBugsDialog';
+import { ExportBugsDialog } from '@/components/bugs/ExportBugsDialog';
 
 export function BugsPage() {
   const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
@@ -20,6 +21,7 @@ export function BugsPage() {
   const { can } = usePermissions(projectId);
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Filter/sort state owned at page level so filters wire into the table
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -37,6 +39,7 @@ export function BugsPage() {
           <h1 className="text-xl font-semibold tracking-tight">Bugs</h1>
           {canReport && (
             <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setExportOpen(true)}>Export Excel</Button>
               <Button variant="outline" onClick={() => setImportOpen(true)}>Import from Excel</Button>
               <Button onClick={() => setCreateOpen(true)}>Report Bug</Button>
             </div>
@@ -67,6 +70,11 @@ export function BugsPage() {
           onOpenChange={setImportOpen}
           projectId={projectId}
         />
+        <ExportBugsDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          projectId={projectId}
+        />
       </div>
     );
   }
@@ -77,6 +85,7 @@ export function BugsPage() {
         <h1 className="text-xl font-semibold tracking-tight">Bugs</h1>
         {canReport && (
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setExportOpen(true)}>Export Excel</Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>Import from Excel</Button>
             <Button onClick={() => setCreateOpen(true)}>Report Bug</Button>
           </div>
@@ -114,6 +123,11 @@ export function BugsPage() {
       <ImportBugsDialog
         open={importOpen}
         onOpenChange={setImportOpen}
+        projectId={projectId}
+      />
+      <ExportBugsDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
         projectId={projectId}
       />
     </div>
