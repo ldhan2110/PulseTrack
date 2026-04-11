@@ -16,6 +16,11 @@ export class UpdateBugDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  preconditions?: string;
+
+  @IsOptional()
   @IsEnum(BugSeverity)
   severity?: BugSeverity;
 

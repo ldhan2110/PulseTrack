@@ -23,6 +23,11 @@ export class CreateBugDto {
   @MaxLength(5000)
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  preconditions?: string;
+
   @IsEnum(BugSeverity)
   severity: BugSeverity;
 

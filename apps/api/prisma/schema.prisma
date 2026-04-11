@@ -411,6 +411,7 @@ model Bug {
   bugKey           String?     @unique
   title            String
   description      String?
+  preconditions    String?
   severity         BugSeverity
   expectedResult   String?
   actualResult     String?

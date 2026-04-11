@@ -314,6 +314,7 @@ export interface Bug {
   bugKey: string | null;
   title: string;
   description: string | null;
+  preconditions: string | null;
   severity: BugSeverity;
   environment: string | null;
   expectedResult: string | null;
@@ -338,6 +339,7 @@ export interface Bug {
 export interface CreateBugPayload {
   title: string;
   description?: string;
+  preconditions?: string;
   severity: BugSeverity;
   environment?: string;
   expectedResult?: string;
@@ -351,6 +353,7 @@ export interface CreateBugPayload {
 export interface UpdateBugPayload {
   title?: string;
   description?: string;
+  preconditions?: string;
   severity?: BugSeverity;
   environment?: string;
   expectedResult?: string;

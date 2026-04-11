@@ -47,6 +47,7 @@ export class BugsService {
           bugKey,
           title: dto.title,
           description: dto.description,
+          preconditions: dto.preconditions,
           severity: dto.severity,
           environment: dto.environment,
           expectedResult: dto.expectedResult,
@@ -157,6 +158,7 @@ export class BugsService {
       const data: Record<string, unknown> = {};
       if (dto.title !== undefined) data.title = dto.title;
       if (dto.description !== undefined) data.description = dto.description;
+      if (dto.preconditions !== undefined) data.preconditions = dto.preconditions;
       if (dto.severity !== undefined) data.severity = dto.severity;
       if (dto.environment !== undefined) data.environment = dto.environment;
       if (dto.expectedResult !== undefined) data.expectedResult = dto.expectedResult;
