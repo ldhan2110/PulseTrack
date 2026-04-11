@@ -416,12 +416,29 @@ export interface BugCounts {
   critical: number;
 }
 
+export interface MemberPerformanceRow {
+  userId: string;
+  name: string;
+  imageUrl: string | null;
+  tasks: {
+    completed: number;
+    inProgress: number;
+    todo: number;
+    total: number;
+  };
+  hoursLogged: number;
+  avgHoursPerTask: number;
+  bugCount: number;
+  qualityRatio: number;
+}
+
 export interface DashboardData {
   taskCounts: TaskCounts;
   activeSprint: ActiveSprintData | null;
-  recentActivity: ActivityItem[];
   burndown: BurndownPoint[];
   bugCounts: BugCounts;
+  memberPerformance: MemberPerformanceRow[];
+  teamAvgHoursPerTask: number;
 }
 
 // ─── Comment ─────────────────────────────────────────────────────────────────
