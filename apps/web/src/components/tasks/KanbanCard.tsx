@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import type { Task, Priority } from '@/lib/types';
+import { TaskProgressBar, getParentProgress } from './TaskProgressBar';
 
 interface KanbanCardProps {
   task: Task;
@@ -146,6 +147,14 @@ export function KanbanCard({ task, projectId: _projectId, projectPrefix }: Kanba
               </div>
             )}
           </div>
+
+          {/* Progress bar */}
+          <TaskProgressBar
+            value={(task.children?.length ?? 0) > 0 ? getParentProgress(task.children ?? []) : (task.progress ?? 0)}
+            size="sm"
+            showLabel={false}
+            editable={false}
+          />
         </CardContent>
       </Card>
     </div>
