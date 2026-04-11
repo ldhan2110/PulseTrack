@@ -125,14 +125,15 @@ function TrendArrow({ avgHours, teamAvg }: { avgHours: number; teamAvg: number }
 
 const AVATAR_COLORS = ['#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4', '#10b981', '#f97316', '#8b5cf6'];
 
-function getSortValue(member: MemberPerformanceRow, key: SortKey): number | string {
+function compareMembersByKey(a: MemberPerformanceRow, b: MemberPerformanceRow, key: SortKey): number {
   switch (key) {
-    case 'name': return member.name.toLowerCase();
-    case 'completed': return member.tasks.completed;
-    case 'hours': return member.hoursLogged;
-    case 'avgHours': return member.avgHoursPerTask;
-    case 'quality': return member.qualityRatio;
-    case 'bugs': return member.bugCount;
+    case 'name': return a.name.localeCompare(b.name);
+    case 'completed': return (a.tasks?.completed ?? 0) - (b.tasks?.completed ?? 0);
+    case 'hours': return (Number(a.hoursLogged) || 0) - (Number(b.hoursLogged) || 0);
+    case 'avgHours': return (Number(a.avgHoursPerTask) || 0) - (Number(b.avgHoursPerTask) || 0);
+    case 'quality': return (Number(a.qualityRatio) || 0) - (Number(b.qualityRatio) || 0);
+    case 'bugs': return (Number(a.bugCount) || 0) - (Number(b.bugCount) || 0);
+    default: return 0;
   }
 }
 
@@ -162,9 +163,7 @@ export function MemberPerformance({ members, teamAvgHoursPerTask, timeFilter, on
     let result = q ? members.filter((m) => m.name.toLowerCase().includes(q)) : members;
 
     result = [...result].sort((a, b) => {
-      const aVal = getSortValue(a, sortKey);
-      const bVal = getSortValue(b, sortKey);
-      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      const cmp = compareMembersByKey(a, b, sortKey);
       return sortDir === 'asc' ? cmp : -cmp;
     });
 
