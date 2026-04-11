@@ -75,4 +75,10 @@ export class UpdateTaskDto {
   @IsInt()
   @Min(1)
   estimatedMinutes?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  progress?: number;
 }

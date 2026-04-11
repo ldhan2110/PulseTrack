@@ -14,7 +14,7 @@ export class TimeLogsService {
   async create(projectId: string, taskId: string, userId: string, dto: CreateTimeLogDto) {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
-      select: { id: true, projectId: true, taskKey: true, _count: { select: { children: true } } },
+      select: { id: true, projectId: true, taskKey: true, progress: true, _count: { select: { children: true } } },
     });
 
     if (!task || task.projectId !== projectId) {
@@ -25,22 +25,35 @@ export class TimeLogsService {
       throw new BadRequestException('Cannot log time on a task that has sub-tasks. Log time on sub-tasks instead.');
     }
 
-    const timeLog = await this.prisma.timeLog.create({
-      data: {
-        minutes: dto.minutes,
-        comment: dto.comment,
-        loggedAt: dto.loggedAt ? new Date(dto.loggedAt) : new Date(),
-        taskId,
-        userId,
-      },
-      include: {
-        user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
-      },
-    });
+    const [timeLog] = await this.prisma.$transaction([
+      this.prisma.timeLog.create({
+        data: {
+          minutes: dto.minutes,
+          comment: dto.comment,
+          loggedAt: dto.loggedAt ? new Date(dto.loggedAt) : new Date(),
+          progress: dto.progress,
+          taskId,
+          userId,
+        },
+        include: {
+          user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+        },
+      }),
+      ...(dto.progress !== undefined
+        ? [
+            this.prisma.task.update({
+              where: { id: taskId },
+              data: { progress: dto.progress },
+            }),
+          ]
+        : []),
+    ]);
 
     const hours = Math.floor(dto.minutes / 60);
     const mins = dto.minutes % 60;
     const formatted = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
+
+    const historyValue = `${formatted}${dto.comment ? ` — ${dto.comment}` : ''}${dto.progress !== undefined ? ` (progress: ${dto.progress}%)` : ''}`;
 
     await this.prisma.taskHistory.create({
       data: {
@@ -48,7 +61,7 @@ export class TimeLogsService {
         actorId: userId,
         field: 'timeLog',
         oldValue: null,
-        newValue: `${formatted}${dto.comment ? ` — ${dto.comment}` : ''}`,
+        newValue: historyValue,
       },
     });
 

@@ -13,4 +13,10 @@ export class CreateTimeLogDto {
   @IsOptional()
   @IsDateString()
   loggedAt?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  progress?: number;
 }
