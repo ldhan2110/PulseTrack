@@ -65,6 +65,8 @@ import type {
   WikiGenerationStatus,
   ActiveWikiJob,
   AiTestCaseGenerationJobResult,
+  ReportConfig,
+  UpsertReportConfigPayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -327,6 +329,17 @@ export const api = {
     request<{ projectContext: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
       method: 'POST',
     }),
+
+  // ─── Report Config ──────────────────────────────────────────────────────────
+  getReportConfig: (projectId: string) =>
+    request<ReportConfig | null>(`/projects/${projectId}/settings/report`),
+  upsertReportConfig: (projectId: string, data: UpsertReportConfigPayload) =>
+    request<ReportConfig>(`/projects/${projectId}/settings/report`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  getServerTimezone: (projectId: string) =>
+    request<{ timezone: string }>(`/projects/${projectId}/settings/report/server-timezone`),
 
   // ─── AI Task Generation ────────────────────────────────────────────────────
   generateTasks: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {

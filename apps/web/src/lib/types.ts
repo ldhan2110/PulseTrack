@@ -192,6 +192,7 @@ export interface TimeLog {
   comment: string | null;
   taskId: string;
   userId: string;
+  progress?: number | null;
   user?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
 }
 
@@ -224,6 +225,7 @@ export interface Task {
   plannedEndDate?: string | null;
   actualStartDate?: string | null;
   actualEndDate?: string | null;
+  progress?: number;
 }
 
 export interface AcceptanceCriteria {
@@ -263,12 +265,14 @@ export interface UpdateTaskPayload {
   actualStartDate?: string | null;
   actualEndDate?: string | null;
   estimatedMinutes?: number | null;
+  progress?: number;
 }
 
 export interface CreateTimeLogPayload {
   minutes: number;
   comment?: string;
   loggedAt?: string;
+  progress?: number;
 }
 
 // ─── Sprint ───────────────────────────────────────────────────────────────────
@@ -914,4 +918,35 @@ export interface ActiveWikiJob {
   status?: string;
   step?: string;
   sections?: string[];
+}
+
+// ─── Report Config ──────────────────────────────────────────────────────
+export interface ReportConfig {
+  id: string;
+  projectId: string;
+  emailEnabled: boolean;
+  googleChatEnabled: boolean;
+  googleChatWebhookUrl: string | null;
+  recipientMode: string;
+  recipientRoles: string[];
+  recipientMembers: string[];
+  frequency: string;
+  scheduleDays: number[];
+  scheduleTime: string;
+  timezone: string;
+  isActive: boolean;
+}
+
+export interface UpsertReportConfigPayload {
+  emailEnabled?: boolean;
+  googleChatEnabled?: boolean;
+  googleChatWebhookUrl?: string;
+  recipientMode?: string;
+  recipientRoles?: string[];
+  recipientMembers?: string[];
+  frequency?: string;
+  scheduleDays?: number[];
+  scheduleTime?: string;
+  timezone?: string;
+  isActive?: boolean;
 }
