@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { StatusBadge } from './StatusBadge';
+import { TaskProgressBar } from './TaskProgressBar';
 import { useDeleteMyTask } from '@/hooks/useMyTasks';
 import { cn } from '@/lib/utils';
 import { formatMinutes } from '@/lib/time-utils';
@@ -58,7 +59,7 @@ const ALL_PRIORITIES: Priority[] = ['BLOCKER', 'CRITICAL', 'HIGH', 'MEDIUM', 'LO
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-type SortField = 'taskKey' | 'title' | 'project' | 'status' | 'priority' | 'dueDate';
+type SortField = 'taskKey' | 'title' | 'project' | 'status' | 'priority' | 'dueDate' | 'progress';
 type SortDir = 'asc' | 'desc';
 
 function isOverdue(plannedEndDate: string | null | undefined, isClosed: boolean): boolean {
@@ -93,6 +94,12 @@ function compareTasks(a: Task, b: Task, field: SortField, dir: SortDir): number 
       cmp = aDate - bDate;
       break;
     }
+    case 'progress': {
+      const aProg = a.progress ?? 0;
+      const bProg = b.progress ?? 0;
+      cmp = aProg - bProg;
+      break;
+    }
   }
   return dir === 'desc' ? -cmp : cmp;
 }
@@ -104,9 +111,11 @@ interface FilterBarProps {
   statusFilter: string[];
   priorityFilter: string[];
   projectFilter: string[];
+  progressFilter: string[];
   onStatusChange: (v: string[]) => void;
   onPriorityChange: (v: string[]) => void;
   onProjectChange: (v: string[]) => void;
+  onProgressChange: (v: string[]) => void;
   onClear: () => void;
 }
 
@@ -115,9 +124,11 @@ function FilterBar({
   statusFilter,
   priorityFilter,
   projectFilter,
+  progressFilter,
   onStatusChange,
   onPriorityChange,
   onProjectChange,
+  onProgressChange,
   onClear,
 }: FilterBarProps) {
   const statuses = useMemo(() => {
@@ -144,7 +155,7 @@ function FilterBar({
     return Array.from(map.values());
   }, [tasks]);
 
-  const hasFilters = statusFilter.length > 0 || priorityFilter.length > 0 || projectFilter.length > 0;
+  const hasFilters = statusFilter.length > 0 || priorityFilter.length > 0 || projectFilter.length > 0 || progressFilter.length > 0;
 
   const toggleFilter = (current: string[], value: string, setter: (v: string[]) => void) => {
     setter(current.includes(value) ? current.filter((v) => v !== value) : [...current, value]);
@@ -196,6 +207,27 @@ function FilterBar({
               <div className="flex items-center gap-2">
                 {p.name}
                 {projectFilter.includes(p.id) && <span className="ml-auto text-primary">&#10003;</span>}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value="" onValueChange={(v) => toggleFilter(progressFilter, v, onProgressChange)}>
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder={progressFilter.length > 0 ? `Progress (${progressFilter.length})` : 'Progress'} />
+        </SelectTrigger>
+        <SelectContent>
+          {[
+            { value: '0', label: '0%' },
+            { value: '1-49', label: '1–49%' },
+            { value: '50-99', label: '50–99%' },
+            { value: '100', label: '100%' },
+          ].map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              <div className="flex items-center gap-2">
+                {opt.label}
+                {progressFilter.includes(opt.value) && <span className="ml-auto text-primary">&#10003;</span>}
               </div>
             </SelectItem>
           ))}
@@ -259,6 +291,7 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
+  const [progressFilter, setProgressFilter] = useState<string[]>([]);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -284,6 +317,20 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
     if (projectFilter.length > 0) {
       result = result.filter((t) => projectFilter.includes(t.projectId));
     }
+    if (progressFilter.length > 0) {
+      result = result.filter((t) => {
+        const val = t.progress ?? 0;
+        return progressFilter.some((range) => {
+          switch (range) {
+            case '0': return val === 0;
+            case '1-49': return val >= 1 && val <= 49;
+            case '50-99': return val >= 50 && val <= 99;
+            case '100': return val === 100;
+            default: return true;
+          }
+        });
+      });
+    }
 
     return [...result].sort((a, b) => {
       const primary = compareTasks(a, b, sortField, sortDir);
@@ -293,12 +340,13 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
       }
       return compareTasks(a, b, 'dueDate', 'asc');
     });
-  }, [tasks, statusFilter, priorityFilter, projectFilter, sortField, sortDir]);
+  }, [tasks, statusFilter, priorityFilter, projectFilter, progressFilter, sortField, sortDir]);
 
   const handleClearFilters = () => {
     setStatusFilter([]);
     setPriorityFilter([]);
     setProjectFilter([]);
+    setProgressFilter([]);
   };
 
   const handleRowClick = (task: Task) => {
@@ -339,9 +387,11 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
         statusFilter={statusFilter}
         priorityFilter={priorityFilter}
         projectFilter={projectFilter}
+        progressFilter={progressFilter}
         onStatusChange={setStatusFilter}
         onPriorityChange={setPriorityFilter}
         onProjectChange={setProjectFilter}
+        onProgressChange={setProgressFilter}
         onClear={handleClearFilters}
       />
 
@@ -403,13 +453,14 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
               <SortableHeader label="Status" field="status" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
               <SortableHeader label="Priority" field="priority" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
               <SortableHeader label="Due Date" field="dueDate" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
+              <SortableHeader label="Progress" field="progress" currentField={sortField} currentDir={sortDir} onSort={handleSort} />
               <TableHead className="text-xs">Time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAndSorted.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
                   No tasks match the current filters
                 </TableCell>
               </TableRow>
@@ -481,6 +532,9 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
                       ) : (
                         <span className="text-xs text-muted-foreground">&mdash;</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <TaskProgressBar value={task.progress ?? 0} size="sm" showLabel editable={false} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       {task.estimatedMinutes && task.estimatedMinutes > 0 ? (
