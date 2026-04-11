@@ -1,7 +1,8 @@
 import {
-  Body, Controller, Delete, Get,
-  Param, Patch, Post, Query, Req, UseGuards,
+  Body, Controller, Delete, Get, Header,
+  Param, Patch, Post, Query, Req, Res, UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -38,6 +39,27 @@ export class BugsController {
     @Body() dto: CreateBugDto,
   ) {
     return this.bugsService.create(projectId, req.user.id, dto);
+  }
+
+  @Get('export')
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  async exportExcel(
+    @Param('projectId') projectId: string,
+    @Query('workflowStatusId') workflowStatusId?: string,
+    @Query('severity') severity?: string,
+    @Query('assigneeId') assigneeId?: string,
+    @Query('reporterId') reporterId?: string,
+    @Query('search') search?: string,
+    @Res() res?: Response,
+  ) {
+    const buffer = await this.bugsService.exportExcel(projectId, {
+      workflowStatusId, severity, assigneeId, reporterId, search,
+    });
+    const date = new Date().toISOString().split('T')[0];
+    res!.set({
+      'Content-Disposition': `attachment; filename="bugs-${date}.xlsx"`,
+    });
+    res!.end(buffer);
   }
 
   @Get('by-key/:bugKey')
