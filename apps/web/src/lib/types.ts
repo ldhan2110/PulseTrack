@@ -392,14 +392,6 @@ export interface BurndownPoint {
   actual: number;
 }
 
-export interface ActivityItem {
-  id: string;
-  type: string;
-  title: string;
-  actor: string;
-  timestamp: string;
-}
-
 export interface ActiveSprintData {
   id: string;
   name: string;

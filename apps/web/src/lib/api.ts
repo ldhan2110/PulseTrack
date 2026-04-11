@@ -287,8 +287,8 @@ export const api = {
     request<void>(`/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 
   // ─── Dashboard ─────────────────────────────────────────────────────────────
-  getDashboard: (projectId: string) =>
-    request<DashboardData>(`/projects/${projectId}/dashboard`),
+  getDashboard: (projectId: string, params = '') =>
+    request<DashboardData>(`/projects/${projectId}/dashboard${params}`),
 
   // ─── Workflow ─────────────────────────────────────────────────────────────
   getWorkflow: (projectId: string, kind: WorkflowKind = 'TASK') =>

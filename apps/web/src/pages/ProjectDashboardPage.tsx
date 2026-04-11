@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { useUiStore } from '@/store/uiStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardStatusStrip } from '@/components/dashboard/DashboardStatusStrip';
 import { BurndownChart } from '@/components/dashboard/BurndownChart';
-import { RecentActivity } from '@/components/dashboard/RecentActivity';
+import { MemberPerformance } from '@/components/dashboard/MemberPerformance';
 import { BugSummaryBanner } from '@/components/dashboard/BugSummaryBanner';
 import { useDashboard } from '@/hooks/useDashboard';
 
@@ -22,7 +23,9 @@ function DashboardSkeleton() {
         <Skeleton className="h-[340px] rounded-xl lg:col-span-3" />
         <Skeleton className="h-[340px] rounded-xl lg:col-span-2" />
       </div>
-      {/* Row 3: activity */}
+      {/* Row 3: bug banner */}
+      <Skeleton className="h-[60px] rounded-xl" />
+      {/* Row 4: member performance */}
       <Skeleton className="h-[300px] rounded-xl" />
     </div>
   );
@@ -30,7 +33,8 @@ function DashboardSkeleton() {
 
 export function ProjectDashboardPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
-  const { data, isLoading } = useDashboard(projectId);
+  const [timeFilter, setTimeFilter] = useState('all');
+  const { data, isLoading } = useDashboard(projectId, timeFilter);
 
   if (isLoading) {
     return (
@@ -44,8 +48,9 @@ export function ProjectDashboardPage() {
   const taskCounts = data?.taskCounts ?? { total: 0, byStatus: [], orphaned: 0 };
   const activeSprint = data?.activeSprint ?? null;
   const burndownData = data?.burndown ?? [];
-  const activities = data?.recentActivity ?? [];
   const bugCounts = data?.bugCounts ?? { total: 0, open: 0, critical: 0 };
+  const memberPerformance = data?.memberPerformance ?? [];
+  const teamAvgHoursPerTask = data?.teamAvgHoursPerTask ?? 0;
 
   const sprintProgress =
     activeSprint && activeSprint.totalPoints > 0
@@ -93,8 +98,13 @@ export function ProjectDashboardPage() {
       {/* Row 3: Bug summary banner */}
       <BugSummaryBanner bugCounts={bugCounts} />
 
-      {/* Row 4: Recent activity */}
-      <RecentActivity activities={activities} />
+      {/* Row 4: Member performance table */}
+      <MemberPerformance
+        members={memberPerformance}
+        teamAvgHoursPerTask={teamAvgHoursPerTask}
+        timeFilter={timeFilter}
+        onTimeFilterChange={setTimeFilter}
+      />
     </div>
   );
 }
