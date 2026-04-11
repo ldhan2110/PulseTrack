@@ -207,7 +207,7 @@ export class DashboardService {
     if (dateFilter) timeLogWhere.loggedAt = dateFilter;
     if (sprintFilter) timeLogWhere.task = { projectId, sprintId: sprintFilter.sprintId };
 
-    const bugWhere: Record<string, unknown> = { projectId, assigneeId: { not: null } };
+    const bugWhere: Record<string, unknown> = { projectId, ownerId: { not: null } };
     if (dateFilter) bugWhere.createdAt = dateFilter;
 
     const [members, workflowStatuses, taskGroups, timeGroups, bugGroups] = await Promise.all([
@@ -233,7 +233,7 @@ export class DashboardService {
         _sum: { minutes: true },
       }),
       this.prisma.bug.groupBy({
-        by: ['assigneeId'],
+        by: ['ownerId'],
         where: bugWhere,
         _count: true,
       }),
@@ -243,7 +243,7 @@ export class DashboardService {
 
     // Build lookup maps
     const timeByUser = new Map(timeGroups.map((t) => [t.userId, t._sum.minutes ?? 0]));
-    const bugsByUser = new Map(bugGroups.map((b) => [b.assigneeId, b._count]));
+    const bugsByUser = new Map(bugGroups.map((b) => [b.ownerId, b._count]));
 
     // Aggregate tasks per member
     const tasksByUser = new Map<string, { completed: number; inProgress: number; todo: number }>();

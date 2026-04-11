@@ -270,10 +270,10 @@ describe('DashboardService', () => {
         { userId: 'user-2', _sum: { minutes: 2700 } },  // 45 hours
       ]);
 
-      // Mock bugs grouped by assigneeId
+      // Mock bugs grouped by ownerId
       mockPrismaService.bug.groupBy.mockResolvedValue([
-        { assigneeId: 'user-1', _count: 2 },
-        { assigneeId: 'user-2', _count: 5 },
+        { ownerId: 'user-1', _count: 2 },
+        { ownerId: 'user-2', _count: 5 },
       ]);
 
       const result = await service.getMemberPerformance(projectId);
