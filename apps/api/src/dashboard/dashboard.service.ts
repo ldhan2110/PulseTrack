@@ -222,4 +222,120 @@ export class DashboardService {
       bugCounts: bugCountData,
     };
   }
+
+  async getMemberPerformance(projectId: string, timeFilter?: 'sprint' | '7d' | '30d') {
+    // Build date filter
+    let dateFilter: { gte: Date } | undefined;
+    let sprintFilter: { sprintId: string } | undefined;
+
+    if (timeFilter === '7d') {
+      dateFilter = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    } else if (timeFilter === '30d') {
+      dateFilter = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+    } else if (timeFilter === 'sprint') {
+      const activeSprint = await this.prisma.sprint.findFirst({
+        where: { projectId, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (activeSprint) {
+        sprintFilter = { sprintId: activeSprint.id };
+      }
+    }
+
+    const taskWhere: Record<string, unknown> = { projectId, assigneeId: { not: null } };
+    if (dateFilter) taskWhere.updatedAt = dateFilter;
+    if (sprintFilter) taskWhere.sprintId = sprintFilter.sprintId;
+
+    const timeLogWhere: Record<string, unknown> = { task: { projectId } };
+    if (dateFilter) timeLogWhere.loggedAt = dateFilter;
+    if (sprintFilter) timeLogWhere.task = { projectId, sprintId: sprintFilter.sprintId };
+
+    const bugWhere: Record<string, unknown> = { projectId, assigneeId: { not: null } };
+    if (dateFilter) bugWhere.createdAt = dateFilter;
+
+    const [members, workflowStatuses, taskGroups, timeGroups, bugGroups] = await Promise.all([
+      this.prisma.projectMember.findMany({
+        where: { projectId },
+        select: {
+          userId: true,
+          user: { select: { id: true, name: true, imageUrl: true } },
+        },
+      }),
+      this.prisma.workflowStatus.findMany({
+        where: { projectId, kind: 'TASK' },
+        select: { id: true, isClosed: true },
+      }),
+      this.prisma.task.groupBy({
+        by: ['assigneeId', 'workflowStatusId'],
+        where: taskWhere,
+        _count: true,
+      }),
+      this.prisma.timeLog.groupBy({
+        by: ['userId'],
+        where: timeLogWhere,
+        _sum: { minutes: true },
+      }),
+      this.prisma.bug.groupBy({
+        by: ['assigneeId'],
+        where: bugWhere,
+        _count: true,
+      }),
+    ]);
+
+    const closedStatusIds = new Set(workflowStatuses.filter((ws) => ws.isClosed).map((ws) => ws.id));
+
+    // Build lookup maps
+    const timeByUser = new Map(timeGroups.map((t) => [t.userId, t._sum.minutes ?? 0]));
+    const bugsByUser = new Map(bugGroups.map((b) => [b.assigneeId, b._count]));
+
+    // Aggregate tasks per member
+    const tasksByUser = new Map<string, { completed: number; inProgress: number; todo: number }>();
+    for (const group of taskGroups) {
+      if (!group.assigneeId) continue;
+      const entry = tasksByUser.get(group.assigneeId) ?? { completed: 0, inProgress: 0, todo: 0 };
+      if (group.workflowStatusId && closedStatusIds.has(group.workflowStatusId)) {
+        entry.completed += group._count;
+      } else if (group.workflowStatusId) {
+        entry.inProgress += group._count;
+      } else {
+        entry.todo += group._count;
+      }
+      tasksByUser.set(group.assigneeId, entry);
+    }
+
+    let totalCompleted = 0;
+    let totalHours = 0;
+
+    const rows = members.map((member) => {
+      const tasks = tasksByUser.get(member.userId) ?? { completed: 0, inProgress: 0, todo: 0 };
+      const minutes = timeByUser.get(member.userId) ?? 0;
+      const hoursLogged = Math.round((minutes / 60) * 100) / 100;
+      const bugCount = bugsByUser.get(member.userId) ?? 0;
+      const avgHoursPerTask = tasks.completed > 0 ? Math.round((hoursLogged / tasks.completed) * 100) / 100 : 0;
+      const qualityRatio = tasks.completed > 0 ? Math.round((bugCount / tasks.completed) * 100) / 100 : 0;
+
+      totalCompleted += tasks.completed;
+      totalHours += hoursLogged;
+
+      return {
+        userId: member.userId,
+        name: member.user.name ?? member.user.id,
+        imageUrl: member.user.imageUrl,
+        tasks: { ...tasks, total: tasks.completed + tasks.inProgress + tasks.todo },
+        hoursLogged,
+        avgHoursPerTask,
+        bugCount,
+        qualityRatio,
+      };
+    });
+
+    // Sort by completed count descending
+    rows.sort((a, b) => b.tasks.completed - a.tasks.completed);
+
+    const teamAvgHoursPerTask = totalCompleted > 0
+      ? Math.round((totalHours / totalCompleted) * 100) / 100
+      : 0;
+
+    return { members: rows, teamAvgHoursPerTask };
+  }
 }

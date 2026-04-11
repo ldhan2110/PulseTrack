@@ -265,12 +265,12 @@ describe('DashboardService', () => {
 
       expect(result.members).toHaveLength(2);
 
-      // User-1: 10 completed, 3 in-progress, 2 todo, 80h, 8h/task avg, 2 bugs
+      // User-1: 10 completed, 5 in-progress (3 in-progress + 2 backlog), 0 todo, 80h, 8h/task avg, 2 bugs
       const user1 = result.members.find((m) => m.userId === 'user-1')!;
       expect(user1.name).toBe('John Doe');
       expect(user1.tasks.completed).toBe(10);
-      expect(user1.tasks.inProgress).toBe(3);
-      expect(user1.tasks.todo).toBe(2);
+      expect(user1.tasks.inProgress).toBe(5);
+      expect(user1.tasks.todo).toBe(0);
       expect(user1.hoursLogged).toBe(80);
       expect(user1.avgHoursPerTask).toBe(8);
       expect(user1.bugCount).toBe(2);
@@ -319,7 +319,8 @@ describe('DashboardService', () => {
 
       const user = result.members[0];
       expect(user.tasks.completed).toBe(0);
-      expect(user.tasks.todo).toBe(5);
+      expect(user.tasks.inProgress).toBe(5);
+      expect(user.tasks.todo).toBe(0);
       expect(user.hoursLogged).toBe(0);
       expect(user.avgHoursPerTask).toBe(0);
       expect(user.bugCount).toBe(0);
