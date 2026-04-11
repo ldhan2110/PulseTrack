@@ -89,6 +89,36 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+async function downloadFile(path: string, params?: Record<string, string>): Promise<void> {
+  const token = keycloak.token;
+  const sp = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v) sp.set(k, v);
+    });
+  }
+  const qs = sp.toString();
+  const url = `${API_BASE}${path}${qs ? `?${qs}` : ''}`;
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { message?: string }).message || `Export failed: ${res.status}`);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const match = disposition.match(/filename="?(.+?)"?$/);
+  const filename = match?.[1] ?? 'export.xlsx';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+}
+
 export const api = {
   // ─── Projects ──────────────────────────────────────────────────────────────
   getProjects: () => request<Project[]>('/projects'),
@@ -167,6 +197,8 @@ export const api = {
   deleteTask: (projectId: string, taskId: string) =>
     request<void>(`/projects/${projectId}/tasks/${taskId}`, { method: 'DELETE' }),
   getMyTasks: () => request<Task[]>('/tasks/my-tasks'),
+  exportTasks: (projectId: string, params?: Record<string, string>) =>
+    downloadFile(`/projects/${projectId}/tasks/export`, params),
 
   // ─── Time Logs ─────────────────────────────────────────────────────────────
   getTimeLogs: (projectId: string, taskId: string) =>
@@ -216,6 +248,8 @@ export const api = {
     request<BulkImportBugsResult>(`/projects/${projectId}/bugs/bulk-import`, {
       method: 'POST', body: JSON.stringify(data),
     }),
+  exportBugs: (projectId: string, params?: Record<string, string>) =>
+    downloadFile(`/projects/${projectId}/bugs/export`, params),
 
   // ─── Bug Attachments ──────────────────────────────────────────────────────
   getBugAttachments: (projectId: string, bugId: string) =>
