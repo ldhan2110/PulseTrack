@@ -40,7 +40,7 @@ export function LogTimeModal({
       setProgress(currentProgress ?? 0);
       setProgressTouched(false);
     }
-  }, [open]);
+  }, [open, currentProgress]);
 
   const totalMinutes = (parseInt(hours) || 0) * 60 + (parseInt(minutes) || 0);
 

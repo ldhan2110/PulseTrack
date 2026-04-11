@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import type { Task, Priority } from '@/lib/types';
-import { TaskProgressBar, getParentProgress } from './TaskProgressBar';
+import { TaskProgressBar } from './TaskProgressBar';
+import { getParentProgress } from './task-progress-utils';
 
 interface KanbanCardProps {
   task: Task;

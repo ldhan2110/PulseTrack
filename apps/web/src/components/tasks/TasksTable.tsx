@@ -32,7 +32,8 @@ import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown, Trash2 } fr
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
-import { TaskProgressBar, getParentProgress } from './TaskProgressBar';
+import { TaskProgressBar } from './TaskProgressBar';
+import { getParentProgress } from './task-progress-utils';
 import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn, progressFilterFn } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
 import { formatMinutes } from '@/lib/time-utils';
