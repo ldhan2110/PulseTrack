@@ -243,6 +243,7 @@ model Project {
   customRoles    CustomRole[]
   wikiConfig       WikiConfig?
   wikiAnnotations  WikiAnnotation[]
+  reportConfig     ReportConfig?
 }
 
 model ProjectMember {
@@ -296,6 +297,7 @@ model Task {
   parentId            String?
   estimatedMinutes    Int?
   subTaskSequence     Int         @default(0)
+  progress          Int         @default(0)   // 0-100 percentage
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
@@ -337,6 +339,7 @@ model TimeLog {
   minutes     Int
   loggedAt    DateTime  @default(now())
   comment     String?
+  progress    Int?      // snapshot of progress at time of logging
   taskId      String
   userId      String
   blueprintId String?
@@ -612,6 +615,32 @@ model WikiAnnotation {
   author  User    @relation("WikiAnnotationAuthor", fields: [authorId], references: [id])
 
   @@index([projectId, pagePath])
+}
+
+model ReportConfig {
+  id                   String   @id @default(cuid())
+  projectId            String   @unique
+
+  emailEnabled         Boolean  @default(false)
+  googleChatEnabled    Boolean  @default(false)
+  googleChatWebhookUrl String?
+
+  recipientMode        String   @default("all")
+  recipientRoles       String[] @default([])
+  recipientMembers     String[] @default([])
+
+  frequency            String   @default("daily")
+  scheduleDays         Int[]    @default([])
+  scheduleTime         String   @default("09:00")
+  timezone             String   @default("UTC")
+
+  isActive             Boolean  @default(false)
+  bullmqJobId          String?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // =====================
