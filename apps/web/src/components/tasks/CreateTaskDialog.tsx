@@ -105,11 +105,12 @@ export function CreateTaskDialog({
   const [errors, setErrors] = useState<FormErrors>({});
   const [assigneeOpen, setAssigneeOpen] = useState(false);
 
-  const assigneeLabel = useMemo(() => {
-    if (!assigneeId || assigneeId === 'unassigned') return 'Unassigned';
-    const member = members.find((m) => m.userId === assigneeId);
-    return member?.user.name ?? member?.user.username ?? 'Unassigned';
+  const selectedMember = useMemo(() => {
+    if (!assigneeId || assigneeId === 'unassigned') return null;
+    return members.find((m) => m.userId === assigneeId) ?? null;
   }, [assigneeId, members]);
+
+  const assigneeLabel = selectedMember?.user.name ?? selectedMember?.user.username ?? 'Unassigned';
 
   const resetForm = () => {
     setTitle('');
@@ -252,16 +253,24 @@ export function CreateTaskDialog({
                       aria-expanded={assigneeOpen}
                       className="h-8 justify-between font-normal"
                     >
-                      <span className={cn('truncate text-sm', !assigneeId && 'text-muted-foreground')}>
-                        {assigneeLabel}
-                      </span>
+                      {selectedMember ? (
+                        <span className="flex items-center gap-2 truncate text-sm">
+                          <Avatar className="size-5 shrink-0">
+                            {selectedMember.user.imageUrl && <AvatarImage src={selectedMember.user.imageUrl} alt={assigneeLabel} />}
+                            <AvatarFallback className="text-[9px]">{getInitials(assigneeLabel)}</AvatarFallback>
+                          </Avatar>
+                          {assigneeLabel}
+                        </span>
+                      ) : (
+                        <span className="truncate text-sm text-muted-foreground">Unassigned</span>
+                      )}
                       <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0" align="start">
+                  <PopoverContent className="w-50 p-0" align="start">
                     <Command>
                       <CommandInput placeholder="Search members..." />
-                      <CommandList>
+                      <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
                         <CommandEmpty>No members found.</CommandEmpty>
                         <CommandGroup>
                           <CommandItem
@@ -290,11 +299,11 @@ export function CreateTaskDialog({
                             >
                               <Check
                                 className={cn(
-                                  'mr-2 size-4',
+                                  'size-4',
                                   assigneeId === member.userId ? 'opacity-100' : 'opacity-0',
                                 )}
                               />
-                              <Avatar className="size-5 mr-1.5">
+                              <Avatar className="size-5">
                                 {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
                                 <AvatarFallback className="text-[9px]">
                                   {getInitials(member.user.name ?? member.user.username)}

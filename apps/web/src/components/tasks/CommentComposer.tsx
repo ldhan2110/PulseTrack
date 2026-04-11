@@ -103,7 +103,7 @@ export function CommentComposer({
           items: ({ query }: { query: string }) => {
             return (members ?? []).filter((m) =>
               m.label.toLowerCase().includes(query.toLowerCase()),
-            ).slice(0, 5);
+            );
           },
           render: () => {
             let component: ReactRenderer<MentionSuggestionRef>;

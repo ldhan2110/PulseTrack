@@ -101,8 +101,10 @@ export function CreateBugDialog({
   const [actualResult, setActualResult] = useState('');
   const [environment, setEnvironment] = useState('');
   const [assigneeId, setAssigneeId] = useState<string>('');
+  const [ownerId, setOwnerId] = useState<string>('');
   const [parentTaskId, setParentTaskId] = useState<string>(defaultParentTaskId ?? '');
   const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const [ownerOpen, setOwnerOpen] = useState(false);
   const [parentTaskOpen, setParentTaskOpen] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -111,6 +113,12 @@ export function CreateBugDialog({
     const member = members.find((m) => m.userId === assigneeId);
     return member?.user.name ?? member?.user.username ?? 'Unassigned';
   }, [assigneeId, members]);
+
+  const ownerLabel = useMemo(() => {
+    if (!ownerId) return 'No owner';
+    const member = members.find((m) => m.userId === ownerId);
+    return member?.user.name ?? member?.user.username ?? 'No owner';
+  }, [ownerId, members]);
 
   const parentTaskLabel = useMemo(() => {
     if (!parentTaskId) return 'None';
@@ -128,6 +136,7 @@ export function CreateBugDialog({
     setActualResult('');
     setEnvironment('');
     setAssigneeId('');
+    setOwnerId('');
     setParentTaskId(defaultParentTaskId ?? '');
     setErrors({});
   };
@@ -162,6 +171,7 @@ export function CreateBugDialog({
         actualResult: actualResult.trim() || undefined,
         environment: environment.trim() || undefined,
         assigneeId: assigneeId || undefined,
+        ownerId: ownerId || undefined,
         parentTaskId: parentTaskId || undefined,
         reproSteps: reproSteps.length > 0 ? reproSteps : undefined,
       },
@@ -176,7 +186,7 @@ export function CreateBugDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[520px] max-w-full">
+      <DialogContent className="w-130" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Report Bug</DialogTitle>
         </DialogHeader>
@@ -286,7 +296,7 @@ export function CreateBugDialog({
                 <PopoverContent className="w-[240px] p-0" align="start">
                   <Command>
                     <CommandInput placeholder="Search members..." />
-                    <CommandList>
+                    <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
                       <CommandEmpty>No members found.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem
@@ -333,6 +343,71 @@ export function CreateBugDialog({
             </Field>
 
             <Field>
+              <FieldLabel>Bug Owner</FieldLabel>
+              <Popover open={ownerOpen} onOpenChange={setOwnerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={ownerOpen}
+                    className="h-8 justify-between font-normal"
+                  >
+                    <span className={cn('truncate text-sm', !ownerId && 'text-muted-foreground')}>
+                      {ownerLabel}
+                    </span>
+                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[240px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search members..." />
+                    <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                      <CommandEmpty>No members found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="no-owner"
+                          onSelect={() => {
+                            setOwnerId('');
+                            setOwnerOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn('mr-2 size-4', !ownerId ? 'opacity-100' : 'opacity-0')}
+                          />
+                          <span className="text-muted-foreground">No owner</span>
+                        </CommandItem>
+                        {members.map((member) => (
+                          <CommandItem
+                            key={member.userId}
+                            value={member.user.name ?? member.user.username}
+                            onSelect={() => {
+                              setOwnerId(member.userId);
+                              setOwnerOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 size-4',
+                                ownerId === member.userId ? 'opacity-100' : 'opacity-0',
+                              )}
+                            />
+                            <Avatar className="size-5 mr-1.5">
+                              {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
+                              <AvatarFallback className="text-[9px]">
+                                {getInitials(member.user.name ?? member.user.username)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {member.user.name ?? member.user.username}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </Field>
+
+            <Field>
               <FieldLabel>Parent Task</FieldLabel>
               <Popover open={parentTaskOpen} onOpenChange={setParentTaskOpen}>
                 <PopoverTrigger asChild>
@@ -351,7 +426,7 @@ export function CreateBugDialog({
                 <PopoverContent className="w-[320px] p-0" align="start">
                   <Command>
                     <CommandInput placeholder="Search tasks..." />
-                    <CommandList>
+                    <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
                       <CommandEmpty>No tasks found.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,6 +50,14 @@ import { AddSubTaskModal } from '@/components/tasks/AddSubTaskModal';
 import type { AcceptanceCriteria, Priority } from '@/lib/types';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { WatcherSelect } from '@/components/tasks/WatcherSelect';
@@ -218,6 +226,9 @@ export function TaskDetailPage() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Assignee combobox
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
 
   // Sub-task modal
   const [addSubTaskOpen, setAddSubTaskOpen] = useState(false);
@@ -754,55 +765,83 @@ export function TaskDetailPage() {
               {/* Assignee */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Assignee</SidebarLabel>
-                <Select
-                  value={task.assigneeId ?? 'unassigned'}
-                  onValueChange={(val) => {
-                    const assigneeId = val === 'unassigned' ? null : val;
-                    optimisticMutate({ assigneeId }, { taskId, data: { assigneeId } });
-                  }}
-                  disabled={!canEdit}
-                >
-                  <SelectTrigger className="h-8 w-full">
-                    {task.assigneeId && task.assignee ? (
-                      <div className="flex items-center gap-2">
-                        <Avatar className="size-5">
-                          {task.assignee.imageUrl && <AvatarImage src={task.assignee.imageUrl} alt={task.assignee.name ?? task.assignee.username} />}
-                          <AvatarFallback className="text-[9px]">
-                            {getInitials(task.assignee.name ?? task.assignee.username)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="truncate">{task.assignee.name ?? task.assignee.username}</span>
-                      </div>
-                    ) : (
-                      <SelectValue placeholder="Unassigned" />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">
-                      <span className="text-muted-foreground">Unassigned</span>
-                    </SelectItem>
-                    {(allowedAssignees ?? members.map((m) => ({
-                      userId: m.userId,
-                      username: m.user.username,
-                      name: m.user.name ?? m.user.username,
-                      imageUrl: m.user.imageUrl,
-                      memberId: m.id,
-                      email: m.user.email,
-                    }))).map((a) => (
-                      <SelectItem key={a.userId} value={a.userId}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="size-5">
-                            {a.imageUrl && <AvatarImage src={a.imageUrl} alt={a.name ?? a.username} />}
-                            <AvatarFallback className="text-[9px]">
-                              {getInitials(a.name ?? a.username)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {a.name ?? a.username}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {(() => {
+                  const assigneeOptions = allowedAssignees ?? members.map((m) => ({
+                    userId: m.userId,
+                    username: m.user.username,
+                    name: m.user.name ?? m.user.username,
+                    imageUrl: m.user.imageUrl,
+                    memberId: m.id,
+                    email: m.user.email,
+                  }));
+                  const currentAssignee = assigneeOptions.find((a) => a.userId === task.assigneeId);
+                  const assigneeLabel = currentAssignee ? (currentAssignee.name ?? currentAssignee.username) : 'Unassigned';
+                  return (
+                    <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={assigneeOpen}
+                          className="h-8 w-full justify-between font-normal"
+                          disabled={!canEdit}
+                        >
+                          {currentAssignee ? (
+                            <span className="flex items-center gap-2 truncate text-sm">
+                              <Avatar className="size-5 shrink-0">
+                                {currentAssignee.imageUrl && <AvatarImage src={currentAssignee.imageUrl} alt={assigneeLabel} />}
+                                <AvatarFallback className="text-[9px]">{getInitials(assigneeLabel)}</AvatarFallback>
+                              </Avatar>
+                              {assigneeLabel}
+                            </span>
+                          ) : (
+                            <span className="truncate text-sm text-muted-foreground">Unassigned</span>
+                          )}
+                          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search members..." />
+                          <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                            <CommandEmpty>No members found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="unassigned"
+                                onSelect={() => {
+                                  optimisticMutate({ assigneeId: null }, { taskId, data: { assigneeId: null } });
+                                  setAssigneeOpen(false);
+                                }}
+                              >
+                                <Check className={cn('mr-2 size-4', !task.assigneeId ? 'opacity-100' : 'opacity-0')} />
+                                <span className="text-muted-foreground">Unassigned</span>
+                              </CommandItem>
+                              {assigneeOptions.map((a) => (
+                                <CommandItem
+                                  key={a.userId}
+                                  value={a.name ?? a.username}
+                                  onSelect={() => {
+                                    optimisticMutate({ assigneeId: a.userId }, { taskId, data: { assigneeId: a.userId } });
+                                    setAssigneeOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn('mr-2 size-4', task.assigneeId === a.userId ? 'opacity-100' : 'opacity-0')} />
+                                  <Avatar className="size-5 mr-1.5">
+                                    {a.imageUrl && <AvatarImage src={a.imageUrl} alt={a.name ?? a.username} />}
+                                    <AvatarFallback className="text-[9px]">
+                                      {getInitials(a.name ?? a.username)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  {a.name ?? a.username}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
               </div>
 
               {/* Sprint */}

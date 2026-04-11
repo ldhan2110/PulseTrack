@@ -47,6 +47,10 @@ export class CreateBugDto {
 
   @IsOptional()
   @IsString()
+  ownerId?: string;
+
+  @IsOptional()
+  @IsString()
   parentTaskId?: string;
 
   @IsOptional()

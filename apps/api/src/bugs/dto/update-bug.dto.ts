@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsArray, ValidateNested, IsInt, Min, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsArray, ValidateNested, IsInt, Min, MinLength, MaxLength, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BugSeverity } from '@prisma/client';
 import { ReproStepDto } from './create-bug.dto';
@@ -35,8 +35,14 @@ export class UpdateBugDto {
   actualResult?: string;
 
   @IsOptional()
+  @ValidateIf(o => o.assigneeId !== null)
   @IsString()
-  assigneeId?: string;
+  assigneeId?: string | null;
+
+  @IsOptional()
+  @ValidateIf(o => o.ownerId !== null)
+  @IsString()
+  ownerId?: string | null;
 
   @IsOptional()
   @IsString()

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { SuggestionKeyDownProps } from '@tiptap/suggestion';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
@@ -18,8 +18,16 @@ function getInitials(name: string): string {
 export const MentionList = forwardRef<MentionSuggestionRef, MentionListProps>(
   ({ items, command }, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => setSelectedIndex(0), [items]);
+
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      const selected = container.children[selectedIndex] as HTMLElement | undefined;
+      selected?.scrollIntoView({ block: 'nearest' });
+    }, [selectedIndex]);
 
     useImperativeHandle(ref, () => ({
       onKeyDown: ({ event }: SuggestionKeyDownProps) => {
@@ -43,7 +51,7 @@ export const MentionList = forwardRef<MentionSuggestionRef, MentionListProps>(
     if (items.length === 0) return null;
 
     return (
-      <div className="rounded-md border bg-popover p-1 shadow-md">
+      <div ref={containerRef} className="rounded-md border bg-popover p-1 shadow-md max-h-60 overflow-y-auto">
         {items.map((item, i) => (
           <button
             key={item.id}

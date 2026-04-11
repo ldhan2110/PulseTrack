@@ -190,6 +190,7 @@ model User {
   aiJobsRequested   AiJob[]
   reportedBugs      Bug[]     @relation("BugReporter")
   assignedBugs      Bug[]     @relation("BugAssignee")
+  ownedBugs         Bug[]     @relation("BugOwner")
   uploadedAttachments     Attachment[]      @relation("AttachmentUploader")
   bugAttachments          BugAttachment[]   @relation("BugAttachmentUploader")
   taskHistories           TaskHistory[]     @relation("TaskHistoryActor")
@@ -419,12 +420,14 @@ model Bug {
   projectId        String
   reporterId       String
   assigneeId       String?
+  ownerId          String?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
   project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reporter       User             @relation("BugReporter", fields: [reporterId], references: [id])
   assignee       User?            @relation("BugAssignee", fields: [assigneeId], references: [id])
+  owner          User?            @relation("BugOwner", fields: [ownerId], references: [id])
   parentTask     Task?            @relation("TaskBugs", fields: [parentTaskId], references: [id])
   workflowStatus WorkflowStatus?  @relation("BugWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
   reproSteps     BugReproStep[]

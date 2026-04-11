@@ -11,6 +11,7 @@ import type { NotificationType, EntityType, Prisma } from '@prisma/client';
 const BUG_RELATIONS = {
   reporter: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
   assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+  owner: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
   workflowStatus: true,
   reproSteps: { orderBy: { position: 'asc' as const } },
   parentTask: { select: { id: true, taskKey: true, title: true } },
@@ -51,6 +52,7 @@ export class BugsService {
           expectedResult: dto.expectedResult,
           actualResult: dto.actualResult,
           assigneeId: dto.assigneeId,
+          ownerId: dto.ownerId,
           parentTaskId: dto.parentTaskId,
           workflowStatusId: initialStatus?.id ?? null,
         },
@@ -145,7 +147,7 @@ export class BugsService {
           where: { id: bugId },
           select: {
             title: true, description: true, severity: true, environment: true,
-            expectedResult: true, actualResult: true, assigneeId: true,
+            expectedResult: true, actualResult: true, assigneeId: true, ownerId: true,
             workflowStatusId: true, workflowStatus: { select: { name: true } },
           },
         })
@@ -160,6 +162,7 @@ export class BugsService {
       if (dto.expectedResult !== undefined) data.expectedResult = dto.expectedResult;
       if (dto.actualResult !== undefined) data.actualResult = dto.actualResult;
       if (dto.assigneeId !== undefined) data.assigneeId = dto.assigneeId;
+      if (dto.ownerId !== undefined) data.ownerId = dto.ownerId;
       if (dto.parentTaskId !== undefined) data.parentTaskId = dto.parentTaskId;
       if (dto.workflowStatusId !== undefined) data.workflowStatusId = dto.workflowStatusId;
 
@@ -193,6 +196,9 @@ export class BugsService {
         }
         if (dto.assigneeId !== undefined && dto.assigneeId !== oldBug.assigneeId) {
           historyEntries.push({ bugId, actorId, field: 'assigneeId', oldValue: oldBug.assigneeId ?? null, newValue: dto.assigneeId ?? null });
+        }
+        if (dto.ownerId !== undefined && dto.ownerId !== oldBug.ownerId) {
+          historyEntries.push({ bugId, actorId, field: 'ownerId', oldValue: oldBug.ownerId ?? null, newValue: dto.ownerId ?? null });
         }
         if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== oldBug.workflowStatusId) {
           historyEntries.push({ bugId, actorId, field: 'workflowStatusId', oldValue: oldBug.workflowStatus?.name ?? oldBug.workflowStatusId ?? null, newValue: (bug as any).workflowStatus?.name ?? dto.workflowStatusId ?? null });

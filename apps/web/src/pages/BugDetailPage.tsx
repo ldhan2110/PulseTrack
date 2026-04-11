@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
-import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +40,16 @@ import { BugAttachments } from '@/components/bugs/BugAttachments';
 import { BugCommentThread } from '@/components/bugs/BugCommentThread';
 import { BugActivityLog } from '@/components/bugs/BugActivityLog';
 import { WatcherSelect } from '@/components/tasks/WatcherSelect';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 function SidebarLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -89,6 +99,11 @@ export function BugDetailPage() {
   const deleteBug = useDeleteBug(projectId);
   const { data: workflow } = useWorkflow(projectId, 'BUG');
   const validTransitions = useValidTransitions(workflow, bug?.workflowStatusId ?? null);
+
+  // Assignee combobox
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
+  // Owner combobox
+  const [ownerOpen, setOwnerOpen] = useState(false);
 
   // Inline title editing
   const [editingTitle, setEditingTitle] = useState(false);
@@ -509,37 +524,147 @@ export function BugDetailPage() {
               {/* Assignee */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Assignee</SidebarLabel>
-                <Select
-                  value={bug.assigneeId ?? 'unassigned'}
-                  onValueChange={(val) =>
-                    updateBug.mutate({
-                      bugId,
-                      data: { assigneeId: val === 'unassigned' ? null : val },
-                    })
-                  }
-                >
-                  <SelectTrigger className="h-8 w-full">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">
-                      <span className="text-muted-foreground">Unassigned</span>
-                    </SelectItem>
-                    {members.map((m) => (
-                      <SelectItem key={m.userId} value={m.userId}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="size-5">
-                            {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
-                            <AvatarFallback className="text-[9px]">
-                              {getInitials(m.user.name ?? m.user.username)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {m.user.name ?? m.user.username}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {(() => {
+                  const currentAssignee = members.find((m) => m.userId === bug.assigneeId);
+                  const assigneeLabel = currentAssignee ? (currentAssignee.user.name ?? currentAssignee.user.username) : 'Unassigned';
+                  return (
+                    <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={assigneeOpen}
+                          className="h-8 w-full justify-between font-normal"
+                        >
+                          {currentAssignee ? (
+                            <span className="flex items-center gap-2 truncate text-sm">
+                              <Avatar className="size-5 shrink-0">
+                                {currentAssignee.user.imageUrl && <AvatarImage src={currentAssignee.user.imageUrl} alt={assigneeLabel} />}
+                                <AvatarFallback className="text-[9px]">{getInitials(assigneeLabel)}</AvatarFallback>
+                              </Avatar>
+                              {assigneeLabel}
+                            </span>
+                          ) : (
+                            <span className="truncate text-sm text-muted-foreground">Unassigned</span>
+                          )}
+                          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search members..." />
+                          <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                            <CommandEmpty>No members found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="unassigned"
+                                onSelect={() => {
+                                  updateBug.mutate({ bugId, data: { assigneeId: null } });
+                                  setAssigneeOpen(false);
+                                }}
+                              >
+                                <Check className={cn('mr-2 size-4', !bug.assigneeId ? 'opacity-100' : 'opacity-0')} />
+                                <span className="text-muted-foreground">Unassigned</span>
+                              </CommandItem>
+                              {members.map((m) => (
+                                <CommandItem
+                                  key={m.userId}
+                                  value={m.user.name ?? m.user.username}
+                                  onSelect={() => {
+                                    updateBug.mutate({ bugId, data: { assigneeId: m.userId } });
+                                    setAssigneeOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn('mr-2 size-4', bug.assigneeId === m.userId ? 'opacity-100' : 'opacity-0')} />
+                                  <Avatar className="size-5 mr-1.5">
+                                    {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
+                                    <AvatarFallback className="text-[9px]">
+                                      {getInitials(m.user.name ?? m.user.username)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  {m.user.name ?? m.user.username}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
+              </div>
+
+              {/* Bug Owner */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Bug Owner</SidebarLabel>
+                {(() => {
+                  const currentOwner = members.find((m) => m.userId === bug.ownerId);
+                  const ownerLabel = currentOwner ? (currentOwner.user.name ?? currentOwner.user.username) : 'No owner';
+                  return (
+                    <Popover open={ownerOpen} onOpenChange={setOwnerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={ownerOpen}
+                          className="h-8 w-full justify-between font-normal"
+                        >
+                          {currentOwner ? (
+                            <span className="flex items-center gap-2 truncate text-sm">
+                              <Avatar className="size-5 shrink-0">
+                                {currentOwner.user.imageUrl && <AvatarImage src={currentOwner.user.imageUrl} alt={ownerLabel} />}
+                                <AvatarFallback className="text-[9px]">{getInitials(ownerLabel)}</AvatarFallback>
+                              </Avatar>
+                              {ownerLabel}
+                            </span>
+                          ) : (
+                            <span className="truncate text-sm text-muted-foreground">No owner</span>
+                          )}
+                          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search members..." />
+                          <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                            <CommandEmpty>No members found.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="no-owner"
+                                onSelect={() => {
+                                  updateBug.mutate({ bugId, data: { ownerId: null } });
+                                  setOwnerOpen(false);
+                                }}
+                              >
+                                <Check className={cn('mr-2 size-4', !bug.ownerId ? 'opacity-100' : 'opacity-0')} />
+                                <span className="text-muted-foreground">No owner</span>
+                              </CommandItem>
+                              {members.map((m) => (
+                                <CommandItem
+                                  key={m.userId}
+                                  value={m.user.name ?? m.user.username}
+                                  onSelect={() => {
+                                    updateBug.mutate({ bugId, data: { ownerId: m.userId } });
+                                    setOwnerOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn('mr-2 size-4', bug.ownerId === m.userId ? 'opacity-100' : 'opacity-0')} />
+                                  <Avatar className="size-5 mr-1.5">
+                                    {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
+                                    <AvatarFallback className="text-[9px]">
+                                      {getInitials(m.user.name ?? m.user.username)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  {m.user.name ?? m.user.username}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
               </div>
 
               {/* Environment */}

@@ -315,6 +315,8 @@ export class WorkflowService {
         userId: m.user.id,
         username: m.user.username,
         email: m.user.email,
+        name: m.user.name,
+        imageUrl: m.user.imageUrl,
       }));
     }
 
@@ -323,6 +325,8 @@ export class WorkflowService {
       userId: r.member.user.id,
       username: r.member.user.username,
       email: r.member.user.email,
+      name: r.member.user.name,
+      imageUrl: r.member.user.imageUrl,
     }));
   }
 
