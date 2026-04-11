@@ -44,6 +44,7 @@ import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { TimeTrackingCard } from '@/components/tasks/TimeTrackingCard';
+import { TaskProgressBar, getParentProgress } from '@/components/tasks/TaskProgressBar';
 import { TimeLogsList } from '@/components/tasks/TimeLogsList';
 import { SubTaskCard } from '@/components/tasks/SubTaskCard';
 import { AddSubTaskModal } from '@/components/tasks/AddSubTaskModal';
@@ -926,6 +927,23 @@ export function TaskDetailPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Task Progress */}
+              <div className="border border-border rounded-lg p-3 space-y-2">
+                <h4 className="text-sm font-semibold">Progress</h4>
+                <TaskProgressBar
+                  value={isParent ? getParentProgress(task.children ?? []) : (task.progress ?? 0)}
+                  editable={!isParent && canEdit}
+                  onSave={(val) => {
+                    updateTask.mutate({ taskId: task.id, data: { progress: val } });
+                  }}
+                  showLabel
+                  size="md"
+                />
+                {isParent && (
+                  <p className="text-xs text-muted-foreground italic">Averaged from sub-tasks</p>
+                )}
               </div>
 
               {/* Time Tracking */}
