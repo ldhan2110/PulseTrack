@@ -11,8 +11,8 @@ export interface BurndownPoint {
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getProjectDashboard(projectId: string) {
-    const [workflowStatuses, tasksByStatus, activeSprint, recentTasks, recentBugs, bugCounts] =
+  async getProjectDashboard(projectId: string, timeFilter?: 'sprint' | '7d' | '30d') {
+    const [workflowStatuses, tasksByStatus, activeSprint, bugCounts] =
       await Promise.all([
         this.prisma.workflowStatus.findMany({
           where: { projectId, kind: 'TASK' },
@@ -33,28 +33,6 @@ export class DashboardService {
                 workflowStatusId: true,
               },
             },
-          },
-        }),
-        this.prisma.task.findMany({
-          where: { projectId },
-          orderBy: { updatedAt: 'desc' },
-          take: 10,
-          select: {
-            id: true,
-            title: true,
-            updatedAt: true,
-            creator: { select: { username: true, name: true, imageUrl: true } },
-          },
-        }),
-        this.prisma.bug.findMany({
-          where: { projectId },
-          orderBy: { updatedAt: 'desc' },
-          take: 10,
-          select: {
-            id: true,
-            title: true,
-            updatedAt: true,
-            reporter: { select: { username: true, name: true, imageUrl: true } },
           },
         }),
         this.prisma.workflowStatus.findMany({
@@ -131,30 +109,6 @@ export class DashboardService {
       };
     }
 
-    // Build recent activity feed (merge tasks + bugs, sort by updatedAt)
-    const taskActivity = recentTasks.map((t) => ({
-      id: t.id,
-      type: 'task' as const,
-      title: t.title,
-      actor: t.creator.username,
-      timestamp: t.updatedAt.toISOString(),
-    }));
-
-    const bugActivity = recentBugs.map((b) => ({
-      id: b.id,
-      type: 'bug' as const,
-      title: b.title,
-      actor: b.reporter.username,
-      timestamp: b.updatedAt.toISOString(),
-    }));
-
-    const recentActivity = [...taskActivity, ...bugActivity]
-      .sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      )
-      .slice(0, 20);
-
     // Build burndown data
     // POC approximation — uses updatedAt for completion date. Production would use TaskStatusHistory table.
     const burndown: BurndownPoint[] = [];
@@ -214,12 +168,15 @@ export class DashboardService {
       critical: criticalBugs,
     };
 
+    const memberPerformance = await this.getMemberPerformance(projectId, timeFilter);
+
     return {
       taskCounts,
       activeSprint: activeSprintData,
-      recentActivity,
       burndown,
       bugCounts: bugCountData,
+      memberPerformance: memberPerformance.members,
+      teamAvgHoursPerTask: memberPerformance.teamAvgHoursPerTask,
     };
   }
 
