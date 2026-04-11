@@ -454,6 +454,137 @@ export class TasksService {
     return `${m}m`;
   }
 
+  async exportExcel(projectId: string, filters: {
+    workflowStatusId?: string;
+    assigneeId?: string;
+    sprintId?: string;
+    priority?: string;
+    plannedStartFrom?: string;
+    plannedStartTo?: string;
+    plannedEndFrom?: string;
+    plannedEndTo?: string;
+    overdue?: string;
+    search?: string;
+  }): Promise<Buffer> {
+    const where: any = { projectId, parentId: null };
+
+    if (filters.workflowStatusId) {
+      where.workflowStatusId = { in: filters.workflowStatusId.split(',') };
+    }
+    if (filters.assigneeId) {
+      where.assigneeId = { in: filters.assigneeId.split(',') };
+    }
+    if (filters.sprintId) {
+      where.sprintId = { in: filters.sprintId.split(',') };
+    }
+    if (filters.priority) {
+      where.priority = { in: filters.priority.split(',') };
+    }
+    if (filters.search) {
+      where.title = { contains: filters.search, mode: 'insensitive' };
+    }
+
+    // Date filters on plannedStartDate
+    if (filters.plannedStartFrom || filters.plannedStartTo) {
+      where.plannedStartDate = {};
+      if (filters.plannedStartFrom) where.plannedStartDate.gte = new Date(filters.plannedStartFrom);
+      if (filters.plannedStartTo) where.plannedStartDate.lte = new Date(filters.plannedStartTo);
+    }
+
+    // Date filters on plannedEndDate
+    if (filters.plannedEndFrom || filters.plannedEndTo) {
+      where.plannedEndDate = {};
+      if (filters.plannedEndFrom) where.plannedEndDate.gte = new Date(filters.plannedEndFrom);
+      if (filters.plannedEndTo) where.plannedEndDate.lte = new Date(filters.plannedEndTo);
+    }
+
+    // Overdue: plannedEndDate < now AND no actualEndDate
+    if (filters.overdue === 'true') {
+      where.plannedEndDate = { ...where.plannedEndDate, lt: new Date() };
+      where.actualEndDate = null;
+    }
+
+    const tasks = await this.prisma.task.findMany({
+      where,
+      include: {
+        assignee: { select: { id: true, username: true, name: true } },
+        sprint: { select: { id: true, name: true } },
+        workflowStatus: true,
+        timeLogs: { select: { minutes: true } },
+        children: {
+          include: {
+            assignee: { select: { id: true, username: true, name: true } },
+            workflowStatus: true,
+            timeLogs: { select: { minutes: true } },
+            sprint: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Flatten: parent tasks + their children
+    const rows: any[] = [];
+    for (const task of tasks) {
+      rows.push(task);
+      if (task.children) {
+        for (const child of task.children) {
+          rows.push(child);
+        }
+      }
+    }
+
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Tasks');
+
+    sheet.columns = [
+      { header: 'Task Key', key: 'taskKey', width: 14 },
+      { header: 'Title', key: 'title', width: 40 },
+      { header: 'Description', key: 'description', width: 50 },
+      { header: 'Status', key: 'status', width: 18 },
+      { header: 'Priority', key: 'priority', width: 12 },
+      { header: 'Assignee', key: 'assignee', width: 20 },
+      { header: 'Sprint', key: 'sprint', width: 18 },
+      { header: 'Story Points', key: 'storyPoints', width: 14 },
+      { header: 'Estimated (min)', key: 'estimatedMinutes', width: 16 },
+      { header: 'Time Logged (min)', key: 'timeLogged', width: 18 },
+      { header: 'Planned Start', key: 'plannedStartDate', width: 16 },
+      { header: 'Planned End', key: 'plannedEndDate', width: 16 },
+      { header: 'Actual Start', key: 'actualStartDate', width: 16 },
+      { header: 'Actual End', key: 'actualEndDate', width: 16 },
+      { header: 'Created At', key: 'createdAt', width: 20 },
+    ];
+
+    // Bold header row
+    sheet.getRow(1).font = { bold: true };
+
+    for (const t of rows) {
+      const totalMinutes = (t.timeLogs ?? []).reduce((sum: number, tl: any) => sum + tl.minutes, 0);
+      sheet.addRow({
+        taskKey: t.taskKey ?? '',
+        title: t.title,
+        description: t.description ?? '',
+        status: t.workflowStatus?.name ?? '',
+        priority: t.priority ?? '',
+        assignee: t.assignee?.name ?? t.assignee?.username ?? '',
+        sprint: t.sprint?.name ?? '',
+        storyPoints: t.storyPoints ?? '',
+        estimatedMinutes: t.estimatedMinutes ?? '',
+        timeLogged: totalMinutes || '',
+        plannedStartDate: t.plannedStartDate ? new Date(t.plannedStartDate).toISOString().split('T')[0] : '',
+        plannedEndDate: t.plannedEndDate ? new Date(t.plannedEndDate).toISOString().split('T')[0] : '',
+        actualStartDate: t.actualStartDate ? new Date(t.actualStartDate).toISOString().split('T')[0] : '',
+        actualEndDate: t.actualEndDate ? new Date(t.actualEndDate).toISOString().split('T')[0] : '',
+        createdAt: t.createdAt ? new Date(t.createdAt).toISOString().replace('T', ' ').substring(0, 19) : '',
+      });
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
   private async triggerWatcherNotifications(opts: {
     projectId: string;
     entityId: string;
