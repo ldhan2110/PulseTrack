@@ -1,4 +1,8 @@
+import { useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -7,6 +11,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { MemberPerformanceRow } from '@/lib/types';
+
+type SortKey = 'name' | 'completed' | 'hours' | 'avgHours' | 'quality' | 'bugs';
+type SortDir = 'asc' | 'desc';
 
 interface MemberPerformanceProps {
   members: MemberPerformanceRow[];
@@ -119,96 +126,178 @@ function TrendArrow({ avgHours, teamAvg }: { avgHours: number; teamAvg: number }
 
 const AVATAR_COLORS = ['#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4', '#10b981', '#f97316', '#8b5cf6'];
 
+function getSortValue(member: MemberPerformanceRow, key: SortKey): number | string {
+  switch (key) {
+    case 'name': return member.name.toLowerCase();
+    case 'completed': return member.tasks.completed;
+    case 'hours': return member.hoursLogged;
+    case 'avgHours': return member.avgHoursPerTask;
+    case 'quality': return member.qualityRatio;
+    case 'bugs': return member.bugCount;
+  }
+}
+
+function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: SortKey; sortDir: SortDir }) {
+  if (column !== sortKey) return <ArrowUpDown className="ml-1 inline size-3 text-muted-foreground/50" />;
+  return sortDir === 'asc'
+    ? <ArrowUp className="ml-1 inline size-3" />
+    : <ArrowDown className="ml-1 inline size-3" />;
+}
+
 export function MemberPerformance({ members, teamAvgHoursPerTask, timeFilter, onTimeFilterChange }: MemberPerformanceProps) {
+  const [sortKey, setSortKey] = useState<SortKey>('completed');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [search, setSearch] = useState('');
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'name' ? 'asc' : 'desc');
+    }
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    let result = q ? members.filter((m) => m.name.toLowerCase().includes(q)) : members;
+
+    result = [...result].sort((a, b) => {
+      const aVal = getSortValue(a, sortKey);
+      const bVal = getSortValue(b, sortKey);
+      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return result;
+  }, [members, search, sortKey, sortDir]);
+
+  const thClass = 'pb-3 font-medium cursor-pointer select-none hover:text-foreground transition-colors whitespace-nowrap';
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between gap-4">
         <CardTitle>Team Performance</CardTitle>
-        <Select value={timeFilter} onValueChange={onTimeFilterChange}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All time</SelectItem>
-            <SelectItem value="sprint">This sprint</SelectItem>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search member..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-8 w-[160px] pl-8 text-sm"
+            />
+          </div>
+          <Select value={timeFilter} onValueChange={onTimeFilterChange}>
+            <SelectTrigger className="h-8 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All time</SelectItem>
+              <SelectItem value="sprint">This sprint</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
         {members.length === 0 ? (
           <p className="text-sm text-muted-foreground">No team members in this project.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs text-muted-foreground">
-                  <th className="pb-3 font-medium">Member</th>
-                  <th className="pb-3 font-medium">Task Breakdown</th>
-                  <th className="pb-3 font-medium">Hours</th>
-                  <th className="pb-3 font-medium">Avg Time/Task</th>
-                  <th className="pb-3 font-medium">Quality</th>
-                  <th className="pb-3 font-medium">Bugs</th>
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((member, idx) => (
-                  <tr key={member.userId} className="border-b last:border-0">
-                    <td className="py-3 pr-4">
-                      <div className="flex items-center gap-2">
-                        {member.imageUrl ? (
-                          <img
-                            src={member.imageUrl}
-                            alt={member.name}
-                            className="size-7 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div
-                            className="flex size-7 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-                            style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
-                          >
-                            {getInitials(member.name)}
-                          </div>
-                        )}
-                        <span className="font-medium">{member.name}</span>
-                      </div>
-                    </td>
-                    <td className="min-w-[180px] py-3 pr-4">
-                      <TaskBar
-                        completed={member.tasks.completed}
-                        inProgress={member.tasks.inProgress}
-                        todo={member.tasks.todo}
-                      />
-                    </td>
-                    <td className="py-3 pr-4">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-semibold">{Math.round(member.hoursLogged)}</span>
-                        <span className="text-muted-foreground">h</span>
-                      </div>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <TrendArrow avgHours={member.avgHoursPerTask} teamAvg={teamAvgHoursPerTask} />
-                    </td>
-                    <td className="py-3 pr-4">
-                      {member.tasks.completed === 0 ? (
-                        <div className="flex gap-[3px]">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="h-6 w-2 rounded-sm bg-muted" />
-                          ))}
-                        </div>
-                      ) : (
-                        <QualityBlocks ratio={member.qualityRatio} />
-                      )}
-                    </td>
-                    <td className="py-3">
-                      <span className="text-sm font-medium">{member.bugCount}</span>
-                    </td>
+          <ScrollArea className="max-h-[420px]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card z-10">
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className={thClass} onClick={() => handleSort('name')}>
+                      Member <SortIcon column="name" sortKey={sortKey} sortDir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => handleSort('completed')}>
+                      Task Breakdown <SortIcon column="completed" sortKey={sortKey} sortDir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => handleSort('hours')}>
+                      Hours <SortIcon column="hours" sortKey={sortKey} sortDir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => handleSort('avgHours')}>
+                      Avg Time/Task <SortIcon column="avgHours" sortKey={sortKey} sortDir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => handleSort('quality')}>
+                      Quality <SortIcon column="quality" sortKey={sortKey} sortDir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => handleSort('bugs')}>
+                      Bugs <SortIcon column="bugs" sortKey={sortKey} sortDir={sortDir} />
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                        No members match &quot;{search}&quot;
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((member, idx) => (
+                      <tr key={member.userId} className="border-b last:border-0">
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center gap-2">
+                            {member.imageUrl ? (
+                              <img
+                                src={member.imageUrl}
+                                alt={member.name}
+                                className="size-7 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div
+                                className="flex size-7 items-center justify-center rounded-full text-[11px] font-semibold text-white"
+                                style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                              >
+                                {getInitials(member.name)}
+                              </div>
+                            )}
+                            <span className="font-medium whitespace-nowrap">{member.name}</span>
+                          </div>
+                        </td>
+                        <td className="min-w-[180px] py-3 pr-4">
+                          <TaskBar
+                            completed={member.tasks.completed}
+                            inProgress={member.tasks.inProgress}
+                            todo={member.tasks.todo}
+                          />
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-semibold">{Math.round(member.hoursLogged)}</span>
+                            <span className="text-muted-foreground">h</span>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <TrendArrow avgHours={member.avgHoursPerTask} teamAvg={teamAvgHoursPerTask} />
+                        </td>
+                        <td className="py-3 pr-4">
+                          {member.tasks.completed === 0 ? (
+                            <div className="flex gap-[3px]">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="h-6 w-2 rounded-sm bg-muted" />
+                              ))}
+                            </div>
+                          ) : (
+                            <QualityBlocks ratio={member.qualityRatio} />
+                          )}
+                        </td>
+                        <td className="py-3">
+                          <span className="text-sm font-medium">{member.bugCount}</span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <ScrollBar orientation="vertical" />
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         )}
       </CardContent>
     </Card>
