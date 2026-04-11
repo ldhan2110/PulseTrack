@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -205,8 +204,7 @@ export function MemberPerformance({ members, teamAvgHoursPerTask, timeFilter, on
         {members.length === 0 ? (
           <p className="text-sm text-muted-foreground">No team members in this project.</p>
         ) : (
-          <ScrollArea className="max-h-[420px]">
-            <div className="overflow-x-auto">
+          <div className="max-h-[420px] overflow-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-card z-10">
                   <tr className="border-b text-left text-xs text-muted-foreground">
@@ -294,10 +292,7 @@ export function MemberPerformance({ members, teamAvgHoursPerTask, timeFilter, on
                   )}
                 </tbody>
               </table>
-            </div>
-            <ScrollBar orientation="vertical" />
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </div>
         )}
       </CardContent>
     </Card>
