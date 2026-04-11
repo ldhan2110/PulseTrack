@@ -54,6 +54,8 @@ import type {
   TestExecutionAttachment,
   BulkImportTestCasesPayload,
   BulkImportResult,
+  BulkImportBugsPayload,
+  BulkImportBugsResult,
   WikiConfig,
   UpsertWikiConfigPayload,
   WikiTreeNode,
@@ -210,6 +212,10 @@ export const api = {
     request<Bug>(`/projects/${projectId}/bugs/${bugId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteBug: (projectId: string, bugId: string) =>
     request<void>(`/projects/${projectId}/bugs/${bugId}`, { method: 'DELETE' }),
+  bulkImportBugs: (projectId: string, data: BulkImportBugsPayload) =>
+    request<BulkImportBugsResult>(`/projects/${projectId}/bugs/bulk-import`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
 
   // ─── Bug Attachments ──────────────────────────────────────────────────────
   getBugAttachments: (projectId: string, bugId: string) =>

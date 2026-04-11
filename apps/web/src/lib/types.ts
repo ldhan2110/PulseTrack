@@ -836,6 +836,26 @@ export interface BulkImportResult {
   modulesCreated: string[];
 }
 
+export interface BulkImportBugItem {
+  title: string;
+  preconditions?: string;
+  description?: string;
+  severity: BugSeverity;
+  environment?: string;
+  expectedResult?: string;
+  actualResult?: string;
+  statusName?: string;
+  reproSteps?: { position: number; content: string }[];
+}
+
+export interface BulkImportBugsPayload {
+  items: BulkImportBugItem[];
+}
+
+export interface BulkImportBugsResult {
+  created: number;
+}
+
 // ─── Wiki ──────────────────────────────────────────────────────────────
 export interface WikiConfig {
   id: string;
