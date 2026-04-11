@@ -10,7 +10,7 @@ import { LogTimeModal } from './LogTimeModal';
 interface TimeTrackingCardProps {
   task: Task;
   onEstimateChange?: (minutes: number | null) => void;
-  onLogTime?: (data: { minutes: number; comment?: string; loggedAt?: string }) => void;
+  onLogTime?: (data: { minutes: number; comment?: string; loggedAt?: string; progress?: number }) => void;
   isParent: boolean;
   isLogTimeLoading?: boolean;
 }
@@ -121,6 +121,7 @@ export function TimeTrackingCard({
           onOpenChange={setLogTimeModalOpen}
           onSubmit={onLogTime}
           isLoading={isLogTimeLoading}
+          currentProgress={task.progress ?? 0}
         />
       )}
     </div>
