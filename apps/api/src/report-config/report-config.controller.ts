@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Param, Body, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
@@ -24,6 +24,13 @@ export class ReportConfigController {
     @Body() dto: UpsertReportConfigDto,
   ) {
     return this.service.upsert(projectId, dto);
+  }
+
+  @Post('test')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'update')
+  testReport(@Param('projectId') projectId: string) {
+    return this.service.testReport(projectId);
   }
 
   @Get('server-timezone')

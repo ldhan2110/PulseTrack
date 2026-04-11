@@ -26,6 +26,19 @@ export function useUpsertReportConfig(projectId: string) {
   });
 }
 
+export function useTestReport(projectId: string) {
+  return useMutation({
+    mutationFn: () => api.testReportConfig(projectId),
+    onSuccess: (data: { report: { totalTasks: number; totalMembers: number }; results: { channel: string; status: string; detail?: string }[] }) => {
+      const summary = data.results.map((r) => `${r.channel}: ${r.status}${r.detail ? ` (${r.detail})` : ''}`).join(', ');
+      toast.success(`Test report sent — ${summary}`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to send test report');
+    },
+  });
+}
+
 export function useServerTimezone(projectId: string) {
   return useQuery({
     queryKey: ['serverTimezone'],

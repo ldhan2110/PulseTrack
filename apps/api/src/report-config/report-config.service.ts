@@ -1,20 +1,36 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpsertReportConfigDto } from './dto/upsert-report-config.dto';
 import { encrypt, decrypt, maskToken } from '../common/encryption.util';
+import { ReportGeneratorService } from '../report-generator/report-generator.service';
+import { GoogleChatService } from '../report-generator/google-chat.service';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class ReportConfigService {
   private readonly logger = new Logger(ReportConfigService.name);
+  private transporter: nodemailer.Transporter;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     @InjectQueue('report-generation') private readonly reportQueue: Queue,
-  ) {}
+    private readonly reportGenerator: ReportGeneratorService,
+    private readonly googleChat: GoogleChatService,
+  ) {
+    this.transporter = nodemailer.createTransport({
+      host: this.config.get('SMTP_HOST'),
+      port: parseInt(this.config.get('SMTP_PORT', '587'), 10),
+      secure: this.config.get('SMTP_SECURE') === 'true',
+      auth: {
+        user: this.config.get('SMTP_USER'),
+        pass: this.config.get('SMTP_PASS'),
+      },
+    });
+  }
 
   private get encryptionKey(): string {
     return this.config.getOrThrow<string>('ENCRYPTION_KEY');
@@ -75,6 +91,92 @@ export class ReportConfigService {
 
   async getServerTimezone() {
     return { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+  }
+
+  async testReport(projectId: string) {
+    const reportConfig = await this.prisma.reportConfig.findUnique({
+      where: { projectId },
+      include: { project: { select: { id: true, name: true } } },
+    });
+
+    if (!reportConfig) {
+      throw new BadRequestException('Save report settings first before testing');
+    }
+
+    if (!reportConfig.emailEnabled && !reportConfig.googleChatEnabled) {
+      throw new BadRequestException('Enable at least one channel (Email or Google Chat) before testing');
+    }
+
+    const report = await this.reportGenerator.generate(projectId);
+
+    const results: { channel: string; status: string; detail?: string }[] = [];
+
+    // Email delivery
+    if (reportConfig.emailEnabled) {
+      try {
+        const recipients = await this.resolveRecipients(
+          projectId,
+          reportConfig.recipientMode,
+          reportConfig.recipientRoles,
+          reportConfig.recipientMembers,
+        );
+
+        if (recipients.length === 0) {
+          results.push({ channel: 'email', status: 'skipped', detail: 'No recipients found' });
+        } else {
+          const html = this.reportGenerator.formatAsHtml(report);
+          const subject = `[TEST] 📊 ${reportConfig.project.name} — ${report.date} Report`;
+          const from = this.config.get('SMTP_FROM', 'PulseTrack <noreply@pulsetrack.com>');
+
+          for (const recipient of recipients) {
+            await this.transporter.sendMail({ from, to: recipient.email, subject, html });
+          }
+          results.push({ channel: 'email', status: 'sent', detail: `Sent to ${recipients.length} recipient(s)` });
+        }
+      } catch (err) {
+        results.push({ channel: 'email', status: 'failed', detail: String(err) });
+      }
+    }
+
+    // Google Chat delivery
+    if (reportConfig.googleChatEnabled && reportConfig.googleChatWebhookUrl) {
+      try {
+        const webhookUrl = decrypt(reportConfig.googleChatWebhookUrl, this.encryptionKey);
+        await this.googleChat.send(webhookUrl, report);
+        results.push({ channel: 'google_chat', status: 'sent' });
+      } catch (err) {
+        results.push({ channel: 'google_chat', status: 'failed', detail: String(err) });
+      }
+    }
+
+    return { report: { totalTasks: report.totalTasks, totalMembers: report.totalMembers }, results };
+  }
+
+  private async resolveRecipients(
+    projectId: string,
+    mode: string,
+    roleIds: string[],
+    memberIds: string[],
+  ): Promise<{ email: string; name: string }[]> {
+    let where: Record<string, unknown> = { projectId };
+
+    if (mode === 'roles' && roleIds.length > 0) {
+      where = { ...where, roleId: { in: roleIds } };
+    } else if (mode === 'members' && memberIds.length > 0) {
+      where = { ...where, id: { in: memberIds } };
+    }
+
+    const members = await this.prisma.projectMember.findMany({
+      where,
+      include: {
+        user: { select: { email: true, name: true, username: true } },
+      },
+    });
+
+    return members.map((m) => ({
+      email: m.user.email,
+      name: m.user.name ?? m.user.username,
+    }));
   }
 
   private async syncSchedule(

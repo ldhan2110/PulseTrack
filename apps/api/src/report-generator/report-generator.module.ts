@@ -7,6 +7,6 @@ import { GoogleChatService } from './google-chat.service';
 @Module({
   imports: [BullModule.registerQueue({ name: 'report-generation' })],
   providers: [ReportGeneratorService, ReportGeneratorProcessor, GoogleChatService],
-  exports: [ReportGeneratorService],
+  exports: [ReportGeneratorService, GoogleChatService],
 })
 export class ReportGeneratorModule {}

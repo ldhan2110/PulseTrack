@@ -340,6 +340,11 @@ export const api = {
     }),
   getServerTimezone: (projectId: string) =>
     request<{ timezone: string }>(`/projects/${projectId}/settings/report/server-timezone`),
+  testReportConfig: (projectId: string) =>
+    request<{ report: { totalTasks: number; totalMembers: number }; results: { channel: string; status: string; detail?: string }[] }>(
+      `/projects/${projectId}/settings/report/test`,
+      { method: 'POST' },
+    ),
 
   // ─── AI Task Generation ────────────────────────────────────────────────────
   generateTasks: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {
