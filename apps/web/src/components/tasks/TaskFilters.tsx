@@ -58,21 +58,25 @@ export function TaskFilters({
   const statusColumn = table.getColumn('workflowStatusId');
   const assigneeColumn = table.getColumn('assigneeId');
   const sprintColumn = table.getColumn('sprintId');
+  const progressColumn = table.getColumn('progress');
 
   const selectedStatuses = (statusColumn?.getFilterValue() as string[] | undefined) ?? [];
   const selectedAssignees = (assigneeColumn?.getFilterValue() as string[] | undefined) ?? [];
   const selectedSprint = (sprintColumn?.getFilterValue() as string | undefined) ?? '';
+  const selectedProgress = (progressColumn?.getFilterValue() as string[] | undefined) ?? [];
 
   const hasAnyFilter =
     selectedStatuses.length > 0 ||
     selectedAssignees.length > 0 ||
     selectedSprint !== '' ||
+    selectedProgress.length > 0 ||
     searchValue !== '';
 
   const clearAllFilters = () => {
     statusColumn?.setFilterValue(undefined);
     assigneeColumn?.setFilterValue(undefined);
     sprintColumn?.setFilterValue(undefined);
+    progressColumn?.setFilterValue(undefined);
     setSearchValue('');
     onGlobalFilterChange('');
   };
@@ -95,6 +99,14 @@ export function TaskFilters({
 
   const selectSprint = (sprintId: string) => {
     sprintColumn?.setFilterValue(sprintId === '' ? undefined : sprintId);
+  };
+
+  const toggleProgress = (range: string) => {
+    const current = [...selectedProgress];
+    const idx = current.indexOf(range);
+    if (idx >= 0) current.splice(idx, 1);
+    else current.push(range);
+    progressColumn?.setFilterValue(current.length > 0 ? current : undefined);
   };
 
   return (
@@ -264,6 +276,49 @@ export function TaskFilters({
         </PopoverContent>
       </Popover>
 
+      {/* Progress filter */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              'h-8 gap-1.5',
+              selectedProgress.length > 0 && 'border-primary',
+            )}
+          >
+            Progress
+            {selectedProgress.length > 0 && (
+              <Badge variant="secondary" className="size-5 p-0 flex items-center justify-center text-[10px] rounded-full">
+                {selectedProgress.length}
+              </Badge>
+            )}
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-40 p-2" align="start">
+          <div className="flex flex-col gap-1">
+            {[
+              { value: '0', label: '0%' },
+              { value: '1-49', label: '1–49%' },
+              { value: '50-99', label: '50–99%' },
+              { value: '100', label: '100%' },
+            ].map((opt) => (
+              <label
+                key={opt.value}
+                className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
+              >
+                <Checkbox
+                  checked={selectedProgress.includes(opt.value)}
+                  onCheckedChange={() => toggleProgress(opt.value)}
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+
       {/* Clear filters */}
       {hasAnyFilter && (
         <Button
@@ -299,4 +354,18 @@ export const sprintFilterFn = (row: { getValue: (id: string) => unknown }, colum
   const val = row.getValue(columnId) as string | null;
   if (filterValue === 'none') return val === null || val === undefined;
   return val === filterValue;
+};
+
+export const progressFilterFn = (row: { getValue: (id: string) => unknown }, columnId: string, filterValue: string[]) => {
+  if (!filterValue || filterValue.length === 0) return true;
+  const val = (row.getValue(columnId) as number) ?? 0;
+  return filterValue.some((range) => {
+    switch (range) {
+      case '0': return val === 0;
+      case '1-49': return val >= 1 && val <= 49;
+      case '50-99': return val >= 50 && val <= 99;
+      case '100': return val === 100;
+      default: return true;
+    }
+  });
 };

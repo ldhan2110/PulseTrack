@@ -32,7 +32,8 @@ import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown, Trash2 } fr
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
-import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn } from './TaskFilters';
+import { TaskProgressBar, getParentProgress } from './TaskProgressBar';
+import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn, progressFilterFn } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
 import { formatMinutes } from '@/lib/time-utils';
 import { format } from 'date-fns';
@@ -331,6 +332,23 @@ export function TasksTable({
         size: 70,
       },
       {
+        id: 'progress',
+        header: ({ column }) => <SortHeader label="Progress" column={column} />,
+        accessorFn: (row: Task) => {
+          if ((row.children?.length ?? 0) > 0) {
+            return getParentProgress(row.children ?? []);
+          }
+          return row.progress ?? 0;
+        },
+        cell: ({ getValue }: { getValue: () => unknown }) => {
+          const val = getValue() as number;
+          return <TaskProgressBar value={val} size="sm" showLabel editable={false} />;
+        },
+        filterFn: progressFilterFn,
+        enableColumnFilter: true,
+        size: 120,
+      },
+      {
         id: 'logged',
         header: 'Logged',
         accessorFn: (row: Task) => {
@@ -490,6 +508,9 @@ export function TasksTable({
                             </span>
                           ) : '—';
                         })()}
+                      </TableCell>
+                      <TableCell>
+                        <TaskProgressBar value={child.progress ?? 0} size="sm" showLabel editable={false} />
                       </TableCell>
                     </TableRow>
                   ))}
