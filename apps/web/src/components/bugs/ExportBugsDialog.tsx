@@ -48,6 +48,10 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
     else setter([...arr, val]);
   };
 
+  const toggleAll = (selected: string[], allValues: string[], setter: (v: string[]) => void) => {
+    setter(selected.length === allValues.length ? [] : allValues);
+  };
+
   const hasFilters =
     selectedStatuses.length > 0 || selectedSeverities.length > 0 ||
     selectedAssignees.length > 0 || selectedReporters.length > 0 ||
@@ -86,7 +90,7 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetFilters(); onOpenChange(o); }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg w-150" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Export Bugs to Excel</DialogTitle>
         </DialogHeader>
@@ -105,7 +109,12 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
 
           {/* Status */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedStatuses, (workflow?.statuses ?? []).map((ws) => ws.id), setSelectedStatuses)}>
+                {selectedStatuses.length === (workflow?.statuses ?? []).length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
               {(workflow?.statuses ?? []).map((ws) => (
                 <label key={ws.id} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -122,7 +131,12 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
 
           {/* Severity */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Severity</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Severity</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedSeverities, SEVERITY_OPTIONS.map((o) => o.value), setSelectedSeverities)}>
+                {selectedSeverities.length === SEVERITY_OPTIONS.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1">
               {SEVERITY_OPTIONS.map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -138,7 +152,12 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
 
           {/* Assignee */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Assignee</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Assignee</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedAssignees, members.map((m) => m.userId), setSelectedAssignees)}>
+                {selectedAssignees.length === members.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
               {members.map((m) => (
                 <label key={m.userId} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -160,7 +179,12 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
 
           {/* Reporter */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Reporter</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Reporter</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedReporters, members.map((m) => m.userId), setSelectedReporters)}>
+                {selectedReporters.length === members.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
               {members.map((m) => (
                 <label key={m.userId} className="flex items-center gap-2 text-sm cursor-pointer">

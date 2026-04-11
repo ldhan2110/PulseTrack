@@ -61,6 +61,10 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
     else setter([...arr, val]);
   };
 
+  const toggleAll = (selected: string[], allValues: string[], setter: (v: string[]) => void) => {
+    setter(selected.length === allValues.length ? [] : allValues);
+  };
+
   const hasFilters =
     selectedStatuses.length > 0 || selectedAssignees.length > 0 ||
     selectedSprints.length > 0 || selectedPriorities.length > 0 ||
@@ -130,7 +134,12 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
 
           {/* Status */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedStatuses, (workflow?.statuses ?? []).map((ws) => ws.id), setSelectedStatuses)}>
+                {selectedStatuses.length === (workflow?.statuses ?? []).length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
               {(workflow?.statuses ?? []).map((ws) => (
                 <label key={ws.id} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -147,7 +156,12 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
 
           {/* Priority */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Priority</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Priority</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedPriorities, PRIORITY_OPTIONS.map((o) => o.value), setSelectedPriorities)}>
+                {selectedPriorities.length === PRIORITY_OPTIONS.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1">
               {PRIORITY_OPTIONS.map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -163,7 +177,12 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
 
           {/* Assignee */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Assignee</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Assignee</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedAssignees, members.map((m) => m.userId), setSelectedAssignees)}>
+                {selectedAssignees.length === members.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
               {members.map((m) => (
                 <label key={m.userId} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -185,7 +204,12 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
 
           {/* Sprint */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Sprint</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Sprint</Label>
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleAll(selectedSprints, sprints.map((s) => s.id), setSelectedSprints)}>
+                {selectedSprints.length === sprints.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
               {sprints.map((s) => (
                 <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
