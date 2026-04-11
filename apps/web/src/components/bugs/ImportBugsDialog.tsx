@@ -228,7 +228,7 @@ export function ImportBugsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-fit max-w-0 max-h-[85vh] flex flex-col">
+      <DialogContent className="w-fit max-w-0 max-h-[85vh] flex flex-col" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Import Bugs from Excel</DialogTitle>
         </DialogHeader>
