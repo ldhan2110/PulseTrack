@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { api } from '@/lib/api';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { useMembers } from '@/hooks/useMembers';
@@ -145,6 +146,12 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
                     checked={selectedAssignees.includes(m.userId)}
                     onCheckedChange={() => toggle(selectedAssignees, m.userId, setSelectedAssignees)}
                   />
+                  <Avatar className="size-5">
+                    {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
+                    <AvatarFallback className="text-[9px]">
+                      {(m.user.name ?? m.user.username ?? '?').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="truncate">{m.user.name ?? m.user.username}</span>
                 </label>
               ))}
@@ -161,6 +168,12 @@ export function ExportBugsDialog({ open, onOpenChange, projectId }: ExportBugsDi
                     checked={selectedReporters.includes(m.userId)}
                     onCheckedChange={() => toggle(selectedReporters, m.userId, setSelectedReporters)}
                   />
+                  <Avatar className="size-5">
+                    {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
+                    <AvatarFallback className="text-[9px]">
+                      {(m.user.name ?? m.user.username ?? '?').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="truncate">{m.user.name ?? m.user.username}</span>
                 </label>
               ))}

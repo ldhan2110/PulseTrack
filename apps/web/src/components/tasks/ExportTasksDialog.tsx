@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { api } from '@/lib/api';
@@ -170,6 +171,12 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
                     checked={selectedAssignees.includes(m.userId)}
                     onCheckedChange={() => toggle(selectedAssignees, m.userId, setSelectedAssignees)}
                   />
+                  <Avatar className="size-5">
+                    {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? m.user.username} />}
+                    <AvatarFallback className="text-[9px]">
+                      {(m.user.name ?? m.user.username ?? '?').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="truncate">{m.user.name ?? m.user.username}</span>
                 </label>
               ))}
