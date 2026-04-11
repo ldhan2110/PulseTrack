@@ -15,6 +15,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
     BullModule.registerQueue({ name: 'ai-jobs' }),
     BullModule.registerQueue({ name: 'notification-email' }),
+    BullModule.registerQueue({ name: 'report-generation' }),
   ],
   exports: [BullModule],
 })
