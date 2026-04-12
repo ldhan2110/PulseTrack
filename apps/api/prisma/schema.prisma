@@ -244,6 +244,7 @@ model Project {
   wikiConfig       WikiConfig?
   wikiAnnotations  WikiAnnotation[]
   reportConfig     ReportConfig?
+  branches         TaskBranch[]
 }
 
 model ProjectMember {
@@ -314,6 +315,7 @@ model Task {
   attachments    Attachment[]
   history        TaskHistory[]
   bugs           Bug[]          @relation("TaskBugs")
+  branches       TaskBranch[]
 }
 
 model Comment {
@@ -566,6 +568,7 @@ model RepositoryConfig {
   id            String   @id @default(cuid())
   projectId     String   @unique
   repoUrl       String
+  provider      String   @default("gitlab") // "github" | "gitlab"
   accessToken   String   // AES-256-GCM encrypted
   cloneStatus   String   @default("pending") // pending | cloning | cloned | failed
   cloneError    String?
@@ -574,6 +577,25 @@ model RepositoryConfig {
   updatedAt     DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model TaskBranch {
+  id            String   @id @default(cuid())
+  taskId        String
+  projectId     String
+  branchName    String
+  branchType    String              // feat | fix | chore | hotfix | refactor
+  sequence      Int      @default(1)
+  prUrl         String?
+  prNumber      Int?
+  prTitle       String?
+  prStatus      String?             // open | merged | closed
+  createdAt     DateTime @default(now())
+
+  task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, branchName])
 }
 
 model AiConfig {
