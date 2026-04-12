@@ -5,6 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useRepositoryConfig, useUpsertRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import { useSocket } from '@/socket/useSocket';
 import type { CloneStatus } from '@/lib/types';
@@ -27,6 +34,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
   const [repoUrl, setRepoUrl] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [showToken, setShowToken] = useState(false);
+  const [provider, setProvider] = useState<'github' | 'gitlab'>('gitlab');
   const [initialized, setInitialized] = useState(false);
   const socket = useSocket();
 
@@ -34,6 +42,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
     if (config && !initialized) {
       setRepoUrl(config.repoUrl ?? '');
       setAccessToken('');
+      setProvider(config.provider ?? 'gitlab');
       setInitialized(true);
     }
   }, [config, initialized]);
@@ -51,6 +60,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
     upsert.mutate({
       repoUrl: repoUrl.trim(),
       accessToken: accessToken || (config?.accessToken ?? ''),
+      provider,
     });
     setInitialized(false);
   };
@@ -100,6 +110,18 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
               {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Provider</Label>
+          <Select value={provider} onValueChange={(v) => setProvider(v as 'github' | 'gitlab')} disabled={!canManage}>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gitlab">GitLab</SelectItem>
+              <SelectItem value="github">GitHub</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {config?.cloneStatus === 'failed' && config.cloneError && (
           <p className="text-xs text-destructive">{config.cloneError}</p>
