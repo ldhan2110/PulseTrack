@@ -651,6 +651,8 @@ export const api = {
     request<void>(`/projects/${projectId}/wiki/qa/${qaId}`, { method: 'DELETE' }),
 
   // ─── Task Branches ──────────────────────────────────────────────────────
+  getRemoteBranches: (projectId: string) =>
+    request<string[]>(`/projects/${projectId}/remote-branches`),
   getTaskBranches: (projectId: string, taskId: string) =>
     request<TaskBranch[]>(`/projects/${projectId}/tasks/${taskId}/branches`),
   createTaskBranch: (projectId: string, taskId: string, data: CreateBranchPayload) =>

@@ -1,4 +1,4 @@
-import type { GitProvider, CreateBranchParams, CreatePrParams, PrResult } from './git-provider.interface';
+import type { GitProvider, ListBranchesParams, CreateBranchParams, CreatePrParams, PrResult } from './git-provider.interface';
 
 export class GitLabProvider implements GitProvider {
   private parseRepoUrl(repoUrl: string): { apiBase: string; projectPath: string } {
@@ -25,6 +25,27 @@ export class GitLabProvider implements GitProvider {
       throw new Error(`GitLab API error (${response.status}): ${message}`);
     }
     return body;
+  }
+
+  async listBranches(params: ListBranchesParams): Promise<string[]> {
+    const { apiBase, projectPath } = this.parseRepoUrl(params.repoUrl);
+    const branches: string[] = [];
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      const data = await this.apiRequest(
+        `${apiBase}/projects/${projectPath}/repository/branches?per_page=${perPage}&page=${page}`,
+        params.token,
+      );
+      for (const b of data) {
+        branches.push(b.name);
+      }
+      if (data.length < perPage) break;
+      page++;
+    }
+
+    return branches.sort();
   }
 
   async createBranch(params: CreateBranchParams): Promise<void> {

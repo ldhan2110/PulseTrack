@@ -19,7 +19,13 @@ export interface PrResult {
   prNumber: number;
 }
 
+export interface ListBranchesParams {
+  repoUrl: string;
+  token: string;
+}
+
 export interface GitProvider {
+  listBranches(params: ListBranchesParams): Promise<string[]>;
   createBranch(params: CreateBranchParams): Promise<void>;
   createPr(params: CreatePrParams): Promise<PrResult>;
 }

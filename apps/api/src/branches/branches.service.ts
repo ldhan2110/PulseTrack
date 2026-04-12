@@ -26,6 +26,18 @@ export class BranchesService {
       .slice(0, 50);
   }
 
+  async listRemoteBranches(projectId: string): Promise<string[]> {
+    const repoConfig = await this.prisma.repositoryConfig.findUnique({
+      where: { projectId },
+    });
+    if (!repoConfig) throw new NotFoundException('Repository not configured for this project');
+
+    const token = decrypt(repoConfig.accessToken, this.encryptionKey);
+    const provider = this.providerFactory.create(repoConfig.provider);
+
+    return provider.listBranches({ repoUrl: repoConfig.repoUrl, token });
+  }
+
   async listByTask(projectId: string, taskId: string) {
     return this.prisma.taskBranch.findMany({
       where: { projectId, taskId },

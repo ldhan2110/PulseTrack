@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -21,7 +20,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { useTaskBranches, useCreateBranch, useCreatePr } from '@/hooks/useBranches';
+import { useRemoteBranches, useTaskBranches, useCreateBranch, useCreatePr } from '@/hooks/useBranches';
 import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import type { BranchType, TaskBranch } from '@/lib/types';
 
@@ -49,6 +48,7 @@ export function BranchCard({ projectId, taskId }: Props) {
   const { data: branches = [] } = useTaskBranches(projectId, taskId);
   const createBranch = useCreateBranch(projectId, taskId);
   const createPr = useCreatePr(projectId, taskId);
+  const { data: remoteBranches = [], isLoading: branchesLoading } = useRemoteBranches(projectId);
 
   const [branchType, setBranchType] = useState<BranchType>('feat');
   const [sourceBranch, setSourceBranch] = useState('');
@@ -125,13 +125,22 @@ export function BranchCard({ projectId, taskId }: Props) {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Source Branch (optional)</Label>
-                <Input
-                  className="h-8 text-xs"
-                  placeholder="defaults to repo default branch"
-                  value={sourceBranch}
-                  onChange={(e) => setSourceBranch(e.target.value)}
-                />
+                <Label className="text-xs">Source Branch</Label>
+                <Select value={sourceBranch || '__default__'} onValueChange={(v) => setSourceBranch(v === '__default__' ? '' : v)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={branchesLoading ? 'Loading branches...' : 'Default branch'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__default__">
+                      <span className="text-muted-foreground">Default branch</span>
+                    </SelectItem>
+                    {remoteBranches.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
@@ -204,13 +213,22 @@ export function BranchCard({ projectId, taskId }: Props) {
                 </DialogHeader>
                 <div className="space-y-3 py-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Target Branch (optional)</Label>
-                    <Input
-                      className="h-8 text-xs"
-                      placeholder="defaults to repo default branch"
-                      value={targetBranch}
-                      onChange={(e) => setTargetBranch(e.target.value)}
-                    />
+                    <Label className="text-xs">Target Branch</Label>
+                    <Select value={targetBranch || '__default__'} onValueChange={(v) => setTargetBranch(v === '__default__' ? '' : v)}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder={branchesLoading ? 'Loading branches...' : 'Default branch'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__default__">
+                          <span className="text-muted-foreground">Default branch</span>
+                        </SelectItem>
+                        {remoteBranches.map((b) => (
+                          <SelectItem key={b} value={b}>
+                            {b}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <DialogFooter>

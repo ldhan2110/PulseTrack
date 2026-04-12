@@ -12,12 +12,17 @@ import { BranchesService } from './branches.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { CreatePrDto } from './dto/create-pr.dto';
 
-@Controller('projects/:projectId/tasks/:taskId/branches')
+@Controller('projects/:projectId')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
 export class BranchesController {
   constructor(private readonly service: BranchesService) {}
 
-  @Get()
+  @Get('remote-branches')
+  listRemoteBranches(@Param('projectId') projectId: string) {
+    return this.service.listRemoteBranches(projectId);
+  }
+
+  @Get('tasks/:taskId/branches')
   list(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -25,7 +30,7 @@ export class BranchesController {
     return this.service.listByTask(projectId, taskId);
   }
 
-  @Post()
+  @Post('tasks/:taskId/branches')
   createBranch(
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -34,7 +39,7 @@ export class BranchesController {
     return this.service.createBranch(projectId, taskId, dto);
   }
 
-  @Post('pr')
+  @Post('tasks/:taskId/branches/pr')
   createPr(
     @Param('projectId') projectId: string,
     @Body() dto: CreatePrDto,
