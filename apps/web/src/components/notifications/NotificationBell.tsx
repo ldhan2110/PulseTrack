@@ -22,7 +22,7 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0" align="end" sideOffset={8}>
+      <PopoverContent className="w-auto p-0" align="end" sideOffset={8}>
         <NotificationDropdown onClose={() => setOpen(false)} />
       </PopoverContent>
     </Popover>

@@ -36,11 +36,11 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="text-sm leading-snug">
+        <p className="text-sm leading-snug break-words">
           <span className="font-medium">{actor.name ?? actor.username}</span>{' '}
           {notification.summary}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
           {notification.entityTitle} &middot; {relTime}
         </p>
       </div>

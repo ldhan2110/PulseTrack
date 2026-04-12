@@ -25,7 +25,7 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
   };
 
   return (
-    <div className="w-[min(320px,calc(100vw-2rem))] max-h-96 flex flex-col">
+    <div className="w-[min(320px,calc(100vw-2rem))] max-h-96 flex flex-col overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b">
         <span className="text-sm font-semibold">Notifications</span>
         <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => markAllRead.mutate()}>
