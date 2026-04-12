@@ -18,6 +18,7 @@ import { AttachmentsModule } from './attachments/attachments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WorkflowModule } from './workflow/workflow.module';
 import { RepositoryConfigModule } from './repository-config/repository-config.module';
+import { BranchesModule } from './branches/branches.module';
 import { AiConfigModule } from './ai-config/ai-config.module';
 import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 import { AiTestCaseGenerationModule } from './ai-testcase-generation/ai-testcase-generation.module';
@@ -55,6 +56,7 @@ import { ReportGeneratorModule } from './report-generator/report-generator.modul
     NotificationsModule,
     WorkflowModule,
     RepositoryConfigModule,
+    BranchesModule,
     AiConfigModule,
     AiTaskGenerationModule,
     AiTestCaseGenerationModule,
