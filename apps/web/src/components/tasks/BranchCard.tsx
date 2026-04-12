@@ -1,16 +1,23 @@
 import { useState } from 'react';
-import { GitBranch, GitPullRequest, ExternalLink, Plus, Copy, Check } from 'lucide-react';
+import { GitBranch, GitPullRequest, ExternalLink, Plus, Copy, Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +44,73 @@ const PR_STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'>
   merged: 'secondary',
   closed: 'destructive',
 };
+
+function BranchCombobox({
+  value,
+  onChange,
+  branches,
+  loading,
+  placeholder = 'Default branch',
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  branches: string[];
+  loading?: boolean;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-8 w-full justify-between text-xs font-normal"
+        >
+          <span className="truncate">
+            {loading ? 'Loading branches...' : value || placeholder}
+          </span>
+          <ChevronsUpDown className="ml-1 size-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search branches..." className="h-8 text-xs" />
+          <CommandList className="max-h-48">
+            <CommandEmpty className="py-3 text-xs">No branch found.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value="__default__"
+                onSelect={() => {
+                  onChange('');
+                  setOpen(false);
+                }}
+                data-checked={!value}
+              >
+                <span className="text-xs text-muted-foreground">{placeholder}</span>
+              </CommandItem>
+              {branches.map((b) => (
+                <CommandItem
+                  key={b}
+                  value={b}
+                  onSelect={() => {
+                    onChange(b);
+                    setOpen(false);
+                  }}
+                  data-checked={value === b}
+                >
+                  <span className="text-xs truncate">{b}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface Props {
   projectId: string;
@@ -126,21 +200,13 @@ export function BranchCard({ projectId, taskId }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Source Branch</Label>
-                <Select value={sourceBranch || '__default__'} onValueChange={(v) => setSourceBranch(v === '__default__' ? '' : v)}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder={branchesLoading ? 'Loading branches...' : 'Default branch'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__default__">
-                      <span className="text-muted-foreground">Default branch</span>
-                    </SelectItem>
-                    {remoteBranches.map((b) => (
-                      <SelectItem key={b} value={b}>
-                        {b}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <BranchCombobox
+                  value={sourceBranch}
+                  onChange={setSourceBranch}
+                  branches={remoteBranches}
+                  loading={branchesLoading}
+                  placeholder="Default branch"
+                />
               </div>
             </div>
             <DialogFooter>
@@ -214,21 +280,13 @@ export function BranchCard({ projectId, taskId }: Props) {
                 <div className="space-y-3 py-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Target Branch</Label>
-                    <Select value={targetBranch || '__default__'} onValueChange={(v) => setTargetBranch(v === '__default__' ? '' : v)}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder={branchesLoading ? 'Loading branches...' : 'Default branch'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__default__">
-                          <span className="text-muted-foreground">Default branch</span>
-                        </SelectItem>
-                        {remoteBranches.map((b) => (
-                          <SelectItem key={b} value={b}>
-                            {b}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <BranchCombobox
+                      value={targetBranch}
+                      onChange={setTargetBranch}
+                      branches={remoteBranches}
+                      loading={branchesLoading}
+                      placeholder="Default branch"
+                    />
                   </div>
                 </div>
                 <DialogFooter>
