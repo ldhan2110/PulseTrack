@@ -37,11 +37,13 @@ export class RepositoryConfigService {
         projectId,
         repoUrl: dto.repoUrl,
         accessToken: encryptedToken,
+        provider: dto.provider ?? 'gitlab',
         cloneStatus: 'cloning',
       },
       update: {
         repoUrl: dto.repoUrl,
         accessToken: encryptedToken,
+        provider: dto.provider ?? 'gitlab',
         cloneStatus: 'cloning',
         cloneError: null,
         workspacePath: null,

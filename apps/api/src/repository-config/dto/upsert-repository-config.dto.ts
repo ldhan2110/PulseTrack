@@ -1,4 +1,4 @@
-import { IsString, IsUrl, IsNotEmpty } from 'class-validator';
+import { IsString, IsUrl, IsNotEmpty, IsIn, IsOptional } from 'class-validator';
 
 export class UpsertRepositoryConfigDto {
   @IsString()
@@ -9,4 +9,9 @@ export class UpsertRepositoryConfigDto {
   @IsString()
   @IsNotEmpty()
   accessToken: string;
+
+  @IsString()
+  @IsIn(['github', 'gitlab'])
+  @IsOptional()
+  provider?: string;
 }
