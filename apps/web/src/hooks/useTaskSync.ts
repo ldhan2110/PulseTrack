@@ -18,6 +18,7 @@ export function useTaskSync(projectId?: string) {
     function onTaskCreated({ projectId: pid }: { projectId: string }) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', pid] });
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', pid] });
     }
 
     function onTaskUpdated({ projectId: pid, taskId }: { projectId: string; taskId: string }) {
@@ -26,11 +27,13 @@ export function useTaskSync(projectId?: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', pid] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', pid, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', pid] });
     }
 
     function onTaskDeleted({ projectId: pid }: { projectId: string }) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', pid] });
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', pid] });
     }
 
     socket.on('task:created', onTaskCreated);

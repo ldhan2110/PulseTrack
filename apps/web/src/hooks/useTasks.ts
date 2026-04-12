@@ -35,6 +35,7 @@ export function useCreateTask(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Task created successfully');
     },
     onError: (err: Error) => {
@@ -75,6 +76,7 @@ export function useUpdateTask(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
     onSuccess: () => {
       toast.success('Task updated');
@@ -88,6 +90,7 @@ export function useDeleteTask(projectId: string) {
     mutationFn: (taskId: string) => api.deleteTask(projectId, taskId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Task deleted');
     },
     onError: (err: Error) => {
@@ -128,6 +131,7 @@ export function useUpdateTaskStatus(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
     },
     onSuccess: () => {
       toast.success('Status updated');
@@ -153,6 +157,7 @@ export function useCreateTimeLog(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Time logged');
     },
     onError: (err: Error) => toast.error(err.message),
@@ -168,6 +173,7 @@ export function useDeleteTimeLog(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['time-logs', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Time log deleted');
     },
     onError: (err: Error) => toast.error(err.message),

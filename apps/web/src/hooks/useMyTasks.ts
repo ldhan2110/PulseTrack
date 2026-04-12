@@ -18,6 +18,7 @@ export function useDeleteMyTask() {
     onSuccess: (_data, { projectId }) => {
       void queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Task deleted');
     },
     onError: (err: Error) => {
@@ -51,6 +52,7 @@ export function useUpdateMyTaskStatus() {
       void queryClient.invalidateQueries({ queryKey: ['task', task.projectId, task.id] });
       void queryClient.invalidateQueries({ queryKey: ['task-by-key', task.projectId] });
       void queryClient.invalidateQueries({ queryKey: ['task-history', task.projectId, task.id] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', task.projectId] });
     },
     onSuccess: () => {
       toast.success('Status updated');

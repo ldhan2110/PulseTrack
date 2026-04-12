@@ -33,6 +33,7 @@ export function useCreateBug(projectId: string) {
     mutationFn: (data: CreateBugPayload) => api.createBug(projectId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Bug reported');
     },
     onError: (err: Error) => {
@@ -51,6 +52,7 @@ export function useUpdateBug(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['bug', projectId, variables.bugId] });
       void queryClient.invalidateQueries({ queryKey: ['bug-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['bug-history', projectId, variables.bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Bug updated');
     },
     onError: (err: Error) => {
@@ -67,6 +69,7 @@ export function useDeleteBug(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['bug', projectId, bugId] });
       void queryClient.invalidateQueries({ queryKey: ['bug-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Bug deleted');
     },
     onError: (err: Error) => {

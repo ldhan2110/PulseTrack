@@ -25,6 +25,7 @@ export function useCreateSprint(projectId: string) {
     mutationFn: (data: CreateSprintPayload) => api.createSprint(projectId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Sprint created');
     },
     onError: (err: Error) => {
@@ -40,6 +41,7 @@ export function useUpdateSprint(projectId: string) {
       api.updateSprint(projectId, sprintId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Sprint updated');
     },
     onError: (err: Error) => {
@@ -54,6 +56,7 @@ export function useActivateSprint(projectId: string) {
     mutationFn: (sprintId: string) => api.activateSprint(projectId, sprintId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Sprint activated');
     },
     onError: (err: Error) => {
@@ -69,6 +72,7 @@ export function useCloseSprint(projectId: string) {
     onSuccess: (data) => {
       void queryClient.invalidateQueries({ queryKey: ['sprints', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success(`Sprint closed. ${data.movedToBacklog} tasks returned to backlog.`);
     },
     onError: (err: Error) => {

@@ -10,6 +10,7 @@ export function useImportBugs(projectId: string) {
       api.bulkImportBugs(projectId, data),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success(`Imported ${result.created} bug${result.created !== 1 ? 's' : ''}`);
     },
     onError: (err: Error) => {
