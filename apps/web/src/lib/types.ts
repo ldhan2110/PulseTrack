@@ -502,6 +502,7 @@ export interface RepositoryConfig {
   id: string;
   repoUrl: string;
   accessToken: string; // masked
+  provider: 'github' | 'gitlab';
   cloneStatus: CloneStatus;
   cloneError: string | null;
   workspacePath: string | null;
@@ -510,6 +511,35 @@ export interface RepositoryConfig {
 export interface UpsertRepositoryConfigPayload {
   repoUrl: string;
   accessToken: string;
+  provider?: 'github' | 'gitlab';
+}
+
+// ─── Task Branches ──────────────────────────────────────────────────────────
+
+export type BranchType = 'feat' | 'fix' | 'chore' | 'hotfix' | 'refactor';
+
+export interface TaskBranch {
+  id: string;
+  taskId: string;
+  projectId: string;
+  branchName: string;
+  branchType: BranchType;
+  sequence: number;
+  prUrl: string | null;
+  prNumber: number | null;
+  prTitle: string | null;
+  prStatus: 'open' | 'merged' | 'closed' | null;
+  createdAt: string;
+}
+
+export interface CreateBranchPayload {
+  branchType: BranchType;
+  sourceBranch?: string;
+}
+
+export interface CreatePrPayload {
+  branchId: string;
+  targetBranch?: string;
 }
 
 // ─── AI Config ───────────────────────────────────────────────────────────────

@@ -67,6 +67,9 @@ import type {
   AiTestCaseGenerationJobResult,
   ReportConfig,
   UpsertReportConfigPayload,
+  TaskBranch,
+  CreateBranchPayload,
+  CreatePrPayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -646,4 +649,18 @@ export const api = {
     request<Array<{ id: string; question: string; answer: string; createdAt: string }>>(`/projects/${projectId}/wiki/qa/history`),
   deleteWikiQa: (projectId: string, qaId: string) =>
     request<void>(`/projects/${projectId}/wiki/qa/${qaId}`, { method: 'DELETE' }),
+
+  // ─── Task Branches ──────────────────────────────────────────────────────
+  getTaskBranches: (projectId: string, taskId: string) =>
+    request<TaskBranch[]>(`/projects/${projectId}/tasks/${taskId}/branches`),
+  createTaskBranch: (projectId: string, taskId: string, data: CreateBranchPayload) =>
+    request<TaskBranch>(`/projects/${projectId}/tasks/${taskId}/branches`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  createTaskPr: (projectId: string, taskId: string, data: CreatePrPayload) =>
+    request<TaskBranch>(`/projects/${projectId}/tasks/${taskId}/branches/pr`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
