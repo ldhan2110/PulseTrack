@@ -44,6 +44,7 @@ import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { TimeTrackingCard } from '@/components/tasks/TimeTrackingCard';
+import { BranchCard } from '@/components/tasks/BranchCard';
 import { TaskProgressBar } from '@/components/tasks/TaskProgressBar';
 import { getParentProgress } from '@/components/tasks/task-progress-utils';
 import { TimeLogsList } from '@/components/tasks/TimeLogsList';
@@ -962,6 +963,9 @@ export function TaskDetailPage() {
                 } : undefined}
                 isLogTimeLoading={createTimeLog.isPending}
               />
+
+              {/* Branches */}
+              <BranchCard projectId={projectId} taskId={task.id} />
 
               <Separator/>
 
