@@ -107,7 +107,7 @@ export class ReportConfigService {
       throw new BadRequestException('Enable at least one channel (Email or Google Chat) before testing');
     }
 
-    const report = await this.reportGenerator.generate(projectId);
+    const report = await this.reportGenerator.generate(projectId, reportConfig.timezone);
 
     const results: { channel: string; status: string; detail?: string }[] = [];
 

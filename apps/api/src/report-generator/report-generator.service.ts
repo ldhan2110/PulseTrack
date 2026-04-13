@@ -28,16 +28,22 @@ export interface ReportData {
 export class ReportGeneratorService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async generate(projectId: string): Promise<ReportData> {
+  async generate(projectId: string, timezone = 'Asia/Ho_Chi_Minh'): Promise<ReportData> {
     const project = await this.prisma.project.findUniqueOrThrow({
       where: { id: projectId },
       select: { name: true },
     });
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Compute start/end of "today" in the configured timezone
+    const now = new Date();
+    const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' });
+    const tzStr = now.toLocaleString('en-US', { timeZone: timezone });
+    const offsetMs = new Date(tzStr).getTime() - new Date(utcStr).getTime();
+
+    const nowInTz = new Date(now.getTime() + offsetMs);
+    nowInTz.setHours(0, 0, 0, 0);
+    const today = new Date(nowInTz.getTime() - offsetMs);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
     const tasks = await this.prisma.task.findMany({
       where: {
@@ -95,11 +101,12 @@ export class ReportGeneratorService {
       ? Math.round(allProgresses.reduce((a, b) => a + b, 0) / allProgresses.length)
       : 0;
 
-    const dateStr = today.toLocaleDateString('en-US', {
+    const dateStr = now.toLocaleDateString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      timeZone: timezone,
     });
 
     return {

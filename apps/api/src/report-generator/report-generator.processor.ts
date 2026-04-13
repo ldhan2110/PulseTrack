@@ -45,7 +45,7 @@ export class ReportGeneratorProcessor extends WorkerHost {
       return;
     }
 
-    const report = await this.reportGenerator.generate(reportConfig.projectId);
+    const report = await this.reportGenerator.generate(reportConfig.projectId, reportConfig.timezone);
 
     if (report.totalTasks === 0) {
       this.logger.log(`No tasks to report for project: ${reportConfig.project.name}`);
