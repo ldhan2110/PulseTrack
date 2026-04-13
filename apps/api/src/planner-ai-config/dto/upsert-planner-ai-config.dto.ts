@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, IsIn, IsOptional } from 'class-validator';
 
 export class UpsertPlannerAiConfigDto {
   @IsString()
@@ -10,7 +10,8 @@ export class UpsertPlannerAiConfigDto {
   @IsNotEmpty()
   model: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  apiKey: string;
+  apiKey?: string;
 }

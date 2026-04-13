@@ -577,7 +577,7 @@ export interface PlannerAiConfig {
 export interface UpsertPlannerAiConfigPayload {
   provider: string;
   model: string;
-  apiKey: string;
+  apiKey?: string;
 }
 
 // ─── AI Task Generation ─────────────────────────────────────────────────────

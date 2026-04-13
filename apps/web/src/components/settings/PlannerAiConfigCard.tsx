@@ -55,7 +55,7 @@ export function PlannerAiConfigCard({ projectId, canManage }: Props) {
     upsert.mutate({
       provider: 'openrouter',
       model,
-      apiKey: apiKey || (config?.apiKey ?? ''),
+      ...(apiKey && { apiKey }),
     });
     setInitialized(false);
   };
@@ -153,7 +153,7 @@ export function PlannerAiConfigCard({ projectId, canManage }: Props) {
         {canManage && (
           <Button
             onClick={handleSave}
-            disabled={upsert.isPending || !model.trim()}
+            disabled={upsert.isPending || !model.trim() || (!config && !apiKey)}
             size="sm"
           >
             {upsert.isPending ? 'Saving...' : 'Save Planner AI Settings'}

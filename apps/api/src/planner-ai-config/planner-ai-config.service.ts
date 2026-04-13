@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, maskToken } from '../common/encryption.util';
@@ -24,7 +24,13 @@ export class PlannerAiConfigService {
   }
 
   async upsert(projectId: string, dto: UpsertPlannerAiConfigDto) {
-    const encryptedKey = encrypt(dto.apiKey, this.encryptionKey);
+    const encryptedKey = dto.apiKey ? encrypt(dto.apiKey, this.encryptionKey) : undefined;
+
+    // First-time creation requires an API key
+    if (!encryptedKey) {
+      const existing = await this.prisma.plannerAiConfig.findUnique({ where: { projectId } });
+      if (!existing) throw new BadRequestException('API key is required for initial setup');
+    }
 
     const config = await this.prisma.plannerAiConfig.upsert({
       where: { projectId },
@@ -32,15 +38,15 @@ export class PlannerAiConfigService {
         projectId,
         provider: dto.provider,
         model: dto.model,
-        apiKey: encryptedKey,
+        apiKey: encryptedKey!,
       },
       update: {
         provider: dto.provider,
         model: dto.model,
-        apiKey: encryptedKey,
+        ...(encryptedKey && { apiKey: encryptedKey }),
       },
     });
 
-    return { ...config, apiKey: maskToken(dto.apiKey) };
+    return { ...config, apiKey: maskToken(config.apiKey) };
   }
 }
