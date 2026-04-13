@@ -58,6 +58,7 @@ export function CommentItem({
   const canDelete = comment.authorId === currentUserId || canManage;
   const canEditComment = comment.authorId === currentUserId || canManage;
   const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(comment.content);
 
   const relativeTime = (() => {
     try {
@@ -97,15 +98,31 @@ export function CommentItem({
               entityType={entityType}
               entityId={resolvedEntityId}
               placeholder="Edit comment..."
+              onChange={(html) => setEditedContent(html)}
             />
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs mt-1"
-              onClick={() => setIsEditing(false)}
-            >
-              Cancel
-            </Button>
+            <div className="flex items-center gap-1 mt-1">
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  onEdit(comment.id, editedContent);
+                  setIsEditing(false);
+                }}
+              >
+                Update
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setEditedContent(comment.content);
+                  setIsEditing(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         ) : (
           <div

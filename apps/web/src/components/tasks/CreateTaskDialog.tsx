@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import {
   Select,
   SelectContent,
@@ -98,6 +98,7 @@ export function CreateTaskDialog({
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [editorKey, setEditorKey] = useState(0);
   const [assigneeId, setAssigneeId] = useState<string>('');
   const [storyPoints, setStoryPoints] = useState('');
   const [sprintId, setSprintId] = useState<string>('');
@@ -115,6 +116,7 @@ export function CreateTaskDialog({
   const resetForm = () => {
     setTitle('');
     setDescription('');
+    setEditorKey((k) => k + 1);
     setAssigneeId('');
     setStoryPoints('');
     setSprintId('');
@@ -151,7 +153,7 @@ export function CreateTaskDialog({
     createTask.mutate(
       {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description && description !== '<p></p>' ? description : undefined,
         assigneeId: assigneeId && assigneeId !== 'unassigned' ? assigneeId : undefined,
         storyPoints: storyPoints !== '' ? Number(storyPoints) : undefined,
         sprintId: sprintId && sprintId !== 'none' ? sprintId : undefined,
@@ -190,13 +192,15 @@ export function CreateTaskDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="task-description">Description</FieldLabel>
-              <Textarea
-                id="task-description"
+              <FieldLabel>Description</FieldLabel>
+              <RichTextEditor
+                key={editorKey}
+                initialContent=""
+                onSave={() => {}}
+                editable={true}
+                alwaysEditing={true}
                 placeholder="Add a description (optional)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                onChange={setDescription}
               />
             </Field>
 

@@ -97,7 +97,7 @@ export function BacklogPage() {
         ) : (
           <div className="flex gap-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-2 min-w-[240px]">
+              <div key={i} className="flex flex-col gap-2 min-w-60">
                 <Skeleton className="h-8 w-full" />
                 {Array.from({ length: 2 }).map((_, j) => (
                   <Skeleton key={j} className="h-20 w-full" />
@@ -207,7 +207,7 @@ export function BacklogPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full min-h-0">
+    <div className="flex flex-col gap-4 h-full min-h-0 min-w-0 w-full overflow-hidden">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
         {canEdit && (

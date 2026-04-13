@@ -34,7 +34,7 @@ export function MembersPage() {
   const canAdd = can('members', 'create');
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-6">
+    <div className="flex flex-col gap-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Members</h1>

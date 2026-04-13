@@ -65,7 +65,7 @@ export function SprintsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 p-8">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Skeleton className="h-7 w-24" />
           <Skeleton className="h-9 w-32" />
@@ -81,7 +81,7 @@ export function SprintsPage() {
 
   if (!sortedSprints.length) {
     return (
-      <div className="flex flex-col gap-4 p-8">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Sprints</h1>
           {canCreate && (
@@ -113,7 +113,7 @@ export function SprintsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-8">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Sprints</h1>
         {canCreate && (

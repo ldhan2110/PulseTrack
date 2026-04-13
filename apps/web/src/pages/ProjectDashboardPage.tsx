@@ -38,7 +38,7 @@ export function ProjectDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-6 px-8 py-6">
+      <div className="flex flex-col gap-6">
         <h1 className="text-xl font-semibold">Dashboard</h1>
         <DashboardSkeleton />
       </div>
@@ -58,7 +58,7 @@ export function ProjectDashboardPage() {
       : 0;
 
   return (
-    <div className="flex flex-col gap-6 px-8 py-6">
+    <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">Dashboard</h1>
 
       {/* Row 1: Dynamic status cards with horizontal scroll */}

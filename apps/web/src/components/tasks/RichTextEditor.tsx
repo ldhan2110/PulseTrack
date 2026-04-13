@@ -29,6 +29,8 @@ interface RichTextEditorProps {
   /** Always show editor (no read/edit toggle). Used by CommentComposer. */
   alwaysEditing?: boolean;
   placeholder?: string;
+  /** Called on every content change — useful for uncontrolled collection (e.g. creation forms). */
+  onChange?: (html: string) => void;
 }
 
 function ToolbarButton({
@@ -127,6 +129,7 @@ export function RichTextEditor({
   taskId,
   alwaysEditing = false,
   placeholder: placeholderText = 'Add a description...',
+  onChange,
 }: RichTextEditorProps) {
   const resolvedEntityId = entityId ?? taskId ?? '';
   const [isEditing, setIsEditing] = useState(alwaysEditing);
@@ -172,6 +175,9 @@ export function RichTextEditor({
     ],
     content: initialContentRef.current,
     editable: true,
+    onUpdate: ({ editor }) => {
+      onChange?.(editor.getHTML());
+    },
     editorProps: {
       handlePaste: (_view, event) => {
         if (!supportsImages) return false;

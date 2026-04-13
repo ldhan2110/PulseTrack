@@ -1,6 +1,16 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { formatMinutes } from '../../lib/time-utils';
 import type { Task } from '../../lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
+}
 
 interface SubTaskCardProps {
   subTask: Task;
@@ -22,12 +32,27 @@ export function SubTaskCard({ subTask }: SubTaskCardProps) {
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-mono">{subTask.taskKey}</span>
-            <span className="text-sm font-medium truncate">{subTask.title}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs text-muted-foreground font-mono shrink-0">{subTask.taskKey}</span>
+            <span className="text-sm font-medium truncate min-w-0 flex-1">{subTask.title}</span>
           </div>
           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-            {subTask.assignee && <span>👤 {subTask.assignee.name ?? subTask.assignee.username}</span>}
+            {subTask.assignee && (
+              <span className="flex items-center gap-1.5">
+                <Avatar className="size-4 shrink-0">
+                  {subTask.assignee.imageUrl && (
+                    <AvatarImage
+                      src={subTask.assignee.imageUrl}
+                      alt={subTask.assignee.name ?? subTask.assignee.username}
+                    />
+                  )}
+                  <AvatarFallback className="text-[8px]">
+                    {getInitials(subTask.assignee.name ?? subTask.assignee.username ?? '')}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{subTask.assignee.name ?? subTask.assignee.username}</span>
+              </span>
+            )}
             {subTask.workflowStatus && (
               <span
                 className="px-1.5 py-0.5 rounded text-[10px] font-medium"

@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import {
   Select,
   SelectContent,
@@ -186,7 +187,7 @@ export function CreateBugDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[50vw]" style={{ maxWidth: "none" }}>
+      <DialogContent className="w-[50vw] max-h-[90vh]" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Report Bug</DialogTitle>
         </DialogHeader>
@@ -208,13 +209,14 @@ export function CreateBugDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="bug-description">Description</FieldLabel>
-              <Textarea
-                id="bug-description"
+              <FieldLabel>Description</FieldLabel>
+              <RichTextEditor
+                initialContent={description}
+                onSave={() => {}}
+                editable={true}
+                alwaysEditing={true}
                 placeholder="Describe the bug (optional)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
+                onChange={(html) => setDescription(html)}
               />
             </Field>
 

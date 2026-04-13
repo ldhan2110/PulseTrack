@@ -4,14 +4,6 @@ import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
 import { useParams } from 'react-router-dom';
 import { ClipboardList, Search, FileSpreadsheet, Download, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { exportTestCasesToExcel } from '@/lib/exportTestCases';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,6 +20,7 @@ import { TestCasesTable } from '@/components/test-cases/TestCasesTable';
 import { TestCaseForm } from '@/components/test-cases/TestCaseForm';
 import { SuiteManager } from '@/components/test-cases/SuiteManager';
 import { ImportTestCasesDialog } from '@/components/test-cases/ImportTestCasesDialog';
+import { ExportTestCasesDialog } from '@/components/test-cases/ExportTestCasesDialog';
 import type { TestCase } from '@/lib/types';
 import { GenerateTestCasesModal } from '@/components/test-cases/GenerateTestCasesModal';
 import { TestCaseGenerationWizard } from '@/components/test-cases/TestCaseGenerationWizard';
@@ -53,29 +46,11 @@ export function TestCasesPage() {
   const [editingCase, setEditingCase] = useState<TestCase | null>(null);
   const [suiteManagerOpen, setSuiteManagerOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const { projectPrefix } = useParams<{ projectPrefix: string }>();
-  const [exportAllLoading, setExportAllLoading] = useState(false);
-
-  const exportFilename = `test-cases-${projectPrefix ?? 'export'}-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
-  const handleExportFiltered = () => {
-    exportTestCasesToExcel(caseList, exportFilename);
-  };
-
-  const handleExportAll = async () => {
-    setExportAllLoading(true);
-    try {
-      const allCases = await api.getTestCases(projectId);
-      exportTestCasesToExcel(allCases, exportFilename);
-    } catch {
-      toast.error('Failed to export test cases');
-    } finally {
-      setExportAllLoading(false);
-    }
-  };
 
   const { data: aiConfig } = useAiConfig(projectId);
   const { data: repoConfig } = useRepositoryConfig(projectId);
@@ -152,22 +127,10 @@ export function TestCasesPage() {
         <FileSpreadsheet className="size-3.5 mr-1.5" />
         Import Excel
       </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" disabled={exportAllLoading}>
-            <Download className="size-3.5 mr-1.5" />
-            {exportAllLoading ? 'Exporting...' : 'Export Excel'}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={handleExportFiltered}>
-            Export Filtered ({caseList.length})
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleExportAll}>
-            Export All
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button variant="outline" onClick={() => setExportOpen(true)}>
+        <Download className="size-3.5 mr-1.5" />
+        Export Excel
+      </Button>
       <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
     </div>
   );
@@ -223,6 +186,12 @@ export function TestCasesPage() {
           onOpenChange={setImportOpen}
           projectId={projectId}
           modules={modules}
+        />
+        <ExportTestCasesDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          projectId={projectId}
+          projectPrefix={projectPrefix}
         />
         <GenerateTestCasesModal
           open={generateOpen}
@@ -343,6 +312,12 @@ export function TestCasesPage() {
         onOpenChange={setImportOpen}
         projectId={projectId}
         modules={modules}
+      />
+      <ExportTestCasesDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        projectId={projectId}
+        projectPrefix={projectPrefix}
       />
       <GenerateTestCasesModal
         open={generateOpen}

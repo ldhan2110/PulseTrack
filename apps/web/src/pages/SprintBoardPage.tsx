@@ -54,7 +54,7 @@ export function SprintBoardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 p-8">
+      <div className="flex flex-col gap-4">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-8 w-56" />
         <Skeleton className="h-4 w-full max-w-sm" />
@@ -97,7 +97,7 @@ export function SprintBoardPage() {
   const isCompleted = sprint.status === 'COMPLETED';
 
   return (
-    <div className="flex flex-col gap-4 p-8">
+    <div className="flex flex-col gap-4">
       {/* Back navigation */}
       <Button
         variant="ghost"
