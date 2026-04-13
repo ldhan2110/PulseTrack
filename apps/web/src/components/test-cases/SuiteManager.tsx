@@ -75,7 +75,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[520px] max-w-full max-h-[80vh] flex flex-col">
+      <DialogContent className="w-[50vw] max-w-none max-h-[80vh] flex flex-col" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Manage Suite{suite ? ` - ${suite.name}` : ''}</DialogTitle>
         </DialogHeader>
@@ -83,7 +83,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
         {/* Current members */}
         <div className="flex flex-col gap-2">
           <span className="text-[13px] font-semibold">Members ({suite?.members?.length ?? 0})</span>
-          <div className="max-h-[180px] overflow-y-auto flex flex-col gap-1">
+          <div className="max-h-45 overflow-y-auto flex flex-col gap-1">
             {suite?.members?.length === 0 && (
               <p className="text-sm text-muted-foreground py-2">No test cases in this suite.</p>
             )}
@@ -122,7 +122,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
               className="h-8 pl-7 text-sm"
             />
           </div>
-          <div className="max-h-[200px] overflow-y-auto flex flex-col gap-0.5">
+          <div className="max-h-50 overflow-y-auto flex flex-col gap-0.5">
             {availableCases.length === 0 && (
               <p className="text-sm text-muted-foreground py-2">No available test cases.</p>
             )}

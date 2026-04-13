@@ -180,7 +180,7 @@ export function CreateExecutionDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[540px] max-w-full max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[50vw] max-w-none max-h-[85vh] overflow-y-auto" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>New Test Execution</DialogTitle>
         </DialogHeader>
