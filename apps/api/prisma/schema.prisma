@@ -98,6 +98,18 @@ enum TestExecutionStatus {
   COMPLETED
 }
 
+enum PlannerSessionStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum PlannerMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
 model WorkflowStatus {
   id        String       @id @default(cuid())
   projectId String
@@ -245,6 +257,7 @@ model Project {
   wikiAnnotations  WikiAnnotation[]
   reportConfig     ReportConfig?
   branches         TaskBranch[]
+  plannerSessions  PlannerSession[]
 }
 
 model ProjectMember {
@@ -802,4 +815,86 @@ model TestExecutionAttachment {
 
   executionCase TestExecutionCase @relation(fields: [executionCaseId], references: [id], onDelete: Cascade)
   uploader      User              @relation("TestExecutionAttachmentUploader", fields: [uploaderId], references: [id])
+}
+
+// =====================
+// PLANNER
+// =====================
+
+model PlannerSession {
+  id          String               @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  status      PlannerSessionStatus @default(DRAFT)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  project  Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  messages PlannerMessage[]
+  scopes   PlannerScope[]
+
+  @@index([projectId])
+}
+
+model PlannerMessage {
+  id        String             @id @default(cuid())
+  sessionId String
+  role      PlannerMessageRole
+  content   String
+  createdAt DateTime           @default(now())
+
+  session          PlannerSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  attachments      PlannerAttachment[]
+  sourcedFeatures  PlannerFeature[]   @relation("FeatureSourceMessage")
+
+  @@index([sessionId])
+}
+
+model PlannerAttachment {
+  id         String   @id @default(cuid())
+  messageId  String
+  fileName   String
+  storedName String
+  fileUrl    String
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+
+  message PlannerMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model PlannerScope {
+  id          String   @id @default(cuid())
+  sessionId   String
+  title       String
+  description String?
+  position    Int
+  aiGenerated Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  session  PlannerSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  features PlannerFeature[]
+
+  @@index([sessionId])
+}
+
+model PlannerFeature {
+  id              String   @id @default(cuid())
+  scopeId         String
+  title           String
+  description     String?
+  position        Int
+  aiGenerated     Boolean  @default(false)
+  sourceMessageId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  scope         PlannerScope    @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  sourceMessage PlannerMessage? @relation("FeatureSourceMessage", fields: [sourceMessageId], references: [id], onDelete: SetNull)
+
+  @@index([scopeId])
 }
