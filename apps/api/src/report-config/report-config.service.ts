@@ -67,7 +67,7 @@ export class ReportConfigService {
       data.googleChatWebhookUrl = encrypt(dto.googleChatWebhookUrl, this.encryptionKey);
     }
 
-    const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const serverTimezone = 'Asia/Ho_Chi_Minh';
 
     const config = await this.prisma.reportConfig.upsert({
       where: { projectId },
@@ -90,7 +90,7 @@ export class ReportConfigService {
   }
 
   async getServerTimezone() {
-    return { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+    return { timezone: 'Asia/Ho_Chi_Minh' };
   }
 
   async testReport(projectId: string) {
