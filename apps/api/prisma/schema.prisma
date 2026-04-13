@@ -247,6 +247,7 @@ model Project {
   workflowTransitions WorkflowTransition[]
   repositoryConfig    RepositoryConfig?
   aiConfig            AiConfig?
+  plannerAiConfig     PlannerAiConfig?
   notifications       Notification[]
   testModules    TestModule[]
   testCases      TestCase[]
@@ -620,6 +621,18 @@ model AiConfig {
   projectContext String?  @db.VarChar(2000)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model PlannerAiConfig {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  provider  String   @default("openrouter")
+  model     String
+  apiKey    String   // AES-256-GCM encrypted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
