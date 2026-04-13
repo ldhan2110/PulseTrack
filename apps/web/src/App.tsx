@@ -19,6 +19,7 @@ import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { WikiPage } from './pages/WikiPage';
 import { MyTasksPage } from './pages/MyTasksPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { PlannerPage } from './pages/PlannerPage';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/my-tasks" element={<MyTasksPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/projects/:projectPrefix/dashboard" element={<ProjectDashboardPage />} />
+        <Route path="/projects/:projectPrefix/planner" element={<PlannerPage />} />
         <Route path="/projects/:projectPrefix/backlog" element={<BacklogPage />} />
         <Route path="/projects/:projectPrefix/sprints" element={<SprintsPage />} />
         <Route path="/projects/:projectPrefix/sprints/:sprintId" element={<SprintBoardPage />} />

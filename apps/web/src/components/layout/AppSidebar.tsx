@@ -14,6 +14,7 @@ import {
   LogOut,
   CheckSquare,
   BookOpen,
+  Target,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -37,6 +38,7 @@ import { useUiStore } from '@/store/uiStore';
 
 const PROJECT_NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
+  { label: 'Project Planner', icon: Target, path: 'planner' },
   { label: 'Backlog', icon: ListTodo, path: 'backlog' },
   { label: 'Sprints', icon: Zap, path: 'sprints' },
   { label: 'Test Cases', icon: ClipboardList, path: 'test-cases' },
