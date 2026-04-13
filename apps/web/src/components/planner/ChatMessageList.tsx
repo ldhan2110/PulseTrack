@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { PlannerMessage } from '@/lib/types';
-import { ChatMessage, StreamingMessage } from './ChatMessage';
+import { ChatMessage, StreamingMessage, ThinkingIndicator } from './ChatMessage';
 import { ChatActionSuggestion } from './ChatActionSuggestion';
 
 interface ChatMessageListProps {
@@ -19,7 +19,7 @@ export function ChatMessageList({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, streamingContent]);
+  }, [messages.length, streamingContent, isStreaming]);
 
   return (
     <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -31,8 +31,10 @@ export function ChatMessageList({
       {messages.map((msg) => (
         <ChatMessage key={msg.id} message={msg} />
       ))}
-      {isStreaming && streamingContent && (
-        <StreamingMessage content={streamingContent} />
+      {isStreaming && (
+        streamingContent
+          ? <StreamingMessage content={streamingContent} />
+          : <ThinkingIndicator />
       )}
       {suggestedAction && (
         <ChatActionSuggestion

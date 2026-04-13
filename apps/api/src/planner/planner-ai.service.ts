@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { spawn, execSync } from 'child_process';
-import axios from 'axios';
+import { OpenRouter } from '@openrouter/sdk';
 import { PrismaService } from '../prisma/prisma.service';
 import { decrypt } from '../common/encryption.util';
 
@@ -267,13 +267,17 @@ export class PlannerAiService {
   }
 
   /**
-   * Stream a chat completion from OpenRouter using their OpenAI-compatible API.
+   * Stream a chat completion from OpenRouter using their official SDK.
    */
   private async *streamOpenRouterResponse(
     config: { model: string; apiKey: string },
     context: ChatContext,
   ): AsyncGenerator<string> {
     this.logger.log(`OpenRouter streaming: model=${config.model}`);
+
+    const openrouter = new OpenRouter({
+      apiKey: config.apiKey,
+    });
 
     const messages = [
       { role: 'system' as const, content: context.systemPrompt },
@@ -283,49 +287,17 @@ export class PlannerAiService {
       })),
     ];
 
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
+    const stream = await openrouter.chat.send({
+      chatRequest: {
         model: config.model,
         messages,
         stream: true,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://pulsetrack.app',
-          'X-Title': 'PulseTrack Planner',
-        },
-        responseType: 'stream',
-        timeout: 300_000,
-      },
-    );
+    });
 
-    const stream = response.data as NodeJS.ReadableStream;
-    let buffer = '';
-
-    for await (const raw of stream) {
-      buffer += raw.toString();
-      const lines = buffer.split('\n');
-      // Keep the last (possibly incomplete) line in the buffer
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data: ')) continue;
-
-        const payload = trimmed.slice(6);
-        if (payload === '[DONE]') return;
-
-        try {
-          const parsed = JSON.parse(payload);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) yield content;
-        } catch {
-          // Skip malformed SSE chunks
-        }
-      }
+    for await (const chunk of stream) {
+      const content = chunk.choices?.[0]?.delta?.content;
+      if (content) yield content;
     }
   }
 

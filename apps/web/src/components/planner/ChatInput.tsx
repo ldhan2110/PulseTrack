@@ -14,6 +14,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
+    if (disabled) return;
     const trimmed = text.trim();
     if (!trimmed && files.length === 0) return;
     onSend(trimmed, files);

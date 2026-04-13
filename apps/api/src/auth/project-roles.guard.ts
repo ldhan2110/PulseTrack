@@ -17,6 +17,10 @@ export class ProjectRolesGuard implements CanActivate {
     const user = request.user;
     const projectId = request.params.projectId;
 
+    // Routes without :projectId in the path (e.g. planner-sessions/:sessionId/*)
+    // cannot perform project-scoped checks — skip to JWT-only auth.
+    if (!projectId) return true;
+
     const member = await this.prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId, userId: user.id } },
       include: { customRole: true },

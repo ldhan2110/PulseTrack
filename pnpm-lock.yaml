@@ -43,6 +43,9 @@ importers:
       '@nestjs/websockets':
         specifier: ^11.0.1
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(@nestjs/platform-socket.io@11.1.18)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@openrouter/sdk':
+        specifier: ^0.12.1
+        version: 0.12.1
       '@pm/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -1378,6 +1381,9 @@ packages:
 
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
+
+  '@openrouter/sdk@0.12.1':
+    resolution: {integrity: sha512-ERI4RdE36TETVkppXGWIQV7HB2D17dCAydt7owX4r9w3dczOQ7DZReHdrWt+JWNKaW44t+6ufvm1FiSme97LGA==}
 
   '@oxc-project/types@0.122.0':
     resolution: {integrity: sha512-oLAl5kBpV4w69UtFZ9xqcmTi+GENWOcPF7FCrczTiBbmC0ibXxCwyvZGbO39rCVEuLGAZM84DH0pUIyyv/YJzA==}
@@ -8350,6 +8356,10 @@ snapshots:
       outvariant: 1.4.3
 
   '@open-draft/until@2.1.0': {}
+
+  '@openrouter/sdk@0.12.1':
+    dependencies:
+      zod: 4.3.6
 
   '@oxc-project/types@0.122.0': {}
 
