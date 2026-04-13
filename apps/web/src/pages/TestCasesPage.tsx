@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react';
 
 import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
-import { ClipboardList, Search, FileSpreadsheet } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { ClipboardList, Search, FileSpreadsheet, Download } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { exportTestCasesToExcel } from '@/lib/exportTestCases';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -47,6 +55,25 @@ export function TestCasesPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+
+  const { projectPrefix } = useParams<{ projectPrefix: string }>();
+  const [exportAllLoading, setExportAllLoading] = useState(false);
+
+  const exportFilename = `test-cases-${projectPrefix ?? 'export'}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+  const handleExportFiltered = () => {
+    exportTestCasesToExcel(caseList, exportFilename);
+  };
+
+  const handleExportAll = async () => {
+    setExportAllLoading(true);
+    try {
+      const allCases = await api.getTestCases(projectId);
+      exportTestCasesToExcel(allCases, exportFilename);
+    } finally {
+      setExportAllLoading(false);
+    }
+  };
 
   const { data: aiConfig } = useAiConfig(projectId);
   const { data: repoConfig } = useRepositoryConfig(projectId);
@@ -114,7 +141,7 @@ export function TestCasesPage() {
   // Empty state
   if (!isLoading && caseList.length === 0 && !selectedModuleId && !selectedSuiteId && !search && !statusFilter && !priorityFilter) {
     return (
-      <div className="flex flex-col gap-4 p-8">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
           <div className="flex items-center gap-2">
@@ -128,6 +155,22 @@ export function TestCasesPage() {
               <FileSpreadsheet className="size-3.5 mr-1.5" />
               Import Excel
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={exportAllLoading}>
+                  <Download className="size-3.5 mr-1.5" />
+                  {exportAllLoading ? 'Exporting...' : 'Export Excel'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportFiltered}>
+                  Export Filtered ({caseList.length})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportAll}>
+                  Export All
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
           </div>
         </div>
@@ -201,7 +244,7 @@ export function TestCasesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-8">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
         <div className="flex items-center gap-2">
@@ -215,6 +258,22 @@ export function TestCasesPage() {
             <FileSpreadsheet className="size-3.5 mr-1.5" />
             Import Excel
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={exportAllLoading}>
+                <Download className="size-3.5 mr-1.5" />
+                {exportAllLoading ? 'Exporting...' : 'Export Excel'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportFiltered}>
+                Export Filtered ({caseList.length})
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportAll}>
+                Export All
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
         </div>
       </div>
