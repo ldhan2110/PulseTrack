@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
 import { useParams } from 'react-router-dom';
-import { ClipboardList, Search, FileSpreadsheet, Download } from 'lucide-react';
+import { ClipboardList, Search, FileSpreadsheet, Download, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +29,6 @@ import { TestCaseForm } from '@/components/test-cases/TestCaseForm';
 import { SuiteManager } from '@/components/test-cases/SuiteManager';
 import { ImportTestCasesDialog } from '@/components/test-cases/ImportTestCasesDialog';
 import type { TestCase } from '@/lib/types';
-import { Sparkles } from 'lucide-react';
 import { GenerateTestCasesModal } from '@/components/test-cases/GenerateTestCasesModal';
 import { TestCaseGenerationWizard } from '@/components/test-cases/TestCaseGenerationWizard';
 import { useAiTestCaseGeneration } from '@/hooks/useAiTestCaseGeneration';
@@ -70,6 +70,8 @@ export function TestCasesPage() {
     try {
       const allCases = await api.getTestCases(projectId);
       exportTestCasesToExcel(allCases, exportFilename);
+    } catch {
+      toast.error('Failed to export test cases');
     } finally {
       setExportAllLoading(false);
     }
@@ -138,41 +140,45 @@ export function TestCasesPage() {
     if (id) setSuiteManagerOpen(true);
   };
 
+  const toolbarActions = (
+    <div className="flex items-center gap-2">
+      {canGenerate && (
+        <Button variant="outline" onClick={() => setGenerateOpen(true)}>
+          <Sparkles className="size-3.5 mr-1.5" />
+          AI Generate
+        </Button>
+      )}
+      <Button variant="outline" onClick={() => setImportOpen(true)}>
+        <FileSpreadsheet className="size-3.5 mr-1.5" />
+        Import Excel
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" disabled={exportAllLoading}>
+            <Download className="size-3.5 mr-1.5" />
+            {exportAllLoading ? 'Exporting...' : 'Export Excel'}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleExportFiltered}>
+            Export Filtered ({caseList.length})
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportAll}>
+            Export All
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+    </div>
+  );
+
   // Empty state
   if (!isLoading && caseList.length === 0 && !selectedModuleId && !selectedSuiteId && !search && !statusFilter && !priorityFilter) {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
-          <div className="flex items-center gap-2">
-            {canGenerate && (
-              <Button variant="outline" onClick={() => setGenerateOpen(true)}>
-                <Sparkles className="size-3.5 mr-1.5" />
-                AI Generate
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <FileSpreadsheet className="size-3.5 mr-1.5" />
-              Import Excel
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={exportAllLoading}>
-                  <Download className="size-3.5 mr-1.5" />
-                  {exportAllLoading ? 'Exporting...' : 'Export Excel'}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportFiltered}>
-                  Export Filtered ({caseList.length})
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportAll}>
-                  Export All
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
-          </div>
+          {toolbarActions}
         </div>
         <div className="flex">
           <div className="w-60 border-r pr-2 shrink-0">
@@ -247,35 +253,7 @@ export function TestCasesPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
-        <div className="flex items-center gap-2">
-          {canGenerate && (
-            <Button variant="outline" onClick={() => setGenerateOpen(true)}>
-              <Sparkles className="size-3.5 mr-1.5" />
-              AI Generate
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <FileSpreadsheet className="size-3.5 mr-1.5" />
-            Import Excel
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={exportAllLoading}>
-                <Download className="size-3.5 mr-1.5" />
-                {exportAllLoading ? 'Exporting...' : 'Export Excel'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportFiltered}>
-                Export Filtered ({caseList.length})
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportAll}>
-                Export All
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
-        </div>
+        {toolbarActions}
       </div>
 
       <div className="flex gap-0 min-h-0 flex-1">
