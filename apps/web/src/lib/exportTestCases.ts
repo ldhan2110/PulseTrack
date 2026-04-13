@@ -20,7 +20,7 @@ function toTitleCase(str: string): string {
 
 function formatSteps(steps?: { position: number; action: string }[]): string {
   if (!steps || steps.length === 0) return '';
-  return steps
+  return [...steps]
     .sort((a, b) => a.position - b.position)
     .map((s, i) => `${i + 1}. ${s.action}`)
     .join('\n');
