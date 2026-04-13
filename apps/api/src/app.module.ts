@@ -36,6 +36,7 @@ import { WikiGenerationModule } from './wiki-generation/wiki-generation.module';
 import { WikiModule } from './wiki/wiki.module';
 import { ReportConfigModule } from './report-config/report-config.module';
 import { ReportGeneratorModule } from './report-generator/report-generator.module';
+import { PlannerModule } from './planner/planner.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { ReportGeneratorModule } from './report-generator/report-generator.modul
     WikiModule,
     ReportConfigModule,
     ReportGeneratorModule,
+    PlannerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
