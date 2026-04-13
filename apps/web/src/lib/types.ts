@@ -989,3 +989,107 @@ export interface UpsertReportConfigPayload {
   timezone?: string;
   isActive?: boolean;
 }
+
+// ─── Planner ─────────────────────────────────────────────────
+
+export interface PlannerFeature {
+  id: string;
+  scopeId: string;
+  title: string;
+  description: string | null;
+  position: number;
+  aiGenerated: boolean;
+  sourceMessageId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlannerScope {
+  id: string;
+  sessionId: string;
+  title: string;
+  description: string | null;
+  position: number;
+  aiGenerated: boolean;
+  features: PlannerFeature[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlannerAttachment {
+  id: string;
+  messageId: string;
+  fileName: string;
+  storedName: string;
+  fileUrl: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
+export interface PlannerMessage {
+  id: string;
+  sessionId: string;
+  role: 'USER' | 'ASSISTANT' | 'SYSTEM';
+  content: string;
+  attachments: PlannerAttachment[];
+  createdAt: string;
+}
+
+export interface PlannerSession {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  scopes: PlannerScope[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlannerSessionListItem {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  _count: { scopes: number; messages: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePlannerSessionPayload {
+  name: string;
+  description?: string;
+}
+
+export interface UpdatePlannerSessionPayload {
+  name?: string;
+  description?: string;
+  status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+}
+
+export interface CreateScopePayload {
+  title: string;
+  description?: string;
+}
+
+export interface UpdateScopePayload {
+  title?: string;
+  description?: string;
+}
+
+export interface CreateFeaturePayload {
+  title: string;
+  description?: string;
+}
+
+export interface UpdateFeaturePayload {
+  title?: string;
+  description?: string;
+}
+
+export interface SendMessageResult {
+  messageId: string;
+  streamToken: string;
+}
