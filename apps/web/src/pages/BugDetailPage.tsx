@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -243,7 +244,7 @@ export function BugDetailPage() {
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="p-8 max-w-[1280px] flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-8 w-2/3" />
         <div className="flex gap-8">
@@ -283,7 +284,7 @@ export function BugDetailPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       {/* Top bar */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Button
@@ -340,22 +341,17 @@ export function BugDetailPage() {
           {/* Description */}
           <div className="flex flex-col gap-2">
             <h2 className="text-[13px] font-semibold text-muted-foreground">Description</h2>
-            <div className="relative">
-              <Textarea
-                placeholder="Add a description..."
-                value={descValue}
-                onChange={handleDescChange}
-                onBlur={handleDescBlur}
-                rows={4}
-                className="resize-y"
-              />
-              {descSaving && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                  <Loader2 className="size-3 animate-spin" />
-                  Saving...
-                </div>
-              )}
-            </div>
+            <RichTextEditor
+              initialContent={descValue}
+              onSave={(html) => {
+                updateBug.mutate({ bugId, data: { description: html } });
+              }}
+              editable={true}
+              projectId={projectId}
+              entityType="bug"
+              entityId={bugId}
+              placeholder="Add a description..."
+            />
           </div>
 
           {/* Reproduction Steps */}

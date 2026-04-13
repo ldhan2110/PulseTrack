@@ -49,11 +49,11 @@ export function ProjectLayout() {
       }
     >
       <AppSidebar onCreateProject={() => setCreateProjectOpen(true)} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 overflow-hidden">
         <div className="flex justify-end px-4 pt-2">
           <NotificationBell />
         </div>
-        <main className={fullWidth ? 'px-4 pt-2 pb-4 w-full' : 'px-8 pt-4 pb-8 max-w-[1280px] w-full mx-auto'}>
+        <main className={fullWidth ? 'px-4 pt-2 pb-4 w-full overflow-auto' : 'px-8 pt-4 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
           <Outlet />
         </main>
       </SidebarInset>

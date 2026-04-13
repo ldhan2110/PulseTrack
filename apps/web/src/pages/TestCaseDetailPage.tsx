@@ -246,7 +246,7 @@ export function TestCaseDetailPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="p-8 max-w-[1280px] flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-8 w-2/3" />
         <div className="flex gap-8">
@@ -285,7 +285,7 @@ export function TestCaseDetailPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1280px] mx-auto flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       {/* Top bar */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Button

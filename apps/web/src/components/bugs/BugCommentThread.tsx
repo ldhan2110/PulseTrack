@@ -180,7 +180,7 @@ export function BugCommentThread({
   return (
     <div className="flex flex-col">
       {/* Scrollable comment list */}
-      <div className="flex-1 overflow-y-auto max-h-[400px] pr-1">
+      <div className="flex-1 pr-1">
         {annotatedComments.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-2">
             No comments yet. Start the conversation.

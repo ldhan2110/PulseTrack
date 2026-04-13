@@ -70,6 +70,18 @@ import type {
   TaskBranch,
   CreateBranchPayload,
   CreatePrPayload,
+  PlannerSessionListItem,
+  PlannerSession,
+  CreatePlannerSessionPayload,
+  UpdatePlannerSessionPayload,
+  PlannerMessage,
+  SendMessageResult,
+  PlannerScope,
+  CreateScopePayload,
+  UpdateScopePayload,
+  PlannerFeature,
+  CreateFeaturePayload,
+  UpdateFeaturePayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -664,5 +676,87 @@ export const api = {
     request<TaskBranch>(`/projects/${projectId}/tasks/${taskId}/branches/pr`, {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+
+  // ─── Planner ─────────────────────────────────────────────
+
+  getPlannerSessions: (projectId: string) =>
+    request<PlannerSessionListItem[]>(`/projects/${projectId}/planner-sessions`),
+
+  createPlannerSession: (projectId: string, data: CreatePlannerSessionPayload) =>
+    request<PlannerSession>(`/projects/${projectId}/planner-sessions`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  getPlannerSession: (projectId: string, sessionId: string) =>
+    request<PlannerSession>(`/projects/${projectId}/planner-sessions/${sessionId}`),
+
+  updatePlannerSession: (projectId: string, sessionId: string, data: UpdatePlannerSessionPayload) =>
+    request<PlannerSession>(`/projects/${projectId}/planner-sessions/${sessionId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+
+  deletePlannerSession: (projectId: string, sessionId: string) =>
+    request<void>(`/projects/${projectId}/planner-sessions/${sessionId}`, { method: 'DELETE' }),
+
+  getPlannerMessages: (sessionId: string, take = 50, skip = 0) =>
+    request<PlannerMessage[]>(`/planner-sessions/${sessionId}/messages?take=${take}&skip=${skip}`),
+
+  sendPlannerMessage: async (sessionId: string, content: string, files?: File[]) => {
+    const token = keycloak.token;
+    const formData = new FormData();
+    formData.append('content', content);
+    if (files) {
+      files.forEach((f) => formData.append('files', f));
+    }
+    const res = await fetch(`${API_BASE}/planner-sessions/${sessionId}/messages`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `API error: ${res.status}`);
+    }
+    return res.json() as Promise<SendMessageResult>;
+  },
+
+  getPlannerScopes: (sessionId: string) =>
+    request<PlannerScope[]>(`/planner-sessions/${sessionId}/scopes`),
+
+  createPlannerScope: (sessionId: string, data: CreateScopePayload) =>
+    request<PlannerScope>(`/planner-sessions/${sessionId}/scopes`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  updatePlannerScope: (sessionId: string, scopeId: string, data: UpdateScopePayload) =>
+    request<PlannerScope>(`/planner-sessions/${sessionId}/scopes/${scopeId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+
+  deletePlannerScope: (sessionId: string, scopeId: string) =>
+    request<void>(`/planner-sessions/${sessionId}/scopes/${scopeId}`, { method: 'DELETE' }),
+
+  reorderPlannerScopes: (sessionId: string, orderedIds: string[]) =>
+    request<PlannerScope[]>(`/planner-sessions/${sessionId}/scopes/reorder`, {
+      method: 'PATCH', body: JSON.stringify({ orderedIds }),
+    }),
+
+  createPlannerFeature: (sessionId: string, scopeId: string, data: CreateFeaturePayload) =>
+    request<PlannerFeature>(`/planner-sessions/${sessionId}/scopes/${scopeId}/features`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  updatePlannerFeature: (sessionId: string, scopeId: string, featureId: string, data: UpdateFeaturePayload) =>
+    request<PlannerFeature>(`/planner-sessions/${sessionId}/scopes/${scopeId}/features/${featureId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+
+  deletePlannerFeature: (sessionId: string, scopeId: string, featureId: string) =>
+    request<void>(`/planner-sessions/${sessionId}/scopes/${scopeId}/features/${featureId}`, { method: 'DELETE' }),
+
+  reorderPlannerFeatures: (sessionId: string, scopeId: string, orderedIds: string[]) =>
+    request<PlannerFeature[]>(`/planner-sessions/${sessionId}/scopes/${scopeId}/features/reorder`, {
+      method: 'PATCH', body: JSON.stringify({ orderedIds }),
     }),
 };

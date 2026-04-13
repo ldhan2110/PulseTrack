@@ -10,7 +10,7 @@ export function MyTasksPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 px-8 py-6">
+      <div className="flex flex-col gap-4">
         <Skeleton className="h-7 w-32" />
         <Skeleton className="h-8 w-full" />
         {Array.from({ length: 5 }).map((_, i) => (
@@ -24,7 +24,7 @@ export function MyTasksPage() {
 
   if (taskList.length === 0) {
     return (
-      <div className="flex flex-col gap-4 px-8 py-6">
+      <div className="flex flex-col gap-4">
         <h1 className="text-xl font-semibold tracking-tight">My Tasks</h1>
         <div className="flex items-center justify-center py-24">
           <div className="flex flex-col items-center gap-4 max-w-90 text-center">
@@ -44,7 +44,7 @@ export function MyTasksPage() {
   const projectCount = new Set(taskList.map((t) => t.projectId)).size;
 
   return (
-    <div className="flex flex-col gap-4 px-8 py-6">
+    <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">My Tasks</h1>
         <p className="text-sm text-muted-foreground">

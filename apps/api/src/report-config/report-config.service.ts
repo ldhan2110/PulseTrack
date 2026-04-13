@@ -181,45 +181,34 @@ export class ReportConfigService {
 
   private async syncSchedule(
     configId: string,
-    config: { isActive: boolean; frequency: string; scheduleDays: number[]; scheduleTime: string; timezone: string; bullmqJobId: string | null },
+    config: { isActive: boolean; frequency: string; scheduleDays: number[]; scheduleTime: string; timezone: string },
   ) {
-    if (config.bullmqJobId) {
-      try {
-        const removed = await this.reportQueue.removeRepeatableByKey(config.bullmqJobId);
-        if (!removed) {
-          this.logger.warn(`Could not remove repeatable job key: ${config.bullmqJobId}`);
-        }
-      } catch (err) {
-        this.logger.warn(`Error removing repeatable job: ${err}`);
-      }
-    }
+    const schedulerId = `report-${configId}`;
 
     if (!config.isActive) {
-      await this.prisma.reportConfig.update({
-        where: { id: configId },
-        data: { bullmqJobId: null },
-      });
+      try {
+        await this.reportQueue.removeJobScheduler(schedulerId);
+      } catch (err) {
+        this.logger.warn(`Error removing job scheduler ${schedulerId}: ${err}`);
+      }
       return;
     }
 
     const cron = this.buildCron(config.frequency, config.scheduleDays, config.scheduleTime);
 
-    const job = await this.reportQueue.add(
-      'generate-report',
-      { reportConfigId: configId },
+    this.logger.log(`Upserting job scheduler ${schedulerId} with cron="${cron}" tz="${config.timezone}"`);
+
+    await this.reportQueue.upsertJobScheduler(
+      schedulerId,
+      { pattern: cron, tz: config.timezone },
       {
-        repeat: { pattern: cron, tz: config.timezone },
-        removeOnComplete: 100,
-        removeOnFail: 50,
+        name: 'generate-report',
+        data: { reportConfigId: configId },
+        opts: { removeOnComplete: 100, removeOnFail: 50 },
       },
     );
 
-    const repeatJobKey = job.repeatJobKey;
-
-    await this.prisma.reportConfig.update({
-      where: { id: configId },
-      data: { bullmqJobId: repeatJobKey ?? null },
-    });
+    this.logger.log(`Job scheduler ${schedulerId} upserted successfully`);
   }
 
   private buildCron(frequency: string, days: number[], time: string): string {

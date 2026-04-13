@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 
 import { useUiStore } from '@/store/uiStore';
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
-import { ClipboardList, Search, FileSpreadsheet } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { ClipboardList, Search, FileSpreadsheet, Download, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,8 +20,8 @@ import { TestCasesTable } from '@/components/test-cases/TestCasesTable';
 import { TestCaseForm } from '@/components/test-cases/TestCaseForm';
 import { SuiteManager } from '@/components/test-cases/SuiteManager';
 import { ImportTestCasesDialog } from '@/components/test-cases/ImportTestCasesDialog';
+import { ExportTestCasesDialog } from '@/components/test-cases/ExportTestCasesDialog';
 import type { TestCase } from '@/lib/types';
-import { Sparkles } from 'lucide-react';
 import { GenerateTestCasesModal } from '@/components/test-cases/GenerateTestCasesModal';
 import { TestCaseGenerationWizard } from '@/components/test-cases/TestCaseGenerationWizard';
 import { useAiTestCaseGeneration } from '@/hooks/useAiTestCaseGeneration';
@@ -45,8 +46,11 @@ export function TestCasesPage() {
   const [editingCase, setEditingCase] = useState<TestCase | null>(null);
   const [suiteManagerOpen, setSuiteManagerOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+
+  const { projectPrefix } = useParams<{ projectPrefix: string }>();
 
   const { data: aiConfig } = useAiConfig(projectId);
   const { data: repoConfig } = useRepositoryConfig(projectId);
@@ -111,25 +115,33 @@ export function TestCasesPage() {
     if (id) setSuiteManagerOpen(true);
   };
 
+  const toolbarActions = (
+    <div className="flex items-center gap-2">
+      {canGenerate && (
+        <Button variant="outline" onClick={() => setGenerateOpen(true)}>
+          <Sparkles className="size-3.5 mr-1.5" />
+          AI Generate
+        </Button>
+      )}
+      <Button variant="outline" onClick={() => setImportOpen(true)}>
+        <FileSpreadsheet className="size-3.5 mr-1.5" />
+        Import Excel
+      </Button>
+      <Button variant="outline" onClick={() => setExportOpen(true)}>
+        <Download className="size-3.5 mr-1.5" />
+        Export Excel
+      </Button>
+      <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+    </div>
+  );
+
   // Empty state
   if (!isLoading && caseList.length === 0 && !selectedModuleId && !selectedSuiteId && !search && !statusFilter && !priorityFilter) {
     return (
-      <div className="flex flex-col gap-4 p-8">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
-          <div className="flex items-center gap-2">
-            {canGenerate && (
-              <Button variant="outline" onClick={() => setGenerateOpen(true)}>
-                <Sparkles className="size-3.5 mr-1.5" />
-                AI Generate
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <FileSpreadsheet className="size-3.5 mr-1.5" />
-              Import Excel
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
-          </div>
+          {toolbarActions}
         </div>
         <div className="flex">
           <div className="w-60 border-r pr-2 shrink-0">
@@ -175,6 +187,12 @@ export function TestCasesPage() {
           projectId={projectId}
           modules={modules}
         />
+        <ExportTestCasesDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          projectId={projectId}
+          projectPrefix={projectPrefix}
+        />
         <GenerateTestCasesModal
           open={generateOpen}
           onOpenChange={handleGenerateClose}
@@ -201,22 +219,10 @@ export function TestCasesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-8">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
-        <div className="flex items-center gap-2">
-          {canGenerate && (
-            <Button variant="outline" onClick={() => setGenerateOpen(true)}>
-              <Sparkles className="size-3.5 mr-1.5" />
-              AI Generate
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <FileSpreadsheet className="size-3.5 mr-1.5" />
-            Import Excel
-          </Button>
-          <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
-        </div>
+        {toolbarActions}
       </div>
 
       <div className="flex gap-0 min-h-0 flex-1">
@@ -306,6 +312,12 @@ export function TestCasesPage() {
         onOpenChange={setImportOpen}
         projectId={projectId}
         modules={modules}
+      />
+      <ExportTestCasesDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        projectId={projectId}
+        projectPrefix={projectPrefix}
       />
       <GenerateTestCasesModal
         open={generateOpen}

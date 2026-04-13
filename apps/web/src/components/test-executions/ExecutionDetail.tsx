@@ -81,7 +81,7 @@ export function ExecutionDetail({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-8">
+    <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -181,9 +181,9 @@ export function ExecutionDetail({
       )}
 
       {/* Cases table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-auto max-h-[calc(100vh-200px)]">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow>
               <TableHead className="w-[100px]">ID</TableHead>
               <TableHead>Test Case</TableHead>
@@ -212,23 +212,16 @@ export function ExecutionDetail({
                     value={ec.result}
                     onValueChange={(val) => handleQuickResult(ec.id, val)}
                   >
-                    <SelectTrigger className="h-7 text-xs w-[110px]">
-                      <span
-                        className="flex items-center gap-1.5"
-                      >
-                        <span
-                          className="size-2 rounded-full shrink-0"
-                          style={{ backgroundColor: RESULT_COLORS[ec.result] }}
-                        />
-                        <SelectValue />
-                      </span>
+                    <SelectTrigger className="h-7 text-xs w-[120px]">
+                      <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: RESULT_COLORS[ec.result] }} />
+                      <span className="truncate">{RESULT_LABELS[ec.result]}</span>
                     </SelectTrigger>
                     <SelectContent>
                       {ALL_RESULTS.map((r) => (
                         <SelectItem key={r} value={r}>
                           <span className="flex items-center gap-1.5">
                             <span
-                              className="size-2 rounded-full"
+                              className="size-2 rounded-full shrink-0"
                               style={{ backgroundColor: RESULT_COLORS[r] }}
                             />
                             {RESULT_LABELS[r]}

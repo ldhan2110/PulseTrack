@@ -27,9 +27,18 @@ export class TestCasesService {
     search?: string;
   }) {
     const where: any = { projectId };
-    if (filters?.moduleId) where.moduleId = filters.moduleId;
-    if (filters?.status) where.status = filters.status;
-    if (filters?.priority) where.priority = filters.priority;
+    if (filters?.moduleId) {
+      const ids = filters.moduleId.split(',').filter(Boolean);
+      where.moduleId = ids.length === 1 ? ids[0] : { in: ids };
+    }
+    if (filters?.status) {
+      const vals = filters.status.split(',').filter(Boolean);
+      where.status = vals.length === 1 ? vals[0] : { in: vals };
+    }
+    if (filters?.priority) {
+      const vals = filters.priority.split(',').filter(Boolean);
+      where.priority = vals.length === 1 ? vals[0] : { in: vals };
+    }
     if (filters?.tags) where.tags = { hasSome: filters.tags.split(',') };
     if (filters?.search) {
       where.OR = [

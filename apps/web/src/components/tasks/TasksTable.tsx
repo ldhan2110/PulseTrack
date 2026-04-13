@@ -490,14 +490,27 @@ export function TasksTable({
                         {child.workflowStatus && <StatusBadge status={child.workflowStatus} />}
                       </TableCell>
                       <TableCell className="text-xs">—</TableCell>
-                      <TableCell className="text-xs">
-                        {child.assignee?.name ?? child.assignee?.username ?? <span className="text-muted-foreground">Unassigned</span>}
+                      <TableCell>
+                        {child.assignee ? (
+                          <div className="flex items-center gap-2">
+                            <Avatar className="size-6">
+                              {child.assignee.imageUrl && <AvatarImage src={child.assignee.imageUrl} alt={child.assignee.name ?? child.assignee.username} />}
+                              <AvatarFallback className="text-[10px]">{getInitials(child.assignee.name ?? child.assignee.username)}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm truncate">{child.assignee.name ?? child.assignee.username}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Unassigned</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">—</TableCell>
                       <TableCell className="text-xs">—</TableCell>
                       <TableCell className="text-xs">—</TableCell>
                       <TableCell className="text-xs">
                         {child.estimatedMinutes ? formatMinutes(child.estimatedMinutes) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <TaskProgressBar value={child.progress ?? 0} size="sm" showLabel editable={false} />
                       </TableCell>
                       <TableCell className="text-xs">
                         {(() => {
@@ -509,9 +522,6 @@ export function TasksTable({
                             </span>
                           ) : '—';
                         })()}
-                      </TableCell>
-                      <TableCell>
-                        <TaskProgressBar value={child.progress ?? 0} size="sm" showLabel editable={false} />
                       </TableCell>
                     </TableRow>
                   ))}

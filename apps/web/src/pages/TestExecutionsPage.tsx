@@ -96,7 +96,7 @@ export function TestExecutionsPage() {
 
   // List view
   return (
-    <div className="flex flex-col gap-4 p-8">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Executions</h1>
         <Button onClick={() => setCreateOpen(true)}>+ New Execution</Button>

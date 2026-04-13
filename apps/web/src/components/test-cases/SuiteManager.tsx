@@ -68,6 +68,27 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
     });
   };
 
+  const allAvailableSelected =
+    availableCases.length > 0 && availableCases.every((tc) => selectedIds.has(tc.id));
+  const someAvailableSelected =
+    availableCases.some((tc) => selectedIds.has(tc.id)) && !allAvailableSelected;
+
+  const toggleSelectAll = () => {
+    if (allAvailableSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        availableCases.forEach((tc) => next.delete(tc.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        availableCases.forEach((tc) => next.add(tc.id));
+        return next;
+      });
+    }
+  };
+
   const handleAdd = () => {
     if (selectedIds.size === 0) return;
     addMembers.mutate(Array.from(selectedIds));
@@ -75,7 +96,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[520px] max-w-full max-h-[80vh] flex flex-col">
+      <DialogContent className="w-[50vw] max-w-none max-h-[80vh] flex flex-col" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Manage Suite{suite ? ` - ${suite.name}` : ''}</DialogTitle>
         </DialogHeader>
@@ -83,14 +104,16 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
         {/* Current members */}
         <div className="flex flex-col gap-2">
           <span className="text-[13px] font-semibold">Members ({suite?.members?.length ?? 0})</span>
-          <div className="max-h-[180px] overflow-y-auto flex flex-col gap-1">
+          <div className="max-h-45 overflow-y-auto flex flex-col gap-1">
             {suite?.members?.length === 0 && (
               <p className="text-sm text-muted-foreground py-2">No test cases in this suite.</p>
             )}
             {suite?.members?.map((member) => (
               <div key={member.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/50 text-sm">
                 {member.testCase.testCaseKey && (
-                  <span className="text-xs font-mono text-muted-foreground">{member.testCase.testCaseKey}</span>
+                  <span className="text-xs font-mono text-muted-foreground shrink-0 w-20 truncate">
+                    {member.testCase.testCaseKey}
+                  </span>
                 )}
                 <span className="flex-1 truncate">{member.testCase.title}</span>
                 <Button
@@ -112,7 +135,15 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
 
         {/* Add cases */}
         <div className="flex flex-col gap-2 flex-1 min-h-0">
-          <span className="text-[13px] font-semibold">Add Cases</span>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={someAvailableSelected ? 'indeterminate' : allAvailableSelected}
+              onCheckedChange={toggleSelectAll}
+              disabled={availableCases.length === 0}
+              aria-label="Select all"
+            />
+            <span className="text-[13px] font-semibold">Add Cases</span>
+          </div>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
@@ -122,7 +153,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
               className="h-8 pl-7 text-sm"
             />
           </div>
-          <div className="max-h-[200px] overflow-y-auto flex flex-col gap-0.5">
+          <div className="max-h-50 overflow-y-auto flex flex-col gap-0.5">
             {availableCases.length === 0 && (
               <p className="text-sm text-muted-foreground py-2">No available test cases.</p>
             )}
@@ -139,9 +170,11 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
                   onCheckedChange={() => toggleSelected(tc.id)}
                 />
                 {tc.testCaseKey && (
-                  <span className="text-xs font-mono text-muted-foreground">{tc.testCaseKey}</span>
+                  <span className="text-xs font-mono text-muted-foreground shrink-0 w-20 truncate">
+                    {tc.testCaseKey}
+                  </span>
                 )}
-                <span className="truncate">{tc.title}</span>
+                <span className="flex-1 truncate">{tc.title}</span>
               </label>
             ))}
           </div>

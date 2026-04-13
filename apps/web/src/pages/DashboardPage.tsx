@@ -4,7 +4,7 @@ export function DashboardPage() {
   const { user, logout } = useAuth();
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div>
       <h1>PM App - Dashboard</h1>
       <div>
         <p>
