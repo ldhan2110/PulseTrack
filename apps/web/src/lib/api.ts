@@ -82,6 +82,8 @@ import type {
   PlannerFeature,
   CreateFeaturePayload,
   UpdateFeaturePayload,
+  PlannerAiConfig,
+  UpsertPlannerAiConfigPayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -343,6 +345,15 @@ export const api = {
   generateProjectContext: (projectId: string) =>
     request<{ projectContext: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
       method: 'POST',
+    }),
+
+  // ─── Planner AI Config ──────────────────────────────────────────────────────
+  getPlannerAiConfig: (projectId: string) =>
+    request<PlannerAiConfig | null>(`/projects/${projectId}/settings/planner-ai`),
+  upsertPlannerAiConfig: (projectId: string, data: UpsertPlannerAiConfigPayload) =>
+    request<PlannerAiConfig>(`/projects/${projectId}/settings/planner-ai`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     }),
 
   // ─── Report Config ──────────────────────────────────────────────────────────
