@@ -144,7 +144,7 @@ export function TestCaseForm({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-2xl max-h-[85vh] max-w-0 overflow-y-auto">
+      <DialogContent className="w-2xl max-h-[85vh] max-w-full overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Test Case' : 'New Test Case'}</DialogTitle>
         </DialogHeader>

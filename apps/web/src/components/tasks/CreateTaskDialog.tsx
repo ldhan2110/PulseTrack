@@ -168,7 +168,7 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[520px] max-w-full">
+      <DialogContent className="w-[50vw]" style={{maxWidth: "none"}}>
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
         </DialogHeader>

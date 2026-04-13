@@ -58,7 +58,7 @@ export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
           <div className="flex items-center justify-center size-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold shrink-0 mt-1.5">
             {index + 1}
           </div>
-          <div className="flex-1 flex gap-2">
+          <div className="flex-1 flex gap-2 min-w-0">
             <Input
               data-field="action"
               value={step.action}

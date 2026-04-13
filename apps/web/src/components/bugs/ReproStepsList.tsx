@@ -52,7 +52,7 @@ export function ReproStepsList({ steps, onChange, readOnly }: ReproStepsListProp
   return (
     <div className="flex flex-col gap-2">
       {steps.map((step, index) => (
-        <div key={index} className="flex items-center gap-2">
+        <div key={index} className="flex items-center gap-2 min-w-0">
           <div className="flex items-center justify-center size-6 rounded-full bg-primary text-primary-foreground text-xs font-semibold shrink-0">
             {index + 1}
           </div>
@@ -101,7 +101,7 @@ export function ReproStepsList({ steps, onChange, readOnly }: ReproStepsListProp
         </div>
       ))}
       {!readOnly && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center justify-center size-6 rounded-full border border-dashed border-primary text-primary text-xs shrink-0">
             <Plus className="size-3" />
           </div>
