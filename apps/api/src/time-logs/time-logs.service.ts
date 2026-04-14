@@ -14,7 +14,7 @@ export class TimeLogsService {
   async create(projectId: string, taskId: string, userId: string, dto: CreateTimeLogDto) {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
-      select: { id: true, projectId: true, taskKey: true, progress: true, _count: { select: { children: true } } },
+      select: { id: true, projectId: true, taskKey: true, progress: true, estimatedMinutes: true, _count: { select: { children: true } } },
     });
 
     if (!task || task.projectId !== projectId) {
@@ -23,6 +23,10 @@ export class TimeLogsService {
 
     if (task._count.children > 0) {
       throw new BadRequestException('Cannot log time on a task that has sub-tasks. Log time on sub-tasks instead.');
+    }
+
+    if (!task.estimatedMinutes) {
+      throw new BadRequestException('Cannot log time without an estimate. Please set an estimate first.');
     }
 
     const [timeLog] = await this.prisma.$transaction([

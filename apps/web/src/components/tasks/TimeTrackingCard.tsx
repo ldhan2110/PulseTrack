@@ -90,14 +90,22 @@ export function TimeTrackingCard({
             </Button>
           )}
           {onLogTime && (
-            <Button
-              size="sm"
-              className="w-full gap-1.5 h-7 text-xs"
-              onClick={() => setLogTimeModalOpen(true)}
-            >
-              <Clock className="size-3" />
-              Log Time
-            </Button>
+            <div className="relative group">
+              <Button
+                size="sm"
+                className="w-full gap-1.5 h-7 text-xs"
+                onClick={() => setLogTimeModalOpen(true)}
+                disabled={totalEstimated <= 0}
+              >
+                <Clock className="size-3" />
+                Log Time
+              </Button>
+              {totalEstimated <= 0 && (
+                <p className="text-[10px] text-amber-500 mt-0.5 text-center">
+                  Set an estimate first
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
