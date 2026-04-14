@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { read, utils } from 'xlsx';
+import { read, utils } from 'xlsx-js-style';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 import {
   Dialog,

@@ -558,12 +558,27 @@ export class TasksService {
       { header: 'Created At', key: 'createdAt', width: 20 },
     ];
 
-    // Bold header row
-    sheet.getRow(1).font = { bold: true };
+    // Style header row: bold, gray background, borders
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFD9D9D9' },
+      };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+      cell.alignment = { wrapText: true, vertical: 'middle' };
+    });
 
     for (const t of rows) {
       const totalMinutes = (t.timeLogs ?? []).reduce((sum: number, tl: any) => sum + tl.minutes, 0);
-      sheet.addRow({
+      const row = sheet.addRow({
         taskKey: t.taskKey ?? '',
         title: t.title,
         description: t.description ?? '',
@@ -579,6 +594,15 @@ export class TasksService {
         actualStartDate: t.actualStartDate ? new Date(t.actualStartDate).toISOString().split('T')[0] : '',
         actualEndDate: t.actualEndDate ? new Date(t.actualEndDate).toISOString().split('T')[0] : '',
         createdAt: t.createdAt ? new Date(t.createdAt).toISOString().replace('T', ' ').substring(0, 19) : '',
+      });
+      row.eachCell((cell) => {
+        cell.alignment = { wrapText: true, vertical: 'top' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
       });
     }
 
