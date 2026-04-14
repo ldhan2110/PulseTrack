@@ -38,12 +38,10 @@ export class CreateBugDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
   expectedResult?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
   actualResult?: string;
 
   @IsOptional()

@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
 import { ArrowLeft, Trash2, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import { Separator } from '@/components/ui/separator';
@@ -113,14 +112,6 @@ export function BugDetailPage() {
   // Description auto-save
   const [descValue, setDescValue] = useState('');
 
-  // Expected/Actual result auto-save
-  const [expectedValue, setExpectedValue] = useState('');
-  const [expectedSaving, setExpectedSaving] = useState(false);
-  const expectedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [actualValue, setActualValue] = useState('');
-  const [actualSaving, setActualSaving] = useState(false);
-  const actualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Environment auto-save
   const [envValue, setEnvValue] = useState('');
   const [envSaving, setEnvSaving] = useState(false);
@@ -129,8 +120,6 @@ export function BugDetailPage() {
   useEffect(() => {
     if (bug) {
       setDescValue(bug.description ?? '');
-      setExpectedValue(bug.expectedResult ?? '');
-      setActualValue(bug.actualResult ?? '');
       setEnvValue(bug.environment ?? '');
     }
   }, [bug?.id]);
@@ -151,52 +140,6 @@ export function BugDetailPage() {
     if (e.key === 'Escape') {
       setTitleValue(bug?.title ?? '');
       setEditingTitle(false);
-    }
-  };
-
-  const handleExpectedChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setExpectedValue(e.target.value);
-    if (expectedTimerRef.current) clearTimeout(expectedTimerRef.current);
-    expectedTimerRef.current = setTimeout(() => {
-      setExpectedSaving(true);
-      updateBug.mutate(
-        { bugId, data: { expectedResult: e.target.value } },
-        { onSettled: () => setTimeout(() => setExpectedSaving(false), 800) },
-      );
-    }, 500);
-  };
-
-  const handleExpectedBlur = () => {
-    if (expectedTimerRef.current) {
-      clearTimeout(expectedTimerRef.current);
-      setExpectedSaving(true);
-      updateBug.mutate(
-        { bugId, data: { expectedResult: expectedValue } },
-        { onSettled: () => setTimeout(() => setExpectedSaving(false), 800) },
-      );
-    }
-  };
-
-  const handleActualChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setActualValue(e.target.value);
-    if (actualTimerRef.current) clearTimeout(actualTimerRef.current);
-    actualTimerRef.current = setTimeout(() => {
-      setActualSaving(true);
-      updateBug.mutate(
-        { bugId, data: { actualResult: e.target.value } },
-        { onSettled: () => setTimeout(() => setActualSaving(false), 800) },
-      );
-    }, 500);
-  };
-
-  const handleActualBlur = () => {
-    if (actualTimerRef.current) {
-      clearTimeout(actualTimerRef.current);
-      setActualSaving(true);
-      updateBug.mutate(
-        { bugId, data: { actualResult: actualValue } },
-        { onSettled: () => setTimeout(() => setActualSaving(false), 800) },
-      );
     }
   };
 
@@ -344,41 +287,25 @@ export function BugDetailPage() {
           <div className="flex gap-4">
             <div className="flex-1 flex flex-col gap-2">
               <h2 className="text-[13px] font-semibold text-muted-foreground">Expected Result</h2>
-              <div className="relative">
-                <Textarea
-                  placeholder="What should happen..."
-                  value={expectedValue}
-                  onChange={handleExpectedChange}
-                  onBlur={handleExpectedBlur}
-                  rows={3}
-                  className="resize-y"
-                />
-                {expectedSaving && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <Loader2 className="size-3 animate-spin" />
-                    Saving...
-                  </div>
-                )}
-              </div>
+              <RichTextEditor
+                initialContent={bug.expectedResult ?? ''}
+                onSave={(html) => updateBug.mutate({ bugId, data: { expectedResult: html } })}
+                editable={true}
+                projectId={projectId}
+                entityType="bug"
+                entityId={bugId}
+              />
             </div>
             <div className="flex-1 flex flex-col gap-2">
               <h2 className="text-[13px] font-semibold text-muted-foreground">Actual Result</h2>
-              <div className="relative">
-                <Textarea
-                  placeholder="What actually happened..."
-                  value={actualValue}
-                  onChange={handleActualChange}
-                  onBlur={handleActualBlur}
-                  rows={3}
-                  className="resize-y"
-                />
-                {actualSaving && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <Loader2 className="size-3 animate-spin" />
-                    Saving...
-                  </div>
-                )}
-              </div>
+              <RichTextEditor
+                initialContent={bug.actualResult ?? ''}
+                onSave={(html) => updateBug.mutate({ bugId, data: { actualResult: html } })}
+                editable={true}
+                projectId={projectId}
+                entityType="bug"
+                entityId={bugId}
+              />
             </div>
           </div>
 
