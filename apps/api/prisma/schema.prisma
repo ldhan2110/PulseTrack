@@ -259,6 +259,8 @@ model Project {
   reportConfig     ReportConfig?
   branches         TaskBranch[]
   plannerSessions  PlannerSession[]
+  wbsPhases       WbsPhase[]
+  wbsDependencies WbsDependency[]
 }
 
 model ProjectMember {
@@ -330,6 +332,8 @@ model Task {
   history        TaskHistory[]
   bugTasks        BugTask[]
   branches       TaskBranch[]
+  wbsTaskLinks    WbsTask[]    @relation("WbsTaskBacklog")
+  wbsSubtaskLinks WbsSubtask[] @relation("WbsSubtaskBacklog")
 }
 
 model Comment {
@@ -921,4 +925,99 @@ model PlannerFeature {
   sourceMessage PlannerMessage? @relation("FeatureSourceMessage", fields: [sourceMessageId], references: [id], onDelete: SetNull)
 
   @@index([scopeId])
+}
+
+// =====================
+// WBS (Work Breakdown Structure)
+// =====================
+
+enum WbsDependencyType {
+  FINISH_TO_START
+}
+
+enum WbsNodeType {
+  TASK
+  SUBTASK
+}
+
+model WbsPhase {
+  id          String    @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  position    Int
+  planStart   DateTime?
+  planEnd     DateTime?
+  actualStart DateTime?
+  actualEnd   DateTime?
+  progress    Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   WbsTask[]
+
+  @@index([projectId])
+}
+
+model WbsTask {
+  id             String    @id @default(cuid())
+  phaseId        String
+  title          String
+  description    String?
+  position       Int
+  planStart      DateTime?
+  planEnd        DateTime?
+  actualStart    DateTime?
+  actualEnd      DateTime?
+  progress       Float     @default(0)
+  backlogItemId  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  phase       WbsPhase      @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  subtasks    WbsSubtask[]
+  backlogItem Task?         @relation("WbsTaskBacklog", fields: [backlogItemId], references: [id], onDelete: SetNull)
+
+  @@index([phaseId])
+  @@index([backlogItemId])
+}
+
+model WbsSubtask {
+  id             String    @id @default(cuid())
+  taskId         String
+  title          String
+  description    String?
+  position       Int
+  planStart      DateTime?
+  planEnd        DateTime?
+  actualStart    DateTime?
+  actualEnd      DateTime?
+  progress       Float     @default(0)
+  backlogItemId  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  task        WbsTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  backlogItem Task?    @relation("WbsSubtaskBacklog", fields: [backlogItemId], references: [id], onDelete: SetNull)
+
+  @@index([taskId])
+  @@index([backlogItemId])
+}
+
+model WbsDependency {
+  id         String            @id @default(cuid())
+  projectId  String
+  sourceId   String
+  sourceType WbsNodeType
+  targetId   String
+  targetType WbsNodeType
+  type       WbsDependencyType @default(FINISH_TO_START)
+  createdAt  DateTime          @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([sourceId])
+  @@index([targetId])
 }
