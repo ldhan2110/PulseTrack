@@ -17,13 +17,17 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { TasksService } from './tasks.service';
+import { BugsService } from '../bugs/bugs.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Controller('projects/:projectId/tasks')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
 export class TasksController {
-  constructor(private tasksService: TasksService) {}
+  constructor(
+    private tasksService: TasksService,
+    private bugsService: BugsService,
+  ) {}
 
   @Get()
   findAll(@Param('projectId') projectId: string) {
@@ -76,6 +80,11 @@ export class TasksController {
   @Get(':taskId/history')
   getHistory(@Param('taskId') taskId: string) {
     return this.tasksService.getHistory(taskId);
+  }
+
+  @Get(':taskId/bugs')
+  getLinkedBugs(@Param('taskId') taskId: string) {
+    return this.bugsService.getBugsByTaskId(taskId);
   }
 
   @Get(':taskId')

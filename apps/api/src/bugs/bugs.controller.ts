@@ -10,6 +10,7 @@ import { BugsService } from './bugs.service';
 import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
 import { BulkImportBugsDto } from './dto/bulk-import-bugs.dto';
+import { LinkTasksDto } from './dto/link-tasks.dto';
 
 @Controller('projects/:projectId/bugs')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -22,12 +23,11 @@ export class BugsController {
     @Query('severity') severity?: string,
     @Query('workflowStatusId') workflowStatusId?: string,
     @Query('assigneeId') assigneeId?: string,
-    @Query('parentTaskId') parentTaskId?: string,
     @Query('reporterId') reporterId?: string,
     @Query('search') search?: string,
   ) {
     return this.bugsService.findAll(projectId, {
-      severity, workflowStatusId, assigneeId, parentTaskId, reporterId, search,
+      severity, workflowStatusId, assigneeId, reporterId, search,
     });
   }
 
@@ -80,6 +80,29 @@ export class BugsController {
     @Body() dto: BulkImportBugsDto,
   ) {
     return this.bugsService.bulkImport(projectId, req.user.id, dto);
+  }
+
+  @Post(':bugId/tasks')
+  @RequirePermission('bugs', 'update')
+  linkTasks(
+    @Param('bugId') bugId: string,
+    @Body() dto: LinkTasksDto,
+  ) {
+    return this.bugsService.linkTasks(bugId, dto.taskIds);
+  }
+
+  @Delete(':bugId/tasks/:taskId')
+  @RequirePermission('bugs', 'update')
+  unlinkTask(
+    @Param('bugId') bugId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    return this.bugsService.unlinkTask(bugId, taskId);
+  }
+
+  @Get(':bugId/tasks')
+  getLinkedTasks(@Param('bugId') bugId: string) {
+    return this.bugsService.getLinkedTasks(bugId);
   }
 
   @Get(':bugId')

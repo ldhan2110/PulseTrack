@@ -15,7 +15,11 @@ const BUG_RELATIONS = {
   owner: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
   workflowStatus: true,
   reproSteps: { orderBy: { position: 'asc' as const } },
-  parentTask: { select: { id: true, taskKey: true, title: true } },
+  bugTasks: {
+    include: {
+      task: { select: { id: true, taskKey: true, title: true } },
+    },
+  },
 };
 
 @Injectable()
@@ -55,7 +59,6 @@ export class BugsService {
           actualResult: dto.actualResult,
           assigneeId: dto.assigneeId,
           ownerId: dto.ownerId,
-          parentTaskId: dto.parentTaskId,
           workflowStatusId: initialStatus?.id ?? null,
         },
         include: BUG_RELATIONS,
@@ -82,7 +85,6 @@ export class BugsService {
     severity?: string;
     workflowStatusId?: string;
     assigneeId?: string;
-    parentTaskId?: string;
     reporterId?: string;
     search?: string;
   }) {
@@ -90,7 +92,6 @@ export class BugsService {
     if (filters?.severity) where.severity = filters.severity;
     if (filters?.workflowStatusId) where.workflowStatusId = filters.workflowStatusId;
     if (filters?.assigneeId) where.assigneeId = filters.assigneeId;
-    if (filters?.parentTaskId) where.parentTaskId = filters.parentTaskId;
     if (filters?.reporterId) where.reporterId = filters.reporterId;
     if (filters?.search) where.title = { contains: filters.search, mode: 'insensitive' };
 
@@ -166,7 +167,6 @@ export class BugsService {
       if (dto.actualResult !== undefined) data.actualResult = dto.actualResult;
       if (dto.assigneeId !== undefined) data.assigneeId = dto.assigneeId;
       if (dto.ownerId !== undefined) data.ownerId = dto.ownerId;
-      if (dto.parentTaskId !== undefined) data.parentTaskId = dto.parentTaskId;
       if (dto.workflowStatusId !== undefined) data.workflowStatusId = dto.workflowStatusId;
 
       const bug = await tx.bug.update({
@@ -346,7 +346,7 @@ export class BugsService {
       { header: 'Expected Result', key: 'expectedResult', width: 30 },
       { header: 'Actual Result', key: 'actualResult', width: 30 },
       { header: 'Repro Steps', key: 'reproSteps', width: 40 },
-      { header: 'Parent Task', key: 'parentTask', width: 14 },
+      { header: 'Linked Tasks', key: 'linkedTasks', width: 20 },
       { header: 'Created At', key: 'createdAt', width: 20 },
     ];
 
@@ -387,7 +387,7 @@ export class BugsService {
         expectedResult: b.expectedResult ?? '',
         actualResult: b.actualResult ?? '',
         reproSteps: reproText,
-        parentTask: (b as any).parentTask?.taskKey ?? '',
+        linkedTasks: ((b as any).bugTasks ?? []).map((bt: any) => bt.task?.taskKey).filter(Boolean).join(', '),
         createdAt: b.createdAt ? new Date(b.createdAt).toISOString().replace('T', ' ').substring(0, 19) : '',
       });
       row.eachCell((cell) => {
@@ -403,6 +403,47 @@ export class BugsService {
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
+  }
+
+  async linkTasks(bugId: string, taskIds: string[]) {
+    await this.prisma.bugTask.createMany({
+      data: taskIds.map(taskId => ({ bugId, taskId })),
+      skipDuplicates: true,
+    });
+    return this.findOne(bugId);
+  }
+
+  async unlinkTask(bugId: string, taskId: string) {
+    await this.prisma.bugTask.deleteMany({
+      where: { bugId, taskId },
+    });
+    return this.findOne(bugId);
+  }
+
+  async getLinkedTasks(bugId: string) {
+    const bugTasks = await this.prisma.bugTask.findMany({
+      where: { bugId },
+      include: {
+        task: { select: { id: true, taskKey: true, title: true } },
+      },
+    });
+    return bugTasks.map(bt => bt.task);
+  }
+
+  async getBugsByTaskId(taskId: string) {
+    const bugTasks = await this.prisma.bugTask.findMany({
+      where: { taskId },
+      include: {
+        bug: {
+          include: {
+            reporter: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+            assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+            workflowStatus: true,
+          },
+        },
+      },
+    });
+    return bugTasks.map(bt => bt.bug);
   }
 
   async delete(bugId: string) {
