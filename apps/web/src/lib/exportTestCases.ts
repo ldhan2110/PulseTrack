@@ -45,10 +45,10 @@ const headerStyle: XLSX.CellStyle = {
   font: { bold: true },
   fill: { fgColor: { rgb: 'D9D9D9' } },
   border: {
-    top: { style: 'thin' },
-    left: { style: 'thin' },
-    bottom: { style: 'thin' },
-    right: { style: 'thin' },
+    top: { color: { rgb: '000000' }, style: 'thin' },
+    left: { color: { rgb: '000000' }, style: 'thin' },
+    bottom: { color: { rgb: '000000' }, style: 'thin' },
+    right: { color: { rgb: '000000' }, style: 'thin' },
   },
   alignment: { wrapText: true, vertical: 'center' },
 };
@@ -56,10 +56,10 @@ const headerStyle: XLSX.CellStyle = {
 const cellStyle: XLSX.CellStyle = {
   alignment: { wrapText: true, vertical: 'top' },
   border: {
-    top: { style: 'thin' },
-    left: { style: 'thin' },
-    bottom: { style: 'thin' },
-    right: { style: 'thin' },
+    top: { color: { rgb: '000000' }, style: 'thin' },
+    left: { color: { rgb: '000000' }, style: 'thin' },
+    bottom: { color: { rgb: '000000' }, style: 'thin' },
+    right: { color: { rgb: '000000' }, style: 'thin' },
   },
 };
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { Download, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
