@@ -12,7 +12,9 @@ interface WbsExportRow {
 }
 
 function parseDate(d: string | null): Date | null {
-  return d ? new Date(d) : null;
+  if (!d) return null;
+  const parsed = new Date(d);
+  return isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function formatDate(d: Date | null): string {
@@ -93,9 +95,9 @@ function isInRange(day: Date, start: Date | null, end: Date | null): boolean {
 }
 
 const LEVEL_COLORS: Record<0 | 1 | 2, string> = {
-  0: '7C3AED',
-  1: '3B82F6',
-  2: '6366F1',
+  0: '7C3AED', // purple — phases
+  1: '3B82F6', // blue — tasks
+  2: '6366F1', // indigo — subtasks
 };
 
 const headerStyle: XLSX.CellStyle = {
@@ -131,6 +133,11 @@ export function exportWbsToExcel(phases: WbsPhase[]): void {
 
   const dateRange = getDateRange(rows);
   const ganttDays = dateRange ? getDaysBetween(dateRange.start, dateRange.end) : [];
+
+  // Cap at 365 days to prevent oversized exports
+  if (ganttDays.length > 365) {
+    ganttDays.length = 365;
+  }
 
   const DATA_COLS = 6;
   const dataHeaders = ['Task', 'Plan Start', 'Plan End', 'Actual Start', 'Actual End', 'Progress'];
@@ -181,7 +188,7 @@ export function exportWbsToExcel(phases: WbsPhase[]): void {
     const progRef = XLSX.utils.encode_cell({ r: excelRow, c: 5 });
     worksheet[progRef] = { v: `${Math.round(row.progress)}%`, t: 's', s: style };
 
-    // Gantt cells
+    // Gantt bars represent planned schedule only (planStart → planEnd)
     for (let d = 0; d < ganttDays.length; d++) {
       const colIdx = DATA_COLS + d;
       const cellRef = XLSX.utils.encode_cell({ r: excelRow, c: colIdx });
