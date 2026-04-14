@@ -140,33 +140,67 @@ export function exportWbsToExcel(phases: WbsPhase[]): void {
   }
 
   const DATA_COLS = 6;
+  const HEADER_ROWS = 2;
   const dataHeaders = ['Task', 'Plan Start', 'Plan End', 'Actual Start', 'Actual End', 'Progress'];
 
   const worksheet: XLSX.WorkSheet = {};
+  const merges: XLSX.Range[] = [];
   const totalCols = DATA_COLS + ganttDays.length;
 
-  // Write data headers
+  // --- Row 0 + Row 1: Data column headers (merged vertically across 2 rows) ---
   for (let c = 0; c < DATA_COLS; c++) {
     const cellRef = XLSX.utils.encode_cell({ r: 0, c });
     worksheet[cellRef] = { v: dataHeaders[c], t: 's', s: headerStyle };
+    // Write empty styled cell in row 1 for the merge area
+    const cellRef1 = XLSX.utils.encode_cell({ r: 1, c });
+    worksheet[cellRef1] = { v: '', t: 's', s: headerStyle };
+    // Merge row 0 and row 1 for this column
+    merges.push({ s: { r: 0, c }, e: { r: 1, c } });
   }
 
-  // Write gantt day headers
-  for (let i = 0; i < ganttDays.length; i++) {
-    const d = ganttDays[i];
-    const colIdx = DATA_COLS + i;
-    const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
-    const showMonth = i === 0 || d.getDate() === 1;
-    const label = showMonth
-      ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      : `${d.getDate()}`;
-    worksheet[cellRef] = { v: label, t: 's', s: headerStyle };
+  // --- Row 0: Gantt month headers (merged horizontally across days in each month) ---
+  // --- Row 1: Gantt day numbers ---
+  if (ganttDays.length > 0) {
+    // Group days by month
+    let monthStart = 0;
+    for (let i = 0; i < ganttDays.length; i++) {
+      const d = ganttDays[i];
+      const isLast = i === ganttDays.length - 1;
+      const nextIsNewMonth = !isLast && ganttDays[i + 1].getMonth() !== d.getMonth();
+
+      // Write day number in row 1
+      const dayColIdx = DATA_COLS + i;
+      const dayCellRef = XLSX.utils.encode_cell({ r: 1, c: dayColIdx });
+      worksheet[dayCellRef] = { v: d.getDate(), t: 'n', s: headerStyle };
+
+      // When month boundary or last day: write month header and merge
+      if (isLast || nextIsNewMonth) {
+        const monthColStart = DATA_COLS + monthStart;
+        const monthColEnd = DATA_COLS + i;
+        const monthLabel = ganttDays[monthStart].toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const monthCellRef = XLSX.utils.encode_cell({ r: 0, c: monthColStart });
+        worksheet[monthCellRef] = { v: monthLabel, t: 's', s: { ...headerStyle, alignment: { ...headerStyle.alignment, horizontal: 'center' } } };
+
+        // Fill remaining cells in the merge range with empty styled cells
+        for (let mc = monthColStart + 1; mc <= monthColEnd; mc++) {
+          const fillRef = XLSX.utils.encode_cell({ r: 0, c: mc });
+          worksheet[fillRef] = { v: '', t: 's', s: headerStyle };
+        }
+
+        // Merge month header across its day columns (only if more than 1 column)
+        if (monthColEnd > monthColStart) {
+          merges.push({ s: { r: 0, c: monthColStart }, e: { r: 0, c: monthColEnd } });
+        }
+
+        monthStart = i + 1;
+      }
+    }
   }
 
-  // Write data rows
+  // --- Data rows (starting at row 2) ---
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r];
-    const excelRow = r + 1;
+    const excelRow = r + HEADER_ROWS;
     const indent = '  '.repeat(row.level);
     const style = row.level === 0 ? phaseCellStyle : cellStyle;
 
@@ -204,10 +238,13 @@ export function exportWbsToExcel(phases: WbsPhase[]): void {
     }
   }
 
+  // Set merges
+  worksheet['!merges'] = merges;
+
   // Set worksheet range
   worksheet['!ref'] = XLSX.utils.encode_range({
     s: { r: 0, c: 0 },
-    e: { r: rows.length, c: totalCols - 1 },
+    e: { r: rows.length + HEADER_ROWS - 1, c: totalCols - 1 },
   });
 
   // Set column widths
