@@ -57,3 +57,22 @@ export function StreamingMessage({ content }: StreamingMessageProps) {
     </div>
   );
 }
+
+export function ThinkingIndicator() {
+  return (
+    <div className="flex justify-start">
+      <div className="rounded-xl rounded-bl-sm bg-muted px-3 py-2 text-sm">
+        <div className="mb-1 flex items-center gap-1 text-xs font-semibold text-primary/70">
+          <Bot className="size-3" />
+          AI Assistant
+        </div>
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="inline-block size-1.5 animate-bounce rounded-full bg-current [animation-delay:0ms]" />
+          <span className="inline-block size-1.5 animate-bounce rounded-full bg-current [animation-delay:150ms]" />
+          <span className="inline-block size-1.5 animate-bounce rounded-full bg-current [animation-delay:300ms]" />
+          <span className="ml-1.5 text-xs">Thinking...</span>
+        </div>
+      </div>
+    </div>
+  );
+}

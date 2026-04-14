@@ -16,8 +16,12 @@ export function PlannerChatPanel({ sessionId, messages }: PlannerChatPanelProps)
   const sendMessage = useSendPlannerMessage(sessionId);
   const { connect, isStreaming } = usePlannerSSE(sessionId);
 
+  const isBusy = isStreaming || sendMessage.isPending;
+
   const handleSend = useCallback(
     async (content: string, files: File[]) => {
+      if (sendMessage.isPending || isStreaming) return;
+
       setStreamingContent('');
       setSuggestedAction(null);
 
@@ -35,7 +39,7 @@ export function PlannerChatPanel({ sessionId, messages }: PlannerChatPanelProps)
         onDone: () => setStreamingContent(''),
       });
     },
-    [sendMessage, connect],
+    [sendMessage, connect, isStreaming],
   );
 
   return (
@@ -48,12 +52,12 @@ export function PlannerChatPanel({ sessionId, messages }: PlannerChatPanelProps)
       <ChatMessageList
         messages={messages}
         streamingContent={streamingContent}
-        isStreaming={isStreaming}
+        isStreaming={isBusy}
         suggestedAction={suggestedAction}
         onAcceptAction={() => setSuggestedAction(null)}
         onDismissAction={() => setSuggestedAction(null)}
       />
-      <ChatInput onSend={handleSend} disabled={isStreaming} />
+      <ChatInput onSend={handleSend} disabled={isBusy} />
     </div>
   );
 }

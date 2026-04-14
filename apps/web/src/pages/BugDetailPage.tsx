@@ -112,8 +112,6 @@ export function BugDetailPage() {
 
   // Description auto-save
   const [descValue, setDescValue] = useState('');
-  const [descSaving, setDescSaving] = useState(false);
-  const descTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Expected/Actual result auto-save
   const [expectedValue, setExpectedValue] = useState('');
@@ -153,29 +151,6 @@ export function BugDetailPage() {
     if (e.key === 'Escape') {
       setTitleValue(bug?.title ?? '');
       setEditingTitle(false);
-    }
-  };
-
-  const handleDescChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDescValue(e.target.value);
-    if (descTimerRef.current) clearTimeout(descTimerRef.current);
-    descTimerRef.current = setTimeout(() => {
-      setDescSaving(true);
-      updateBug.mutate(
-        { bugId, data: { description: e.target.value } },
-        { onSettled: () => setTimeout(() => setDescSaving(false), 800) },
-      );
-    }, 500);
-  };
-
-  const handleDescBlur = () => {
-    if (descTimerRef.current) {
-      clearTimeout(descTimerRef.current);
-      setDescSaving(true);
-      updateBug.mutate(
-        { bugId, data: { description: descValue } },
-        { onSettled: () => setTimeout(() => setDescSaving(false), 800) },
-      );
     }
   };
 

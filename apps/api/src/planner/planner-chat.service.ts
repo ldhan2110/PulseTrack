@@ -63,7 +63,7 @@ export class PlannerChatService {
 
     const session = await this.plannerService.getSession(sessionId);
 
-    const aiConfig = await this.aiService.getDecryptedApiKey(session.projectId);
+    const aiConfig = await this.aiService.getProjectAiConfig(session.projectId);
     if (!aiConfig) {
       subject.next({ type: 'error', data: { message: 'AI not configured for this project. Go to Settings > AI Config.' } });
       subject.complete();
@@ -82,9 +82,7 @@ export class PlannerChatService {
     );
 
     let fullResponse = '';
-    const stream = this.aiService.streamChatResponse(
-      aiConfig.provider, aiConfig.model, aiConfig.apiKey, context,
-    );
+    const stream = this.aiService.streamChatResponse(aiConfig, context);
 
     const delimiter = '---PLANNER_ACTIONS---';
     let delimiterDetected = false;

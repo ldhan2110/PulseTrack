@@ -85,6 +85,17 @@ describe('ProjectRolesGuard', () => {
     await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow('Not a member of this project');
   });
 
+  it('allows when route has no projectId param', async () => {
+    const user = { id: 'user-1' };
+    const mockFindUnique = vi.fn();
+    const { mockExecutionContext, reflector, mockPrisma } = createMockContext(
+      user, { sessionId: 'sess-1' }, { area: 'tasks', action: 'create' }, mockFindUnique,
+    );
+    const guard = new ProjectRolesGuard(reflector, mockPrisma);
+    expect(await guard.canActivate(mockExecutionContext)).toBe(true);
+    expect(mockFindUnique).not.toHaveBeenCalled();
+  });
+
   it('allows when no decorator present (membership only)', async () => {
     const user = { id: 'user-1' };
     const member = {

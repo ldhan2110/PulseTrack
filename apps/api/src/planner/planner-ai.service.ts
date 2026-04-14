@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { spawn, execSync } from 'child_process';
+import { OpenRouter } from '@openrouter/sdk';
 import { PrismaService } from '../prisma/prisma.service';
 import { decrypt } from '../common/encryption.util';
 
@@ -17,6 +19,12 @@ interface ChatContext {
   systemPrompt: string;
   messages: Array<{ role: string; content: string }>;
 }
+
+const CLI_COMMANDS: Record<string, string> = {
+  claude: 'claude',
+  gemini: 'gemini',
+  codex: 'codex',
+};
 
 const PLANNER_SYSTEM_PROMPT = `You are an expert Business Analyst (BA) assistant embedded in a project management tool called PulseTrack. Your role is to help BAs gather, refine, and organize software requirements through collaborative conversation.
 
@@ -124,140 +132,275 @@ export class PlannerAiService {
     }
   }
 
-  async getDecryptedApiKey(projectId: string): Promise<{ provider: string; model: string; apiKey: string } | null> {
+  async getProjectAiConfig(projectId: string): Promise<{
+    provider: string;
+    model: string;
+    apiKey: string;
+    workspacePath: string | null;
+    cli: string;
+  } | null> {
+    const encryptionKey = this.config.getOrThrow<string>('ENCRYPTION_KEY');
+
+    // Check dedicated planner config first (OpenRouter)
+    const plannerConfig = await this.prisma.plannerAiConfig.findUnique({ where: { projectId } });
+    if (plannerConfig) {
+      const apiKey = decrypt(plannerConfig.apiKey, encryptionKey);
+      const repoConfig = await this.prisma.repositoryConfig.findUnique({ where: { projectId } });
+      const workspacePath = repoConfig?.cloneStatus === 'cloned' ? repoConfig.workspacePath : null;
+      return { provider: plannerConfig.provider, model: plannerConfig.model, apiKey, workspacePath, cli: '' };
+    }
+
+    // Fall back to shared AI config
     const aiConfig = await this.prisma.aiConfig.findUnique({ where: { projectId } });
     if (!aiConfig) return null;
 
-    const encryptionKey = this.config.getOrThrow<string>('ENCRYPTION_KEY');
     const apiKey = decrypt(aiConfig.apiKey, encryptionKey);
-    return { provider: aiConfig.provider, model: aiConfig.model, apiKey };
+    const repoConfig = await this.prisma.repositoryConfig.findUnique({ where: { projectId } });
+    const workspacePath = repoConfig?.cloneStatus === 'cloned' ? repoConfig.workspacePath : null;
+
+    const cliName = CLI_COMMANDS[aiConfig.provider] ?? aiConfig.provider;
+    const cli = this.resolveCliPath(cliName);
+
+    return {
+      provider: aiConfig.provider,
+      model: aiConfig.model,
+      apiKey,
+      workspacePath,
+      cli,
+    };
   }
 
-  async *streamChatResponse(
-    provider: string,
-    model: string,
-    apiKey: string,
-    context: ChatContext,
-  ): AsyncGenerator<string> {
-    if (provider === 'anthropic') {
-      yield* this.streamAnthropic(model, apiKey, context);
-    } else {
-      yield* this.streamOpenAI(provider, model, apiKey, context);
+  /**
+   * Resolve the full path to a CLI binary using the system shell,
+   * so spawn() works even when the binary isn't in the Node process PATH.
+   */
+  private resolveCliPath(name: string): string {
+    try {
+      return execSync(`which ${name}`, { encoding: 'utf-8' }).trim();
+    } catch {
+      this.logger.warn(`Could not resolve CLI path for "${name}", using name directly`);
+      return name;
     }
   }
 
-  private async *streamAnthropic(
-    model: string,
-    apiKey: string,
-    context: ChatContext,
-  ): AsyncGenerator<string> {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system: context.systemPrompt,
-        messages: context.messages,
-        stream: true,
-      }),
-    });
+  /**
+   * Build the full prompt string from context, flattening chat history
+   * into the prompt since the CLI is stateless (no multi-turn).
+   */
+  buildCliPrompt(context: ChatContext): string {
+    const parts: string[] = [context.systemPrompt];
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Anthropic API error: ${response.status} ${err}`);
-    }
-
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') return;
-
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-            yield parsed.delta.text;
-          }
-        } catch {
-          // skip non-JSON lines
-        }
+    if (context.messages.length > 1) {
+      parts.push('\n## Conversation History');
+      // All messages except the last one (which is the current user message)
+      for (const msg of context.messages.slice(0, -1)) {
+        const label = msg.role === 'user' ? 'User' : 'Assistant';
+        parts.push(`\n**${label}:** ${msg.content}`);
       }
     }
-  }
 
-  private async *streamOpenAI(
-    provider: string,
-    model: string,
-    apiKey: string,
-    context: ChatContext,
-  ): AsyncGenerator<string> {
-    const baseUrl = provider === 'openai'
-      ? 'https://api.openai.com/v1'
-      : provider === 'groq'
-        ? 'https://api.groq.com/openai/v1'
-        : 'https://api.openai.com/v1';
-
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        stream: true,
-        messages: [
-          { role: 'system', content: context.systemPrompt },
-          ...context.messages,
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} ${err}`);
+    const lastMessage = context.messages[context.messages.length - 1];
+    if (lastMessage) {
+      parts.push(`\n## Current User Message\n${lastMessage.content}`);
     }
 
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    return parts.join('\n');
+  }
+
+  buildCliArgs(provider: string, model: string, prompt: string): string[] {
+    switch (provider) {
+      case 'claude':
+        return ['--dangerously-skip-permissions', '-p', prompt, '--output-format', 'text', '--model', model];
+      case 'gemini':
+        return ['-p', prompt, '--model', model];
+      case 'codex':
+        return ['-p', prompt, '--model', model];
+      default:
+        return ['-p', prompt];
+    }
+  }
+
+  buildCliEnv(provider: string, apiKey: string): Record<string, string> {
+    switch (provider) {
+      case 'claude':
+        return { CLAUDE_CODE_OAUTH_TOKEN: apiKey };
+      case 'gemini':
+        return { GEMINI_API_KEY: apiKey };
+      case 'codex':
+        return { OPENAI_API_KEY: apiKey };
+      default:
+        return {};
+    }
+  }
+
+  /**
+   * Stream chat response — uses HTTP streaming for OpenRouter,
+   * CLI spawning for other providers.
+   */
+  async *streamChatResponse(
+    config: { provider: string; model: string; apiKey: string; workspacePath: string | null; cli: string },
+    context: ChatContext,
+  ): AsyncGenerator<string> {
+    if (config.provider === 'openrouter') {
+      yield* this.streamOpenRouterResponse(config, context);
+      return;
+    }
+
+    const prompt = this.buildCliPrompt(context);
+    const args = this.buildCliArgs(config.provider, config.model, prompt);
+    const env = this.buildCliEnv(config.provider, config.apiKey);
+    const cwd = config.workspacePath ?? process.cwd();
+
+    this.logger.log(`Spawning CLI: ${config.cli} (provider=${config.provider}, model=${config.model}, cwd=${cwd})`);
+
+    const { readable, promise } = this.spawnCliStream(config.cli, args, {
+      cwd,
+      timeout: 300_000,
+      env: { ...process.env, ...env },
+    });
+
+    for await (const chunk of readable) {
+      yield chunk;
+    }
+
+    await promise;
+  }
+
+  /**
+   * Stream a chat completion from OpenRouter using their official SDK.
+   */
+  private async *streamOpenRouterResponse(
+    config: { model: string; apiKey: string },
+    context: ChatContext,
+  ): AsyncGenerator<string> {
+    this.logger.log(`OpenRouter streaming: model=${config.model}`);
+
+    const openrouter = new OpenRouter({
+      apiKey: config.apiKey,
+    });
+
+    const messages = [
+      { role: 'system' as const, content: context.systemPrompt },
+      ...context.messages.map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      })),
+    ];
+
+    const stream = await openrouter.chat.send({
+      chatRequest: {
+        model: config.model,
+        messages,
+        stream: true,
+      },
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices?.[0]?.delta?.content;
+      if (content) yield content;
+    }
+  }
+
+  /**
+   * Spawn a CLI process and return an async iterable of stdout chunks
+   * plus a promise that resolves/rejects when the process exits.
+   */
+  private spawnCliStream(
+    command: string,
+    args: string[],
+    opts: { cwd: string; timeout: number; env?: Record<string, string | undefined> },
+  ): { readable: AsyncIterable<string>; promise: Promise<void> } {
+    const child = spawn(command, args, {
+      cwd: opts.cwd,
+      env: opts.env as NodeJS.ProcessEnv,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let killed = false;
+    const timer = setTimeout(() => {
+      killed = true;
+      child.kill('SIGTERM');
+    }, opts.timeout);
+
+    // Collect stderr for error reporting
+    const stderrChunks: string[] = [];
+    child.stderr.on('data', (chunk: Buffer) => {
+      const text = chunk.toString();
+      stderrChunks.push(text);
+      for (const line of text.split('\n').filter(Boolean)) {
+        this.logger.warn(`[planner-cli] ${line}`);
+      }
+    });
+
+    // Create an async iterable from stdout
+    const stdoutIterator = this.createAsyncIterableFromStream(child.stdout);
+
+    // Promise that resolves when process exits successfully
+    const promise = new Promise<void>((resolve, reject) => {
+      child.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        if (killed) {
+          reject(new Error(`CLI timed out after ${opts.timeout}ms`));
+          return;
+        }
+        if (code === 0 || code === null) {
+          resolve();
+        } else {
+          const stderr = stderrChunks.join('').slice(0, 500);
+          reject(new Error(`CLI exited with code ${code}${stderr ? `: ${stderr}` : ''}`));
+        }
+      });
+    });
+
+    return { readable: stdoutIterator, promise };
+  }
+
+  /**
+   * Convert a Node readable stream into an async iterable of string chunks.
+   */
+  private async *createAsyncIterableFromStream(
+    stream: NodeJS.ReadableStream,
+  ): AsyncGenerator<string> {
+    const chunks: string[] = [];
+    let resolve: (() => void) | null = null;
+    let done = false;
+
+    stream.on('data', (chunk: Buffer) => {
+      chunks.push(chunk.toString());
+      if (resolve) {
+        resolve();
+        resolve = null;
+      }
+    });
+
+    stream.on('end', () => {
+      done = true;
+      if (resolve) {
+        resolve();
+        resolve = null;
+      }
+    });
+
+    stream.on('error', () => {
+      done = true;
+      if (resolve) {
+        resolve();
+        resolve = null;
+      }
+    });
 
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') return;
-
-        try {
-          const parsed = JSON.parse(data);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) yield content;
-        } catch {
-          // skip non-JSON lines
-        }
+      if (chunks.length > 0) {
+        yield chunks.shift()!;
+      } else if (done) {
+        break;
+      } else {
+        await new Promise<void>((r) => { resolve = r; });
       }
     }
   }

@@ -19,12 +19,17 @@ interface PlannerSessionBarProps {
   sessions: PlannerSessionListItem[];
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
 export function PlannerSessionBar({
   projectId, sessions, activeSessionId, onSelectSession,
+  createOpen: createOpenProp, onCreateOpenChange,
 }: PlannerSessionBarProps) {
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpenLocal, setCreateOpenLocal] = useState(false);
+  const createOpen = createOpenProp ?? createOpenLocal;
+  const setCreateOpen = onCreateOpenChange ?? setCreateOpenLocal;
   const [newName, setNewName] = useState('');
   const createSession = useCreatePlannerSession(projectId);
   const updateSession = useUpdatePlannerSession(projectId);
