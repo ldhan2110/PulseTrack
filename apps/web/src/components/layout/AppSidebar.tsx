@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -10,6 +11,8 @@ import {
   FolderKanban,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  GanttChart,
   Settings,
   LogOut,
   CheckSquare,
@@ -36,9 +39,24 @@ import { useProjects } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { useUiStore } from '@/store/uiStore';
 
-const PROJECT_NAV_ITEMS = [
+interface NavItem {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  path: string;
+  children?: NavItem[];
+}
+
+const PROJECT_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
-  { label: 'Project Planner', icon: Target, path: 'planner' },
+  {
+    label: 'Project Planner',
+    icon: Target,
+    path: 'planner',
+    children: [
+      { label: 'Scope Definition', icon: Target, path: 'planner' },
+      { label: 'WBS', icon: GanttChart, path: 'wbs' },
+    ],
+  },
   { label: 'Backlog', icon: ListTodo, path: 'backlog' },
   { label: 'Sprints', icon: Zap, path: 'sprints' },
   { label: 'Test Cases', icon: ClipboardList, path: 'test-cases' },
@@ -86,6 +104,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ 'Project Planner': true });
   const { data: projects } = useProjects();
   const { user, keycloakUserInfo, logout } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
@@ -236,6 +255,69 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
               )}
               <SidebarMenu>
                 {PROJECT_NAV_ITEMS.map((item) => {
+                  if (item.children) {
+                    const isExpanded = expandedMenus[item.label] ?? false;
+                    const childActive = item.children.some(
+                      (child) => location.pathname === `/projects/${activeProjectPrefix}/${child.path}`,
+                    );
+                    return (
+                      <div key={item.label}>
+                        <SidebarMenuItem>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SidebarMenuButton
+                                isActive={childActive}
+                                aria-label={item.label}
+                                onClick={() =>
+                                  setExpandedMenus((prev) => ({
+                                    ...prev,
+                                    [item.label]: !prev[item.label],
+                                  }))
+                                }
+                                className="cursor-pointer"
+                              >
+                                <item.icon />
+                                <span className="flex-1">{item.label}</span>
+                                {!isCollapsed && (
+                                  <ChevronDown
+                                    className={`size-3 transition-transform ${isExpanded ? '' : '-rotate-90'}`}
+                                  />
+                                )}
+                              </SidebarMenuButton>
+                            </TooltipTrigger>
+                            {isCollapsed && (
+                              <TooltipContent side="right">{item.label}</TooltipContent>
+                            )}
+                          </Tooltip>
+                        </SidebarMenuItem>
+                        {isExpanded && !isCollapsed && (
+                          <div className="ml-4 border-l border-border/50 pl-2 space-y-0.5">
+                            {item.children.map((child) => {
+                              const href = `/projects/${activeProjectPrefix}/${child.path}`;
+                              const isActive = location.pathname === href;
+                              return (
+                                <SidebarMenuItem key={child.path}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <SidebarMenuButton
+                                        isActive={isActive}
+                                        aria-label={child.label}
+                                        onClick={() => navigate(href)}
+                                        className="cursor-pointer h-8 text-sm"
+                                      >
+                                        <child.icon className="size-3.5" />
+                                        <span>{child.label}</span>
+                                      </SidebarMenuButton>
+                                    </TooltipTrigger>
+                                  </Tooltip>
+                                </SidebarMenuItem>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
                   const href = `/projects/${activeProjectPrefix}/${item.path}`;
                   const isActive = location.pathname === href;
                   return (
