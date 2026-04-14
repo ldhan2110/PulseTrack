@@ -9,7 +9,6 @@ import { WbsStatusBar } from '@/components/wbs/WbsStatusBar';
 import { WbsTableView } from '@/components/wbs/WbsTableView';
 import { WbsTaskDialog } from '@/components/wbs/WbsTaskDialog';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
-import type { WbsPhase } from '@/lib/types';
 
 type ViewMode = 'gantt' | 'table';
 type DialogMode = { type: 'phase' | 'task' | 'subtask'; parentId?: string; editItem?: any } | null;
@@ -57,7 +56,7 @@ export function WbsPage() {
 
       <div className="flex-1 overflow-hidden">
         {viewMode === 'gantt' ? (
-          <ResizablePanelGroup direction="horizontal" className="h-full">
+          <ResizablePanelGroup orientation="horizontal" className="h-full">
             <ResizablePanel defaultSize={45} minSize={30}>
               <WbsTaskTree
                 phases={phases}

@@ -186,10 +186,10 @@ export function useDeleteWbsDependency(projectId: string) {
 export function useLinkWbsBacklog(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ nodeType, nodeId, data }: { nodeType: 'task' | 'subtask'; nodeId: string; data: LinkBacklogPayload }) =>
-      nodeType === 'task'
-        ? api.linkWbsTaskBacklog(nodeId, data)
-        : api.linkWbsSubtaskBacklog(nodeId, data),
+    mutationFn: async ({ nodeType, nodeId, data }: { nodeType: 'task' | 'subtask'; nodeId: string; data: LinkBacklogPayload }) => {
+      if (nodeType === 'task') return api.linkWbsTaskBacklog(nodeId, data);
+      return api.linkWbsSubtaskBacklog(nodeId, data) as Promise<any>;
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['wbs-phases', projectId] });
       toast.success('Backlog item linked');
@@ -201,10 +201,10 @@ export function useLinkWbsBacklog(projectId: string) {
 export function useUnlinkWbsBacklog(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ nodeType, nodeId }: { nodeType: 'task' | 'subtask'; nodeId: string }) =>
-      nodeType === 'task'
-        ? api.unlinkWbsTaskBacklog(nodeId)
-        : api.unlinkWbsSubtaskBacklog(nodeId),
+    mutationFn: async ({ nodeType, nodeId }: { nodeType: 'task' | 'subtask'; nodeId: string }) => {
+      if (nodeType === 'task') return api.unlinkWbsTaskBacklog(nodeId);
+      return api.unlinkWbsSubtaskBacklog(nodeId) as Promise<any>;
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['wbs-phases', projectId] });
       toast.success('Backlog item unlinked');

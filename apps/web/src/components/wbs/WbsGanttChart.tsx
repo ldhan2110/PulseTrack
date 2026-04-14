@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Gantt, Task, ViewMode } from 'gantt-task-react';
+import { Gantt, type Task, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import { useUpdateWbsTask, useUpdateWbsSubtask } from '@/hooks/useWbs';
 import type { WbsPhase, WbsDependency } from '@/lib/types';
