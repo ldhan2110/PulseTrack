@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ClipboardCheck, Plus, MessageSquare, LayoutList, Sparkles } from 'lucide-react';
+import { Plus, MessageSquare, LayoutList, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUiStore } from '@/store/uiStore';
 import { usePlannerSessions, usePlannerSession, usePlannerMessages, usePlannerScopes } from '@/hooks/usePlanner';
@@ -38,7 +38,7 @@ export function PlannerPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: sessions } = usePlannerSessions(projectId);
-  const { data: session } = usePlannerSession(projectId, activeSessionId ?? '');
+  usePlannerSession(projectId, activeSessionId ?? '');
   const { data: messages } = usePlannerMessages(activeSessionId ?? '');
   const { data: scopes } = usePlannerScopes(activeSessionId ?? '');
 
@@ -64,7 +64,7 @@ export function PlannerPage() {
         onCreateOpenChange={setCreateOpen}
       />
       {activeSessionId ? (
-        <ResizablePanelGroup direction="horizontal" className="flex-1">
+        <ResizablePanelGroup orientation="horizontal" className="flex-1">
           <ResizablePanel defaultSize={50} minSize={30}>
             <PlannerChatPanel
               sessionId={activeSessionId}
