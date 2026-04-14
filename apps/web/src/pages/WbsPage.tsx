@@ -51,6 +51,7 @@ export function WbsPage() {
     <div className="flex h-[calc(100vh-5rem)] flex-col">
       <WbsToolbar
         onAddPhase={() => setDialogMode({ type: 'phase' })}
+        phases={phases}
       />
       <WbsViewToggle viewMode={viewMode} onChange={setViewMode} />
 
