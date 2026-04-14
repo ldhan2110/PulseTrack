@@ -172,11 +172,12 @@ export function CreateBugDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[50vw] max-h-[90vh]" style={{ maxWidth: "none" }}>
+      <DialogContent className="w-[50vw] max-h-[90vh] flex flex-col" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>Report Bug</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          <div className="overflow-y-auto flex-1 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="bug-title" required>Title</FieldLabel>
@@ -406,8 +407,9 @@ export function CreateBugDialog({
               </div>
             )}
           </FieldGroup>
+          </div>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-6 shrink-0">
             <Button
               type="button"
               variant="ghost"

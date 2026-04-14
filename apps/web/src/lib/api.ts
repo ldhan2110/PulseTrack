@@ -297,6 +297,8 @@ export const api = {
   },
   getBugAttachmentDownloadUrl: (projectId: string, bugId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}/download`,
+  getBugAttachmentInlineUrl: (projectId: string, bugId: string, attachmentId: string) =>
+    `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}/download?inline=true`,
   downloadBugAttachment: async (projectId: string, bugId: string, attachmentId: string): Promise<Blob> => {
     const token = keycloak.token;
     const res = await fetch(

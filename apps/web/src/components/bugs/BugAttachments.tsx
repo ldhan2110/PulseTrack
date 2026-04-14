@@ -1,10 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, X, FileText, Image, Film, File } from 'lucide-react';
+import { Plus, X, FileText, Film, File, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUploadBugAttachment, useDeleteBugAttachment } from '@/hooks/useBugAttachments';
 import { api } from '@/lib/api';
 import type { BugAttachment } from '@/lib/types';
+import { BugEvidencePreviewModal, isPreviewable } from './BugEvidencePreviewModal';
 
 interface BugAttachmentsProps {
   projectId: string;
@@ -14,7 +15,6 @@ interface BugAttachmentsProps {
 }
 
 function fileIcon(mimeType: string) {
-  if (mimeType.startsWith('image/')) return <Image className="size-3.5 text-primary" />;
   if (mimeType.startsWith('video/')) return <Film className="size-3.5 text-primary" />;
   if (mimeType.startsWith('text/') || mimeType.includes('json') || mimeType.includes('har'))
     return <FileText className="size-3.5 text-primary" />;
@@ -31,6 +31,7 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
   const fileInputRef = useRef<HTMLInputElement>(null);
   const upload = useUploadBugAttachment(projectId, bugId);
   const deleteAttachment = useDeleteBugAttachment(projectId, bugId);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,6 +55,14 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
     } catch {
       toast.error('Failed to download file.');
     }
+  };
+
+  const previewableAttachments = attachments.filter((a) => isPreviewable(a.mimeType));
+  const nonPreviewable = attachments.filter((a) => !isPreviewable(a.mimeType));
+
+  const openPreview = (attachment: BugAttachment) => {
+    const idx = previewableAttachments.findIndex((a) => a.id === attachment.id);
+    if (idx >= 0) setPreviewIndex(idx);
   };
 
   return (
@@ -82,9 +91,76 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
           </>
         )}
       </div>
-      {attachments.length > 0 && (
+
+      {/* Thumbnail grid for previewable attachments */}
+      {previewableAttachments.length > 0 && (
+        <div className="grid grid-cols-4 gap-1.5">
+          {previewableAttachments.map((att) => {
+            const staticUrl = `/api/uploads/bugs/${bugId}/${att.storedName}`;
+            const isImage = att.mimeType.startsWith('image/');
+            const isVideo = att.mimeType.startsWith('video/');
+
+            return (
+              <div
+                key={att.id}
+                className="relative group rounded border overflow-hidden cursor-pointer bg-muted/30 aspect-square max-w-[60px]"
+                onClick={() => openPreview(att)}
+              >
+                {isImage && (
+                  <img
+                    src={staticUrl}
+                    alt={att.filename}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                {isVideo && (
+                  <div className="relative w-full h-full bg-black/5 flex items-center justify-center">
+                    <video
+                      src={staticUrl}
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                      muted
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="size-5 rounded-full bg-black/60 flex items-center justify-center">
+                        <Play className="size-2.5 text-white fill-white ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {att.mimeType === 'application/pdf' && (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-muted-foreground">
+                    <FileText className="size-4" />
+                    <span className="text-[7px] truncate max-w-full px-0.5 leading-tight">{att.filename}</span>
+                  </div>
+                )}
+
+                {/* Hover overlay with filename & delete */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[8px] text-white truncate block leading-tight">{att.filename}</span>
+                </div>
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="absolute top-0.5 right-0.5 size-4 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteAttachment.mutate(att.id);
+                    }}
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Chip list for non-previewable files */}
+      {nonPreviewable.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {attachments.map((att) => (
+          {nonPreviewable.map((att) => (
             <div
               key={att.id}
               className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs cursor-pointer hover:bg-muted/50"
@@ -109,6 +185,16 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
           ))}
         </div>
       )}
+
+      <BugEvidencePreviewModal
+        attachments={attachments}
+        currentIndex={previewIndex ?? 0}
+        projectId={projectId}
+        bugId={bugId}
+        open={previewIndex !== null}
+        onClose={() => setPreviewIndex(null)}
+        onNavigate={setPreviewIndex}
+      />
     </div>
   );
 }

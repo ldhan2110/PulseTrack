@@ -63,10 +63,12 @@ export class BugAttachmentsController {
   @Get(':attachmentId/download')
   async download(
     @Param('attachmentId') attachmentId: string,
+    @Query('inline') inline: string | undefined,
     @Res() res: Response,
   ) {
     const { filePath, filename, mimeType } = await this.service.getFilePath(attachmentId);
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    const disposition = inline === 'true' ? 'inline' : 'attachment';
+    res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
     res.setHeader('Content-Type', mimeType);
     res.sendFile(filePath);
   }
