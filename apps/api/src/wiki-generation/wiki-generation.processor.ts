@@ -11,12 +11,29 @@ import type { WikiGenerationJobData, WikiGenerationJobResult } from './dto/gener
 @Processor('wiki-generation', { concurrency: 1 })
 export class WikiGenerationProcessor extends WorkerHost {
   private readonly logger = new Logger(WikiGenerationProcessor.name);
+  private activeChildren = new Map<string, import('child_process').ChildProcess>();
 
   constructor(
     private readonly wikiService: WikiGenerationService,
     private readonly notifications: NotificationsService,
   ) {
     super();
+  }
+
+  /** Kill all child processes for a given job and mark it failed. */
+  abortJob(jobId: string): boolean {
+    const child = this.activeChildren.get(jobId);
+    if (child) {
+      this.logger.warn(`[Wiki ${jobId}] Aborting — killing child PID ${child.pid}`);
+      child.kill('SIGTERM');
+      // Force-kill after 3 s if still alive
+      setTimeout(() => {
+        if (!child.killed) child.kill('SIGKILL');
+      }, 3_000);
+      this.activeChildren.delete(jobId);
+      return true;
+    }
+    return false;
   }
 
   private runCliStreaming(
@@ -32,6 +49,9 @@ export class WikiGenerationProcessor extends WorkerHost {
         env: opts.env as NodeJS.ProcessEnv,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
+
+      // Track child so it can be killed on abort
+      if (jobId) this.activeChildren.set(jobId, child);
 
       const stdoutChunks: string[] = [];
       let killed = false;
@@ -68,6 +88,7 @@ export class WikiGenerationProcessor extends WorkerHost {
       });
 
       child.on('close', (code) => {
+        if (jobId) this.activeChildren.delete(jobId);
         if (timer) clearTimeout(timer);
         if (killed) return;
         if (code === 0 || code === null) {

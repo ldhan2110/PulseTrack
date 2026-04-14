@@ -654,6 +654,8 @@ export const api = {
     request<WikiGenerationStatus>(`/projects/${projectId}/wiki/generate/status/${jobId}`),
   getActiveWikiJob: (projectId: string) =>
     request<ActiveWikiJob>(`/projects/${projectId}/wiki/generate/active`),
+  abortWikiGeneration: (projectId: string, jobId: string) =>
+    request<{ aborted: boolean }>(`/projects/${projectId}/wiki/generate/abort/${jobId}`, { method: 'POST' }),
 
   // ─── Wiki Content ────────────────────────────────────────────────────
   getWikiPages: (projectId: string) =>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, RefreshCw } from 'lucide-react';
+import { BookOpen, RefreshCw, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ interface Props {
 export function WikiConfigCard({ projectId, canManage }: Props) {
   const { data: config } = useWikiConfig(projectId);
   const upsert = useUpsertWikiConfig(projectId);
-  const { generate, step, isActive } = useWikiGeneration(projectId);
+  const { generate, abort, step, isActive } = useWikiGeneration(projectId);
 
   const [autoUpdate, setAutoUpdate] = useState('manual');
   const [sections, setSections] = useState<string[]>(ALL_SECTIONS);
@@ -116,6 +116,16 @@ export function WikiConfigCard({ projectId, canManage }: Props) {
               <RefreshCw className={`size-4 mr-2 ${isActive ? 'animate-spin' : ''}`} />
               {isActive ? `Generating (${step})...` : 'Generate Wiki Now'}
             </Button>
+            {isActive && (
+              <Button
+                variant="destructive"
+                onClick={() => abort.mutate()}
+                disabled={abort.isPending}
+              >
+                <XCircle className="size-4 mr-2" />
+                {abort.isPending ? 'Aborting...' : 'Abort'}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

@@ -183,6 +183,21 @@ export function useWikiGeneration(projectId: string) {
     };
   }, [socket, jobId, projectId, queryClient]);
 
+  const abort = useMutation({
+    mutationFn: () => {
+      if (!jobId) return Promise.reject(new Error('No active job'));
+      return api.abortWikiGeneration(projectId, jobId);
+    },
+    onSuccess: () => {
+      setStep('failed');
+      setJobId(null);
+      toast.info('Wiki generation aborted');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to abort wiki generation');
+    },
+  });
+
   const reset = useCallback(() => {
     setJobId(null);
     setStep('idle');
@@ -192,6 +207,7 @@ export function useWikiGeneration(projectId: string) {
 
   return {
     generate,
+    abort,
     step,
     streamText,
     isActive,

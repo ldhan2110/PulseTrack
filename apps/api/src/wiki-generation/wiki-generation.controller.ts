@@ -9,7 +9,9 @@ import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WikiConfigService } from '../wiki-config/wiki-config.service';
+import { WikiGenerationProcessor } from './wiki-generation.processor';
 import { TriggerWikiGenerationDto, WikiGenerationJobData } from './dto/generate-wiki.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Controller('projects/:projectId/wiki/generate')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -18,6 +20,8 @@ export class WikiGenerationController {
     @InjectQueue('wiki-generation') private readonly queue: Queue,
     private readonly wikiConfigService: WikiConfigService,
     private readonly prisma: PrismaService,
+    private readonly processor: WikiGenerationProcessor,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Fail-fast: validate repo clone + AI config before enqueueing */
@@ -122,6 +126,38 @@ export class WikiGenerationController {
       step: progress?.step ?? 'queued',
       sections: job.data.sections ?? [],
     };
+  }
+
+  @Post('abort/:jobId')
+  @RequirePermission('projectSettings', 'update')
+  async abort(
+    @Param('projectId') projectId: string,
+    @Param('jobId') jobId: string,
+    @Req() req: any,
+  ) {
+    const job = await this.queue.getJob(jobId);
+    if (!job) throw new NotFoundException('Generation job not found');
+
+    const state = await job.getState();
+
+    // Kill any active child processes
+    this.processor.abortJob(jobId);
+
+    if (state === 'active') {
+      await job.moveToFailed(new Error('Aborted by user'), job.token ?? '0', false);
+    } else if (state === 'waiting' || state === 'delayed') {
+      await job.remove();
+    } else {
+      throw new ConflictException(`Job is already ${state}`);
+    }
+
+    // Notify frontend
+    this.notifications.notifyUser(req.user.id, 'wiki-generation:failed', {
+      jobId,
+      error: 'Generation aborted by user',
+    });
+
+    return { aborted: true };
   }
 
   @Get('status/:jobId')
