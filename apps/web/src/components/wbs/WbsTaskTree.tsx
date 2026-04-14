@@ -16,7 +16,11 @@ interface WbsTaskTreeProps {
 
 function formatDate(d: string | null) {
   if (!d) return '\u2014';
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const dt = new Date(d);
+  const day = String(dt.getDate()).padStart(2, '0');
+  const month = String(dt.getMonth() + 1).padStart(2, '0');
+  const year = dt.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function formatProgress(p: number) {
@@ -34,7 +38,7 @@ export function WbsTaskTree({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-[1fr_68px_68px_68px_68px_50px] gap-0 border-b bg-muted/30 px-2 py-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+      <div className="grid grid-cols-[1fr_68px_68px_68px_68px_50px] gap-0 border-b bg-muted/30 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground items-center" style={{ height: 44 }}>
         <span className="pl-2">Task</span>
         <span>Plan S.</span>
         <span>Plan E.</span>

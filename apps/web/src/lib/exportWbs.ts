@@ -19,7 +19,10 @@ function parseDate(d: string | null): Date | null {
 
 function formatDate(d: Date | null): string {
   if (!d) return '\u2014';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function flattenPhases(phases: WbsPhase[]): WbsExportRow[] {
@@ -122,9 +125,19 @@ const cellStyle: XLSX.CellStyle = {
   },
 };
 
+const dateCellStyle: XLSX.CellStyle = {
+  ...cellStyle,
+  alignment: { ...cellStyle.alignment, horizontal: 'center' },
+};
+
 const phaseCellStyle: XLSX.CellStyle = {
   ...cellStyle,
   font: { bold: true },
+};
+
+const phaseDateCellStyle: XLSX.CellStyle = {
+  ...phaseCellStyle,
+  alignment: { ...phaseCellStyle.alignment, horizontal: 'center' },
 };
 
 export function exportWbsToExcel(phases: WbsPhase[]): void {
@@ -202,25 +215,26 @@ export function exportWbsToExcel(phases: WbsPhase[]): void {
     const row = rows[r];
     const excelRow = r + HEADER_ROWS;
     const indent = '  '.repeat(row.level);
-    const style = row.level === 0 ? phaseCellStyle : cellStyle;
+    const nameStyle = row.level === 0 ? phaseCellStyle : cellStyle;
+    const dateStyle = row.level === 0 ? phaseDateCellStyle : dateCellStyle;
 
     const taskRef = XLSX.utils.encode_cell({ r: excelRow, c: 0 });
-    worksheet[taskRef] = { v: `${indent}${row.title}`, t: 's', s: style };
+    worksheet[taskRef] = { v: `${indent}${row.title}`, t: 's', s: nameStyle };
 
     const psRef = XLSX.utils.encode_cell({ r: excelRow, c: 1 });
-    worksheet[psRef] = { v: formatDate(row.planStart), t: 's', s: style };
+    worksheet[psRef] = { v: formatDate(row.planStart), t: 's', s: dateStyle };
 
     const peRef = XLSX.utils.encode_cell({ r: excelRow, c: 2 });
-    worksheet[peRef] = { v: formatDate(row.planEnd), t: 's', s: style };
+    worksheet[peRef] = { v: formatDate(row.planEnd), t: 's', s: dateStyle };
 
     const asRef = XLSX.utils.encode_cell({ r: excelRow, c: 3 });
-    worksheet[asRef] = { v: formatDate(row.actualStart), t: 's', s: style };
+    worksheet[asRef] = { v: formatDate(row.actualStart), t: 's', s: dateStyle };
 
     const aeRef = XLSX.utils.encode_cell({ r: excelRow, c: 4 });
-    worksheet[aeRef] = { v: formatDate(row.actualEnd), t: 's', s: style };
+    worksheet[aeRef] = { v: formatDate(row.actualEnd), t: 's', s: dateStyle };
 
     const progRef = XLSX.utils.encode_cell({ r: excelRow, c: 5 });
-    worksheet[progRef] = { v: `${Math.round(row.progress)}%`, t: 's', s: style };
+    worksheet[progRef] = { v: `${Math.round(row.progress)}%`, t: 's', s: dateStyle };
 
     // Gantt bars represent planned schedule only (planStart → planEnd)
     for (let d = 0; d < ganttDays.length; d++) {
