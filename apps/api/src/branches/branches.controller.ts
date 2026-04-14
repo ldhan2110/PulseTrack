@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -45,5 +46,14 @@ export class BranchesController {
     @Body() dto: CreatePrDto,
   ) {
     return this.service.createPr(projectId, dto);
+  }
+
+  @Delete('tasks/:taskId/branches/:branchId')
+  deleteBranch(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Param('branchId') branchId: string,
+  ) {
+    return this.service.deleteTaskBranch(projectId, taskId, branchId);
   }
 }

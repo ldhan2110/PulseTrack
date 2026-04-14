@@ -49,3 +49,18 @@ export function useCreatePr(projectId: string, taskId: string) {
     },
   });
 }
+
+export function useDeleteBranch(projectId: string, taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (branchId: string) =>
+      api.deleteTaskBranch(projectId, taskId, branchId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['taskBranches', projectId, taskId] });
+      toast.success('Branch record removed');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to remove branch');
+    },
+  });
+}

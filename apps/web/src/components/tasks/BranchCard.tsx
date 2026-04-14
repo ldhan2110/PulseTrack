@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GitBranch, GitPullRequest, ExternalLink, Plus, Copy, Check, ChevronsUpDown } from 'lucide-react';
+import { GitBranch, GitPullRequest, ExternalLink, Plus, Copy, Check, ChevronsUpDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -27,7 +27,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { useRemoteBranches, useTaskBranches, useCreateBranch, useCreatePr } from '@/hooks/useBranches';
+import { useRemoteBranches, useTaskBranches, useCreateBranch, useCreatePr, useDeleteBranch } from '@/hooks/useBranches';
 import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import type { BranchType, TaskBranch } from '@/lib/types';
 
@@ -122,6 +122,7 @@ export function BranchCard({ projectId, taskId }: Props) {
   const { data: branches = [] } = useTaskBranches(projectId, taskId);
   const createBranch = useCreateBranch(projectId, taskId);
   const createPr = useCreatePr(projectId, taskId);
+  const deleteBranch = useDeleteBranch(projectId, taskId);
   const { data: remoteBranches = [], isLoading: branchesLoading } = useRemoteBranches(projectId);
 
   const [branchType, setBranchType] = useState<BranchType>('feat');
@@ -129,6 +130,7 @@ export function BranchCard({ projectId, taskId }: Props) {
   const [targetBranch, setTargetBranch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [prDialogBranchId, setPrDialogBranchId] = useState<string | null>(null);
+  const [deleteDialogBranchId, setDeleteDialogBranchId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   if (!repoConfig || repoConfig.cloneStatus !== 'cloned') return null;
@@ -229,6 +231,39 @@ export function BranchCard({ projectId, taskId }: Props) {
         <p className="text-xs text-muted-foreground">No branches yet</p>
       )}
 
+      <Dialog
+        open={!!deleteDialogBranchId}
+        onOpenChange={(open) => { if (!open) setDeleteDialogBranchId(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Branch Record</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will only remove the branch record from PulseTrack. The actual git branch and any PR/MR will remain untouched.
+          </p>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Cancel</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (deleteDialogBranchId) {
+                  deleteBranch.mutate(deleteDialogBranchId, {
+                    onSuccess: () => setDeleteDialogBranchId(null),
+                  });
+                }
+              }}
+              disabled={deleteBranch.isPending}
+            >
+              {deleteBranch.isPending ? 'Removing...' : 'Remove'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {branches.map((branch) => (
         <div key={branch.id} className="space-y-1.5">
           {branches.length > 1 && branches.indexOf(branch) > 0 && <Separator />}
@@ -243,6 +278,12 @@ export function BranchCard({ projectId, taskId }: Props) {
               ) : (
                 <Copy className="size-3" />
               )}
+            </button>
+            <button
+              onClick={() => setDeleteDialogBranchId(branch.id)}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="size-3" />
             </button>
           </div>
 

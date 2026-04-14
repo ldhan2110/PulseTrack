@@ -128,6 +128,19 @@ export class BranchesService {
     });
   }
 
+  async deleteTaskBranch(projectId: string, taskId: string, branchId: string) {
+    const branch = await this.prisma.taskBranch.findUnique({
+      where: { id: branchId },
+    });
+    if (!branch || branch.projectId !== projectId || branch.taskId !== taskId) {
+      throw new NotFoundException('Branch not found');
+    }
+
+    await this.prisma.taskBranch.delete({ where: { id: branchId } });
+
+    return { deleted: true };
+  }
+
   private buildPrDescription(task: { taskKey: string | null; title: string; description: string | null; acceptanceCriteria: string | null }): string {
     const lines: string[] = [];
     lines.push(`## ${task.taskKey}: ${task.title}`);

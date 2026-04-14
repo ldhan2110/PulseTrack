@@ -47,6 +47,7 @@ export function BugFilters({
 }: BugFiltersProps) {
   const { data: workflow } = useWorkflow(projectId, 'BUG');
   const [searchValue, setSearchValue] = useState(globalFilter);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,7 +187,7 @@ export function BugFilters({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-48 p-2" align="start">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
             {(workflow?.statuses ?? []).map((ws) => (
               <label
                 key={ws.id}
@@ -221,33 +222,50 @@ export function BugFilters({
             <ChevronDown className="size-3.5 text-muted-foreground" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-52 p-2" align="start">
-          <div className="flex flex-col gap-1">
-            <label className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm">
-              <Checkbox
-                checked={selectedAssignees.includes('unassigned')}
-                onCheckedChange={() => toggleAssignee('unassigned')}
-              />
-              <span className="text-muted-foreground">Unassigned</span>
-            </label>
-            {members.map((member) => (
-              <label
-                key={member.userId}
-                className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
-              >
+        <PopoverContent className="w-52 p-2" align="start" onCloseAutoFocus={() => setAssigneeSearch('')}>
+          <div className="relative mb-2">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search..."
+              value={assigneeSearch}
+              onChange={(e) => setAssigneeSearch(e.target.value)}
+              className="pl-7 h-7 text-xs"
+            />
+          </div>
+          <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+            {(!assigneeSearch || 'unassigned'.includes(assigneeSearch.toLowerCase())) && (
+              <label className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm">
                 <Checkbox
-                  checked={selectedAssignees.includes(member.userId)}
-                  onCheckedChange={() => toggleAssignee(member.userId)}
+                  checked={selectedAssignees.includes('unassigned')}
+                  onCheckedChange={() => toggleAssignee('unassigned')}
                 />
-                <Avatar className="size-5">
-                  {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
-                  <AvatarFallback className="text-[9px]">
-                    {getInitials(member.user.name ?? member.user.username)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="truncate">{member.user.name ?? member.user.username}</span>
+                <span className="text-muted-foreground">Unassigned</span>
               </label>
-            ))}
+            )}
+            {members
+              .filter((m) => {
+                if (!assigneeSearch) return true;
+                const name = (m.user.name ?? m.user.username).toLowerCase();
+                return name.includes(assigneeSearch.toLowerCase());
+              })
+              .map((member) => (
+                <label
+                  key={member.userId}
+                  className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
+                >
+                  <Checkbox
+                    checked={selectedAssignees.includes(member.userId)}
+                    onCheckedChange={() => toggleAssignee(member.userId)}
+                  />
+                  <Avatar className="size-5">
+                    {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
+                    <AvatarFallback className="text-[9px]">
+                      {getInitials(member.user.name ?? member.user.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{member.user.name ?? member.user.username}</span>
+                </label>
+              ))}
           </div>
         </PopoverContent>
       </Popover>

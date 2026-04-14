@@ -696,6 +696,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  deleteTaskBranch: (projectId: string, taskId: string, branchId: string) =>
+    request<{ deleted: boolean }>(`/projects/${projectId}/tasks/${taskId}/branches/${branchId}`, {
+      method: 'DELETE',
+    }),
 
   // ─── Planner ─────────────────────────────────────────────
 
