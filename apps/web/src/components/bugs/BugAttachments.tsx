@@ -94,7 +94,7 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
 
       {/* Thumbnail grid for previewable attachments */}
       {previewableAttachments.length > 0 && (
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-[repeat(4,minmax(0,60px))] gap-1.5">
           {previewableAttachments.map((att) => {
             const staticUrl = `/api/uploads/bugs/${bugId}/${att.storedName}`;
             const isImage = att.mimeType.startsWith('image/');
@@ -103,7 +103,7 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
             return (
               <div
                 key={att.id}
-                className="relative group rounded border overflow-hidden cursor-pointer bg-muted/30 aspect-square max-w-[60px]"
+                className="relative group rounded border overflow-hidden cursor-pointer bg-muted/30 aspect-square max-w-15"
                 onClick={() => openPreview(att)}
               >
                 {isImage && (
@@ -167,7 +167,7 @@ export function BugAttachments({ projectId, bugId, attachments, canEdit }: BugAt
               onClick={() => { void handleDownload(att); }}
             >
               {fileIcon(att.mimeType)}
-              <span className="truncate max-w-[140px]">{att.filename}</span>
+              <span className="truncate max-w-35">{att.filename}</span>
               <span className="text-muted-foreground">{formatSize(att.size)}</span>
               {canEdit && (
                 <button

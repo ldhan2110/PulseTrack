@@ -88,7 +88,7 @@ export function BugEvidencePreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-[95vw] w-fit max-h-[95vh] flex flex-col items-center gap-4 p-6">
+      <DialogContent className="max-h-[90vh] w-[80vw] flex flex-col items-center gap-4 p-6" style={{ maxWidth: "none" }}>
         <DialogTitle className="text-sm font-medium truncate max-w-[80vw]">
           {attachment.filename}
           {previewable.length > 1 && (
@@ -98,7 +98,7 @@ export function BugEvidencePreviewModal({
           )}
         </DialogTitle>
 
-        <div className="relative flex items-center justify-center w-full min-h-[200px]">
+        <div className="relative flex items-center justify-center min-h-50">
           {hasPrev && (
             <Button
               variant="outline"
@@ -124,7 +124,7 @@ export function BugEvidencePreviewModal({
                 key={attachment.id}
                 src={staticUrl}
                 controls
-                className="max-w-[90vw] max-h-[82vh] rounded-md"
+                className="max-w-[75vw] max-h-[70vh] rounded-md"
               >
                 Your browser does not support the video tag.
               </video>
