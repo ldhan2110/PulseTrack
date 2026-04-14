@@ -328,7 +328,7 @@ model Task {
   blueprintSyncs BlueprintSync[]
   attachments    Attachment[]
   history        TaskHistory[]
-  bugs           Bug[]          @relation("TaskBugs")
+  bugTasks        BugTask[]
   branches       TaskBranch[]
 }
 
@@ -436,7 +436,6 @@ model Bug {
   actualResult     String?
   environment      String?
   workflowStatusId String?
-  parentTaskId     String?
   projectId        String
   reporterId       String
   assigneeId       String?
@@ -448,12 +447,24 @@ model Bug {
   reporter       User             @relation("BugReporter", fields: [reporterId], references: [id])
   assignee       User?            @relation("BugAssignee", fields: [assigneeId], references: [id])
   owner          User?            @relation("BugOwner", fields: [ownerId], references: [id])
-  parentTask     Task?            @relation("TaskBugs", fields: [parentTaskId], references: [id])
   workflowStatus WorkflowStatus?  @relation("BugWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
+  bugTasks       BugTask[]
   reproSteps     BugReproStep[]
   attachments    BugAttachment[]
   comments       Comment[]
   history        BugHistory[]
+}
+
+model BugTask {
+  id        String   @id @default(cuid())
+  bugId     String
+  taskId    String
+  createdAt DateTime @default(now())
+
+  bug  Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([bugId, taskId])
 }
 
 // =====================

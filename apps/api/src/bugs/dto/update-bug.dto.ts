@@ -49,10 +49,6 @@ export class UpdateBugDto {
 
   @IsOptional()
   @IsString()
-  parentTaskId?: string;
-
-  @IsOptional()
-  @IsString()
   workflowStatusId?: string;
 
   @IsOptional()

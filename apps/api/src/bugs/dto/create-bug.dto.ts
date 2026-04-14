@@ -53,10 +53,6 @@ export class CreateBugDto {
   ownerId?: string;
 
   @IsOptional()
-  @IsString()
-  parentTaskId?: string;
-
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ReproStepDto)
