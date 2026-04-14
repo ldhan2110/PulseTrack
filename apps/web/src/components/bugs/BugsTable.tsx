@@ -232,19 +232,27 @@ export function BugsTable({
         enableSorting: false,
       },
       {
-        accessorKey: 'parentTaskId',
-        header: 'Parent Task',
-        cell: ({ row }) =>
-          row.original.parentTask?.taskKey ? (
-            <Link
-              to={`/projects/${projectPrefix}/tasks/${row.original.parentTask.taskKey}`}
-              className="text-xs text-primary hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {row.original.parentTask.taskKey}
-            </Link>
-          ) : null,
-        size: 100,
+        id: 'linkedTasks',
+        header: 'Linked Tasks',
+        cell: ({ row }) => {
+          const bugTasks = row.original.bugTasks ?? [];
+          if (bugTasks.length === 0) return null;
+          return (
+            <div className="flex flex-wrap gap-1">
+              {bugTasks.map((bt) => (
+                <Link
+                  key={bt.task.id}
+                  to={`/projects/${projectPrefix}/tasks/${bt.task.taskKey}`}
+                  className="text-xs text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {bt.task.taskKey}
+                </Link>
+              ))}
+            </div>
+          );
+        },
+        size: 120,
         enableSorting: false,
       },
     ],

@@ -30,9 +30,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateBug } from '@/hooks/useBugs';
-import { useTasks } from '@/hooks/useTasks';
 import { ReproStepsList } from '@/components/bugs/ReproStepsList';
-import type { BugSeverity, Member, Task } from '@/lib/types';
+import type { BugSeverity, Member } from '@/lib/types';
 import { useAuth } from '@/auth/useAuth';
 
 // FieldGroup + Field composition per shadcn skill rules
@@ -75,7 +74,6 @@ interface CreateBugDialogProps {
   onOpenChange: (open: boolean) => void;
   projectId: string;
   members: Member[];
-  defaultParentTaskId?: string;
 }
 
 interface FormErrors {
@@ -88,11 +86,9 @@ export function CreateBugDialog({
   onOpenChange,
   projectId,
   members,
-  defaultParentTaskId,
 }: CreateBugDialogProps) {
   const createBug = useCreateBug(projectId);
   const { user } = useAuth();
-  const { data: tasks = [] } = useTasks(projectId);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -103,10 +99,8 @@ export function CreateBugDialog({
   const [environment, setEnvironment] = useState('');
   const [assigneeId, setAssigneeId] = useState<string>('');
   const [ownerId, setOwnerId] = useState<string>('');
-  const [parentTaskId, setParentTaskId] = useState<string>(defaultParentTaskId ?? '');
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   const [ownerOpen, setOwnerOpen] = useState(false);
-  const [parentTaskOpen, setParentTaskOpen] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const assigneeLabel = useMemo(() => {
@@ -121,13 +115,6 @@ export function CreateBugDialog({
     return member?.user.name ?? member?.user.username ?? 'No owner';
   }, [ownerId, members]);
 
-  const parentTaskLabel = useMemo(() => {
-    if (!parentTaskId) return 'None';
-    const task = tasks.find((t: Task) => t.id === parentTaskId);
-    if (!task) return 'None';
-    return task.taskKey ? `${task.taskKey} — ${task.title}` : task.title;
-  }, [parentTaskId, tasks]);
-
   const resetForm = () => {
     setTitle('');
     setDescription('');
@@ -138,7 +125,6 @@ export function CreateBugDialog({
     setEnvironment('');
     setAssigneeId('');
     setOwnerId('');
-    setParentTaskId(defaultParentTaskId ?? '');
     setErrors({});
   };
 
@@ -173,7 +159,6 @@ export function CreateBugDialog({
         environment: environment.trim() || undefined,
         assigneeId: assigneeId || undefined,
         ownerId: ownerId || undefined,
-        parentTaskId: parentTaskId || undefined,
         reproSteps: reproSteps.length > 0 ? reproSteps : undefined,
       },
       {
@@ -400,70 +385,6 @@ export function CreateBugDialog({
                               </AvatarFallback>
                             </Avatar>
                             {member.user.name ?? member.user.username}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </Field>
-
-            <Field>
-              <FieldLabel>Parent Task</FieldLabel>
-              <Popover open={parentTaskOpen} onOpenChange={setParentTaskOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={parentTaskOpen}
-                    className="h-8 justify-between font-normal"
-                  >
-                    <span className={cn('truncate text-sm', !parentTaskId && 'text-muted-foreground')}>
-                      {parentTaskLabel}
-                    </span>
-                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[320px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search tasks..." />
-                    <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
-                      <CommandEmpty>No tasks found.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem
-                          value="none"
-                          onSelect={() => {
-                            setParentTaskId('');
-                            setParentTaskOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={cn('mr-2 size-4', !parentTaskId ? 'opacity-100' : 'opacity-0')}
-                          />
-                          <span className="text-muted-foreground">None</span>
-                        </CommandItem>
-                        {tasks.map((task: Task) => (
-                          <CommandItem
-                            key={task.id}
-                            value={task.taskKey ? `${task.taskKey} ${task.title}` : task.title}
-                            onSelect={() => {
-                              setParentTaskId(task.id);
-                              setParentTaskOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                'mr-2 size-4',
-                                parentTaskId === task.id ? 'opacity-100' : 'opacity-0',
-                              )}
-                            />
-                            <span className="truncate">
-                              {task.taskKey && (
-                                <span className="font-mono text-muted-foreground mr-1.5">{task.taskKey}</span>
-                              )}
-                              {task.title}
-                            </span>
                           </CommandItem>
                         ))}
                       </CommandGroup>

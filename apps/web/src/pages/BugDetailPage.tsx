@@ -26,7 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useBugByKey, useUpdateBug, useDeleteBug } from '@/hooks/useBugs';
+import { useBugByKey, useUpdateBug, useDeleteBug, useLinkBugTasks, useUnlinkBugTask } from '@/hooks/useBugs';
+import { useTasks } from '@/hooks/useTasks';
 import { useMembers } from '@/hooks/useMembers';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProject } from '@/hooks/useProjects';
@@ -97,6 +98,9 @@ export function BugDetailPage() {
   const { data: project } = useProject(projectId);
   const updateBug = useUpdateBug(projectId);
   const deleteBug = useDeleteBug(projectId);
+  const linkBugTasks = useLinkBugTasks(projectId);
+  const unlinkBugTask = useUnlinkBugTask(projectId);
+  const { data: tasks = [] } = useTasks(projectId);
   const { data: workflow } = useWorkflow(projectId, 'BUG');
   const validTransitions = useValidTransitions(workflow, bug?.workflowStatusId ?? null);
 
@@ -104,6 +108,8 @@ export function BugDetailPage() {
   const [assigneeOpen, setAssigneeOpen] = useState(false);
   // Owner combobox
   const [ownerOpen, setOwnerOpen] = useState(false);
+  // Tasks combobox
+  const [tasksOpen, setTasksOpen] = useState(false);
 
   // Inline title editing
   const [editingTitle, setEditingTitle] = useState(false);
@@ -585,18 +591,72 @@ export function BugDetailPage() {
 
               <Separator />
 
-              {/* Parent Task */}
-              {bug.parentTask && (
-                <div className="flex flex-col gap-1">
-                  <SidebarLabel>Parent Task</SidebarLabel>
-                  <Link
-                    to={`/projects/${projectPrefix}/tasks/${bug.parentTask.taskKey}`}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {bug.parentTask.taskKey} — {bug.parentTask.title}
-                  </Link>
-                </div>
-              )}
+              {/* Linked Tasks */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Linked Tasks</SidebarLabel>
+                <Popover open={tasksOpen} onOpenChange={setTasksOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={tasksOpen}
+                      className="h-8 w-full justify-between font-normal"
+                    >
+                      <span className="truncate text-sm text-muted-foreground">
+                        {(bug.bugTasks ?? []).length > 0 ? `${(bug.bugTasks ?? []).length} task(s) linked` : 'Link tasks...'}
+                      </span>
+                      <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[250px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search tasks..." />
+                      <CommandList className="max-h-48 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+                        <CommandEmpty>No tasks found.</CommandEmpty>
+                        <CommandGroup>
+                          {tasks.map((t) => {
+                            const linkedTaskIds = bug.bugTasks?.map(bt => bt.task.id) ?? [];
+                            const isLinked = linkedTaskIds.includes(t.id);
+                            return (
+                              <CommandItem
+                                key={t.id}
+                                value={t.taskKey ?? t.title}
+                                onSelect={() => {
+                                  if (isLinked) {
+                                    unlinkBugTask.mutate({ bugId, taskId: t.id });
+                                  } else {
+                                    linkBugTasks.mutate({ bugId, taskIds: [t.id] });
+                                  }
+                                }}
+                              >
+                                <Check className={cn('mr-2 size-4', isLinked ? 'opacity-100' : 'opacity-0')} />
+                                <span className="truncate text-sm">
+                                  {t.taskKey && <span className="text-muted-foreground mr-1">{t.taskKey}</span>}
+                                  {t.title}
+                                </span>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {/* Show linked tasks as clickable links */}
+                {(bug.bugTasks ?? []).length > 0 && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    {bug.bugTasks!.map((bt) => (
+                      <Link
+                        key={bt.task.id}
+                        to={`/projects/${projectPrefix}/tasks/${bt.task.taskKey}`}
+                        className="text-sm text-primary hover:underline truncate"
+                      >
+                        {bt.task.taskKey} — {bt.task.title}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Reporter */}
               {bug.reporter && (

@@ -269,6 +269,12 @@ export const api = {
     }),
   exportBugs: (projectId: string, params?: Record<string, string>) =>
     downloadFile(`/projects/${projectId}/bugs/export`, params),
+  linkBugTasks: (projectId: string, bugId: string, taskIds: string[]) =>
+    request<Bug>(`/projects/${projectId}/bugs/${bugId}/tasks`, { method: 'POST', body: JSON.stringify({ taskIds }) }),
+  unlinkBugTask: (projectId: string, bugId: string, taskId: string) =>
+    request<Bug>(`/projects/${projectId}/bugs/${bugId}/tasks/${taskId}`, { method: 'DELETE' }),
+  getTaskBugs: (projectId: string, taskId: string) =>
+    request<Bug[]>(`/projects/${projectId}/tasks/${taskId}/bugs`),
 
   // ─── Bug Attachments ──────────────────────────────────────────────────────
   getBugAttachments: (projectId: string, bugId: string) =>

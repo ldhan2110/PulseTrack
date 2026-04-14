@@ -77,3 +77,41 @@ export function useDeleteBug(projectId: string) {
     },
   });
 }
+
+export function useLinkBugTasks(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bugId, taskIds }: { bugId: string; taskIds: string[] }) =>
+      api.linkBugTasks(projectId, bugId, taskIds),
+    onSuccess: (_data, { bugId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['bug', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-bugs'] });
+      toast.success('Tasks linked');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUnlinkBugTask(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bugId, taskId }: { bugId: string; taskId: string }) =>
+      api.unlinkBugTask(projectId, bugId, taskId),
+    onSuccess: (_data, { bugId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['bug', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-bugs'] });
+      toast.success('Task unlinked');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useTaskBugs(projectId: string, taskId: string) {
+  return useQuery({
+    queryKey: ['task-bugs', projectId, taskId],
+    queryFn: () => api.getTaskBugs(projectId, taskId),
+    enabled: !!projectId && !!taskId,
+  });
+}

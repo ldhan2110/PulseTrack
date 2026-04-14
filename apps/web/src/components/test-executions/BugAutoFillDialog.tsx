@@ -107,9 +107,6 @@ export function BugAutoFillDialog({
     position: i + 1,
     content: step.action,
   }));
-  const defaultParentTaskId =
-    tc.links?.find((l) => l.entityType === 'TASK')?.entityId ?? '';
-
   const [title, setTitle] = useState(defaultTitle);
   const [description, setDescription] = useState(defaultDescription);
   const [severity, setSeverity] = useState<BugSeverity>(defaultSeverity);
@@ -147,7 +144,6 @@ export function BugAutoFillDialog({
         expectedResult: tc.expectedResult ?? undefined,
         actualResult: actualResult.trim() || undefined,
         reproSteps: defaultReproSteps.length > 0 ? defaultReproSteps : undefined,
-        parentTaskId: defaultParentTaskId || undefined,
         assigneeId: assigneeId || undefined,
       },
       {

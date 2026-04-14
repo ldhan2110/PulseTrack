@@ -329,8 +329,7 @@ export interface Bug {
   ownerId: string | null;
   reporterId: string;
   projectId: string;
-  parentTaskId: string | null;
-  parentTask?: { id: string; taskKey: string | null; title: string } | null;
+  bugTasks?: { task: { id: string; taskKey: string | null; title: string } }[];
   createdAt: string;
   updatedAt: string;
   assignee?: User | null;
@@ -350,7 +349,6 @@ export interface CreateBugPayload {
   actualResult?: string;
   assigneeId?: string;
   ownerId?: string;
-  parentTaskId?: string;
   reproSteps?: { position: number; content: string }[];
 }
 
@@ -364,7 +362,6 @@ export interface UpdateBugPayload {
   actualResult?: string;
   assigneeId?: string | null;
   ownerId?: string | null;
-  parentTaskId?: string | null;
   workflowStatusId?: string;
   reproSteps?: { position: number; content: string }[];
 }

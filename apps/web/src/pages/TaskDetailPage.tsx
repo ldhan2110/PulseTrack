@@ -35,7 +35,7 @@ import { AttachmentList } from '@/components/tasks/AttachmentList';
 import { ActivityLog } from '@/components/tasks/ActivityLog';
 import { useTaskByKey, useUpdateTask, useDeleteTask, useCreateTask, useCreateTimeLog, useDeleteTimeLog } from '@/hooks/useTasks';
 import { useUiStore } from '@/store/uiStore';
-import { useBugs } from '@/hooks/useBugs';
+import { useTaskBugs } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -205,8 +205,7 @@ export function TaskDetailPage() {
   const validNextStatuses = useValidTransitions(workflow, task?.workflowStatusId ?? null);
   const { data: allowedAssignees } = useAllowedAssignees(projectId, task?.workflowStatusId ?? null);
 
-  const { data: allBugs = [] } = useBugs(projectId);
-  const childBugs = allBugs.filter((b) => b.parentTaskId === task?.id);
+  const { data: linkedBugs = [] } = useTaskBugs(projectId, task?.id ?? '');
 
   const taskQueryKey = ['task-by-key', projectId, taskKey] as const;
 
@@ -619,7 +618,7 @@ export function TaskDetailPage() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-[13px] font-semibold text-muted-foreground">
-                  Bugs ({childBugs.length})
+                  Bugs ({linkedBugs.length})
                 </h2>
                 <Button
                   variant="ghost"
@@ -631,12 +630,12 @@ export function TaskDetailPage() {
                   Report Bug
                 </Button>
               </div>
-              {childBugs.length > 0 && (
+              {linkedBugs.length > 0 && (
                 <div className="flex flex-col gap-1">
-                  {childBugs.map((bug) => (
+                  {linkedBugs.map((bug) => (
                     <Link
                       key={bug.id}
-                      to={`/projects/${projectPrefix}/bugs/${bug.id}`}
+                      to={`/projects/${projectPrefix}/bugs/${bug.bugKey}`}
                       className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
                     >
                       <span
