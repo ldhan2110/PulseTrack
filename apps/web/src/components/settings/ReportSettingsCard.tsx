@@ -91,7 +91,6 @@ export function ReportSettingsCard({ projectId, canManage }: Props) {
       scheduleDays,
       scheduleTime,
     });
-    setInitialized(false);
   };
 
   return (
