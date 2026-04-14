@@ -18,6 +18,7 @@ import {
   CheckSquare,
   BookOpen,
   Target,
+  ScanSearch,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,7 +54,7 @@ const PROJECT_NAV_ITEMS: NavItem[] = [
     icon: Target,
     path: 'planner',
     children: [
-      { label: 'Scope Definition', icon: Target, path: 'planner' },
+      { label: 'Scope Definition', icon: ScanSearch, path: 'planner' },
       { label: 'WBS', icon: GanttChart, path: 'wbs' },
     ],
   },

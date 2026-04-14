@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { Gantt, type Task, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import { useUpdateWbsTask, useUpdateWbsSubtask } from '@/hooks/useWbs';
 import type { WbsPhase, WbsDependency } from '@/lib/types';
+
+const COL_W = 44;
+const HEADER_H = 44;
 
 interface WbsGanttChartProps {
   phases: WbsPhase[];
@@ -137,6 +140,60 @@ export function WbsGanttChart({ phases, dependencies, collapsedIds, projectId }:
     }
   };
 
+  // Inject grid lines into the SVG calendar header after render
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const injectHeaderGrid = useCallback(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const calendarG = el.querySelector('g.calendar');
+    if (!calendarG) return;
+
+    // Remove previously injected lines
+    calendarG.querySelectorAll('.injected-grid').forEach((n) => n.remove());
+
+    const headerRect = calendarG.querySelector('rect');
+    if (!headerRect) return;
+    const totalWidth = Number(headerRect.getAttribute('width') || 0);
+    const midY = HEADER_H * 0.5;
+    const cols = Math.floor(totalWidth / COL_W);
+
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // Horizontal line between month row and date row
+    const hLine = document.createElementNS(ns, 'line');
+    hLine.setAttribute('x1', '0');
+    hLine.setAttribute('y1', String(midY));
+    hLine.setAttribute('x2', String(totalWidth));
+    hLine.setAttribute('y2', String(midY));
+    hLine.classList.add('injected-grid', 'gantt-header-hline');
+    calendarG.appendChild(hLine);
+
+    // Vertical lines between each day column (bottom half of header)
+    for (let i = 1; i <= cols; i++) {
+      const x = COL_W * i;
+      const vLine = document.createElementNS(ns, 'line');
+      vLine.setAttribute('x1', String(x));
+      vLine.setAttribute('y1', String(midY));
+      vLine.setAttribute('x2', String(x));
+      vLine.setAttribute('y2', String(HEADER_H));
+      vLine.classList.add('injected-grid', 'gantt-header-vline');
+      calendarG.appendChild(vLine);
+    }
+
+    // Center month text vertically within the top half of the header
+    const topTexts = calendarG.querySelectorAll<SVGTextElement>('.' + '_2q1Kt');
+    topTexts.forEach((txt) => {
+      txt.setAttribute('y', String(midY * 0.55));
+      txt.setAttribute('dominant-baseline', 'central');
+    });
+  }, []);
+
+  useEffect(() => {
+    injectHeaderGrid();
+    // Re-inject when tasks change (causes re-render of the gantt SVG)
+  }, [tasks, injectHeaderGrid]);
+
   if (tasks.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
@@ -146,14 +203,17 @@ export function WbsGanttChart({ phases, dependencies, collapsedIds, projectId }:
   }
 
   return (
-    <div className="h-full overflow-auto [&_.ganttTable]:hidden">
+    <div ref={wrapperRef} className="gantt-wrapper h-full overflow-auto [&_.ganttTable]:hidden">
       <Gantt
         tasks={tasks}
-        viewMode={ViewMode.Week}
+        viewMode={ViewMode.Day}
         onDateChange={handleDateChange}
         onProgressChange={handleProgressChange}
         listCellWidth=""
-        columnWidth={60}
+        columnWidth={COL_W}
+        headerHeight={HEADER_H}
+        rowHeight={33}
+        fontSize="11px"
         barCornerRadius={4}
         todayColor="rgba(239, 68, 68, 0.08)"
         projectBackgroundColor="#7c3aed"

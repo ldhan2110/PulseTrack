@@ -155,3 +155,84 @@
     @apply font-sans;
   }
 }
+
+/* Gantt chart calendar header overrides */
+.gantt-wrapper ._35nLX {
+  fill: oklch(0.97 0 0);
+  stroke: oklch(0.85 0 0);
+  stroke-width: 1.4;
+}
+/* Month/year label (top row) */
+.gantt-wrapper ._2q1Kt {
+  fill: oklch(0.371 0 0);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Geist Variable', sans-serif;
+}
+/* Day label (bottom row) */
+.gantt-wrapper ._9w8d5 {
+  fill: oklch(0.556 0 0);
+  font-size: 10px;
+  font-weight: 400;
+  font-family: 'Geist Variable', sans-serif;
+}
+/* Tick line between month row and day row */
+.gantt-wrapper ._1rLuZ {
+  stroke: oklch(0.85 0 0);
+  stroke-width: 1;
+}
+/* Vertical grid lines in header area */
+.gantt-wrapper ._RuwuK {
+  stroke: oklch(0.9 0 0);
+}
+/* Horizontal grid lines in body */
+.gantt-wrapper ._3rUKi {
+  stroke: oklch(0.93 0 0);
+}
+/* Injected header grid lines */
+.gantt-wrapper .gantt-header-hline {
+  stroke: oklch(0.85 0 0);
+  stroke-width: 1;
+}
+.gantt-wrapper .gantt-header-vline {
+  stroke: oklch(0.88 0 0);
+  stroke-width: 0.8;
+}
+/* Gantt grid row stripes */
+.gantt-wrapper ._2dZTy:nth-child(even) {
+  fill: oklch(0.985 0 0);
+}
+
+/* Dark mode overrides */
+.dark .gantt-wrapper ._35nLX {
+  fill: oklch(0.205 0 0);
+  stroke: oklch(1 0 0 / 15%);
+  stroke-width: 1.4;
+}
+.dark .gantt-wrapper ._2q1Kt {
+  fill: oklch(0.87 0 0);
+}
+.dark .gantt-wrapper ._9w8d5 {
+  fill: oklch(0.708 0 0);
+}
+.dark .gantt-wrapper ._1rLuZ {
+  stroke: oklch(1 0 0 / 15%);
+}
+.dark .gantt-wrapper .gantt-header-hline {
+  stroke: oklch(1 0 0 / 15%);
+}
+.dark .gantt-wrapper .gantt-header-vline {
+  stroke: oklch(1 0 0 / 12%);
+}
+.dark .gantt-wrapper ._2dZTy {
+  fill: oklch(0.145 0 0);
+}
+.dark .gantt-wrapper ._2dZTy:nth-child(even) {
+  fill: oklch(0.18 0 0);
+}
+.dark .gantt-wrapper ._3rUKi {
+  stroke: oklch(1 0 0 / 8%);
+}
+.dark .gantt-wrapper ._RuwuK {
+  stroke: oklch(1 0 0 / 10%);
+}

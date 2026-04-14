@@ -192,13 +192,24 @@ export class TasksService {
       }
     }
 
-    // Apply date automation rule if status is changing
+    // Apply date automation rule and enforce closed-status progress check
     const autoDateUpdates: Partial<Record<'actualStartDate' | 'actualEndDate' | 'plannedStartDate' | 'plannedEndDate', Date | null>> = {};
     if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== current.workflowStatusId && dto.workflowStatusId) {
       const targetStatus = await this.prisma.workflowStatus.findUnique({
         where: { id: dto.workflowStatusId },
-        select: { autoDateField: true, autoDateAction: true },
+        select: { isClosed: true, name: true, autoDateField: true, autoDateAction: true },
       });
+
+      // Enforce: moving to a "closed" status requires progress = 100%
+      if (targetStatus?.isClosed) {
+        const effectiveProgress = dto.progress ?? current.progress;
+        if (effectiveProgress < 100) {
+          throw new BadRequestException(
+            `Cannot move to "${targetStatus.name}" status. Progress must be 100% before closing. Current progress: ${effectiveProgress}%.`,
+          );
+        }
+      }
+
       if (targetStatus?.autoDateField && targetStatus?.autoDateAction) {
         const field = targetStatus.autoDateField as keyof typeof autoDateUpdates;
         if (targetStatus.autoDateAction === 'set' && current[field] == null) {

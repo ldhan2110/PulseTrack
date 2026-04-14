@@ -28,7 +28,8 @@ export function WbsTaskRow({
 }: WbsTaskRowProps) {
   return (
     <div
-      className={`group grid grid-cols-[1fr_68px_68px_68px_68px_50px] gap-0 border-b px-2 py-1.5 text-xs hover:bg-muted/10 ${BG[level]}`}
+      className={`group grid grid-cols-[1fr_68px_68px_68px_68px_50px] gap-0 border-b px-2 text-xs hover:bg-muted/10 items-center ${BG[level]}`}
+      style={{ height: 33 }}
     >
       {/* Name cell */}
       <div className={`flex items-center gap-1 min-w-0 ${INDENT[level]}`}>
