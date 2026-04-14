@@ -38,6 +38,7 @@ import { ReportConfigModule } from './report-config/report-config.module';
 import { ReportGeneratorModule } from './report-generator/report-generator.module';
 import { PlannerModule } from './planner/planner.module';
 import { PlannerAiConfigModule } from './planner-ai-config/planner-ai-config.module';
+import { WbsModule } from './wbs/wbs.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { PlannerAiConfigModule } from './planner-ai-config/planner-ai-config.mod
     ReportGeneratorModule,
     PlannerModule,
     PlannerAiConfigModule,
+    WbsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
