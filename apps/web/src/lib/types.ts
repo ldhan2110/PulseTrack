@@ -1105,3 +1105,120 @@ export interface SendMessageResult {
   messageId: string;
   streamToken: string;
 }
+
+// ─── WBS Types ─────────────────────────────────────────────
+
+export interface WbsSubtask {
+  id: string;
+  taskId: string;
+  title: string;
+  description: string | null;
+  position: number;
+  planStart: string | null;
+  planEnd: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
+  progress: number;
+  backlogItemId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WbsTask {
+  id: string;
+  phaseId: string;
+  title: string;
+  description: string | null;
+  position: number;
+  planStart: string | null;
+  planEnd: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
+  progress: number;
+  backlogItemId: string | null;
+  subtasks: WbsSubtask[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WbsPhase {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string | null;
+  position: number;
+  planStart: string | null;
+  planEnd: string | null;
+  actualStart: string | null;
+  actualEnd: string | null;
+  progress: number;
+  tasks: WbsTask[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WbsDependency {
+  id: string;
+  projectId: string;
+  sourceId: string;
+  sourceType: 'TASK' | 'SUBTASK';
+  targetId: string;
+  targetType: 'TASK' | 'SUBTASK';
+  type: 'FINISH_TO_START';
+  createdAt: string;
+}
+
+export interface CreateWbsPhasePayload {
+  title: string;
+  description?: string;
+}
+
+export interface UpdateWbsPhasePayload {
+  title?: string;
+  description?: string;
+}
+
+export interface CreateWbsTaskPayload {
+  title: string;
+  description?: string;
+  planStart?: string;
+  planEnd?: string;
+}
+
+export interface UpdateWbsTaskPayload {
+  title?: string;
+  description?: string;
+  planStart?: string;
+  planEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  progress?: number;
+}
+
+export interface CreateWbsSubtaskPayload {
+  title: string;
+  description?: string;
+  planStart?: string;
+  planEnd?: string;
+}
+
+export interface UpdateWbsSubtaskPayload {
+  title?: string;
+  description?: string;
+  planStart?: string;
+  planEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  progress?: number;
+}
+
+export interface CreateWbsDependencyPayload {
+  sourceId: string;
+  sourceType: 'TASK' | 'SUBTASK';
+  targetId: string;
+  targetType: 'TASK' | 'SUBTASK';
+}
+
+export interface LinkBacklogPayload {
+  backlogItemId: string;
+}

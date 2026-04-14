@@ -84,6 +84,18 @@ import type {
   UpdateFeaturePayload,
   PlannerAiConfig,
   UpsertPlannerAiConfigPayload,
+  WbsPhase,
+  WbsTask,
+  WbsSubtask,
+  WbsDependency,
+  CreateWbsPhasePayload,
+  UpdateWbsPhasePayload,
+  CreateWbsTaskPayload,
+  UpdateWbsTaskPayload,
+  CreateWbsSubtaskPayload,
+  UpdateWbsSubtaskPayload,
+  CreateWbsDependencyPayload,
+  LinkBacklogPayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -784,4 +796,95 @@ export const api = {
     request<PlannerFeature[]>(`/planner-sessions/${sessionId}/scopes/${scopeId}/features/reorder`, {
       method: 'PATCH', body: JSON.stringify({ orderedIds }),
     }),
+
+  // ─── WBS ───────────────────────────────────────────────────
+
+  // Phases
+  getWbsPhases: (projectId: string) =>
+    request<WbsPhase[]>(`/projects/${projectId}/wbs/phases`),
+
+  createWbsPhase: (projectId: string, data: CreateWbsPhasePayload) =>
+    request<WbsPhase>(`/projects/${projectId}/wbs/phases`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  updateWbsPhase: (projectId: string, phaseId: string, data: UpdateWbsPhasePayload) =>
+    request<WbsPhase>(`/projects/${projectId}/wbs/phases/${phaseId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+
+  deleteWbsPhase: (projectId: string, phaseId: string) =>
+    request<void>(`/projects/${projectId}/wbs/phases/${phaseId}`, { method: 'DELETE' }),
+
+  reorderWbsPhases: (projectId: string, orderedIds: string[]) =>
+    request<WbsPhase[]>(`/projects/${projectId}/wbs/phases/reorder`, {
+      method: 'PATCH', body: JSON.stringify({ orderedIds }),
+    }),
+
+  // Tasks
+  createWbsTask: (phaseId: string, data: CreateWbsTaskPayload) =>
+    request<WbsTask>(`/wbs/phases/${phaseId}/tasks`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  updateWbsTask: (phaseId: string, taskId: string, data: UpdateWbsTaskPayload) =>
+    request<WbsTask>(`/wbs/phases/${phaseId}/tasks/${taskId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+
+  deleteWbsTask: (phaseId: string, taskId: string) =>
+    request<void>(`/wbs/phases/${phaseId}/tasks/${taskId}`, { method: 'DELETE' }),
+
+  reorderWbsTasks: (phaseId: string, orderedIds: string[]) =>
+    request<void>(`/wbs/phases/${phaseId}/tasks/reorder`, {
+      method: 'PATCH', body: JSON.stringify({ orderedIds }),
+    }),
+
+  // Subtasks
+  createWbsSubtask: (taskId: string, data: CreateWbsSubtaskPayload) =>
+    request<WbsSubtask>(`/wbs/tasks/${taskId}/subtasks`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  updateWbsSubtask: (taskId: string, subtaskId: string, data: UpdateWbsSubtaskPayload) =>
+    request<WbsSubtask>(`/wbs/tasks/${taskId}/subtasks/${subtaskId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+
+  deleteWbsSubtask: (taskId: string, subtaskId: string) =>
+    request<void>(`/wbs/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'DELETE' }),
+
+  reorderWbsSubtasks: (taskId: string, orderedIds: string[]) =>
+    request<void>(`/wbs/tasks/${taskId}/subtasks/reorder`, {
+      method: 'PATCH', body: JSON.stringify({ orderedIds }),
+    }),
+
+  // Dependencies
+  getWbsDependencies: (projectId: string) =>
+    request<WbsDependency[]>(`/projects/${projectId}/wbs/dependencies`),
+
+  createWbsDependency: (projectId: string, data: CreateWbsDependencyPayload) =>
+    request<WbsDependency>(`/projects/${projectId}/wbs/dependencies`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  deleteWbsDependency: (projectId: string, depId: string) =>
+    request<void>(`/projects/${projectId}/wbs/dependencies/${depId}`, { method: 'DELETE' }),
+
+  // Backlog linking
+  linkWbsTaskBacklog: (taskId: string, data: LinkBacklogPayload) =>
+    request<WbsTask>(`/wbs/tasks/${taskId}/link-backlog`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  unlinkWbsTaskBacklog: (taskId: string) =>
+    request<WbsTask>(`/wbs/tasks/${taskId}/link-backlog`, { method: 'DELETE' }),
+
+  linkWbsSubtaskBacklog: (subtaskId: string, data: LinkBacklogPayload) =>
+    request<WbsSubtask>(`/wbs/subtasks/${subtaskId}/link-backlog`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+
+  unlinkWbsSubtaskBacklog: (subtaskId: string) =>
+    request<WbsSubtask>(`/wbs/subtasks/${subtaskId}/link-backlog`, { method: 'DELETE' }),
 };
