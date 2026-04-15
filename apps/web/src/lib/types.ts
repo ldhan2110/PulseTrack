@@ -1260,3 +1260,17 @@ export interface CreateWbsDependencyPayload {
 export interface LinkBacklogPayload {
   backlogItemId: string;
 }
+
+// ─── AI WBS Generation Types ──────────────────────────────
+
+export interface AiWbsGenerationJobResult {
+  status: 'completed' | 'failed' | string;
+  phases?: any[];
+  error?: string;
+  step?: string;
+  rawText?: string;
+}
+
+export interface WbsChatResponse {
+  phases: any[];
+}

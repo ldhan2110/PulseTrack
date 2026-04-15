@@ -97,6 +97,8 @@ import type {
   CreateWbsDependencyPayload,
   LinkBacklogPayload,
   BulkCreateWbsPayload,
+  AiWbsGenerationJobResult,
+  WbsChatResponse,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -430,6 +432,27 @@ export const api = {
   },
   getTestCaseGenerationJobResult: (projectId: string, jobId: string) =>
     request<AiTestCaseGenerationJobResult>(`/projects/${projectId}/ai/generate-testcases/${jobId}`),
+
+  // ─── AI WBS Generation ──────────────────────────────────────────────────
+  generateWbs: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {
+    const token = keycloak.token;
+    const res = await fetch(`${API_BASE}/projects/${projectId}/ai/generate-wbs`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: data,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Generation failed: ${res.status}`);
+    }
+    return res.json() as Promise<{ jobId: string }>;
+  },
+  getWbsGenerationResult: (projectId: string, jobId: string) =>
+    request<AiWbsGenerationJobResult>(`/projects/${projectId}/ai/wbs-generation/${jobId}`),
+  wbsChat: (projectId: string, data: { message: string; currentWbs: any[]; chatHistory?: { role: string; content: string }[] }) =>
+    request<WbsChatResponse>(`/projects/${projectId}/ai/wbs-chat`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
 
   // ─── Comments ──────────────────────────────────────────────────────────────
   getComments: (projectId: string, taskId: string) =>
