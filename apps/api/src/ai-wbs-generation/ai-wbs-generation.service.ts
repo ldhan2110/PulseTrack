@@ -299,16 +299,51 @@ The user wants to modify the current WBS. Return the FULL updated WBS as valid J
   async readUploadedFiles(filePaths: string[]): Promise<string> {
     if (filePaths.length === 0) return '';
 
-    const { readFile } = await import('fs/promises');
     const contents: string[] = [];
     for (const fp of filePaths) {
+      const ext = fp.split('.').pop()?.toLowerCase();
       try {
-        const content = await readFile(fp, 'utf-8');
-        contents.push(`### File: ${fp}\n${content}`);
+        if (ext === 'xlsx' || ext === 'xls') {
+          const text = await this.extractExcelText(fp);
+          contents.push(`### File: ${fp}\n${text}`);
+        } else {
+          const { readFile } = await import('fs/promises');
+          const content = await readFile(fp, 'utf-8');
+          // Strip any null bytes from text files just in case
+          contents.push(`### File: ${fp}\n${content.replace(/\0/g, '')}`);
+        }
       } catch {
-        contents.push(`### File: ${fp}\n[Binary file — cannot extract text]`);
+        contents.push(`### File: ${fp}\n[Could not extract text from file]`);
       }
     }
     return contents.join('\n\n');
+  }
+
+  /**
+   * Extract text content from an Excel file using exceljs.
+   * Returns a readable text representation of all sheets.
+   */
+  private async extractExcelText(filePath: string): Promise<string> {
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+
+    const lines: string[] = [];
+    workbook.eachSheet((sheet) => {
+      lines.push(`## Sheet: ${sheet.name}`);
+      sheet.eachRow((row, rowNumber) => {
+        const cells: string[] = [];
+        row.eachCell({ includeEmpty: false }, (cell) => {
+          const val = cell.text ?? String(cell.value ?? '');
+          if (val.trim()) cells.push(val.trim());
+        });
+        if (cells.length > 0) {
+          lines.push(cells.join(' | '));
+        }
+      });
+      lines.push('');
+    });
+
+    return lines.join('\n');
   }
 }

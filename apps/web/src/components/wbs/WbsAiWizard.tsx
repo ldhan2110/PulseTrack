@@ -49,7 +49,7 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
   const handleGenerate = () => {
     const formData = new FormData();
     if (scope.file) {
-      formData.append('documents', scope.file);
+      formData.append('document', scope.file);
     }
     if (scope.features.length > 0) {
       formData.append('features', JSON.stringify(scope.features));

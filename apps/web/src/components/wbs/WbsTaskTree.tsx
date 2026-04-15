@@ -12,6 +12,7 @@ interface WbsTaskTreeProps {
   onEditTask: (task: WbsTask) => void;
   onEditSubtask: (subtask: WbsSubtask) => void;
   projectId: string;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 function formatDate(d: string | null) {
@@ -29,7 +30,7 @@ function formatProgress(p: number) {
 
 export function WbsTaskTree({
   phases, collapsedIds, onToggleCollapse,
-  onAddTask, onAddSubtask, onEditPhase, onEditTask, onEditSubtask, projectId,
+  onAddTask, onAddSubtask, onEditPhase, onEditTask, onEditSubtask, projectId, scrollRef,
 }: WbsTaskTreeProps) {
   const deletePhase = useDeleteWbsPhase(projectId);
   const deleteTask = useDeleteWbsTask(projectId);
@@ -48,7 +49,7 @@ export function WbsTaskTree({
       </div>
 
       {/* Rows */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {phases.map((phase) => {
           const phaseCollapsed = collapsedIds.has(phase.id);
           const hasChildren = phase.tasks.length > 0;

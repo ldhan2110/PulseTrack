@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUiStore } from '@/store/uiStore';
 import { useWbsPhases, useWbsDependencies } from '@/hooks/useWbs';
 import { WbsToolbar } from '@/components/wbs/WbsToolbar';
@@ -23,6 +23,7 @@ export function WbsPage() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showAiWizard, setShowAiWizard] = useState(false);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  const treeScrollRef = useRef<HTMLDivElement>(null);
 
   const { data: phases = [] } = useWbsPhases(projectId);
   const { data: dependencies = [] } = useWbsDependencies(projectId);
@@ -75,6 +76,7 @@ export function WbsPage() {
                 onEditTask={(task) => setDialogMode({ type: 'task', editItem: task })}
                 onEditSubtask={(subtask) => setDialogMode({ type: 'subtask', editItem: subtask })}
                 projectId={projectId}
+                scrollRef={treeScrollRef}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -84,6 +86,7 @@ export function WbsPage() {
                 dependencies={dependencies}
                 collapsedIds={collapsedIds}
                 projectId={projectId}
+                treeScrollRef={treeScrollRef}
               />
             </ResizablePanel>
           </ResizablePanelGroup>
