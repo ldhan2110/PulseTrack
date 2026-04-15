@@ -12,6 +12,7 @@ import * as nodemailer from 'nodemailer';
 @Injectable()
 export class ReportConfigService implements OnModuleInit {
   private readonly logger = new Logger(ReportConfigService.name);
+  private static readonly SERVER_TIMEZONE = 'Asia/Ho_Chi_Minh';
   private transporter: nodemailer.Transporter;
 
   constructor(
@@ -86,7 +87,7 @@ export class ReportConfigService implements OnModuleInit {
     }
 
     // Always use the server timezone — ensures BullMQ cron fires at the correct local time
-    const serverTimezone = 'Asia/Ho_Chi_Minh';
+    const serverTimezone = ReportConfigService.SERVER_TIMEZONE;
     data.timezone = serverTimezone;
 
     const config = await this.prisma.reportConfig.upsert({
@@ -109,7 +110,7 @@ export class ReportConfigService implements OnModuleInit {
   }
 
   async getServerTimezone() {
-    return { timezone: 'Asia/Ho_Chi_Minh' };
+    return { timezone: ReportConfigService.SERVER_TIMEZONE };
   }
 
   async testReport(projectId: string) {
