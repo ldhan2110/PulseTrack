@@ -108,8 +108,9 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
         className={
           isPreviewMode
             ? 'max-w-5xl h-[80vh] flex flex-col p-0 gap-0'
-            : 'max-w-xl flex flex-col gap-0 p-0'
+            : 'w-[50%] flex flex-col gap-0 p-0'
         }
+        style={{ maxWidth: "none" }}
       >
         {isPreviewMode ? (
           <>
