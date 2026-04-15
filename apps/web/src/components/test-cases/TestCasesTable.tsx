@@ -9,6 +9,7 @@ import {
   type SortingState,
   type ColumnFiltersState,
   type OnChangeFn,
+  type RowSelectionState,
   flexRender,
 } from '@tanstack/react-table';
 import {
@@ -22,6 +23,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import type { TestCase, Priority, TestCaseStatus } from '@/lib/types';
 
@@ -123,6 +125,8 @@ interface TestCasesTableProps {
   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
   globalFilter: string;
   onGlobalFilterChange: (val: string) => void;
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: OnChangeFn<RowSelectionState>;
 }
 
 export function TestCasesTable({
@@ -136,11 +140,38 @@ export function TestCasesTable({
   onColumnFiltersChange,
   globalFilter,
   onGlobalFilterChange,
+  rowSelection,
+  onRowSelectionChange,
 }: TestCasesTableProps) {
   const navigate = useNavigate();
   const { projectPrefix } = useParams<{ projectPrefix: string }>();
   const columns = useMemo<ColumnDef<TestCase>[]>(
     () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(val) => table.toggleAllPageRowsSelected(!!val)}
+            aria-label="Select all"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(val) => row.toggleSelected(!!val)}
+            aria-label="Select row"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        enableSorting: false,
+        enableColumnFilter: false,
+        size: 40,
+      },
       {
         accessorKey: 'testCaseKey',
         header: 'ID',
@@ -240,10 +271,13 @@ export function TestCasesTable({
       sorting,
       columnFilters,
       globalFilter,
+      rowSelection,
     },
+    enableRowSelection: true,
     onSortingChange,
     onColumnFiltersChange,
     onGlobalFilterChange,
+    onRowSelectionChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
