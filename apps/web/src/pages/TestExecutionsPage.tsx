@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Search, ChevronDown, X } from 'lucide-react';
+import { Search, ChevronDown, X, Trash2 } from 'lucide-react';
 import { type SortingState, type ColumnFiltersState } from '@tanstack/react-table';
+import type { RowSelectionState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,13 +16,23 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/store/uiStore';
-import { useTestExecutions, useTestExecution } from '@/hooks/useTestExecutions';
+import { useTestExecutions, useTestExecution, useBulkDeleteTestExecutions } from '@/hooks/useTestExecutions';
 import { useMembers } from '@/hooks/useMembers';
 import { ExecutionList } from '@/components/test-executions/ExecutionList';
 import { ExecutionDetail } from '@/components/test-executions/ExecutionDetail';
 import { ExecutionRunner } from '@/components/test-executions/ExecutionRunner';
 import { CreateExecutionDialog } from '@/components/test-executions/CreateExecutionDialog';
 import type { TestExecution } from '@/lib/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 function getInitials(name: string): string {
   return name
@@ -48,13 +59,31 @@ export function TestExecutionsPage() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [sprintSearch, setSprintSearch] = useState('');
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const { data: selectedExecution } = useTestExecution(
     projectId,
     selectedExecutionId ?? '',
   );
 
+  const bulkDelete = useBulkDeleteTestExecutions(projectId);
+
   const executionList = (executions ?? []) as TestExecution[];
+
+  const selectedIds = Object.keys(rowSelection)
+    .filter((key) => rowSelection[key])
+    .map((key) => executionList[parseInt(key)]?.id)
+    .filter(Boolean) as string[];
+
+  const handleBulkDelete = () => {
+    bulkDelete.mutate(selectedIds, {
+      onSuccess: () => {
+        setRowSelection({});
+        setConfirmDeleteOpen(false);
+      },
+    });
+  };
 
   // Derive unique sprints from execution data for the sprint filter
   const sprintOptions = useMemo(() => {
@@ -309,7 +338,57 @@ export function TestExecutionsPage() {
         onColumnFiltersChange={setColumnFilters}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
       />
+
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-3 bg-card shadow-lg rounded-lg px-4 py-3 border">
+            <span className="text-sm font-medium">
+              {selectedIds.length} test execution{selectedIds.length !== 1 ? 's' : ''} selected
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setConfirmDeleteOpen(true)}
+              className="h-8 gap-1.5"
+            >
+              <Trash2 className="size-3.5" />
+              Delete
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRowSelection({})}
+              className="h-8"
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete test executions</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedIds.length} test execution
+              {selectedIds.length !== 1 ? 's' : ''}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CreateExecutionDialog
         open={createOpen}
