@@ -578,6 +578,11 @@ export const api = {
     request<TestCase>(`/projects/${projectId}/test-cases/${testCaseId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteTestCase: (projectId: string, testCaseId: string) =>
     request<void>(`/projects/${projectId}/test-cases/${testCaseId}`, { method: 'DELETE' }),
+  bulkDeleteTestCases: (projectId: string, ids: string[]) =>
+    request<{ deleted: number }>(`/projects/${projectId}/test-cases/bulk`, {
+      method: 'DELETE',
+      body: JSON.stringify({ ids }),
+    }),
   bulkAddToSuite: (projectId: string, suiteId: string, testCaseIds: string[]) =>
     request<{ added: number }>(`/projects/${projectId}/test-cases/bulk-suite`, {
       method: 'POST', body: JSON.stringify({ suiteId, testCaseIds }),
@@ -624,6 +629,11 @@ export const api = {
     }),
   deleteTestExecution: (projectId: string, executionId: string) =>
     request<void>(`/projects/${projectId}/test-executions/${executionId}`, { method: 'DELETE' }),
+  bulkDeleteTestExecutions: (projectId: string, ids: string[]) =>
+    request<{ deleted: number }>(`/projects/${projectId}/test-executions/bulk`, {
+      method: 'DELETE',
+      body: JSON.stringify({ ids }),
+    }),
   updateExecutionCaseResult: (projectId: string, executionCaseId: string, data: { result: string; notes?: string }) =>
     request<TestExecutionCase>(`/projects/${projectId}/test-executions/cases/${executionCaseId}/result`, {
       method: 'PATCH', body: JSON.stringify(data),

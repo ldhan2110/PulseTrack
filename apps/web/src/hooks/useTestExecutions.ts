@@ -98,3 +98,17 @@ export function useDeleteTestExecution(projectId: string) {
     },
   });
 }
+
+export function useBulkDeleteTestExecutions(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => api.bulkDeleteTestExecutions(projectId, ids),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+      toast.success(`Deleted ${data.deleted} test execution${data.deleted !== 1 ? 's' : ''}`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}

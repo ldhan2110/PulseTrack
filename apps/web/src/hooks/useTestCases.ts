@@ -72,3 +72,18 @@ export function useDeleteTestCase(projectId: string) {
     },
   });
 }
+
+export function useBulkDeleteTestCases(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => api.bulkDeleteTestCases(projectId, ids),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-case-by-key', projectId] });
+      toast.success(`Deleted ${data.deleted} test case${data.deleted !== 1 ? 's' : ''}`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
