@@ -96,6 +96,7 @@ import type {
   UpdateWbsSubtaskPayload,
   CreateWbsDependencyPayload,
   LinkBacklogPayload,
+  BulkCreateWbsPayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -829,6 +830,11 @@ export const api = {
   reorderWbsPhases: (projectId: string, orderedIds: string[]) =>
     request<WbsPhase[]>(`/projects/${projectId}/wbs/phases/reorder`, {
       method: 'PATCH', body: JSON.stringify({ orderedIds }),
+    }),
+
+  bulkCreateWbs: (projectId: string, data: BulkCreateWbsPayload) =>
+    request<WbsPhase[]>(`/projects/${projectId}/wbs/bulk-create`, {
+      method: 'POST', body: JSON.stringify(data),
     }),
 
   // Tasks

@@ -1212,6 +1212,44 @@ export interface UpdateWbsSubtaskPayload {
   progress?: number;
 }
 
+// ─── WBS Bulk Create Types ────────────────────────────────
+
+export interface BulkCreateWbsSubtaskPayload {
+  title: string;
+  description?: string;
+  planStart?: string;
+  planEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  progress?: number;
+}
+
+export interface BulkCreateWbsTaskPayload {
+  title: string;
+  description?: string;
+  planStart?: string;
+  planEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  progress?: number;
+  subtasks?: BulkCreateWbsSubtaskPayload[];
+}
+
+export interface BulkCreateWbsPhasePayload {
+  title: string;
+  description?: string;
+  planStart?: string;
+  planEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  progress?: number;
+  tasks?: BulkCreateWbsTaskPayload[];
+}
+
+export interface BulkCreateWbsPayload {
+  phases: BulkCreateWbsPhasePayload[];
+}
+
 export interface CreateWbsDependencyPayload {
   sourceId: string;
   sourceType: 'TASK' | 'SUBTASK';

@@ -6,6 +6,7 @@ import type {
   CreateWbsTaskPayload, UpdateWbsTaskPayload,
   CreateWbsSubtaskPayload, UpdateWbsSubtaskPayload,
   CreateWbsDependencyPayload, LinkBacklogPayload,
+  BulkCreateWbsPayload,
 } from '@/lib/types';
 
 // ─── Queries ───────────────────────────────────────────────
@@ -70,6 +71,18 @@ export function useReorderWbsPhases(projectId: string) {
     mutationFn: (orderedIds: string[]) => api.reorderWbsPhases(projectId, orderedIds),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['wbs-phases', projectId] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useBulkCreateWbs(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BulkCreateWbsPayload) => api.bulkCreateWbs(projectId, data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['wbs-phases', projectId] });
+      toast.success('WBS items imported');
     },
     onError: (err: Error) => toast.error(err.message),
   });
