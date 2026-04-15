@@ -8,6 +8,7 @@ import { WbsGanttChart } from '@/components/wbs/WbsGanttChart';
 import { WbsStatusBar } from '@/components/wbs/WbsStatusBar';
 import { WbsTableView } from '@/components/wbs/WbsTableView';
 import { WbsTaskDialog } from '@/components/wbs/WbsTaskDialog';
+import { WbsImportDialog } from '@/components/wbs/WbsImportDialog';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 
 type ViewMode = 'gantt' | 'table';
@@ -18,6 +19,8 @@ export function WbsPage() {
   const setFullWidth = useUiStore((s) => s.setFullWidth);
   const [viewMode, setViewMode] = useState<ViewMode>('gantt');
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showAiWizard, setShowAiWizard] = useState(false);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const { data: phases = [] } = useWbsPhases(projectId);
@@ -51,6 +54,8 @@ export function WbsPage() {
     <div className="flex h-[calc(100vh-5rem)] flex-col">
       <WbsToolbar
         onAddPhase={() => setDialogMode({ type: 'phase' })}
+        onImportExcel={() => setShowImportDialog(true)}
+        onAiSuggest={() => setShowAiWizard(false)}
         phases={phases}
       />
       <WbsViewToggle viewMode={viewMode} onChange={setViewMode} />
@@ -108,6 +113,11 @@ export function WbsPage() {
           onClose={() => setDialogMode(null)}
         />
       )}
+      <WbsImportDialog
+        open={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        projectId={projectId}
+      />
     </div>
   );
 }
