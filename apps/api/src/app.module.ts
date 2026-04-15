@@ -22,6 +22,7 @@ import { BranchesModule } from './branches/branches.module';
 import { AiConfigModule } from './ai-config/ai-config.module';
 import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 import { AiTestCaseGenerationModule } from './ai-testcase-generation/ai-testcase-generation.module';
+import { AiWbsGenerationModule } from './ai-wbs-generation/ai-wbs-generation.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 import { WatchersModule } from './watchers/watchers.module';
@@ -63,6 +64,7 @@ import { WbsModule } from './wbs/wbs.module';
     AiConfigModule,
     AiTaskGenerationModule,
     AiTestCaseGenerationModule,
+    AiWbsGenerationModule,
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,
