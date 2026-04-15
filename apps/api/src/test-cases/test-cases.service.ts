@@ -174,6 +174,16 @@ export class TestCasesService {
     });
   }
 
+  async bulkDelete(ids: string[]) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.testCaseStep.deleteMany({ where: { testCaseId: { in: ids } } });
+      await tx.testCaseLink.deleteMany({ where: { testCaseId: { in: ids } } });
+      await tx.testExecutionCase.deleteMany({ where: { testCaseId: { in: ids } } });
+      const result = await tx.testCase.deleteMany({ where: { id: { in: ids } } });
+      return { deleted: result.count };
+    });
+  }
+
   async delete(testCaseId: string) {
     return this.prisma.testCase.delete({ where: { id: testCaseId } });
   }

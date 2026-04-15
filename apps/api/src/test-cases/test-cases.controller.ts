@@ -9,6 +9,7 @@ import { TestCasesService } from './test-cases.service';
 import { CreateTestCaseDto } from './dto/create-test-case.dto';
 import { UpdateTestCaseDto } from './dto/update-test-case.dto';
 import { BulkImportTestCasesDto } from './dto/bulk-import-test-cases.dto';
+import { BulkDeleteTestCasesDto } from './dto/bulk-delete-test-cases.dto';
 
 @Controller('projects/:projectId/test-cases')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -57,6 +58,12 @@ export class TestCasesController {
     @Body() dto: UpdateTestCaseDto,
   ) {
     return this.service.update(testCaseId, dto);
+  }
+
+  @Delete('bulk')
+  @RequirePermission('testCases', 'delete')
+  bulkDelete(@Body() dto: BulkDeleteTestCasesDto) {
+    return this.service.bulkDelete(dto.ids);
   }
 
   @Delete(':testCaseId')
