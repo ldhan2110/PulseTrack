@@ -90,6 +90,7 @@ export function ReportSettingsCard({ projectId, canManage }: Props) {
       frequency,
       scheduleDays,
       scheduleTime,
+      timezone: serverTz?.timezone ?? config?.timezone ?? 'Asia/Ho_Chi_Minh',
     });
   };
 
