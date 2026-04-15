@@ -695,7 +695,7 @@ model ReportConfig {
   frequency            String   @default("daily")
   scheduleDays         Int[]    @default([])
   scheduleTime         String   @default("09:00")
-  timezone             String   @default("UTC")
+  timezone             String   @default("Asia/Ho_Chi_Minh")
 
   isActive             Boolean  @default(false)
   bullmqJobId          String?
