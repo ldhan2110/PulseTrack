@@ -12,6 +12,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateSubtaskDto } from './dto/create-subtask.dto';
 import { UpdateSubtaskDto } from './dto/update-subtask.dto';
 import { ReorderDto } from './dto/reorder.dto';
+import { BulkCreateWbsDto } from './dto/bulk-create-wbs.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -52,6 +53,14 @@ export class WbsController {
     @Body() dto: ReorderDto,
   ) {
     return this.wbsService.reorderPhases(projectId, dto);
+  }
+
+  @Post('projects/:projectId/wbs/bulk-create')
+  bulkCreate(
+    @Param('projectId') projectId: string,
+    @Body() dto: BulkCreateWbsDto,
+  ) {
+    return this.wbsService.bulkCreate(projectId, dto);
   }
 
   // ─── Tasks ───────────────────────────────────────────────

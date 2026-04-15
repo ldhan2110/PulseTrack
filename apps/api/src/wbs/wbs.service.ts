@@ -7,6 +7,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateSubtaskDto } from './dto/create-subtask.dto';
 import { UpdateSubtaskDto } from './dto/update-subtask.dto';
 import { ReorderDto } from './dto/reorder.dto';
+import { BulkCreateWbsDto } from './dto/bulk-create-wbs.dto';
 
 const PHASE_INCLUDE = {
   tasks: {
@@ -209,6 +210,79 @@ export class WbsService {
         }),
       ),
     );
+  }
+
+  // ─── Bulk Create ─────────────────────────────────────────
+
+  async bulkCreate(projectId: string, dto: BulkCreateWbsDto) {
+    const maxPhasePos = await this.prisma.wbsPhase.aggregate({
+      where: { projectId },
+      _max: { position: true },
+    });
+    let phasePosition = (maxPhasePos._max.position ?? -1) + 1;
+
+    for (const phaseDto of dto.phases) {
+      const { planStart, planEnd, actualStart, actualEnd, tasks, ...phaseRest } = phaseDto;
+      const phase = await this.prisma.wbsPhase.create({
+        data: {
+          projectId,
+          title: phaseRest.title,
+          description: phaseRest.description,
+          progress: phaseRest.progress,
+          planStart: planStart ? new Date(planStart) : undefined,
+          planEnd: planEnd ? new Date(planEnd) : undefined,
+          actualStart: actualStart ? new Date(actualStart) : undefined,
+          actualEnd: actualEnd ? new Date(actualEnd) : undefined,
+          position: phasePosition++,
+        },
+      });
+
+      let taskPosition = 0;
+      for (const taskDto of tasks ?? []) {
+        const { planStart: tPs, planEnd: tPe, actualStart: tAs, actualEnd: tAe, subtasks, ...taskRest } = taskDto;
+        const task = await this.prisma.wbsTask.create({
+          data: {
+            phaseId: phase.id,
+            title: taskRest.title,
+            description: taskRest.description,
+            progress: taskRest.progress,
+            planStart: tPs ? new Date(tPs) : undefined,
+            planEnd: tPe ? new Date(tPe) : undefined,
+            actualStart: tAs ? new Date(tAs) : undefined,
+            actualEnd: tAe ? new Date(tAe) : undefined,
+            position: taskPosition++,
+          },
+        });
+
+        let subtaskPosition = 0;
+        for (const subtaskDto of subtasks ?? []) {
+          const { planStart: sPs, planEnd: sPe, actualStart: sAs, actualEnd: sAe, ...subtaskRest } = subtaskDto;
+          await this.prisma.wbsSubtask.create({
+            data: {
+              taskId: task.id,
+              title: subtaskRest.title,
+              description: subtaskRest.description,
+              progress: subtaskRest.progress ?? 0,
+              planStart: sPs ? new Date(sPs) : undefined,
+              planEnd: sPe ? new Date(sPe) : undefined,
+              actualStart: sAs ? new Date(sAs) : undefined,
+              actualEnd: sAe ? new Date(sAe) : undefined,
+              position: subtaskPosition++,
+            },
+          });
+        }
+
+        await this.rollupTask(task.id);
+      }
+
+      await this.rollupPhase(phase.id);
+    }
+
+    return this.prisma.wbsPhase.findMany({
+      where: { projectId },
+      orderBy: { position: 'asc' },
+      include: PHASE_INCLUDE,
+    });
   }
 
   // ─── Rollup ──────────────────────────────────────────────
