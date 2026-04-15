@@ -34,7 +34,7 @@ export class BugAttachmentsController {
           cb(null, `${randomUUID()}${ext}`);
         },
       }),
-      limits: { fileSize: 10 * 1024 * 1024 },
+      limits: { fileSize: 100 * 1024 * 1024 },
     }),
   )
   upload(

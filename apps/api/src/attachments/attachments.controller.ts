@@ -38,7 +38,7 @@ export class AttachmentsController {
           cb(null, `${randomUUID()}${ext}`);
         },
       }),
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per D-18
+      limits: { fileSize: 100 * 1024 * 1024 },
     }),
   )
   async upload(
