@@ -110,6 +110,7 @@ export class AiWbsGenerationController {
       targetEndDate: dto.targetEndDate,
       methodology: dto.methodology,
       sprintDuration: dto.sprintDuration,
+      scanCodebase: dto.scanCodebase ?? false,
       uploadedFilePaths,
     };
 

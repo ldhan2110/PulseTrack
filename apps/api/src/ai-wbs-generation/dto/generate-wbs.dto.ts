@@ -1,5 +1,5 @@
 // apps/api/src/ai-wbs-generation/dto/generate-wbs.dto.ts
-import { IsString, IsOptional, IsArray, IsNumber, IsDateString, MinLength, MaxLength, Min } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber, IsBoolean, IsDateString, MinLength, MaxLength, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class GenerateWbsDto {
@@ -9,6 +9,13 @@ export class GenerateWbsDto {
   instructions?: string;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); } catch { return [value]; }
+    }
+    return value;
+  })
   @IsArray()
   @IsString({ each: true })
   features?: string[];
@@ -20,6 +27,13 @@ export class GenerateWbsDto {
   teamSize?: number;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); } catch { return []; }
+    }
+    return value;
+  })
   @IsArray()
   teamRoles?: { role: string; count: number }[];
 
@@ -38,6 +52,11 @@ export class GenerateWbsDto {
   @IsOptional()
   @IsString()
   sprintDuration?: '1-week' | '2-weeks' | '3-weeks';
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  scanCodebase?: boolean;
 }
 
 export class WbsChatDto {
@@ -65,6 +84,7 @@ export interface WbsGenerationJobData {
   targetEndDate?: string;
   methodology?: string;
   sprintDuration?: string;
+  scanCodebase: boolean;
   uploadedFilePaths: string[];
 }
 

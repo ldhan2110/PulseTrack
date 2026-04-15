@@ -1,5 +1,7 @@
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ScanSearch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import type { ScopeData } from './WizardScopeStep';
 import type { TeamData } from './WizardTeamStep';
 import type { ConstraintsData } from './WizardConstraintsStep';
@@ -8,6 +10,8 @@ interface WizardReviewStepProps {
   scope: ScopeData;
   team: TeamData;
   constraints: ConstraintsData;
+  scanCodebase: boolean;
+  onScanCodebaseChange: (value: boolean) => void;
   onGenerate: () => void;
   isGenerating: boolean;
   rawText: string;
@@ -29,6 +33,8 @@ export function WizardReviewStep({
   scope,
   team,
   constraints,
+  scanCodebase,
+  onScanCodebaseChange,
   onGenerate,
   isGenerating,
   rawText,
@@ -106,6 +112,25 @@ export function WizardReviewStep({
               )}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Scan Codebase Option */}
+      <div className="flex items-start gap-3 rounded-md border border-border bg-muted/20 p-3">
+        <Checkbox
+          id="scan-codebase"
+          checked={scanCodebase}
+          onCheckedChange={(checked) => onScanCodebaseChange(checked === true)}
+          className="mt-0.5"
+        />
+        <div className="space-y-1">
+          <Label htmlFor="scan-codebase" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+            <ScanSearch className="h-3.5 w-3.5" />
+            Scan Codebase
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Analyze your repository structure with code-graph so AI can create tasks that align with your actual architecture, modules, and patterns. Requires a cloned repository.
+          </p>
         </div>
       </div>
 

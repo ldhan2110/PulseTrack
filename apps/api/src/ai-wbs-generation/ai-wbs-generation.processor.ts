@@ -111,19 +111,8 @@ export class AiWbsGenerationProcessor extends WorkerHost {
   }
 
   async process(job: Job<WbsGenerationJobData>): Promise<WbsGenerationJobResult> {
-    const {
-      projectId,
-      userId,
-      instructions,
-      features,
-      teamSize,
-      teamRoles,
-      projectStartDate,
-      targetEndDate,
-      methodology,
-      sprintDuration,
-      uploadedFilePaths,
-    } = job.data;
+    const data = job.data;
+    const { projectId, userId, scanCodebase } = data;
 
     let logBuffer = '';
     let currentStep = 'queued';
@@ -137,29 +126,83 @@ export class AiWbsGenerationProcessor extends WorkerHost {
     };
 
     try {
-      // Step 1: Get AI config
-      const config = await this.aiService.getProjectAiConfig(projectId);
+      // Step 1: Get AI config (require repo if scanning)
+      const config = await this.aiService.getProjectAiConfig(projectId, !!scanCodebase);
 
       // Step 2: Read uploaded files
       currentStep = 'reading-files';
       this.emitStep(userId, job, 'reading-files');
-      const fileContents = await this.aiService.readUploadedFiles(uploadedFilePaths);
+      const fileContents = await this.aiService.readUploadedFiles(data.uploadedFilePaths);
 
-      // Step 3: Build and run generation prompt
+      // Step 3: Scan codebase (if requested)
+      let scanResults: string | null = null;
+      if (scanCodebase) {
+        // Step 3a: git pull
+        currentStep = 'pulling';
+        this.emitStep(userId, job, 'pulling');
+        emitStream('$ git pull\n');
+
+        const pullOutput = await this.runCliStreaming('git', ['pull'], {
+          cwd: config.workspacePath,
+          timeout: 60_000,
+        }, job.id, emitStream);
+
+        if (!pullOutput.trim()) emitStream('Already up to date.\n');
+        emitStream('\n');
+
+        // Step 3b: Build/update code knowledge graph
+        currentStep = 'building-graph';
+        this.emitStep(userId, job, 'building-graph');
+        emitStream(`$ ${config.cli} (building code graph)\n`);
+
+        const graphPrompt = this.aiService.buildGraphPrompt();
+        const graphArgs = this.aiService.buildCliArgs(config.provider, config.model, graphPrompt);
+        const graphEnv = this.aiService.buildCliEnv(config.provider, config.apiKey);
+
+        await this.runCliStreaming(config.cli, graphArgs, {
+          cwd: config.workspacePath,
+          timeout: 300_000,
+          env: { ...process.env, ...graphEnv },
+        }, job.id, emitStream);
+
+        emitStream('\n');
+
+        // Step 3c: Scan codebase using the freshly built graph
+        currentStep = 'scanning';
+        this.emitStep(userId, job, 'scanning');
+        emitStream(`$ ${config.cli} (scanning codebase with code-graph)\n`);
+
+        const featureSummary = (data.features ?? []).join(', ') || data.instructions || 'project scope';
+        const scanPrompt = this.aiService.buildScanPrompt(featureSummary);
+        const scanArgs = this.aiService.buildCliArgs(config.provider, config.model, scanPrompt);
+        const scanEnv = this.aiService.buildCliEnv(config.provider, config.apiKey);
+
+        const scanOutput = await this.runCliStreaming(config.cli, scanArgs, {
+          cwd: config.workspacePath,
+          timeout: 300_000,
+          env: { ...process.env, ...scanEnv },
+        }, job.id, emitStream);
+
+        scanResults = scanOutput.trim();
+        emitStream('\n');
+      }
+
+      // Step 4: Build and run generation prompt
       currentStep = 'generating';
       this.emitStep(userId, job, 'generating');
       emitStream(`$ ${config.cli} (generating WBS)\n`);
 
       const generationPrompt = this.aiService.buildGenerationPrompt({
-        instructions,
-        features: features ?? [],
-        teamSize,
-        teamRoles,
-        projectStartDate,
-        targetEndDate,
-        methodology,
-        sprintDuration,
+        instructions: data.instructions,
+        features: data.features ?? [],
+        teamSize: data.teamSize,
+        teamRoles: data.teamRoles,
+        projectStartDate: data.projectStartDate,
+        targetEndDate: data.targetEndDate,
+        methodology: data.methodology,
+        sprintDuration: data.sprintDuration,
         projectContext: config.projectContext,
+        scanResults,
         fileContents,
       });
 
@@ -167,7 +210,7 @@ export class AiWbsGenerationProcessor extends WorkerHost {
       const genEnv = this.aiService.buildCliEnv(config.provider, config.apiKey);
 
       const rawOutput = await this.runCliStreaming(config.cli, genArgs, {
-        cwd: process.cwd(),
+        cwd: config.workspacePath,
         timeout: 600_000,
         env: { ...process.env, ...genEnv },
       }, job.id, emitStream);

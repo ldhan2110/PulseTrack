@@ -64,7 +64,13 @@ export function WizardTeamStep({ data, onChange }: WizardTeamStepProps) {
           className="w-32 text-sm"
           min={1}
           value={data.teamSize}
-          onChange={(e) => onChange({ ...data, teamSize: Math.max(1, parseInt(e.target.value) || 1) })}
+          onChange={(e) => {
+            const val = e.target.value;
+            onChange({ ...data, teamSize: val === '' ? ('' as unknown as number) : Math.max(1, parseInt(val) || 1) });
+          }}
+          onBlur={() => {
+            if (!data.teamSize || data.teamSize < 1) onChange({ ...data, teamSize: 1 });
+          }}
         />
       </div>
 

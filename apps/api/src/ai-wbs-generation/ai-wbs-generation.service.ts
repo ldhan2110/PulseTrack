@@ -11,6 +11,29 @@ const CLI_COMMANDS: Record<string, string> = {
   codex: 'codex',
 };
 
+const BUILD_GRAPH_PROMPT = `Build or update the knowledge graph for this repository using the code-review-graph skills installed.
+Do not do anything else. Just build the graph and report the result.`;
+
+const CODE_GRAPH_SCAN_PROMPT = `You have access to the code-review-graph MCP server with a freshly built knowledge graph for this repository.
+
+Analyze the codebase architecture and structure to help create a realistic Work Breakdown Structure for:
+"{USER_PROMPT}"
+
+Use these tools in order:
+1. semantic_search_nodes_tool — find relevant functions, classes, and types by keyword
+2. query_graph_tool with patterns callers_of, callees_of, imports_of — trace relationships between found nodes
+3. get_architecture_overview_tool — get high-level module structure
+4. list_communities_tool — identify which modules/domains are involved
+
+Return a structured summary with these sections:
+- Architecture Overview: tech stack, frameworks, major modules
+- Relevant Modules: which parts of the codebase relate to the requested features
+- Key Patterns: existing conventions, coding patterns, folder structure
+- Dependencies: external services, databases, APIs the project uses
+- Complexity Indicators: large files, deeply nested modules, areas that need careful attention
+
+Keep the summary concise and focused on what helps estimate and break down work accurately.`;
+
 @Injectable()
 export class AiWbsGenerationService {
   constructor(
@@ -18,9 +41,14 @@ export class AiWbsGenerationService {
     private readonly config: ConfigService,
   ) {}
 
-  async getProjectAiConfig(projectId: string) {
+  async getProjectAiConfig(projectId: string, requireRepo = false) {
     const aiConfig = await this.prisma.aiConfig.findUnique({ where: { projectId } });
     if (!aiConfig) throw new BadRequestException('AI configuration not found. Save AI settings first.');
+
+    const repoConfig = await this.prisma.repositoryConfig.findUnique({ where: { projectId } });
+    if (requireRepo && (!repoConfig || repoConfig.cloneStatus !== 'cloned')) {
+      throw new BadRequestException('Repository must be cloned before scanning codebase.');
+    }
 
     const encryptionKey = this.config.getOrThrow<string>('ENCRYPTION_KEY');
     const apiKey = decrypt(aiConfig.apiKey, encryptionKey);
@@ -30,8 +58,17 @@ export class AiWbsGenerationService {
       model: aiConfig.model,
       apiKey,
       projectContext: aiConfig.projectContext,
+      workspacePath: repoConfig?.workspacePath ?? process.cwd(),
       cli: CLI_COMMANDS[aiConfig.provider] ?? aiConfig.provider,
     };
+  }
+
+  buildGraphPrompt(): string {
+    return BUILD_GRAPH_PROMPT;
+  }
+
+  buildScanPrompt(userPrompt: string): string {
+    return CODE_GRAPH_SCAN_PROMPT.replace('{USER_PROMPT}', userPrompt);
   }
 
   buildGenerationPrompt(opts: {
@@ -44,6 +81,7 @@ export class AiWbsGenerationService {
     methodology?: string;
     sprintDuration?: string;
     projectContext: string | null;
+    scanResults?: string | null;
     fileContents: string;
   }): string {
     const parts: string[] = [];
@@ -107,6 +145,11 @@ Return ONLY valid JSON matching this schema:
     // Project context
     if (opts.projectContext) {
       parts.push(`\n## Project Context\n${opts.projectContext}`);
+    }
+
+    // Codebase scan results
+    if (opts.scanResults) {
+      parts.push(`\n## Codebase Analysis\nThe following is a structural analysis of the project codebase. Use this to:\n- Create tasks that align with the actual code architecture\n- Estimate complexity based on real module structure\n- Identify integration points and dependencies\n\n${opts.scanResults}`);
     }
 
     // Uploaded file contents

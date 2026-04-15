@@ -33,6 +33,7 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
     methodology: 'agile',
     sprintDuration: '2-weeks',
   });
+  const [scanCodebase, setScanCodebase] = useState(false);
   const [generatedPhases, setGeneratedPhases] = useState<any[] | null>(null);
 
   const aiGen = useAiWbsGeneration(projectId);
@@ -50,14 +51,17 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
     if (scope.file) {
       formData.append('documents', scope.file);
     }
-    scope.features.forEach((feature) => formData.append('features', feature));
-    formData.append('instructions', scope.instructions);
-    formData.append('teamSize', String(team.teamSize));
-    formData.append('teamRoles', JSON.stringify(team.roles));
+    if (scope.features.length > 0) {
+      formData.append('features', JSON.stringify(scope.features));
+    }
+    if (scope.instructions) formData.append('instructions', scope.instructions);
+    if (team.teamSize) formData.append('teamSize', String(team.teamSize));
+    if (team.roles.length > 0) formData.append('teamRoles', JSON.stringify(team.roles));
     formData.append('projectStartDate', constraints.projectStartDate);
     formData.append('targetEndDate', constraints.targetEndDate);
     formData.append('methodology', constraints.methodology);
     formData.append('sprintDuration', constraints.sprintDuration);
+    if (scanCodebase) formData.append('scanCodebase', 'true');
     aiGen.generate.mutate(formData);
   };
 
@@ -83,6 +87,7 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
       methodology: 'agile',
       sprintDuration: '2-weeks',
     });
+    setScanCodebase(false);
     setGeneratedPhases(null);
     aiGen.reset();
     onClose();
@@ -173,19 +178,21 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
             {/* Step content */}
             <div className="flex-1 overflow-y-auto px-6 pb-4">
               {step === 0 && (
-                <WizardScopeStep value={scope} onChange={setScope} />
+                <WizardScopeStep data={scope} onChange={setScope} />
               )}
               {step === 1 && (
-                <WizardTeamStep value={team} onChange={setTeam} />
+                <WizardTeamStep data={team} onChange={setTeam} />
               )}
               {step === 2 && (
-                <WizardConstraintsStep value={constraints} onChange={setConstraints} />
+                <WizardConstraintsStep data={constraints} onChange={setConstraints} />
               )}
               {step === 3 && (
                 <WizardReviewStep
                   scope={scope}
                   team={team}
                   constraints={constraints}
+                  scanCodebase={scanCodebase}
+                  onScanCodebaseChange={setScanCodebase}
                   onGenerate={handleGenerate}
                   isGenerating={aiGen.isLoading}
                   rawText={aiGen.rawText}
