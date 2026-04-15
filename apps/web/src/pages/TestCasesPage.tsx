@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 
 import { useUiStore } from '@/store/uiStore';
-import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
+import type { ColumnFiltersState, SortingState, RowSelectionState } from '@tanstack/react-table';
 import { useParams } from 'react-router-dom';
-import { ClipboardList, Search, FileSpreadsheet, Download, Sparkles } from 'lucide-react';
+import { ClipboardList, Search, FileSpreadsheet, Download, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useTestCases } from '@/hooks/useTestCases';
+import { useTestCases, useBulkDeleteTestCases } from '@/hooks/useTestCases';
 import { useTestModules } from '@/hooks/useTestModules';
 import { ModuleTree } from '@/components/test-cases/ModuleTree';
 import { TestCasesTable } from '@/components/test-cases/TestCasesTable';
@@ -26,6 +26,16 @@ import { GenerateTestCasesModal } from '@/components/test-cases/GenerateTestCase
 import { TestCaseGenerationWizard } from '@/components/test-cases/TestCaseGenerationWizard';
 import { useAiTestCaseGeneration } from '@/hooks/useAiTestCaseGeneration';
 import { useAiConfig } from '@/hooks/useAiConfig';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import type { Task } from '@/lib/types';
 import { api } from '@/lib/api';
@@ -49,6 +59,8 @@ export function TestCasesPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const { projectPrefix } = useParams<{ projectPrefix: string }>();
 
@@ -57,6 +69,7 @@ export function TestCasesPage() {
   const canGenerate = !!aiConfig && repoConfig?.cloneStatus === 'cloned';
 
   const aiGeneration = useAiTestCaseGeneration(projectId);
+  const bulkDelete = useBulkDeleteTestCases(projectId);
 
   // Fetch project tasks for the modal task selector
   const { data: projectTasks = [] } = useQuery({
@@ -99,6 +112,20 @@ export function TestCasesPage() {
   const { data: modules = [] } = useTestModules(projectId);
 
   const caseList = (testCases ?? []) as TestCase[];
+
+  const selectedIds = Object.keys(rowSelection)
+    .filter((key) => rowSelection[key])
+    .map((key) => caseList[parseInt(key)]?.id)
+    .filter(Boolean) as string[];
+
+  const handleBulkDelete = () => {
+    bulkDelete.mutate(selectedIds, {
+      onSuccess: () => {
+        setRowSelection({});
+        setConfirmDeleteOpen(false);
+      },
+    });
+  };
 
   const handleEditCase = (tc: TestCase) => {
     setEditingCase(tc);
@@ -287,9 +314,59 @@ export function TestCasesPage() {
             onColumnFiltersChange={setColumnFilters}
             globalFilter={globalFilter}
             onGlobalFilterChange={setGlobalFilter}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
           />
         </div>
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-3 bg-card shadow-lg rounded-lg px-4 py-3 border">
+            <span className="text-sm font-medium">
+              {selectedIds.length} test case{selectedIds.length !== 1 ? 's' : ''} selected
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setConfirmDeleteOpen(true)}
+              className="h-8 gap-1.5"
+            >
+              <Trash2 className="size-3.5" />
+              Delete
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRowSelection({})}
+              className="h-8"
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete test cases</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedIds.length} test case
+              {selectedIds.length !== 1 ? 's' : ''}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <TestCaseForm
         open={createOpen}
