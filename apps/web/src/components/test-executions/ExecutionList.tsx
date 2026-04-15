@@ -9,8 +9,10 @@ import {
   type SortingState,
   type ColumnFiltersState,
   type OnChangeFn,
+  type RowSelectionState,
   flexRender,
 } from '@tanstack/react-table';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableHeader,
@@ -127,6 +129,8 @@ interface ExecutionListProps {
   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
   globalFilter: string;
   onGlobalFilterChange: (val: string) => void;
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: OnChangeFn<RowSelectionState>;
 }
 
 export function ExecutionList({
@@ -138,12 +142,39 @@ export function ExecutionList({
   onColumnFiltersChange,
   globalFilter,
   onGlobalFilterChange,
+  rowSelection,
+  onRowSelectionChange,
 }: ExecutionListProps) {
   const navigate = useNavigate();
   const { projectPrefix } = useParams<{ projectPrefix: string }>();
 
   const columns = useMemo<ColumnDef<TestExecution>[]>(
     () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(val) => table.toggleAllPageRowsSelected(!!val)}
+            aria-label="Select all"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(val) => row.toggleSelected(!!val)}
+            aria-label="Select row"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        enableSorting: false,
+        enableColumnFilter: false,
+        size: 40,
+      },
       {
         accessorKey: 'executionKey',
         header: ({ column }) => <SortHeader label="ID" column={column} />,
@@ -287,10 +318,13 @@ export function ExecutionList({
       sorting,
       columnFilters,
       globalFilter,
+      rowSelection,
     },
+    enableRowSelection: true,
     onSortingChange,
     onColumnFiltersChange,
     onGlobalFilterChange,
+    onRowSelectionChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
