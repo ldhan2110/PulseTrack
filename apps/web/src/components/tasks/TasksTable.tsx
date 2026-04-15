@@ -489,7 +489,19 @@ export function TasksTable({
                       <TableCell>
                         {child.workflowStatus && <StatusBadge status={child.workflowStatus} />}
                       </TableCell>
-                      <TableCell className="text-xs">—</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const p = child.priority as Priority | null | undefined;
+                          if (!p) return <span className="text-xs text-muted-foreground">—</span>;
+                          const cfg = PRIORITY_CONFIG[p];
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-block size-2 rounded-full" style={{ backgroundColor: cfg.color }} />
+                              <span className="text-xs font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell>
                         {child.assignee ? (
                           <div className="flex items-center gap-2">
@@ -503,9 +515,35 @@ export function TasksTable({
                           <span className="text-sm text-muted-foreground">Unassigned</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs">—</TableCell>
-                      <TableCell className="text-xs">—</TableCell>
-                      <TableCell className="text-xs">—</TableCell>
+                      <TableCell>
+                        <span className="text-sm text-center block">
+                          {child.storyPoints ?? <span className="text-muted-foreground">—</span>}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {child.sprintId ? (sprintMap[child.sprintId] ?? 'Unknown') : (
+                            <span className="text-muted-foreground">Backlog</span>
+                          )}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const due = child.plannedEndDate;
+                          if (!due) return <span className="text-xs text-muted-foreground">—</span>;
+                          const isOverdue = new Date(due) < new Date() && !child.workflowStatus?.isClosed;
+                          try {
+                            const formatted = format(new Date(due), 'MMM d, yyyy');
+                            return (
+                              <span className={cn('text-xs', isOverdue ? 'text-destructive' : 'text-amber-500')}>
+                                {formatted}
+                              </span>
+                            );
+                          } catch {
+                            return <span className="text-xs text-muted-foreground">—</span>;
+                          }
+                        })()}
+                      </TableCell>
                       <TableCell className="text-xs">
                         {child.estimatedMinutes ? formatMinutes(child.estimatedMinutes) : '—'}
                       </TableCell>

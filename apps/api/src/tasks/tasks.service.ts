@@ -127,6 +127,7 @@ export class TasksService {
         children: {
           include: {
             assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+            sprint: { select: { id: true, name: true } },
             workflowStatus: true,
             timeLogs: { select: { minutes: true } },
           },
@@ -152,6 +153,7 @@ export class TasksService {
         children: {
           include: {
             assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+            sprint: { select: { id: true, name: true } },
             workflowStatus: true,
             timeLogs: { select: { minutes: true } },
           },
@@ -175,6 +177,7 @@ export class TasksService {
         children: {
           include: {
             assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+            sprint: { select: { id: true, name: true } },
             workflowStatus: true,
             timeLogs: { select: { minutes: true } },
           },

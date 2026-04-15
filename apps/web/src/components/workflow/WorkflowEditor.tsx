@@ -82,6 +82,7 @@ function statusToNode(
       key: status.key,
       isDefault: status.isDefault,
       isClosed: status.isClosed,
+      statusId: status.id ?? null,
       onEdit: callbacks.onEdit,
       onDelete: callbacks.onDelete,
       canManage,
@@ -252,6 +253,7 @@ export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: Workflow
     const statuses = nodes.map((n, i) => {
       const d = n.data as unknown as StatusNodeData;
       return {
+        ...(d.statusId ? { id: d.statusId as string } : {}),
         name: d.name,
         key: d.key,
         color: d.color,

@@ -158,26 +158,61 @@ export class WorkflowService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Build old key→id mapping so we can remap tasks after recreation
       const existingStatuses = await tx.workflowStatus.findMany({
         where: { projectId, kind },
-        select: { id: true },
+        select: { id: true, key: true },
       });
-      const existingIds = existingStatuses.map((s) => s.id);
-      const keptIds = dto.statuses.filter((s) => s.id).map((s) => s.id!);
-      const removedIds = existingIds.filter((id) => !keptIds.includes(id));
+      const oldKeyToId: Record<string, string> = {};
+      for (const s of existingStatuses) {
+        oldKeyToId[s.key] = s.id;
+      }
 
-      if (removedIds.length > 0) {
+      const newKeys = new Set(dto.statuses.map((s) => s.key));
+      const removedOldIds = existingStatuses
+        .filter((s) => !newKeys.has(s.key))
+        .map((s) => s.id);
+
+      // Nullify status on tasks/bugs whose status is being removed entirely
+      if (removedOldIds.length > 0) {
         if (kind === 'TASK') {
           await tx.task.updateMany({
-            where: { workflowStatusId: { in: removedIds } },
+            where: { workflowStatusId: { in: removedOldIds } },
             data: { workflowStatusId: null },
           });
         } else {
           await tx.bug.updateMany({
-            where: { workflowStatusId: { in: removedIds } },
+            where: { workflowStatusId: { in: removedOldIds } },
             data: { workflowStatusId: null },
           });
         }
+      }
+
+      // Snapshot which tasks/bugs hold which status key BEFORE deleting statuses
+      // (onDelete: SetNull will null them out during delete)
+      const keptKeys = dto.statuses.map((s) => s.key).filter((k) => oldKeyToId[k]);
+      const keptOldIds = keptKeys.map((k) => oldKeyToId[k]);
+      let taskStatusSnapshot: { id: string; workflowStatusId: string }[] = [];
+      let bugStatusSnapshot: { id: string; workflowStatusId: string }[] = [];
+
+      if (keptOldIds.length > 0) {
+        if (kind === 'TASK') {
+          taskStatusSnapshot = await tx.task.findMany({
+            where: { workflowStatusId: { in: keptOldIds } },
+            select: { id: true, workflowStatusId: true },
+          }) as { id: string; workflowStatusId: string }[];
+        } else {
+          bugStatusSnapshot = await tx.bug.findMany({
+            where: { workflowStatusId: { in: keptOldIds } },
+            select: { id: true, workflowStatusId: true },
+          }) as { id: string; workflowStatusId: string }[];
+        }
+      }
+
+      // Build reverse map: old status ID → key
+      const oldIdToKey: Record<string, string> = {};
+      for (const s of existingStatuses) {
+        oldIdToKey[s.id] = s.key;
       }
 
       await tx.statusAssigneeRule.deleteMany({
@@ -203,6 +238,26 @@ export class WorkflowService {
           },
         });
         statusMap[s.key] = created.id;
+      }
+
+      // Remap tasks/bugs from snapshot: restore status using key-based mapping
+      const snapshotItems = kind === 'TASK' ? taskStatusSnapshot : bugStatusSnapshot;
+      for (const item of snapshotItems) {
+        const key = oldIdToKey[item.workflowStatusId];
+        const newId = key ? statusMap[key] : undefined;
+        if (newId) {
+          if (kind === 'TASK') {
+            await tx.task.update({
+              where: { id: item.id },
+              data: { workflowStatusId: newId },
+            });
+          } else {
+            await tx.bug.update({
+              where: { id: item.id },
+              data: { workflowStatusId: newId },
+            });
+          }
+        }
       }
 
       for (const t of dto.transitions) {
