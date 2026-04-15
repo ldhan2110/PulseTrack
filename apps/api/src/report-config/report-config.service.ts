@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
@@ -10,7 +10,7 @@ import { GoogleChatService } from '../report-generator/google-chat.service';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
-export class ReportConfigService {
+export class ReportConfigService implements OnModuleInit {
   private readonly logger = new Logger(ReportConfigService.name);
   private transporter: nodemailer.Transporter;
 
@@ -30,6 +30,25 @@ export class ReportConfigService {
         pass: this.config.get('SMTP_PASS'),
       },
     });
+  }
+
+  async onModuleInit() {
+    this.logger.log('Re-syncing all active report schedulers...');
+
+    const activeConfigs = await this.prisma.reportConfig.findMany({
+      where: { isActive: true },
+    });
+
+    for (const config of activeConfigs) {
+      try {
+        await this.syncSchedule(config.id, config);
+        this.logger.log(`Re-synced scheduler for config ${config.id}`);
+      } catch (err) {
+        this.logger.error(`Failed to re-sync scheduler for config ${config.id}: ${err}`);
+      }
+    }
+
+    this.logger.log(`Re-synced ${activeConfigs.length} active report scheduler(s)`);
   }
 
   private get encryptionKey(): string {
@@ -60,20 +79,20 @@ export class ReportConfigService {
     if (dto.frequency !== undefined) data.frequency = dto.frequency;
     if (dto.scheduleDays !== undefined) data.scheduleDays = dto.scheduleDays;
     if (dto.scheduleTime !== undefined) data.scheduleTime = dto.scheduleTime;
-    if (dto.timezone !== undefined) data.timezone = dto.timezone;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
 
     if (dto.googleChatWebhookUrl) {
       data.googleChatWebhookUrl = encrypt(dto.googleChatWebhookUrl, this.encryptionKey);
     }
 
+    // Always use the server timezone — ensures BullMQ cron fires at the correct local time
     const serverTimezone = 'Asia/Ho_Chi_Minh';
+    data.timezone = serverTimezone;
 
     const config = await this.prisma.reportConfig.upsert({
       where: { projectId },
       create: {
         projectId,
-        timezone: serverTimezone,
         ...data,
       },
       update: data,
