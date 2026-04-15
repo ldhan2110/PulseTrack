@@ -13,6 +13,7 @@ import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { TestExecutionsService } from './test-executions.service';
 import { CreateTestExecutionDto } from './dto/create-test-execution.dto';
+import { BulkDeleteTestExecutionsDto } from './dto/bulk-delete-test-executions.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
 import type { TestExecutionStatus } from '@prisma/client';
 
@@ -63,6 +64,12 @@ export class TestExecutionsController {
     @Body() body: { testCaseIds: string[] },
   ) {
     return this.service.addCases(executionId, body.testCaseIds);
+  }
+
+  @Delete('bulk')
+  @RequirePermission('testExecutions', 'delete')
+  bulkDelete(@Body() dto: BulkDeleteTestExecutionsDto) {
+    return this.service.bulkDelete(dto.ids);
   }
 
   @Delete(':executionId')

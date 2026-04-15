@@ -159,6 +159,25 @@ export class TestExecutionsService {
     return { added: newIds.length };
   }
 
+  async bulkDelete(ids: string[]) {
+    return this.prisma.$transaction(async (tx) => {
+      // Find all execution case IDs for these executions
+      const execCases = await tx.testExecutionCase.findMany({
+        where: { executionId: { in: ids } },
+        select: { id: true },
+      });
+      const execCaseIds = execCases.map((c) => c.id);
+
+      // Delete attachments, then cases, then executions
+      if (execCaseIds.length > 0) {
+        await tx.testExecutionAttachment.deleteMany({ where: { executionCaseId: { in: execCaseIds } } });
+      }
+      await tx.testExecutionCase.deleteMany({ where: { executionId: { in: ids } } });
+      const result = await tx.testExecution.deleteMany({ where: { id: { in: ids } } });
+      return { deleted: result.count };
+    });
+  }
+
   async delete(executionId: string) {
     return this.prisma.testExecution.delete({ where: { id: executionId } });
   }
