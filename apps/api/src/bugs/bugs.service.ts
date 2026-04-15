@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WatchersService } from '../watchers/watchers.service';
@@ -28,7 +26,6 @@ export class BugsService {
     private prisma: PrismaService,
     private notifications: NotificationsService,
     private watchersService: WatchersService,
-    @InjectQueue('notification-email') private emailQueue: Queue,
   ) {}
 
   async create(projectId: string, reporterId: string, dto: CreateBugDto) {
@@ -36,7 +33,7 @@ export class BugsService {
       where: { projectId, kind: 'BUG', isDefault: true },
     });
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // Atomically increment bugSeq to generate bugKey
       const project = await tx.project.update({
         where: { id: projectId },
@@ -79,6 +76,34 @@ export class BugsService {
         include: BUG_RELATIONS,
       });
     });
+
+    this.notifications.notifyProject(projectId, 'bug:created', { projectId, bug: result });
+
+    // Notify assignee when bug is created with an assignee
+    if (result.assigneeId && result.assigneeId !== reporterId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { prefix: true },
+      });
+      const bugTitle = result.bugKey ? `${result.bugKey}: ${result.title}` : result.title;
+      await this.notifications.createMany([{
+        recipientId: result.assigneeId,
+        projectId,
+        type: 'ASSIGNEE_CHANGE' as NotificationType,
+        entityType: 'BUG' as EntityType,
+        entityId: result.id,
+        entityTitle: bugTitle,
+        actorId: reporterId,
+        summary: 'assigned this bug to you',
+        metadata: {
+          field: 'assigneeId',
+          ...(project?.prefix && { projectPrefix: project.prefix }),
+          ...(result.bugKey && { entityKey: result.bugKey }),
+        },
+      }] as Prisma.NotificationCreateManyInput[]);
+    }
+
+    return result;
   }
 
   async findAll(projectId: string, filters?: {
@@ -149,6 +174,7 @@ export class BugsService {
       ? await this.prisma.bug.findUniqueOrThrow({
           where: { id: bugId },
           select: {
+            projectId: true, bugKey: true,
             title: true, description: true, severity: true, environment: true,
             expectedResult: true, actualResult: true, assigneeId: true, ownerId: true,
             workflowStatusId: true, workflowStatus: { select: { name: true } },
@@ -156,7 +182,9 @@ export class BugsService {
         })
       : null;
 
-    return this.prisma.$transaction(async (tx) => {
+    const historyEntries: { bugId: string; actorId: string; field: string; oldValue?: string | null; newValue?: string | null }[] = [];
+
+    const result = await this.prisma.$transaction(async (tx) => {
       const data: Record<string, unknown> = {};
       if (dto.title !== undefined) data.title = dto.title;
       if (dto.description !== undefined) data.description = dto.description;
@@ -177,8 +205,6 @@ export class BugsService {
 
       // Record history entries for changed fields
       if (actorId && oldBug) {
-        const historyEntries: { bugId: string; actorId: string; field: string; oldValue?: string | null; newValue?: string | null }[] = [];
-
         if (dto.title !== undefined && dto.title !== oldBug.title) {
           historyEntries.push({ bugId, actorId, field: 'title', oldValue: oldBug.title, newValue: dto.title });
         }
@@ -232,6 +258,73 @@ export class BugsService {
 
       return bug;
     });
+
+    // Trigger watcher notifications for tracked field changes (outside transaction)
+    if (actorId && oldBug && historyEntries.length > 0) {
+      const bugTitle = oldBug.bugKey
+        ? `${oldBug.bugKey}: ${(result as any).title}`
+        : (result as any).title;
+
+      const fieldToType: Record<string, NotificationType> = {
+        workflowStatusId: 'STATUS_CHANGE' as NotificationType,
+        assigneeId: 'ASSIGNEE_CHANGE' as NotificationType,
+        severity: 'PRIORITY_CHANGE' as NotificationType,
+        description: 'DESCRIPTION_EDIT' as NotificationType,
+      };
+
+      const summaryMap: Record<string, (e: typeof historyEntries[0]) => string> = {
+        workflowStatusId: (e) => `changed status from "${e.oldValue ?? 'none'}" to "${e.newValue}"`,
+        assigneeId: () => 'changed assignee',
+        severity: (e) => `changed severity from "${e.oldValue ?? 'none'}" to "${e.newValue}"`,
+        description: () => 'updated the description',
+        title: (e) => `changed title from "${e.oldValue}" to "${e.newValue}"`,
+        ownerId: () => 'changed owner',
+      };
+
+      for (const entry of historyEntries) {
+        const notifType = fieldToType[entry.field];
+        if (!notifType) continue;
+
+        void this.triggerWatcherNotifications({
+          projectId: oldBug.projectId,
+          entityId: bugId,
+          entityTitle: bugTitle,
+          entityKey: oldBug.bugKey,
+          type: notifType,
+          actorId,
+          summary: summaryMap[entry.field]?.(entry) ?? `updated ${entry.field}`,
+          metadata: { field: entry.field, oldValue: entry.oldValue, newValue: entry.newValue },
+        });
+      }
+
+      // Directly notify the new assignee when assigned (if not the actor and not already a watcher)
+      if (dto.assigneeId && dto.assigneeId !== oldBug.assigneeId && dto.assigneeId !== actorId) {
+        const watcherIds = await this.watchersService.getWatcherUserIds('BUG' as EntityType, bugId);
+        if (!watcherIds.includes(dto.assigneeId)) {
+          const project = await this.prisma.project.findUnique({
+            where: { id: oldBug.projectId },
+            select: { prefix: true },
+          });
+          await this.notifications.createMany([{
+            recipientId: dto.assigneeId,
+            projectId: oldBug.projectId,
+            type: 'ASSIGNEE_CHANGE' as NotificationType,
+            entityType: 'BUG' as EntityType,
+            entityId: bugId,
+            entityTitle: bugTitle,
+            actorId,
+            summary: 'assigned this bug to you',
+            metadata: {
+              field: 'assigneeId',
+              ...(project?.prefix && { projectPrefix: project.prefix }),
+              ...(oldBug.bugKey && { entityKey: oldBug.bugKey }),
+            },
+          }] as Prisma.NotificationCreateManyInput[]);
+        }
+      }
+    }
+
+    return result;
   }
 
   async bulkImport(projectId: string, reporterId: string, dto: BulkImportBugsDto) {
@@ -466,7 +559,7 @@ export class BugsService {
 
     const project = await this.prisma.project.findUnique({
       where: { id: opts.projectId },
-      select: { prefix: true, emailNotificationsEnabled: true },
+      select: { prefix: true },
     });
 
     const enrichedMetadata = {
@@ -487,18 +580,5 @@ export class BugsService {
       metadata: enrichedMetadata ?? undefined,
     })) as Prisma.NotificationCreateManyInput[];
     await this.notifications.createMany(data);
-    if (project?.emailNotificationsEnabled) {
-      const users = await this.prisma.user.findMany({
-        where: { id: { in: recipientIds } },
-        select: { id: true, email: true, name: true, username: true },
-      });
-      for (const user of users) {
-        await this.emailQueue.add('send', {
-          notificationId: opts.entityId,
-          recipientEmail: user.email,
-          recipientName: user.name ?? user.username,
-        });
-      }
-    }
   }
 }

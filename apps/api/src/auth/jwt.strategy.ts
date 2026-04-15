@@ -43,14 +43,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (userInfo) {
       const blueprintUrl = this.config.get<string>('BLUEPRINT_URL') || '';
       const name = userInfo.usrNm ?? null;
+      const email = userInfo.usrEml ?? '';
       const imageUrl = userInfo.imgUrl
         ? `${blueprintUrl}/upload/${userInfo.imgUrl.replace(/\\/g, '/')}`
         : null;
 
-      if (user.name !== name || user.imageUrl !== imageUrl) {
+      if (user.name !== name || user.email !== email || user.imageUrl !== imageUrl) {
         return this.prisma.user.update({
           where: { id: user.id },
-          data: { name, imageUrl },
+          data: { name, email, imageUrl },
         });
       }
     }

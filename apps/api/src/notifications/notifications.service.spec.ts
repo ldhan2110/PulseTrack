@@ -4,28 +4,41 @@ import { NotificationsService } from './notifications.service';
 describe('NotificationsService', () => {
   let service: NotificationsService;
   let prisma: any;
+  let emailQueue: any;
 
   beforeEach(() => {
     prisma = {
       notification: {
-        createMany: vi.fn(),
+        create: vi.fn(),
         findMany: vi.fn(),
         count: vi.fn(),
         update: vi.fn(),
         updateMany: vi.fn(),
       },
+      project: { findUnique: vi.fn() },
+      user: { findMany: vi.fn() },
     };
-    service = new NotificationsService(prisma);
+    emailQueue = { add: vi.fn() };
+    service = new NotificationsService(prisma, emailQueue);
   });
 
-  it('createMany inserts notifications in bulk', async () => {
-    prisma.notification.createMany.mockResolvedValue({ count: 2 });
+  it('createMany inserts notifications individually and enqueues emails', async () => {
+    const n1 = { id: 'n1', recipientId: 'u1', projectId: 'p1' };
+    const n2 = { id: 'n2', recipientId: 'u3', projectId: 'p1' };
+    prisma.notification.create.mockResolvedValueOnce(n1).mockResolvedValueOnce(n2);
+    prisma.project.findUnique.mockResolvedValue({ emailNotificationsEnabled: true });
+    prisma.user.findMany.mockResolvedValue([
+      { id: 'u1', email: 'u1@test.com', name: 'User1', username: 'user1' },
+      { id: 'u3', email: 'u3@test.com', name: 'User3', username: 'user3' },
+    ]);
     const data = [
       { recipientId: 'u1', projectId: 'p1', type: 'STATUS_CHANGE', entityType: 'TASK', entityId: 't1', entityTitle: 'PM-1: Fix', actorId: 'u2', summary: 'Changed status' },
       { recipientId: 'u3', projectId: 'p1', type: 'STATUS_CHANGE', entityType: 'TASK', entityId: 't1', entityTitle: 'PM-1: Fix', actorId: 'u2', summary: 'Changed status' },
     ];
     await service.createMany(data as any);
-    expect(prisma.notification.createMany).toHaveBeenCalledWith({ data });
+    expect(prisma.notification.create).toHaveBeenCalledTimes(2);
+    expect(emailQueue.add).toHaveBeenCalledTimes(2);
+    expect(emailQueue.add).toHaveBeenCalledWith('send', { notificationId: 'n1', recipientEmail: 'u1@test.com', recipientName: 'User1' });
   });
 
   it('getUnreadCount returns count for user', async () => {

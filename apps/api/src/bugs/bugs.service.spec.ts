@@ -58,7 +58,6 @@ describe('BugsService', () => {
       mockPrismaService as any,
       mockNotificationsService as any,
       mockWatchersService as any,
-      mockEmailQueue as any,
     );
     mockPrismaService.workflowStatus.findFirst.mockResolvedValue(defaultWorkflowStatus);
   });

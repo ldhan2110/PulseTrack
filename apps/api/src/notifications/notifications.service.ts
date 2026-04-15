@@ -1,13 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { Server } from 'socket.io';
 import type { Prisma } from '@prisma/client';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
   private server: Server;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue('notification-email') private emailQueue: Queue,
+  ) {}
 
   setServer(server: Server): void {
     this.server = server;
@@ -23,9 +29,47 @@ export class NotificationsService {
 
   async createMany(data: Prisma.NotificationCreateManyInput[]) {
     if (data.length === 0) return;
-    await this.prisma.notification.createMany({ data });
-    for (const n of data) {
+
+    // Use individual creates to get back notification IDs for email jobs
+    const created = await Promise.all(
+      data.map((d) => this.prisma.notification.create({ data: d })),
+    );
+
+    for (const n of created) {
       this.notifyUser(n.recipientId, 'notification:new', n);
+    }
+
+    // Enqueue email jobs if project has email enabled
+    const projectId = data[0].projectId;
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { emailNotificationsEnabled: true },
+    });
+    if (!project?.emailNotificationsEnabled) {
+      this.logger.debug(`Email notifications disabled for project ${projectId}, skipping email queue`);
+      return;
+    }
+
+    const recipientIds = created.map((n) => n.recipientId);
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: recipientIds } },
+      select: { id: true, email: true, name: true, username: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    this.logger.log(`Enqueuing ${created.length} email job(s) for project ${projectId}`);
+    for (const n of created) {
+      const user = userMap.get(n.recipientId);
+      if (!user) {
+        this.logger.warn(`Recipient ${n.recipientId} not found, skipping email for notification ${n.id}`);
+        continue;
+      }
+      const job = await this.emailQueue.add('send', {
+        notificationId: n.id,
+        recipientEmail: user.email,
+        recipientName: user.name ?? user.username,
+      });
+      this.logger.log(`Email job queued | jobId=${job.id} | notificationId=${n.id} | type=${n.type} | to=${user.email}`);
     }
   }
 

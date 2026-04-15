@@ -1,6 +1,4 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WorkflowService } from '../workflow/workflow.service';
@@ -17,7 +15,6 @@ export class TasksService {
     private notifications: NotificationsService,
     private workflowService: WorkflowService,
     private watchersService: WatchersService,
-    @InjectQueue('notification-email') private emailQueue: Queue,
   ) {}
 
   async create(projectId: string, creatorId: string, dto: CreateTaskDto) {
@@ -90,6 +87,31 @@ export class TasksService {
     });
 
     this.notifications.notifyProject(projectId, 'task:created', { projectId, task });
+
+    // Notify assignee when task is created with an assignee
+    if (task.assigneeId && task.assigneeId !== creatorId) {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { prefix: true },
+      });
+      const taskTitle = task.taskKey ? `${task.taskKey}: ${task.title}` : task.title;
+      await this.notifications.createMany([{
+        recipientId: task.assigneeId,
+        projectId,
+        type: 'ASSIGNEE_CHANGE' as NotificationType,
+        entityType: 'TASK' as EntityType,
+        entityId: task.id,
+        entityTitle: taskTitle,
+        actorId: creatorId,
+        summary: 'assigned this task to you',
+        metadata: {
+          field: 'assigneeId',
+          ...(project?.prefix && { projectPrefix: project.prefix }),
+          ...(task.taskKey && { entityKey: task.taskKey }),
+        } as unknown as Prisma.InputJsonValue,
+      }]);
+    }
+
     return task;
   }
 
@@ -416,6 +438,32 @@ export class TasksService {
       });
     }
 
+    // Directly notify the new assignee when assigned (if not the actor and not already a watcher)
+    if (dto.assigneeId && dto.assigneeId !== current.assigneeId && dto.assigneeId !== actorId) {
+      const watcherIds = await this.watchersService.getWatcherUserIds('TASK' as EntityType, taskId);
+      if (!watcherIds.includes(dto.assigneeId)) {
+        const project = await this.prisma.project.findUnique({
+          where: { id: current.projectId },
+          select: { prefix: true },
+        });
+        await this.notifications.createMany([{
+          recipientId: dto.assigneeId,
+          projectId: current.projectId,
+          type: 'ASSIGNEE_CHANGE' as NotificationType,
+          entityType: 'TASK' as EntityType,
+          entityId: taskId,
+          entityTitle: taskTitle,
+          actorId,
+          summary: 'assigned this task to you',
+          metadata: {
+            field: 'assigneeId',
+            ...(project?.prefix && { projectPrefix: project.prefix }),
+            ...(updatedTask.taskKey && { entityKey: updatedTask.taskKey }),
+          } as unknown as Prisma.InputJsonValue,
+        }]);
+      }
+    }
+
     return updatedTask;
   }
 
@@ -637,7 +685,7 @@ export class TasksService {
 
     const project = await this.prisma.project.findUnique({
       where: { id: opts.projectId },
-      select: { prefix: true, emailNotificationsEnabled: true },
+      select: { prefix: true },
     });
 
     const enrichedMetadata = {
@@ -658,18 +706,5 @@ export class TasksService {
       metadata: enrichedMetadata as Prisma.InputJsonValue | undefined,
     }));
     await this.notifications.createMany(data);
-    if (project?.emailNotificationsEnabled) {
-      const users = await this.prisma.user.findMany({
-        where: { id: { in: recipientIds } },
-        select: { id: true, email: true, name: true, username: true },
-      });
-      for (const user of users) {
-        await this.emailQueue.add('send', {
-          notificationId: opts.entityId,
-          recipientEmail: user.email,
-          recipientName: user.name ?? user.username,
-        });
-      }
-    }
   }
 }

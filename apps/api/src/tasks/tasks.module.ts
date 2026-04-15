@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -13,7 +12,6 @@ import { BugsModule } from '../bugs/bugs.module';
     WorkflowModule,
     WatchersModule,
     BugsModule,
-    BullModule.registerQueue({ name: 'notification-email' }),
   ],
   controllers: [TasksController],
   providers: [TasksService],

@@ -332,7 +332,7 @@ export class CommentsService {
             entityId,
             entityTitle,
             actorId: authorId,
-            summary: 'mentioned you in a comment',
+            summary: `mentioned you in a comment: "${preview}"`,
             metadata: notifMetadata,
           })),
         );
