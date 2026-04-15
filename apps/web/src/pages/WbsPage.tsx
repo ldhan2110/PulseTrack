@@ -9,6 +9,7 @@ import { WbsStatusBar } from '@/components/wbs/WbsStatusBar';
 import { WbsTableView } from '@/components/wbs/WbsTableView';
 import { WbsTaskDialog } from '@/components/wbs/WbsTaskDialog';
 import { WbsImportDialog } from '@/components/wbs/WbsImportDialog';
+import { WbsAiWizard } from '@/components/wbs/WbsAiWizard';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 
 type ViewMode = 'gantt' | 'table';
@@ -55,7 +56,7 @@ export function WbsPage() {
       <WbsToolbar
         onAddPhase={() => setDialogMode({ type: 'phase' })}
         onImportExcel={() => setShowImportDialog(true)}
-        onAiSuggest={() => setShowAiWizard(false)}
+        onAiSuggest={() => setShowAiWizard(true)}
         phases={phases}
       />
       <WbsViewToggle viewMode={viewMode} onChange={setViewMode} />
@@ -116,6 +117,11 @@ export function WbsPage() {
       <WbsImportDialog
         open={showImportDialog}
         onClose={() => setShowImportDialog(false)}
+        projectId={projectId}
+      />
+      <WbsAiWizard
+        open={showAiWizard}
+        onClose={() => setShowAiWizard(false)}
         projectId={projectId}
       />
     </div>
