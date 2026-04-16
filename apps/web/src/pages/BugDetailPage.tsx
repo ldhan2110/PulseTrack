@@ -128,7 +128,7 @@ export function BugDetailPage() {
       setDescValue(bug.description ?? '');
       setEnvValue(bug.environment ?? '');
     }
-  }, [bug?.id]);
+  }, [bug?.id, bug?.description, bug?.environment]);
 
   const handleTitleSave = () => {
     if (!titleValue.trim() || titleValue.trim() === bug?.title) {
@@ -268,6 +268,7 @@ export function BugDetailPage() {
             <RichTextEditor
               initialContent={descValue}
               onSave={(html) => {
+                setDescValue(html);
                 updateBug.mutate({ bugId, data: { description: html } });
               }}
               editable={true}
