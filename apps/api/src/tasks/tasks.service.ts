@@ -227,7 +227,18 @@ export class TasksService {
 
       // Enforce: moving to a "closed" status requires progress = 100%
       if (targetStatus?.isClosed) {
-        const effectiveProgress = dto.progress ?? current.progress;
+        let effectiveProgress = dto.progress ?? current.progress;
+
+        // For parent tasks, compute progress from children instead of using stored value
+        const children = await this.prisma.task.findMany({
+          where: { parentId: taskId },
+          select: { progress: true },
+        });
+        if (children.length > 0) {
+          const sum = children.reduce((acc, c) => acc + (c.progress ?? 0), 0);
+          effectiveProgress = Math.round(sum / children.length);
+        }
+
         if (effectiveProgress < 100) {
           throw new BadRequestException(
             `Cannot move to "${targetStatus.name}" status. Progress must be 100% before closing. Current progress: ${effectiveProgress}%.`,
