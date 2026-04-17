@@ -48,6 +48,7 @@ export function useUpdateExecutionCaseResult(projectId: string) {
       api.updateExecutionCaseResult(projectId, executionCaseId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-execution', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-execution-by-key', projectId] });
       void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
     },
     onError: (err: Error) => {

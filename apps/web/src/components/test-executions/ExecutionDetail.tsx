@@ -215,7 +215,7 @@ export function ExecutionDetail({
                       <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: RESULT_COLORS[ec.result] }} />
                       <span className="truncate">{RESULT_LABELS[ec.result]}</span>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {ALL_RESULTS.map((r) => (
                         <SelectItem key={r} value={r}>
                           <span className="flex items-center gap-1.5">
