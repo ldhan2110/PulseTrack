@@ -216,6 +216,7 @@ model User {
   uploadedTestEvidence    TestExecutionAttachment[] @relation("TestExecutionAttachmentUploader")
   wikiAnnotations         WikiAnnotation[]          @relation("WikiAnnotationAuthor")
   savedFilters            SavedFilter[]
+  commentLikes            CommentLike[]     @relation("CommentLikeUser")
 }
 
 model Project {
@@ -354,6 +355,19 @@ model Comment {
   author    User      @relation(fields: [authorId], references: [id])
   parent    Comment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies   Comment[] @relation("CommentThread")
+  likes     CommentLike[]
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation("CommentLikeUser", fields: [userId], references: [id])
+
+  @@unique([commentId, userId])
 }
 
 model TimeLog {
