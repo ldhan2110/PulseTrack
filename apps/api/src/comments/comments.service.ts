@@ -16,6 +16,11 @@ export class CommentsService {
 
   private static readonly AUTHOR_SELECT = { id: true, username: true, email: true, name: true, imageUrl: true } as const;
 
+  private static readonly LIKE_SELECT = {
+    userId: true,
+    user: { select: { id: true, username: true, name: true, imageUrl: true } },
+  } as const;
+
   private buildCommentTree(comments: any[]): any[] {
     const map = new Map<string, any>();
     const roots: any[] = [];
@@ -38,6 +43,7 @@ export class CommentsService {
       where: { taskId },
       include: {
         author: { select: CommentsService.AUTHOR_SELECT },
+        likes: { select: CommentsService.LIKE_SELECT },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -148,6 +154,7 @@ export class CommentsService {
       where: { bugId },
       include: {
         author: { select: CommentsService.AUTHOR_SELECT },
+        likes: { select: CommentsService.LIKE_SELECT },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -338,5 +345,33 @@ export class CommentsService {
         );
       }
     }
+  }
+
+  async toggleLike(commentId: string, userId: string) {
+    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    const existing = await this.prisma.commentLike.findUnique({
+      where: { commentId_userId: { commentId, userId } },
+    });
+
+    if (existing) {
+      await this.prisma.commentLike.delete({ where: { id: existing.id } });
+    } else {
+      await this.prisma.commentLike.create({ data: { commentId, userId } });
+    }
+
+    const likes = await this.prisma.commentLike.findMany({
+      where: { commentId },
+      select: CommentsService.LIKE_SELECT,
+    });
+
+    return {
+      likes,
+      liked: !existing,
+      count: likes.length,
+    };
   }
 }
