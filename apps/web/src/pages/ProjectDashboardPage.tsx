@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -32,6 +33,7 @@ function DashboardSkeleton() {
 }
 
 export function ProjectDashboardPage() {
+  const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
   const [timeFilter, setTimeFilter] = useState('all');
   const { data, isLoading } = useDashboard(projectId, timeFilter);
@@ -62,7 +64,7 @@ export function ProjectDashboardPage() {
       <h1 className="text-xl font-semibold">Dashboard</h1>
 
       {/* Row 1: Dynamic status cards with horizontal scroll */}
-      <DashboardStatusStrip total={taskCounts.total} byStatus={taskCounts.byStatus} />
+      <DashboardStatusStrip total={taskCounts.total} byStatus={taskCounts.byStatus} projectPrefix={projectPrefix} />
 
       {/* Row 2: Burndown (60%) + Sprint progress (40%) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
@@ -104,6 +106,7 @@ export function ProjectDashboardPage() {
         teamAvgHoursPerTask={teamAvgHoursPerTask}
         timeFilter={timeFilter}
         onTimeFilterChange={setTimeFilter}
+        projectPrefix={projectPrefix}
       />
     </div>
   );
