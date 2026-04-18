@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
@@ -34,11 +34,13 @@ import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
 import { TaskProgressBar } from './TaskProgressBar';
 import { getParentProgress } from './task-progress-utils';
-import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn, progressFilterFn } from './TaskFilters';
+import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn, progressFilterFn, matchesFilters } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
 import { formatMinutes } from '@/lib/time-utils';
 import { format } from 'date-fns';
-import type { Task, Member, Sprint, Priority } from '@/lib/types';
+import type { Task, Member, Sprint, Priority, WorkflowStatus } from '@/lib/types';
+
+type ProcessedTask = Task & { _promotedFromParent?: Task };
 
 const PRIORITY_CONFIG: Record<Priority, { color: string; label: string }> = {
   LOW:      { color: '#6b7280', label: 'Low' },
@@ -93,6 +95,8 @@ interface TasksTableProps {
   projectPrefix: string;
   members: Member[];
   sprints: Sprint[];
+  workflowStatuses?: WorkflowStatus[];
+  initialFilters?: ColumnFiltersState;
   isLoading?: boolean;
   onRowSelectionChange?: (selected: Task[]) => void;
 }
@@ -103,16 +107,24 @@ export function TasksTable({
   projectPrefix,
   members,
   sprints,
+  workflowStatuses,
+  initialFilters,
   isLoading,
   onRowSelectionChange,
 }: TasksTableProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useUpdateTaskStatus(projectId);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters ?? []);
   const [globalFilter, setGlobalFilter] = useState('');
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (initialFilters) {
+      setColumnFilters(initialFilters);
+    }
+  }, [initialFilters]);
 
   const toggleExpand = (taskId: string) => {
     setExpandedRows((prev) => {
@@ -122,6 +134,35 @@ export function TasksTable({
       return next;
     });
   };
+
+  const hasActiveFilters = columnFilters.length > 0 || globalFilter !== '';
+
+  const processedTasks = useMemo(() => {
+    if (!hasActiveFilters) return tasks;
+
+    const result: ProcessedTask[] = [];
+    for (const parent of tasks) {
+      const parentMatches = matchesFilters(parent, columnFilters, globalFilter);
+      const matchingChildren = (parent.children ?? []).filter((child) =>
+        matchesFilters(child, columnFilters, globalFilter),
+      );
+
+      if (parentMatches) {
+        result.push({
+          ...parent,
+          children: matchingChildren,
+        });
+      } else if (matchingChildren.length > 0) {
+        for (const child of matchingChildren) {
+          result.push({
+            ...child,
+            _promotedFromParent: parent,
+          });
+        }
+      }
+    }
+    return result;
+  }, [tasks, columnFilters, globalFilter, hasActiveFilters]);
 
   const sprintMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -137,12 +178,14 @@ export function TasksTable({
         id: 'expand',
         header: () => null,
         cell: ({ row }: { row: { original: Task } }) => {
-          const hasChildren = (row.original.children?.length ?? 0) > 0;
+          const task = row.original as ProcessedTask;
+          if (task._promotedFromParent) return null;
+          const hasChildren = (task.children?.length ?? 0) > 0;
           if (!hasChildren) return null;
-          const isExpanded = expandedRows.has(row.original.id);
+          const isExpanded = expandedRows.has(task.id);
           return (
             <button
-              onClick={(e) => { e.stopPropagation(); toggleExpand(row.original.id); }}
+              onClick={(e) => { e.stopPropagation(); toggleExpand(task.id); }}
               className="p-1 hover:bg-muted rounded"
             >
               {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
@@ -181,13 +224,18 @@ export function TasksTable({
         accessorKey: 'title',
         header: ({ column }) => <SortHeader label="Title" column={column} />,
         cell: ({ row }) => {
-          const hasChildren = (row.original.children?.length ?? 0) > 0;
+          const task = row.original as ProcessedTask;
+          const promoted = task._promotedFromParent;
+          const hasChildren = !promoted && (task.children?.length ?? 0) > 0;
           return (
-            <span className={cn('text-sm truncate block max-w-[400px]', hasChildren ? 'font-semibold' : 'font-medium')} title={row.original.title}>
-              {row.original.taskKey && (
-                <span className="font-mono text-xs text-muted-foreground mr-2">{row.original.taskKey}</span>
+            <span className={cn('text-sm truncate block max-w-[400px]', hasChildren ? 'font-semibold' : 'font-medium')} title={task.title}>
+              {promoted && promoted.taskKey && (
+                <span className="font-mono text-xs text-muted-foreground/60 mr-1">{promoted.taskKey} &gt; </span>
               )}
-              {row.original.title}
+              {task.taskKey && (
+                <span className="font-mono text-xs text-muted-foreground mr-2">{task.taskKey}</span>
+              )}
+              {task.title}
             </span>
           );
         },
@@ -381,7 +429,7 @@ export function TasksTable({
   );
 
   const table = useReactTable({
-    data: tasks,
+    data: processedTasks,
     columns,
     state: {
       sorting,
@@ -397,7 +445,7 @@ export function TasksTable({
       setRowSelection((prev) => {
         const next = typeof updater === 'function' ? updater(prev) : updater;
         if (onRowSelectionChange) {
-          const selectedTasks = tasks.filter((_, idx) => next[idx]);
+          const selectedTasks = processedTasks.filter((_, idx) => next[idx]);
           onRowSelectionChange(selectedTasks);
         }
         return next;
@@ -424,6 +472,7 @@ export function TasksTable({
         table={table}
         members={members}
         sprints={sprints}
+        workflowStatuses={workflowStatuses}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
       />

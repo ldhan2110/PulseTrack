@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Table } from '@tanstack/react-table';
+import type { Table, ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -406,3 +406,41 @@ export const progressFilterFn = (row: { getValue: (id: string) => unknown }, col
     }
   });
 };
+
+export function matchesFilters(
+  task: Task,
+  columnFilters: ColumnFiltersState,
+  globalFilter: string,
+): boolean {
+  for (const filter of columnFilters) {
+    const { id, value } = filter;
+    switch (id) {
+      case 'workflowStatusId': {
+        if (!statusFilterFn({ getValue: () => task.workflowStatusId }, id, value as string[])) return false;
+        break;
+      }
+      case 'assigneeId': {
+        if (!assigneeFilterFn({ getValue: () => task.assigneeId ?? null }, id, value as string[])) return false;
+        break;
+      }
+      case 'sprintId': {
+        if (!sprintFilterFn({ getValue: () => task.sprintId ?? null }, id, value as string)) return false;
+        break;
+      }
+      case 'progress': {
+        const progress = task.progress ?? 0;
+        if (!progressFilterFn({ getValue: () => progress }, id, value as string[])) return false;
+        break;
+      }
+    }
+  }
+
+  if (globalFilter) {
+    const search = globalFilter.toLowerCase();
+    const titleMatch = task.title.toLowerCase().includes(search);
+    const keyMatch = task.taskKey?.toLowerCase().includes(search) ?? false;
+    if (!titleMatch && !keyMatch) return false;
+  }
+
+  return true;
+}
