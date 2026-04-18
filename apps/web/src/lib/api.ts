@@ -99,6 +99,9 @@ import type {
   BulkCreateWbsPayload,
   AiWbsGenerationJobResult,
   WbsChatResponse,
+  SavedFilter,
+  CreateSavedFilterPayload,
+  UpdateSavedFilterPayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -340,6 +343,16 @@ export const api = {
     }),
   getAllowedAssignees: (projectId: string, statusId: string) =>
     request<WorkflowAllowedAssignee[]>(`/projects/${projectId}/workflow/statuses/${statusId}/allowed-assignees`),
+
+  // ─── Saved Filters ────────────────────────────────────────────────────────
+  getSavedFilters: (projectId: string, entityType?: string) =>
+    request<SavedFilter[]>(`/projects/${projectId}/saved-filters${entityType ? `?entityType=${entityType}` : ''}`),
+  createSavedFilter: (projectId: string, data: CreateSavedFilterPayload) =>
+    request<SavedFilter>(`/projects/${projectId}/saved-filters`, { method: 'POST', body: JSON.stringify(data) }),
+  updateSavedFilter: (projectId: string, id: string, data: UpdateSavedFilterPayload) =>
+    request<SavedFilter>(`/projects/${projectId}/saved-filters/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteSavedFilter: (projectId: string, id: string) =>
+    request<void>(`/projects/${projectId}/saved-filters/${id}`, { method: 'DELETE' }),
 
   // ─── Repository Config ────────────────────────────────────────────────────
   getRepositoryConfig: (projectId: string) =>

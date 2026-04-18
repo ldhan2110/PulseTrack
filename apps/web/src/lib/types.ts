@@ -478,6 +478,41 @@ export interface TaskHistoryEntry {
   actor: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
 }
 
+// ─── Saved Filters ──────────────────────────────────────────────────────────
+
+export interface SavedFilterData {
+  statuses?: string[];
+  assignees?: string[];
+  sprint?: string;
+  progress?: string[];
+  search?: string;
+}
+
+export interface SavedFilter {
+  id: string;
+  userId: string;
+  projectId: string;
+  entityType: 'task' | 'bug';
+  name: string;
+  filters: SavedFilterData;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSavedFilterPayload {
+  name: string;
+  entityType: 'task' | 'bug';
+  filters: SavedFilterData;
+  isDefault?: boolean;
+}
+
+export interface UpdateSavedFilterPayload {
+  name?: string;
+  filters?: SavedFilterData;
+  isDefault?: boolean;
+}
+
 // ─── Bug History ─────────────────────────────────────────────────────────────
 
 export interface BugHistoryEntry {
