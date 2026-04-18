@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,6 +34,7 @@ export function BacklogPage() {
   const { data: members = [] } = useMembers(projectId);
   const { data: workflow } = useWorkflow(projectId);
   const workflowStatuses = workflow?.statuses ?? [];
+  const [searchParams] = useSearchParams();
   const { data: savedFilters = [] } = useSavedFilters(projectId, 'task');
   const createSavedFilter = useCreateSavedFilter(projectId);
   const updateSavedFilter = useUpdateSavedFilter(projectId, 'task');
@@ -52,6 +53,48 @@ export function BacklogPage() {
   const hasAppliedDefault = useRef(false);
   useEffect(() => {
     if (hasAppliedDefault.current) return;
+
+    // URL params take priority
+    const statusParam = searchParams.get('status');
+    const statusCategoryParam = searchParams.get('statusCategory');
+    const assigneeParam = searchParams.get('assignee');
+
+    if (statusParam || statusCategoryParam || assigneeParam) {
+      const columnFilters: ColumnFiltersState = [];
+
+      if (statusParam) {
+        columnFilters.push({ id: 'workflowStatusId', value: [statusParam] });
+      } else if (statusCategoryParam && workflowStatuses.length > 0) {
+        let statusIds: string[];
+        switch (statusCategoryParam) {
+          case 'closed':
+            statusIds = workflowStatuses.filter((s) => s.isClosed).map((s) => s.id);
+            break;
+          case 'active':
+            statusIds = workflowStatuses.filter((s) => !s.isClosed).map((s) => s.id);
+            break;
+          case 'unassigned':
+            statusIds = ['__none__'];
+            break;
+          default:
+            statusIds = [];
+        }
+        if (statusIds.length > 0) {
+          columnFilters.push({ id: 'workflowStatusId', value: statusIds });
+        }
+      }
+
+      if (assigneeParam) {
+        columnFilters.push({ id: 'assigneeId', value: [assigneeParam] });
+      }
+
+      setAppliedFilters({ columnFilters, globalFilter: '' });
+      setActiveFilterId(null);
+      hasAppliedDefault.current = true;
+      return;
+    }
+
+    // Fall back to saved filter default or hardcoded default
     if (defaultSavedFilter) {
       const resolved = savedFilterDataToColumnFilters(defaultSavedFilter.filters);
       setAppliedFilters(resolved);
@@ -64,7 +107,7 @@ export function BacklogPage() {
       }
       hasAppliedDefault.current = true;
     }
-  }, [defaultSavedFilter, workflowStatuses]);
+  }, [defaultSavedFilter, workflowStatuses, searchParams]);
 
   const handleFiltersChange = useCallback((filters: ColumnFiltersState, globalFilter: string) => {
     currentFiltersRef.current = { filters, globalFilter };
