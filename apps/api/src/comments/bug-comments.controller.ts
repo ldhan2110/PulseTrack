@@ -53,4 +53,12 @@ export class BugCommentsController {
   ) {
     return this.commentsService.delete(commentId, req.user.id, req.user.permissions);
   }
+
+  @Post(':commentId/likes')
+  toggleLike(
+    @Param('commentId') commentId: string,
+    @Req() req: any,
+  ) {
+    return this.commentsService.toggleLike(commentId, req.user.id);
+  }
 }
