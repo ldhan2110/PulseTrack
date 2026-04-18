@@ -70,3 +70,17 @@ export function useUpdateBugComment(projectId: string, bugId: string) {
     },
   });
 }
+
+export function useToggleBugCommentLike(projectId: string, bugId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) =>
+      api.toggleBugCommentLike(projectId, bugId, commentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['bug-comments', projectId, bugId] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}

@@ -68,6 +68,20 @@ export function useUpdateComment(projectId: string, taskId: string) {
   });
 }
 
+export function useToggleCommentLike(projectId: string, taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) =>
+      api.toggleCommentLike(projectId, taskId, commentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['comments', projectId, taskId] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
 // ─── Bug Comments ──────────────────────────────────────────────────────────
 
 export function useBugComments(projectId: string, bugId: string) {
