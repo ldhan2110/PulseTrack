@@ -17,7 +17,8 @@ import { useWorkflow } from '@/hooks/useWorkflow';
 import { useSavedFilters, useCreateSavedFilter, useUpdateSavedFilter, useDeleteSavedFilter } from '@/hooks/useSavedFilters';
 import { SavedQueryDropdown } from '@/components/tasks/SavedQueryDropdown';
 import type { ColumnFiltersState } from '@tanstack/react-table';
-import type { SavedFilter, SavedFilterData } from '@/lib/types';
+import type { SavedFilter } from '@/lib/types';
+import { savedFilterDataToColumnFilters, columnFiltersToSavedFilterData } from '@/lib/filter-utils';
 import { format } from 'date-fns';
 
 function formatDate(dateStr: string | null): string {
@@ -27,37 +28,6 @@ function formatDate(dateStr: string | null): string {
   } catch {
     return dateStr;
   }
-}
-
-function savedFilterDataToColumnFilters(data: SavedFilterData): ColumnFiltersState {
-  const filters: ColumnFiltersState = [];
-  if (data.statuses && data.statuses.length > 0) {
-    filters.push({ id: 'workflowStatusId', value: data.statuses });
-  }
-  if (data.assignees && data.assignees.length > 0) {
-    filters.push({ id: 'assigneeId', value: data.assignees });
-  }
-  if (data.sprint) {
-    filters.push({ id: 'sprintId', value: data.sprint });
-  }
-  if (data.progress && data.progress.length > 0) {
-    filters.push({ id: 'progress', value: data.progress });
-  }
-  return filters;
-}
-
-function columnFiltersToSavedFilterData(filters: ColumnFiltersState, globalFilter: string): SavedFilterData {
-  const data: SavedFilterData = {};
-  for (const f of filters) {
-    switch (f.id) {
-      case 'workflowStatusId': data.statuses = f.value as string[]; break;
-      case 'assigneeId': data.assignees = f.value as string[]; break;
-      case 'sprintId': data.sprint = f.value as string; break;
-      case 'progress': data.progress = f.value as string[]; break;
-    }
-  }
-  if (globalFilter) data.search = globalFilter;
-  return data;
 }
 
 export function SprintBoardPage() {
@@ -82,24 +52,24 @@ export function SprintBoardPage() {
 
   const defaultSavedFilter = savedFilters.find((f) => f.isDefault);
 
-  const initialFilters = useMemo<ColumnFiltersState>(() => {
-    if (defaultSavedFilter) {
-      return savedFilterDataToColumnFilters(defaultSavedFilter.filters);
-    }
-    const openStatusIds = workflowStatuses
-      .filter((s) => !s.isClosed)
-      .map((s) => s.id);
-    if (openStatusIds.length > 0 && openStatusIds.length < workflowStatuses.length) {
-      return [{ id: 'workflowStatusId', value: openStatusIds }];
-    }
-    return [];
-  }, [defaultSavedFilter, workflowStatuses]);
+  const [appliedFilters, setAppliedFilters] = useState<{ columnFilters: ColumnFiltersState; globalFilter: string } | null>(null);
 
+  const hasAppliedDefault = useRef(false);
   useEffect(() => {
-    if (defaultSavedFilter && !activeFilterId) {
+    if (hasAppliedDefault.current) return;
+    if (defaultSavedFilter) {
+      const resolved = savedFilterDataToColumnFilters(defaultSavedFilter.filters);
+      setAppliedFilters(resolved);
       setActiveFilterId(defaultSavedFilter.id);
+      hasAppliedDefault.current = true;
+    } else if (workflowStatuses.length > 0) {
+      const openStatusIds = workflowStatuses.filter((s) => !s.isClosed).map((s) => s.id);
+      if (openStatusIds.length > 0 && openStatusIds.length < workflowStatuses.length) {
+        setAppliedFilters({ columnFilters: [{ id: 'workflowStatusId', value: openStatusIds }], globalFilter: '' });
+      }
+      hasAppliedDefault.current = true;
     }
-  }, [defaultSavedFilter, activeFilterId]);
+  }, [defaultSavedFilter, workflowStatuses]);
 
   const handleFiltersChange = useCallback((filters: ColumnFiltersState, globalFilter: string) => {
     currentFiltersRef.current = { filters, globalFilter };
@@ -107,6 +77,8 @@ export function SprintBoardPage() {
   }, []);
 
   const handleSelectFilter = (filter: SavedFilter) => {
+    const resolved = savedFilterDataToColumnFilters(filter.filters);
+    setAppliedFilters(resolved);
     setActiveFilterId(filter.id);
     setIsFilterModified(false);
   };
@@ -163,7 +135,7 @@ export function SprintBoardPage() {
         </div>
         <div className="flex gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2 min-w-[240px]">
+            <div key={i} className="flex flex-col gap-2 min-w-60">
               <Skeleton className="h-8 w-full" />
               {Array.from({ length: 2 }).map((_, j) => (
                 <Skeleton key={j} className="h-20 w-full" />
@@ -251,6 +223,7 @@ export function SprintBoardPage() {
           </div>
         </div>
       ) : (
+        <>
         <div className="flex items-center gap-2 mb-2">
           <SavedQueryDropdown
             savedFilters={savedFilters}
@@ -289,11 +262,13 @@ export function SprintBoardPage() {
               members={members}
               sprints={sprints}
               workflowStatuses={workflowStatuses}
-              initialFilters={initialFilters}
+              initialFilters={appliedFilters?.columnFilters}
+              initialGlobalFilter={appliedFilters?.globalFilter}
               onFiltersChange={handleFiltersChange}
             />
           </TabsContent>
         </Tabs>
+        </>
       )}
     </div>
   );

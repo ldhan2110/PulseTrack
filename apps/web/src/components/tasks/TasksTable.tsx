@@ -97,6 +97,7 @@ interface TasksTableProps {
   sprints: Sprint[];
   workflowStatuses?: WorkflowStatus[];
   initialFilters?: ColumnFiltersState;
+  initialGlobalFilter?: string;
   isLoading?: boolean;
   onRowSelectionChange?: (selected: Task[]) => void;
   onFiltersChange?: (filters: ColumnFiltersState, globalFilter: string) => void;
@@ -110,6 +111,7 @@ export function TasksTable({
   sprints,
   workflowStatuses,
   initialFilters,
+  initialGlobalFilter,
   isLoading,
   onRowSelectionChange,
   onFiltersChange,
@@ -118,7 +120,7 @@ export function TasksTable({
   const updateTaskStatus = useUpdateTaskStatus(projectId);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters ?? []);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [globalFilter, setGlobalFilter] = useState(initialGlobalFilter ?? '');
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -126,7 +128,8 @@ export function TasksTable({
     if (initialFilters) {
       setColumnFilters(initialFilters);
     }
-  }, [initialFilters]);
+    setGlobalFilter(initialGlobalFilter ?? '');
+  }, [initialFilters, initialGlobalFilter]);
 
   const isInitialMount = useRef(true);
   useEffect(() => {

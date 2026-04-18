@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -23,38 +23,8 @@ import { useWorkflow } from '@/hooks/useWorkflow';
 import { useSavedFilters, useCreateSavedFilter, useUpdateSavedFilter, useDeleteSavedFilter } from '@/hooks/useSavedFilters';
 import { SavedQueryDropdown } from '@/components/tasks/SavedQueryDropdown';
 import type { ColumnFiltersState } from '@tanstack/react-table';
-import type { Task, SavedFilter, SavedFilterData } from '@/lib/types';
-
-function savedFilterDataToColumnFilters(data: SavedFilterData): ColumnFiltersState {
-  const filters: ColumnFiltersState = [];
-  if (data.statuses && data.statuses.length > 0) {
-    filters.push({ id: 'workflowStatusId', value: data.statuses });
-  }
-  if (data.assignees && data.assignees.length > 0) {
-    filters.push({ id: 'assigneeId', value: data.assignees });
-  }
-  if (data.sprint) {
-    filters.push({ id: 'sprintId', value: data.sprint });
-  }
-  if (data.progress && data.progress.length > 0) {
-    filters.push({ id: 'progress', value: data.progress });
-  }
-  return filters;
-}
-
-function columnFiltersToSavedFilterData(filters: ColumnFiltersState, globalFilter: string): SavedFilterData {
-  const data: SavedFilterData = {};
-  for (const f of filters) {
-    switch (f.id) {
-      case 'workflowStatusId': data.statuses = f.value as string[]; break;
-      case 'assigneeId': data.assignees = f.value as string[]; break;
-      case 'sprintId': data.sprint = f.value as string; break;
-      case 'progress': data.progress = f.value as string[]; break;
-    }
-  }
-  if (globalFilter) data.search = globalFilter;
-  return data;
-}
+import type { Task, SavedFilter } from '@/lib/types';
+import { savedFilterDataToColumnFilters, columnFiltersToSavedFilterData } from '@/lib/filter-utils';
 
 export function BacklogPage() {
   const { projectPrefix = '' } = useParams<{ projectPrefix: string }>();
@@ -75,24 +45,26 @@ export function BacklogPage() {
 
   const defaultSavedFilter = savedFilters.find((f) => f.isDefault);
 
-  const initialFilters = useMemo<ColumnFiltersState>(() => {
-    if (defaultSavedFilter) {
-      return savedFilterDataToColumnFilters(defaultSavedFilter.filters);
-    }
-    const openStatusIds = workflowStatuses
-      .filter((s) => !s.isClosed)
-      .map((s) => s.id);
-    if (openStatusIds.length > 0 && openStatusIds.length < workflowStatuses.length) {
-      return [{ id: 'workflowStatusId', value: openStatusIds }];
-    }
-    return [];
-  }, [defaultSavedFilter, workflowStatuses]);
+  // Resolve which filters to apply: selected filter > user default > hardcoded default
+  const [appliedFilters, setAppliedFilters] = useState<{ columnFilters: ColumnFiltersState; globalFilter: string } | null>(null);
 
+  // On first load, apply user default or hardcoded default
+  const hasAppliedDefault = useRef(false);
   useEffect(() => {
-    if (defaultSavedFilter && !activeFilterId) {
+    if (hasAppliedDefault.current) return;
+    if (defaultSavedFilter) {
+      const resolved = savedFilterDataToColumnFilters(defaultSavedFilter.filters);
+      setAppliedFilters(resolved);
       setActiveFilterId(defaultSavedFilter.id);
+      hasAppliedDefault.current = true;
+    } else if (workflowStatuses.length > 0) {
+      const openStatusIds = workflowStatuses.filter((s) => !s.isClosed).map((s) => s.id);
+      if (openStatusIds.length > 0 && openStatusIds.length < workflowStatuses.length) {
+        setAppliedFilters({ columnFilters: [{ id: 'workflowStatusId', value: openStatusIds }], globalFilter: '' });
+      }
+      hasAppliedDefault.current = true;
     }
-  }, [defaultSavedFilter, activeFilterId]);
+  }, [defaultSavedFilter, workflowStatuses]);
 
   const handleFiltersChange = useCallback((filters: ColumnFiltersState, globalFilter: string) => {
     currentFiltersRef.current = { filters, globalFilter };
@@ -100,6 +72,8 @@ export function BacklogPage() {
   }, []);
 
   const handleSelectFilter = (filter: SavedFilter) => {
+    const resolved = savedFilterDataToColumnFilters(filter.filters);
+    setAppliedFilters(resolved);
     setActiveFilterId(filter.id);
     setIsFilterModified(false);
   };
@@ -358,7 +332,8 @@ export function BacklogPage() {
             members={members}
             sprints={sprints}
             workflowStatuses={workflowStatuses}
-            initialFilters={initialFilters}
+            initialFilters={appliedFilters?.columnFilters}
+            initialGlobalFilter={appliedFilters?.globalFilter}
             onRowSelectionChange={setSelectedTasks}
             onFiltersChange={handleFiltersChange}
           />
