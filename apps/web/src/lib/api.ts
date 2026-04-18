@@ -23,6 +23,7 @@ import type {
   DashboardData,
   Comment,
   CreateCommentPayload,
+  ToggleLikeResponse,
   Attachment,
   TaskHistoryEntry,
   BugHistoryEntry,
@@ -489,6 +490,10 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+  toggleCommentLike: (projectId: string, taskId: string, commentId: string) =>
+    request<ToggleLikeResponse>(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}/likes`, {
+      method: 'POST',
+    }),
 
   // ─── Attachments ───────────────────────────────────────────────────────────
   getAttachments: (projectId: string, taskId: string) =>
@@ -586,6 +591,10 @@ export const api = {
   updateBugComment: (projectId: string, bugId: string, commentId: string, data: CreateCommentPayload) =>
     request<Comment>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}`, {
       method: 'PATCH', body: JSON.stringify(data),
+    }),
+  toggleBugCommentLike: (projectId: string, bugId: string, commentId: string) =>
+    request<ToggleLikeResponse>(`/projects/${projectId}/bugs/${bugId}/comments/${commentId}/likes`, {
+      method: 'POST',
     }),
 
   // ─── Test Modules ──────────────────────────────────────────────────────────

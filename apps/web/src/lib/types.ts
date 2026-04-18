@@ -432,6 +432,11 @@ export interface DashboardData {
 
 // ─── Comment ─────────────────────────────────────────────────────────────────
 
+export interface CommentLike {
+  userId: string;
+  user: Pick<User, 'id' | 'name' | 'username' | 'imageUrl'>;
+}
+
 export interface Comment {
   id: string;
   content: string;
@@ -444,10 +449,17 @@ export interface Comment {
   updatedAt: string;
   author: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
   replies?: Comment[];
+  likes?: CommentLike[];
 }
 
 export interface CreateCommentPayload {
   content: string;
+}
+
+export interface ToggleLikeResponse {
+  likes: CommentLike[];
+  liked: boolean;
+  count: number;
 }
 
 // ─── Attachment ──────────────────────────────────────────────────────────────
