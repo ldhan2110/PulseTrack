@@ -26,6 +26,7 @@ import { AiWbsGenerationModule } from './ai-wbs-generation/ai-wbs-generation.mod
 import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 import { WatchersModule } from './watchers/watchers.module';
+import { SavedFiltersModule } from './saved-filters/saved-filters.module';
 import { NotificationEmailModule } from './notification-email/notification-email.module';
 import { TestModulesModule } from './test-modules/test-modules.module';
 import { TestCasesModule } from './test-cases/test-cases.module';
@@ -68,6 +69,7 @@ import { WbsModule } from './wbs/wbs.module';
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,
+    SavedFiltersModule,
     NotificationEmailModule,
     TestModulesModule,
     TestCasesModule,
