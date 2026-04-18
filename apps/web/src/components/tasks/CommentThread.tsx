@@ -5,6 +5,7 @@ import {
   useCreateReply,
   useDeleteComment,
   useUpdateComment,
+  useToggleCommentLike,
 } from '@/hooks/useComments';
 import { useMembers } from '@/hooks/useMembers';
 import { CommentItem } from './CommentItem';
@@ -31,6 +32,7 @@ function RecursiveComment({
   onReply,
   onDelete,
   onEdit,
+  onToggleLike,
   onPostReply,
   isReplyPending,
   mentionMembers,
@@ -46,6 +48,7 @@ function RecursiveComment({
   onReply: (commentId: string) => void;
   onDelete: (commentId: string) => void;
   onEdit: (commentId: string, content: string) => void;
+  onToggleLike: (commentId: string) => void;
   onPostReply: (commentId: string, content: string) => void;
   isReplyPending: boolean;
   mentionMembers: { id: string; label: string; imageUrl: string | null }[];
@@ -70,6 +73,7 @@ function RecursiveComment({
         onReply={onReply}
         onDelete={onDelete}
         onEdit={onEdit}
+        onToggleLike={onToggleLike}
       />
 
       {replyingTo === comment.id && (
@@ -101,6 +105,7 @@ function RecursiveComment({
               onReply={onReply}
               onDelete={onDelete}
               onEdit={onEdit}
+              onToggleLike={onToggleLike}
               onPostReply={onPostReply}
               isReplyPending={isReplyPending}
               mentionMembers={mentionMembers}
@@ -125,6 +130,7 @@ export function CommentThread({
   const createReply = useCreateReply(projectId, taskId);
   const deleteComment = useDeleteComment(projectId, taskId);
   const updateComment = useUpdateComment(projectId, taskId);
+  const toggleLike = useToggleCommentLike(projectId, taskId);
 
   const mentionMembers = members.map((m) => ({
     id: m.userId,
@@ -144,6 +150,10 @@ export function CommentThread({
 
   const handleEdit = (commentId: string, content: string) => {
     updateComment.mutate({ commentId, content });
+  };
+
+  const handleToggleLike = (commentId: string) => {
+    toggleLike.mutate(commentId);
   };
 
   const handlePostComment = (content: string) => {
@@ -198,6 +208,7 @@ export function CommentThread({
                   onReply={handleReply}
                   onDelete={handleDelete}
                   onEdit={handleEdit}
+                  onToggleLike={handleToggleLike}
                   onPostReply={handlePostReply}
                   isReplyPending={createReply.isPending}
                   mentionMembers={mentionMembers}

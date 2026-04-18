@@ -5,6 +5,7 @@ import {
   useCreateBugReply,
   useDeleteBugComment,
   useUpdateBugComment,
+  useToggleBugCommentLike,
 } from '@/hooks/useBugComments';
 import { useMembers } from '@/hooks/useMembers';
 import { CommentItem } from '@/components/tasks/CommentItem';
@@ -31,6 +32,7 @@ function RecursiveBugComment({
   onReply,
   onDelete,
   onEdit,
+  onToggleLike,
   onPostReply,
   isReplyPending,
   mentionMembers,
@@ -46,6 +48,7 @@ function RecursiveBugComment({
   onReply: (commentId: string) => void;
   onDelete: (commentId: string) => void;
   onEdit: (commentId: string, content: string) => void;
+  onToggleLike: (commentId: string) => void;
   onPostReply: (commentId: string, content: string) => void;
   isReplyPending: boolean;
   mentionMembers: { id: string; label: string; imageUrl: string | null }[];
@@ -71,6 +74,7 @@ function RecursiveBugComment({
         onReply={onReply}
         onDelete={onDelete}
         onEdit={onEdit}
+        onToggleLike={onToggleLike}
       />
 
       {replyingTo === comment.id && (
@@ -103,6 +107,7 @@ function RecursiveBugComment({
               onReply={onReply}
               onDelete={onDelete}
               onEdit={onEdit}
+              onToggleLike={onToggleLike}
               onPostReply={onPostReply}
               isReplyPending={isReplyPending}
               mentionMembers={mentionMembers}
@@ -127,6 +132,7 @@ export function BugCommentThread({
   const createReply = useCreateBugReply(projectId, bugId);
   const deleteComment = useDeleteBugComment(projectId, bugId);
   const updateComment = useUpdateBugComment(projectId, bugId);
+  const toggleLike = useToggleBugCommentLike(projectId, bugId);
 
   const mentionMembers = members.map((m) => ({
     id: m.userId,
@@ -146,6 +152,10 @@ export function BugCommentThread({
 
   const handleEdit = (commentId: string, content: string) => {
     updateComment.mutate({ commentId, content });
+  };
+
+  const handleToggleLike = (commentId: string) => {
+    toggleLike.mutate(commentId);
   };
 
   const handlePostComment = (content: string) => {
@@ -200,6 +210,7 @@ export function BugCommentThread({
                   onReply={handleReply}
                   onDelete={handleDelete}
                   onEdit={handleEdit}
+                  onToggleLike={handleToggleLike}
                   onPostReply={handlePostReply}
                   isReplyPending={createReply.isPending}
                   mentionMembers={mentionMembers}
