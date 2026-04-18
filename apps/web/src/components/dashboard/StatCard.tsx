@@ -8,11 +8,16 @@ interface StatCardProps {
   icon: LucideIcon;
   variant?: 'default' | 'warning' | 'danger';
   accentColor?: string;
+  onClick?: () => void;
 }
 
-export function StatCard({ title, value, icon: Icon, variant = 'default', accentColor }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, variant = 'default', accentColor, onClick }: StatCardProps) {
   return (
-    <Card className="min-w-[160px]" style={accentColor ? { borderTopColor: accentColor, borderTopWidth: 3 } : undefined}>
+    <Card
+      className={cn('min-w-[160px]', onClick && 'cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md')}
+      style={accentColor ? { borderTopColor: accentColor, borderTopWidth: 3 } : undefined}
+      onClick={onClick}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[13px] font-semibold tracking-[0.01em]">
