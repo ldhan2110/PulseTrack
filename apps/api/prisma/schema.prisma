@@ -215,6 +215,7 @@ model User {
   executedTestCases       TestExecutionCase[]       @relation("TestExecutionCaseExecutor")
   uploadedTestEvidence    TestExecutionAttachment[] @relation("TestExecutionAttachmentUploader")
   wikiAnnotations         WikiAnnotation[]          @relation("WikiAnnotationAuthor")
+  savedFilters            SavedFilter[]
 }
 
 model Project {
@@ -261,6 +262,7 @@ model Project {
   plannerSessions  PlannerSession[]
   wbsPhases       WbsPhase[]
   wbsDependencies WbsDependency[]
+  savedFilters    SavedFilter[]
 }
 
 model ProjectMember {
@@ -1020,4 +1022,26 @@ model WbsDependency {
   @@index([projectId])
   @@index([sourceId])
   @@index([targetId])
+}
+
+// =====================
+// SAVED FILTERS
+// =====================
+
+model SavedFilter {
+  id         String   @id @default(cuid())
+  userId     String
+  projectId  String
+  entityType String   // "task" | "bug"
+  name       String
+  filters    Json     // { statuses?: string[], assignees?: string[], sprint?: string, progress?: string[], search?: string }
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, entityType, name])
+  @@index([userId, projectId, entityType])
 }
