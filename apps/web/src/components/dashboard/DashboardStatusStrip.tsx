@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ListTodo, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatCard } from './StatCard';
@@ -7,9 +8,11 @@ import type { StatusCount } from '@/lib/types';
 interface DashboardStatusStripProps {
   total: number;
   byStatus: StatusCount[];
+  projectPrefix: string;
 }
 
-export function DashboardStatusStrip({ total, byStatus }: DashboardStatusStripProps) {
+export function DashboardStatusStrip({ total, byStatus, projectPrefix }: DashboardStatusStripProps) {
+  const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -60,7 +63,7 @@ export function DashboardStatusStrip({ total, byStatus }: DashboardStatusStripPr
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <div className="shrink-0">
-          <StatCard title="Total Tasks" value={total} icon={ListTodo} />
+          <StatCard title="Total Tasks" value={total} icon={ListTodo} onClick={() => navigate(`/projects/${projectPrefix}/backlog`)} />
         </div>
         {byStatus.map((s) => (
           <div key={s.statusId} className="shrink-0">
@@ -69,6 +72,7 @@ export function DashboardStatusStrip({ total, byStatus }: DashboardStatusStripPr
               value={s.count}
               icon={Circle}
               accentColor={s.color}
+              onClick={() => navigate(`/projects/${projectPrefix}/backlog?status=${s.statusId}`)}
             />
           </div>
         ))}
