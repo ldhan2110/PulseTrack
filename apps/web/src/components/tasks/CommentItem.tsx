@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { formatDistanceToNow } from 'date-fns';
-import { Trash2, Reply, Pencil } from 'lucide-react';
+import { Trash2, Reply, Pencil, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RichTextEditor } from './RichTextEditor';
@@ -17,6 +17,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { Comment } from '@/lib/types';
 
 function getInitials(name: string): string {
@@ -40,6 +46,7 @@ interface CommentItemProps {
   onReply: (commentId: string) => void;
   onDelete: (commentId: string) => void;
   onEdit: (commentId: string, content: string) => void;
+  onToggleLike: (commentId: string) => void;
 }
 
 export function CommentItem({
@@ -53,6 +60,7 @@ export function CommentItem({
   onReply,
   onDelete,
   onEdit,
+  onToggleLike,
 }: CommentItemProps) {
   const resolvedEntityId = entityId ?? taskId ?? '';
   const canDelete = comment.authorId === currentUserId || canManage;
@@ -66,6 +74,20 @@ export function CommentItem({
     } catch {
       return comment.createdAt;
     }
+  })();
+
+  const likes = comment.likes ?? [];
+  const likeCount = likes.length;
+  const isLikedByMe = likes.some((l) => l.userId === currentUserId);
+  const hasLikes = likeCount > 0;
+
+  const likeTooltipText = (() => {
+    if (likeCount === 0) return '';
+    const names = likes.map((l) =>
+      l.userId === currentUserId ? 'You' : (l.user.name ?? l.user.username)
+    );
+    if (names.length <= 3) return names.join(', ');
+    return `${names.slice(0, 3).join(', ')}, and ${names.length - 3} other${names.length - 3 > 1 ? 's' : ''}`;
   })();
 
   return (
@@ -130,54 +152,85 @@ export function CommentItem({
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content, { ADD_ATTR: ['data-mention-id'] }) }}
           />
         )}
-        <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs gap-1"
-            onClick={() => onReply(comment.id)}
-          >
-            <Reply className="size-3" />
-            Reply
-          </Button>
-          {canEditComment && !isEditing && (
+        <div className="flex items-center gap-1 mt-1">
+          {/* Like button — always visible when has likes, hover-only when no likes */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-6 px-2 text-xs gap-1 ${
+                    isLikedByMe
+                      ? 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 opacity-100'
+                      : hasLikes
+                        ? 'bg-muted text-muted-foreground hover:bg-muted/80 opacity-100'
+                        : 'opacity-0 group-hover/comment:opacity-100'
+                  } transition-opacity`}
+                  onClick={() => onToggleLike(comment.id)}
+                >
+                  <ThumbsUp className={`size-3 ${isLikedByMe ? 'fill-current' : ''}`} />
+                  {hasLikes && likeCount}
+                </Button>
+              </TooltipTrigger>
+              {hasLikes && (
+                <TooltipContent side="top">
+                  {likeTooltipText}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Existing actions — hover only */}
+          <div className="flex items-center gap-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">
             <Button
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs gap-1"
-              onClick={() => setIsEditing(true)}
+              onClick={() => onReply(comment.id)}
             >
-              <Pencil className="size-3" />
-              Edit
+              <Reply className="size-3" />
+              Reply
             </Button>
-          )}
-          {canDelete && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-6">
-                  <Trash2 className="size-3" />
-                  <span className="sr-only">Delete comment</span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete this comment. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    onClick={() => onDelete(comment.id)}
-                  >
-                    Delete Comment
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+            {canEditComment && !isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs gap-1"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="size-3" />
+                Edit
+              </Button>
+            )}
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-6">
+                    <Trash2 className="size-3" />
+                    <span className="sr-only">Delete comment</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this comment. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={() => onDelete(comment.id)}
+                    >
+                      Delete Comment
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
       </div>
     </div>
