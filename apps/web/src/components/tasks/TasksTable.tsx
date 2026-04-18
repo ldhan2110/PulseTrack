@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
@@ -128,7 +128,12 @@ export function TasksTable({
     }
   }, [initialFilters]);
 
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     onFiltersChange?.(columnFilters, globalFilter);
   }, [columnFilters, globalFilter, onFiltersChange]);
 
