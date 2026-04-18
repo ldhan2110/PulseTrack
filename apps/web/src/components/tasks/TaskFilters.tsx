@@ -375,7 +375,10 @@ export function TaskFilters({
 // Custom filter functions for use with TanStack Table
 export const statusFilterFn = (row: { getValue: (id: string) => unknown }, columnId: string, filterValue: string[]) => {
   if (!filterValue || filterValue.length === 0) return true;
-  return filterValue.includes(row.getValue(columnId) as string);
+  const val = row.getValue(columnId) as string | null;
+  if (filterValue.includes('__none__') && (val === null || val === undefined)) return true;
+  if (val && filterValue.includes(val)) return true;
+  return false;
 };
 
 export const assigneeFilterFn = (row: { getValue: (id: string) => unknown }, columnId: string, filterValue: string[]) => {
