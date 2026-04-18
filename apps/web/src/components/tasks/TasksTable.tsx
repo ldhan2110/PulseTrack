@@ -99,6 +99,7 @@ interface TasksTableProps {
   initialFilters?: ColumnFiltersState;
   isLoading?: boolean;
   onRowSelectionChange?: (selected: Task[]) => void;
+  onFiltersChange?: (filters: ColumnFiltersState, globalFilter: string) => void;
 }
 
 export function TasksTable({
@@ -111,6 +112,7 @@ export function TasksTable({
   initialFilters,
   isLoading,
   onRowSelectionChange,
+  onFiltersChange,
 }: TasksTableProps) {
   const navigate = useNavigate();
   const updateTaskStatus = useUpdateTaskStatus(projectId);
@@ -125,6 +127,10 @@ export function TasksTable({
       setColumnFilters(initialFilters);
     }
   }, [initialFilters]);
+
+  useEffect(() => {
+    onFiltersChange?.(columnFilters, globalFilter);
+  }, [columnFilters, globalFilter, onFiltersChange]);
 
   const toggleExpand = (taskId: string) => {
     setExpandedRows((prev) => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
 import { Zap } from 'lucide-react';
@@ -13,6 +13,11 @@ import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
 import { KanbanBoard } from '@/components/tasks/KanbanBoard';
 import { TasksTable } from '@/components/tasks/TasksTable';
+import { useWorkflow } from '@/hooks/useWorkflow';
+import { useSavedFilters, useCreateSavedFilter, useUpdateSavedFilter, useDeleteSavedFilter } from '@/hooks/useSavedFilters';
+import { SavedQueryDropdown } from '@/components/tasks/SavedQueryDropdown';
+import type { ColumnFiltersState } from '@tanstack/react-table';
+import type { SavedFilter, SavedFilterData } from '@/lib/types';
 import { format } from 'date-fns';
 
 function formatDate(dateStr: string | null): string {
@@ -24,6 +29,37 @@ function formatDate(dateStr: string | null): string {
   }
 }
 
+function savedFilterDataToColumnFilters(data: SavedFilterData): ColumnFiltersState {
+  const filters: ColumnFiltersState = [];
+  if (data.statuses && data.statuses.length > 0) {
+    filters.push({ id: 'workflowStatusId', value: data.statuses });
+  }
+  if (data.assignees && data.assignees.length > 0) {
+    filters.push({ id: 'assigneeId', value: data.assignees });
+  }
+  if (data.sprint) {
+    filters.push({ id: 'sprintId', value: data.sprint });
+  }
+  if (data.progress && data.progress.length > 0) {
+    filters.push({ id: 'progress', value: data.progress });
+  }
+  return filters;
+}
+
+function columnFiltersToSavedFilterData(filters: ColumnFiltersState, globalFilter: string): SavedFilterData {
+  const data: SavedFilterData = {};
+  for (const f of filters) {
+    switch (f.id) {
+      case 'workflowStatusId': data.statuses = f.value as string[]; break;
+      case 'assigneeId': data.assignees = f.value as string[]; break;
+      case 'sprintId': data.sprint = f.value as string; break;
+      case 'progress': data.progress = f.value as string[]; break;
+    }
+  }
+  if (globalFilter) data.search = globalFilter;
+  return data;
+}
+
 export function SprintBoardPage() {
   const { sprintId = '', projectPrefix = '' } = useParams<{ sprintId: string; projectPrefix: string }>();
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
@@ -32,7 +68,70 @@ export function SprintBoardPage() {
   const { data: allTasks, isLoading: tasksLoading } = useTasks(projectId);
   const { data: members = [] } = useMembers(projectId);
   const { data: sprints = [] } = useSprints(projectId);
+  const { data: workflow } = useWorkflow(projectId);
+  const workflowStatuses = workflow?.statuses ?? [];
+  const { data: savedFilters = [] } = useSavedFilters(projectId, 'task');
+  const createSavedFilter = useCreateSavedFilter(projectId);
+  const updateSavedFilter = useUpdateSavedFilter(projectId, 'task');
+  const deleteSavedFilter = useDeleteSavedFilter(projectId, 'task');
+
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
+  const [isFilterModified, setIsFilterModified] = useState(false);
+  const currentFiltersRef = useRef<{ filters: ColumnFiltersState; globalFilter: string }>({ filters: [], globalFilter: '' });
   const [view, setView] = useState<'table' | 'board'>('board');
+
+  const defaultSavedFilter = savedFilters.find((f) => f.isDefault);
+
+  const initialFilters = useMemo<ColumnFiltersState>(() => {
+    if (defaultSavedFilter) {
+      return savedFilterDataToColumnFilters(defaultSavedFilter.filters);
+    }
+    const openStatusIds = workflowStatuses
+      .filter((s) => !s.isClosed)
+      .map((s) => s.id);
+    if (openStatusIds.length > 0 && openStatusIds.length < workflowStatuses.length) {
+      return [{ id: 'workflowStatusId', value: openStatusIds }];
+    }
+    return [];
+  }, [defaultSavedFilter, workflowStatuses]);
+
+  useEffect(() => {
+    if (defaultSavedFilter && !activeFilterId) {
+      setActiveFilterId(defaultSavedFilter.id);
+    }
+  }, [defaultSavedFilter, activeFilterId]);
+
+  const handleFiltersChange = useCallback((filters: ColumnFiltersState, globalFilter: string) => {
+    currentFiltersRef.current = { filters, globalFilter };
+    setIsFilterModified(true);
+  }, []);
+
+  const handleSelectFilter = (filter: SavedFilter) => {
+    setActiveFilterId(filter.id);
+    setIsFilterModified(false);
+  };
+
+  const handleSaveFilter = (name: string, isDefault: boolean) => {
+    const { filters, globalFilter } = currentFiltersRef.current;
+    createSavedFilter.mutate({
+      name,
+      entityType: 'task',
+      filters: columnFiltersToSavedFilterData(filters, globalFilter),
+      isDefault,
+    });
+  };
+
+  const handleSetDefault = (id: string, isDefault: boolean) => {
+    updateSavedFilter.mutate({ id, data: { isDefault } });
+  };
+
+  const handleDeleteFilter = (id: string) => {
+    deleteSavedFilter.mutate(id);
+    if (activeFilterId === id) {
+      setActiveFilterId(null);
+      setIsFilterModified(false);
+    }
+  };
 
   // Filter tasks to only this sprint
   const sprintTasks = useMemo(() => {
@@ -152,6 +251,18 @@ export function SprintBoardPage() {
           </div>
         </div>
       ) : (
+        <div className="flex items-center gap-2 mb-2">
+          <SavedQueryDropdown
+            savedFilters={savedFilters}
+            activeFilterId={activeFilterId}
+            isModified={isFilterModified}
+            onSelect={handleSelectFilter}
+            onSave={handleSaveFilter}
+            onSetDefault={handleSetDefault}
+            onDelete={handleDeleteFilter}
+          />
+        </div>
+
         <Tabs
           value={view}
           onValueChange={(v) => setView(v as 'table' | 'board')}
@@ -177,6 +288,9 @@ export function SprintBoardPage() {
               projectPrefix={projectPrefix}
               members={members}
               sprints={sprints}
+              workflowStatuses={workflowStatuses}
+              initialFilters={initialFilters}
+              onFiltersChange={handleFiltersChange}
             />
           </TabsContent>
         </Tabs>
