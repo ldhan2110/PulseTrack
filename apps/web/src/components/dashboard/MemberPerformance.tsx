@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ interface MemberPerformanceProps {
   teamAvgHoursPerTask: number;
   timeFilter: string;
   onTimeFilterChange: (value: string) => void;
+  projectPrefix: string;
 }
 
 function getInitials(name: string): string {
@@ -64,7 +66,17 @@ function QualityBlocks({ ratio }: { ratio: number }) {
   );
 }
 
-function TaskBar({ completed, inProgress, todo }: { completed: number; inProgress: number; todo: number }) {
+function TaskBar({
+  completed,
+  inProgress,
+  todo,
+  onSegmentClick,
+}: {
+  completed: number;
+  inProgress: number;
+  todo: number;
+  onSegmentClick?: (category: 'closed' | 'active' | 'unassigned') => void;
+}) {
   const total = completed + inProgress + todo;
   if (total === 0) {
     return <div className="h-5 w-full rounded bg-muted" />;
@@ -75,20 +87,26 @@ function TaskBar({ completed, inProgress, todo }: { completed: number; inProgres
       <div className="flex h-5 overflow-hidden rounded" style={{ gap: '1px' }}>
         {completed > 0 && (
           <div
+            className="cursor-pointer transition-all hover:brightness-110"
             style={{ width: `${(completed / total) * 100}%`, backgroundColor: '#22c55e' }}
             title={`Done: ${completed}`}
+            onClick={(e) => { e.stopPropagation(); onSegmentClick?.('closed'); }}
           />
         )}
         {inProgress > 0 && (
           <div
+            className="cursor-pointer transition-all hover:brightness-110"
             style={{ width: `${(inProgress / total) * 100}%`, backgroundColor: '#3b82f6' }}
             title={`In Progress: ${inProgress}`}
+            onClick={(e) => { e.stopPropagation(); onSegmentClick?.('active'); }}
           />
         )}
         {todo > 0 && (
           <div
+            className="cursor-pointer transition-all hover:brightness-110"
             style={{ width: `${(todo / total) * 100}%`, backgroundColor: 'hsl(var(--muted-foreground) / 0.3)' }}
             title={`To Do: ${todo}`}
+            onClick={(e) => { e.stopPropagation(); onSegmentClick?.('unassigned'); }}
           />
         )}
       </div>
@@ -144,7 +162,8 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
     : <ArrowDown className="ml-1 inline size-3" />;
 }
 
-export function MemberPerformance({ members, teamAvgHoursPerTask, timeFilter, onTimeFilterChange }: MemberPerformanceProps) {
+export function MemberPerformance({ members, teamAvgHoursPerTask, timeFilter, onTimeFilterChange, projectPrefix }: MemberPerformanceProps) {
+  const navigate = useNavigate();
   const [sortKey, setSortKey] = useState<SortKey>('completed');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [search, setSearch] = useState('');
@@ -261,6 +280,9 @@ export function MemberPerformance({ members, teamAvgHoursPerTask, timeFilter, on
                             completed={member.tasks.completed}
                             inProgress={member.tasks.inProgress}
                             todo={member.tasks.todo}
+                            onSegmentClick={(category) =>
+                              navigate(`/projects/${projectPrefix}/backlog?assignee=${member.userId}&statusCategory=${category}`)
+                            }
                           />
                         </td>
                         <td className="py-3 pr-4">
