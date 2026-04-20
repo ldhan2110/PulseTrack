@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -145,7 +145,6 @@ export function ExecutionList({
   rowSelection,
   onRowSelectionChange,
 }: ExecutionListProps) {
-  const navigate = useNavigate();
   const { projectPrefix } = useParams<{ projectPrefix: string }>();
 
   const columns = useMemo<ColumnDef<TestExecution>[]>(
@@ -380,7 +379,7 @@ export function ExecutionList({
                 className="h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100"
                 onClick={() => {
                   if (projectPrefix && row.original.executionKey) {
-                    navigate(`/projects/${projectPrefix}/test-executions/${row.original.executionKey}`);
+                    window.open(`/projects/${projectPrefix}/test-executions/${row.original.executionKey}`, '_blank');
                   } else {
                     onSelectExecution(row.original.id);
                   }

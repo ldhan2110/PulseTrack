@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -143,7 +143,6 @@ export function TestCasesTable({
   rowSelection,
   onRowSelectionChange,
 }: TestCasesTableProps) {
-  const navigate = useNavigate();
   const { projectPrefix } = useParams<{ projectPrefix: string }>();
   const columns = useMemo<ColumnDef<TestCase>[]>(
     () => [
@@ -328,7 +327,7 @@ export function TestCasesTable({
                 onClick={() => {
                   const key = row.original.testCaseKey;
                   if (key && projectPrefix) {
-                    navigate(`/projects/${projectPrefix}/test-cases/${key}`);
+                    window.open(`/projects/${projectPrefix}/test-cases/${key}`, '_blank');
                   } else {
                     onEditCase(row.original);
                   }

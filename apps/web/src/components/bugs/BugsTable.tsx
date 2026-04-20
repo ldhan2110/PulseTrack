@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -140,7 +140,6 @@ export function BugsTable({
   globalFilter,
   onGlobalFilterChange,
 }: BugsTableProps) {
-  const navigate = useNavigate();
 
   const columns = useMemo<ColumnDef<Bug>[]>(
     () => [
@@ -317,7 +316,7 @@ export function BugsTable({
               <TableRow
                 key={row.id}
                 className="h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100"
-                onClick={() => navigate(`/projects/${projectPrefix}/bugs/${row.original.bugKey ?? row.original.id}`)}
+                onClick={() => window.open(`/projects/${projectPrefix}/bugs/${row.original.bugKey ?? row.original.id}`, '_blank')}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className="py-0">

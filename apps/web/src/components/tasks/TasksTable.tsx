@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -116,7 +115,6 @@ export function TasksTable({
   onRowSelectionChange,
   onFiltersChange,
 }: TasksTableProps) {
-  const navigate = useNavigate();
   const updateTaskStatus = useUpdateTaskStatus(projectId);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters ?? []);
@@ -526,7 +524,7 @@ export function TasksTable({
                       'h-10 cursor-pointer hover:bg-muted/50 transition-colors duration-100',
                       row.getIsSelected() && 'bg-muted/30',
                     )}
-                    onClick={() => navigate(`/projects/${projectPrefix}/tasks/${row.original.taskKey ?? row.original.id}`)}
+                    onClick={() => window.open(`/projects/${projectPrefix}/tasks/${row.original.taskKey ?? row.original.id}`, '_blank')}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-0">
@@ -538,7 +536,7 @@ export function TasksTable({
                     <TableRow
                       key={child.id}
                       className="h-9 bg-muted/30 cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(`/projects/${projectPrefix}/tasks/${child.taskKey ?? child.id}`)}
+                      onClick={() => window.open(`/projects/${projectPrefix}/tasks/${child.taskKey ?? child.id}`, '_blank')}
                     >
                       <TableCell />
                       <TableCell />
