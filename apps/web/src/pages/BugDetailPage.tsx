@@ -369,39 +369,58 @@ export function BugDetailPage() {
               {/* Status */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Status</SidebarLabel>
-                <Select
-                  value={bug.workflowStatusId ?? ''}
-                  onValueChange={(val) => updateBug.mutate({ bugId, data: { workflowStatusId: val } })}
-                >
-                  <SelectTrigger className="h-8 w-full">
-                    <SelectValue>
-                      {bug.workflowStatus && (
+                {bug.workflowStatus ? (
+                  <Select
+                    value={bug.workflowStatusId ?? ''}
+                    onValueChange={(val) => updateBug.mutate({ bugId, data: { workflowStatusId: val } })}
+                  >
+                    <SelectTrigger className="h-8 w-full">
+                      <SelectValue>
                         <span className="flex items-center gap-1.5">
                           <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
                           {bug.workflowStatus.name}
                         </span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bug.workflowStatus && (
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
                       <SelectItem value={bug.workflowStatus.id}>
                         <span className="flex items-center gap-1.5">
                           <span className="size-2 rounded-full" style={{ backgroundColor: bug.workflowStatus.color }} />
                           {bug.workflowStatus.name}
                         </span>
                       </SelectItem>
-                    )}
-                    {validTransitions.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <span className="flex items-center gap-1.5">
-                          <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
-                          {s.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {validTransitions.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <span className="flex items-center gap-1.5">
+                            <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
+                            {s.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select
+                    value=""
+                    onValueChange={(val) => updateBug.mutate({ bugId, data: { workflowStatusId: val } })}
+                  >
+                    <SelectTrigger className="h-8 w-full">
+                      <SelectValue>
+                        <span className="text-sm text-muted-foreground">No Status</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(workflow?.statuses ?? []).map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <span className="flex items-center gap-1.5">
+                            <span className="size-2 rounded-full" style={{ backgroundColor: s.color }} />
+                            {s.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Severity */}

@@ -200,6 +200,26 @@ export class TasksService {
       include: { workflowStatus: true },
     });
 
+    // Auto-clear orphaned workflowStatusId (ID set but status record missing)
+    if (current.workflowStatusId && !current.workflowStatus) {
+      await this.prisma.task.update({
+        where: { id: taskId },
+        data: { workflowStatusId: null },
+      });
+      current.workflowStatusId = null;
+    }
+
+    // Validate target workflowStatusId exists; set to null if not found
+    if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== null) {
+      const targetExists = await this.prisma.workflowStatus.findUnique({
+        where: { id: dto.workflowStatusId },
+        select: { id: true },
+      });
+      if (!targetExists) {
+        dto.workflowStatusId = null as unknown as string;
+      }
+    }
+
     // Validate workflow status transition if changing workflowStatusId
     if (dto.workflowStatusId !== undefined && dto.workflowStatusId !== current.workflowStatusId) {
       if (current.workflowStatusId) {

@@ -184,6 +184,15 @@ export class BugsService {
 
     const historyEntries: { bugId: string; actorId: string; field: string; oldValue?: string | null; newValue?: string | null }[] = [];
 
+    // Auto-clear orphaned workflowStatusId (ID set but status record missing)
+    if (oldBug && oldBug.workflowStatusId && !oldBug.workflowStatus) {
+      await this.prisma.bug.update({
+        where: { id: bugId },
+        data: { workflowStatusId: null },
+      });
+      oldBug.workflowStatusId = null;
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const data: Record<string, unknown> = {};
       if (dto.title !== undefined) data.title = dto.title;
@@ -195,7 +204,17 @@ export class BugsService {
       if (dto.actualResult !== undefined) data.actualResult = dto.actualResult;
       if (dto.assigneeId !== undefined) data.assigneeId = dto.assigneeId;
       if (dto.ownerId !== undefined) data.ownerId = dto.ownerId;
-      if (dto.workflowStatusId !== undefined) data.workflowStatusId = dto.workflowStatusId;
+      if (dto.workflowStatusId !== undefined) {
+        if (dto.workflowStatusId !== null) {
+          const targetExists = await tx.workflowStatus.findUnique({
+            where: { id: dto.workflowStatusId },
+            select: { id: true },
+          });
+          data.workflowStatusId = targetExists ? dto.workflowStatusId : null;
+        } else {
+          data.workflowStatusId = null;
+        }
+      }
 
       const bug = await tx.bug.update({
         where: { id: bugId },
