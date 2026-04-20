@@ -55,7 +55,7 @@ export class TasksService {
 
       // Find default workflow status for this project
       const defaultStatus = await tx.workflowStatus.findFirst({
-        where: { projectId, isDefault: true },
+        where: { projectId, kind: 'TASK', isDefault: true },
       });
 
       return tx.task.create({
