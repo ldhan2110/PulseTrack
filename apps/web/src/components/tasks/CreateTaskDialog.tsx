@@ -170,11 +170,12 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[50vw]" style={{maxWidth: "none"}}>
+      <DialogContent className="w-full max-w-[50vw] h-[90vh] max-h-[90vh] flex flex-col" style={{maxWidth: "50vw"}}>
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          <div className="overflow-y-auto flex-1 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="task-title" required>Title</FieldLabel>
@@ -341,8 +342,9 @@ export function CreateTaskDialog({
               </Field>
             </div>
           </FieldGroup>
+          </div>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-6 shrink-0">
             <Button
               type="button"
               variant="ghost"

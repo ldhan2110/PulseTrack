@@ -48,6 +48,7 @@ export function BugFilters({
   const { data: workflow } = useWorkflow(projectId, 'BUG');
   const [searchValue, setSearchValue] = useState(globalFilter);
   const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [ownerSearch, setOwnerSearch] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,11 +85,13 @@ export function BugFilters({
   const selectedSeverities = (getFilterValue('severity') as BugSeverity[] | undefined) ?? [];
   const selectedStatuses = (getFilterValue('workflowStatusId') as string[] | undefined) ?? [];
   const selectedAssignees = (getFilterValue('assigneeId') as string[] | undefined) ?? [];
+  const selectedOwners = (getFilterValue('ownerId') as string[] | undefined) ?? [];
 
   const hasAnyFilter =
     selectedSeverities.length > 0 ||
     selectedStatuses.length > 0 ||
     selectedAssignees.length > 0 ||
+    selectedOwners.length > 0 ||
     searchValue !== '';
 
   const clearAllFilters = () => {
@@ -119,6 +122,14 @@ export function BugFilters({
     if (idx >= 0) current.splice(idx, 1);
     else current.push(userId);
     setFilterValue('assigneeId', current.length > 0 ? current : undefined);
+  };
+
+  const toggleOwner = (userId: string) => {
+    const current = [...selectedOwners];
+    const idx = current.indexOf(userId);
+    if (idx >= 0) current.splice(idx, 1);
+    else current.push(userId);
+    setFilterValue('ownerId', current.length > 0 ? current : undefined);
   };
 
   return (
@@ -256,6 +267,71 @@ export function BugFilters({
                   <Checkbox
                     checked={selectedAssignees.includes(member.userId)}
                     onCheckedChange={() => toggleAssignee(member.userId)}
+                  />
+                  <Avatar className="size-5">
+                    {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
+                    <AvatarFallback className="text-[9px]">
+                      {getInitials(member.user.name ?? member.user.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{member.user.name ?? member.user.username}</span>
+                </label>
+              ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Bug Owner filter */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn('h-8 gap-1.5', selectedOwners.length > 0 && 'border-primary')}
+          >
+            Bug Owner
+            {selectedOwners.length > 0 && (
+              <Badge variant="secondary" className="size-5 p-0 flex items-center justify-center text-[10px] rounded-full">
+                {selectedOwners.length}
+              </Badge>
+            )}
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-52 p-2" align="start" onCloseAutoFocus={() => setOwnerSearch('')}>
+          <div className="relative mb-2">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search..."
+              value={ownerSearch}
+              onChange={(e) => setOwnerSearch(e.target.value)}
+              className="pl-7 h-7 text-xs"
+            />
+          </div>
+          <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+            {(!ownerSearch || 'unassigned'.includes(ownerSearch.toLowerCase())) && (
+              <label className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm">
+                <Checkbox
+                  checked={selectedOwners.includes('unassigned')}
+                  onCheckedChange={() => toggleOwner('unassigned')}
+                />
+                <span className="text-muted-foreground">Unassigned</span>
+              </label>
+            )}
+            {members
+              .filter((m) => {
+                if (!ownerSearch) return true;
+                const name = (m.user.name ?? m.user.username).toLowerCase();
+                return name.includes(ownerSearch.toLowerCase());
+              })
+              .map((member) => (
+                <label
+                  key={member.userId}
+                  className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
+                >
+                  <Checkbox
+                    checked={selectedOwners.includes(member.userId)}
+                    onCheckedChange={() => toggleOwner(member.userId)}
                   />
                   <Avatar className="size-5">
                     {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}

@@ -172,7 +172,7 @@ export function CreateBugDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[50vw] max-h-[90vh] flex flex-col" style={{ maxWidth: "none" }}>
+      <DialogContent className="w-full max-w-[50vw] h-[90vh] max-h-[90vh] flex flex-col" style={{ maxWidth: "50vw" }}>
         <DialogHeader>
           <DialogTitle>Report Bug</DialogTitle>
         </DialogHeader>

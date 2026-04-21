@@ -115,6 +115,18 @@ export const bugAssigneeFilterFn = (
   return false;
 };
 
+export const bugOwnerFilterFn = (
+  row: { getValue: (id: string) => unknown },
+  columnId: string,
+  filterValue: string[],
+) => {
+  if (!filterValue || filterValue.length === 0) return true;
+  const val = row.getValue(columnId) as string | null;
+  if (filterValue.includes('unassigned') && (val === null || val === undefined)) return true;
+  if (val && filterValue.includes(val)) return true;
+  return false;
+};
+
 interface BugsTableProps {
   bugs: Bug[];
   projectId: string;
@@ -207,6 +219,28 @@ export function BugsTable({
         },
         size: 140,
         filterFn: bugAssigneeFilterFn,
+        enableColumnFilter: true,
+      },
+      {
+        accessorKey: 'ownerId',
+        header: ({ column }) => <SortHeader label="Owner" column={column} />,
+        cell: ({ row }) => {
+          const owner = row.original.owner;
+          if (!owner) {
+            return <span className="text-sm text-muted-foreground">Unassigned</span>;
+          }
+          return (
+            <div className="flex items-center gap-2">
+              <Avatar className="size-6">
+                {owner.imageUrl && <AvatarImage src={owner.imageUrl} alt={owner.name ?? owner.username} />}
+                <AvatarFallback className="text-[10px]">{getInitials(owner.name ?? owner.username)}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm truncate">{owner.name ?? owner.username}</span>
+            </div>
+          );
+        },
+        size: 140,
+        filterFn: bugOwnerFilterFn,
         enableColumnFilter: true,
       },
       {
