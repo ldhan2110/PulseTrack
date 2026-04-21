@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WatchersService } from '../watchers/watchers.service';
+import { TasksService } from '../tasks/tasks.service';
 import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
 import { BulkImportBugsDto } from './dto/bulk-import-bugs.dto';
+import { CreateFixTaskDto } from './dto/create-fix-task.dto';
 import type { NotificationType, EntityType, Prisma } from '@prisma/client';
 
 const BUG_RELATIONS = {
@@ -26,6 +28,8 @@ export class BugsService {
     private prisma: PrismaService,
     private notifications: NotificationsService,
     private watchersService: WatchersService,
+    @Inject(forwardRef(() => TasksService))
+    private tasksService: TasksService,
   ) {}
 
   async create(projectId: string, reporterId: string, dto: CreateBugDto) {
@@ -540,6 +544,58 @@ export class BugsService {
       },
     });
     return bugTasks.map(bt => bt.task);
+  }
+
+  async createFixTask(bugId: string, projectId: string, creatorId: string, dto: { parentId?: string; assigneeId?: string }) {
+    const bug = await this.prisma.bug.findUniqueOrThrow({
+      where: { id: bugId },
+      select: {
+        id: true,
+        bugKey: true,
+        title: true,
+        description: true,
+        preconditions: true,
+        expectedResult: true,
+        actualResult: true,
+        environment: true,
+        severity: true,
+        assigneeId: true,
+        projectId: true,
+        reproSteps: { orderBy: { position: 'asc' } },
+      },
+    });
+
+    if (bug.projectId !== projectId) {
+      throw new Error('Bug does not belong to this project');
+    }
+
+    const title = `Fix [${bug.bugKey}]: ${bug.title}`;
+
+    const sections: string[] = [];
+    if (bug.description) sections.push(`**Description:** ${bug.description}`);
+    if (bug.preconditions) sections.push(`**Preconditions:** ${bug.preconditions}`);
+    if (bug.expectedResult) sections.push(`**Expected Result:** ${bug.expectedResult}`);
+    if (bug.actualResult) sections.push(`**Actual Result:** ${bug.actualResult}`);
+    if (bug.environment) sections.push(`**Environment:** ${bug.environment}`);
+    if (bug.severity) sections.push(`**Severity:** ${bug.severity}`);
+    if (bug.reproSteps.length > 0) {
+      const steps = bug.reproSteps.map((s, i) => `${i + 1}. ${s.content}`).join('\n');
+      sections.push(`**Repro Steps:**\n${steps}`);
+    }
+    const description = `**Bug:** ${bug.bugKey}\n\n${sections.join('\n\n')}`;
+
+    const task = await this.tasksService.create(projectId, creatorId, {
+      title,
+      description,
+      parentId: dto.parentId,
+      assigneeId: dto.assigneeId ?? bug.assigneeId ?? undefined,
+    } as any);
+
+    await this.prisma.bugTask.create({
+      data: { bugId, taskId: task.id },
+    });
+
+    return task;
   }
 
   async getBugsByTaskId(taskId: string) {
