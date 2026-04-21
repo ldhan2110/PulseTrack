@@ -11,6 +11,7 @@ import { CreateBugDto } from './dto/create-bug.dto';
 import { UpdateBugDto } from './dto/update-bug.dto';
 import { BulkImportBugsDto } from './dto/bulk-import-bugs.dto';
 import { LinkTasksDto } from './dto/link-tasks.dto';
+import { CreateFixTaskDto } from './dto/create-fix-task.dto';
 
 @Controller('projects/:projectId/bugs')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -89,6 +90,17 @@ export class BugsController {
     @Body() dto: LinkTasksDto,
   ) {
     return this.bugsService.linkTasks(bugId, dto.taskIds);
+  }
+
+  @Post(':bugId/create-fix-task')
+  @RequirePermission('bugs', 'update')
+  createFixTask(
+    @Param('projectId') projectId: string,
+    @Param('bugId') bugId: string,
+    @Req() req: any,
+    @Body() dto: CreateFixTaskDto,
+  ) {
+    return this.bugsService.createFixTask(bugId, projectId, req.user.id, dto);
   }
 
   @Delete(':bugId/tasks/:taskId')
