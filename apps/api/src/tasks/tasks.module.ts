@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -11,7 +11,7 @@ import { BugsModule } from '../bugs/bugs.module';
     NotificationsModule,
     WorkflowModule,
     WatchersModule,
-    BugsModule,
+    forwardRef(() => BugsModule),
   ],
   controllers: [TasksController],
   providers: [TasksService],
