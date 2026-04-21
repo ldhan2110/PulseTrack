@@ -17,7 +17,34 @@ const BUG_RELATIONS = {
   reproSteps: { orderBy: { position: 'asc' as const } },
   bugTasks: {
     include: {
-      task: { select: { id: true, taskKey: true, title: true } },
+      task: {
+        select: {
+          id: true,
+          taskKey: true,
+          title: true,
+          estimatedMinutes: true,
+          timeLogs: {
+            include: {
+              user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+            },
+            orderBy: { loggedAt: 'desc' as const },
+          },
+          children: {
+            select: {
+              id: true,
+              taskKey: true,
+              title: true,
+              estimatedMinutes: true,
+              timeLogs: {
+                include: {
+                  user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+                },
+                orderBy: { loggedAt: 'desc' as const },
+              },
+            },
+          },
+        },
+      },
     },
   },
 };
