@@ -108,6 +108,22 @@ export function useUnlinkBugTask(projectId: string) {
   });
 }
 
+export function useCreateFixTask(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bugId, data }: { bugId: string; data: { parentId?: string; assigneeId?: string } }) =>
+      api.createFixTask(projectId, bugId, data),
+    onSuccess: (_data, { bugId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['bug', projectId, bugId] });
+      void queryClient.invalidateQueries({ queryKey: ['bug-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['bugs', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      toast.success(`Fix task created: ${_data.taskKey}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useTaskBugs(projectId: string, taskId: string) {
   return useQuery({
     queryKey: ['task-bugs', projectId, taskId],
