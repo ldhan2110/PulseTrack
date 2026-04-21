@@ -329,7 +329,22 @@ export interface Bug {
   ownerId: string | null;
   reporterId: string;
   projectId: string;
-  bugTasks?: { task: { id: string; taskKey: string | null; title: string } }[];
+  bugTasks?: {
+    task: {
+      id: string;
+      taskKey: string | null;
+      title: string;
+      estimatedMinutes: number | null;
+      timeLogs?: TimeLog[];
+      children?: {
+        id: string;
+        taskKey: string | null;
+        title: string;
+        estimatedMinutes: number | null;
+        timeLogs?: TimeLog[];
+      }[];
+    };
+  }[];
   createdAt: string;
   updatedAt: string;
   assignee?: User | null;

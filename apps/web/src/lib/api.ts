@@ -292,6 +292,8 @@ export const api = {
     request<Bug>(`/projects/${projectId}/bugs/${bugId}/tasks`, { method: 'POST', body: JSON.stringify({ taskIds }) }),
   unlinkBugTask: (projectId: string, bugId: string, taskId: string) =>
     request<Bug>(`/projects/${projectId}/bugs/${bugId}/tasks/${taskId}`, { method: 'DELETE' }),
+  createFixTask: (projectId: string, bugId: string, data: { parentId?: string; assigneeId?: string }) =>
+    request<Task>(`/projects/${projectId}/bugs/${bugId}/create-fix-task`, { method: 'POST', body: JSON.stringify(data) }),
   getTaskBugs: (projectId: string, taskId: string) =>
     request<Bug[]>(`/projects/${projectId}/tasks/${taskId}/bugs`),
 
