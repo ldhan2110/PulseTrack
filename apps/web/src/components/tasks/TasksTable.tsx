@@ -446,13 +446,11 @@ export function TasksTable({
     state: {
       sorting,
       columnFilters,
-      globalFilter,
       rowSelection,
     },
     enableRowSelection: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: (updater) => {
       setRowSelection((prev) => {
         const next = typeof updater === 'function' ? updater(prev) : updater;
@@ -541,10 +539,10 @@ export function TasksTable({
                       <TableCell />
                       <TableCell />
                       <TableCell>
-                        <div className="flex items-center gap-2 pl-4">
-                          <span className="text-muted-foreground">└</span>
-                          <span className="text-xs text-muted-foreground font-mono">{child.taskKey}</span>
-                          <span className="text-sm">{child.title}</span>
+                        <div className="flex items-center gap-2 pl-4 min-w-0 overflow-hidden">
+                          <span className="text-muted-foreground shrink-0">└</span>
+                          <span className="text-xs text-muted-foreground font-mono shrink-0">{child.taskKey}</span>
+                          <span className="text-sm truncate max-w-[250px]" title={child.title}>{child.title}</span>
                         </div>
                       </TableCell>
                       <TableCell>

@@ -44,6 +44,7 @@ export class ReportGeneratorService {
     nowInTz.setHours(0, 0, 0, 0);
     const today = new Date(nowInTz.getTime() - offsetMs);
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
 
     const tasks = await this.prisma.task.findMany({
       where: {
@@ -54,13 +55,14 @@ export class ReportGeneratorService {
           { progress: { lt: 100 } },
           {
             workflowStatus: { isClosed: true },
-            actualEndDate: { gte: today, lt: tomorrow },
+            actualEndDate: { gte: threeDaysAgo, lt: tomorrow },
           },
         ],
       },
       include: {
         assignee: { select: { id: true, name: true, username: true } },
         workflowStatus: { select: { name: true } },
+        children: { select: { progress: true } },
       },
     });
 
@@ -80,11 +82,18 @@ export class ReportGeneratorService {
       const statusName = task.workflowStatus?.name ?? 'No Status';
       statusCounts[statusName] = (statusCounts[statusName] ?? 0) + 1;
 
+      // For parent tasks, compute progress from children instead of using the stored value
+      let effectiveProgress = task.progress;
+      if (task.children && task.children.length > 0) {
+        const sum = task.children.reduce((acc, c) => acc + (c.progress ?? 0), 0);
+        effectiveProgress = Math.round(sum / task.children.length);
+      }
+
       memberMap.get(memberId)!.tasks.push({
         taskKey: task.taskKey ?? task.id.slice(0, 8),
         title: task.title,
         statusName,
-        progress: task.progress,
+        progress: effectiveProgress,
       });
     }
 
@@ -96,7 +105,13 @@ export class ReportGeneratorService {
       tasks: m.tasks,
     }));
 
-    const allProgresses = tasks.map((t) => t.progress);
+    const allProgresses = tasks.map((t) => {
+      if (t.children && t.children.length > 0) {
+        const sum = t.children.reduce((acc, c) => acc + (c.progress ?? 0), 0);
+        return Math.round(sum / t.children.length);
+      }
+      return t.progress;
+    });
     const avgProgress = allProgresses.length > 0
       ? Math.round(allProgresses.reduce((a, b) => a + b, 0) / allProgresses.length)
       : 0;

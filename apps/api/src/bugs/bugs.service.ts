@@ -573,7 +573,7 @@ export class BugsService {
     return bugTasks.map(bt => bt.task);
   }
 
-  async createFixTask(bugId: string, projectId: string, creatorId: string, dto: { parentId?: string; assigneeId?: string }) {
+  async createFixTask(bugId: string, projectId: string, creatorId: string, dto: { title?: string; parentId?: string; assigneeId?: string }) {
     const bug = await this.prisma.bug.findUniqueOrThrow({
       where: { id: bugId },
       select: {
@@ -596,7 +596,7 @@ export class BugsService {
       throw new Error('Bug does not belong to this project');
     }
 
-    const title = `Fix [${bug.bugKey}]: ${bug.title}`;
+    const title = dto.title?.trim() || `Fix [${bug.bugKey}]: ${bug.title}`;
 
     const sections: string[] = [];
     if (bug.description) sections.push(`**Description:** ${bug.description}`);
