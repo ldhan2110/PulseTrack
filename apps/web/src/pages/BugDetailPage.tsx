@@ -785,7 +785,7 @@ export function BugDetailPage() {
         defaultTitle={`Fix [${bug.bugKey}]: ${bug.title}`}
         defaultAssigneeId={bug.assigneeId}
         tasks={tasks}
-        members={members}
+        members={members.map((m) => m.user)}
         onSubmit={(data) => {
           createFixTask.mutate(
             { bugId: bug.id, data },

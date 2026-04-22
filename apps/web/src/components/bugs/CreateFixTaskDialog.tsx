@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -47,6 +48,8 @@ export function CreateFixTaskDialog({
   const topLevelTasks = tasks.filter((t) => !t.parentId);
   const selectedParent = topLevelTasks.find((t) => t.id === parentId);
   const selectedAssignee = members.find((m) => m.id === assigneeId);
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -156,11 +159,21 @@ export function CreateFixTaskDialog({
                   role="combobox"
                   className="w-full justify-between font-normal"
                 >
-                  <span className="truncate text-sm">
-                    {selectedAssignee
-                      ? selectedAssignee.name ?? selectedAssignee.username
-                      : 'Select assignee...'}
-                  </span>
+                  {selectedAssignee ? (
+                    <span className="flex items-center gap-2 truncate text-sm">
+                      <Avatar className="size-5 shrink-0">
+                        {selectedAssignee.imageUrl && (
+                          <AvatarImage src={selectedAssignee.imageUrl} alt={selectedAssignee.name ?? selectedAssignee.username} />
+                        )}
+                        <AvatarFallback className="text-[9px]">
+                          {getInitials(selectedAssignee.name ?? selectedAssignee.username)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {selectedAssignee.name ?? selectedAssignee.username}
+                    </span>
+                  ) : (
+                    <span className="truncate text-sm text-muted-foreground">Select assignee...</span>
+                  )}
                   <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -180,6 +193,12 @@ export function CreateFixTaskDialog({
                           }}
                         >
                           <Check className={cn('mr-2 size-4', assigneeId === m.id ? 'opacity-100' : 'opacity-0')} />
+                          <Avatar className="size-5 mr-1.5">
+                            {m.imageUrl && <AvatarImage src={m.imageUrl} alt={m.name ?? m.username} />}
+                            <AvatarFallback className="text-[9px]">
+                              {getInitials(m.name ?? m.username ?? m.email)}
+                            </AvatarFallback>
+                          </Avatar>
                           <span className="text-sm">{m.name ?? m.username}</span>
                         </CommandItem>
                       ))}
