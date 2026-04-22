@@ -41,6 +41,8 @@ import { ReproStepsList } from '@/components/bugs/ReproStepsList';
 import { BugAttachments } from '@/components/bugs/BugAttachments';
 import { BugCommentThread } from '@/components/bugs/BugCommentThread';
 import { BugActivityLog } from '@/components/bugs/BugActivityLog';
+import { TimeLogsList } from '@/components/tasks/TimeLogsList';
+import { BugTimeTrackingCard } from '@/components/bugs/BugTimeTrackingCard';
 import { WatcherSelect } from '@/components/tasks/WatcherSelect';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -103,6 +105,19 @@ export function BugDetailPage() {
   const unlinkBugTask = useUnlinkBugTask(projectId);
   const createFixTask = useCreateFixTask(projectId);
   const [fixTaskDialogOpen, setFixTaskDialogOpen] = useState(false);
+
+  // Flatten time logs from all linked tasks and their sub-tasks for display
+  const aggregatedTimeLogs = (bug?.bugTasks ?? []).flatMap((bt) => {
+    const task = bt.task;
+    const children = task.children ?? [];
+    if (children.length > 0) {
+      return children.flatMap((child) =>
+        (child.timeLogs ?? []).map((tl) => ({ ...tl, _taskKey: child.taskKey, _taskTitle: child.title })),
+      );
+    }
+    return (task.timeLogs ?? []).map((tl) => ({ ...tl, _taskKey: task.taskKey, _taskTitle: task.title }));
+  });
+
   const { data: tasks = [] } = useTasks(projectId);
   const { data: workflow } = useWorkflow(projectId, 'BUG');
   const validTransitions = useValidTransitions(workflow, bug?.workflowStatusId ?? null);
@@ -333,6 +348,7 @@ export function BugDetailPage() {
               <TabsList variant="line" className="mb-4">
                 <TabsTrigger value="comments">Comments</TabsTrigger>
                 <TabsTrigger value="activity">Activity</TabsTrigger>
+                <TabsTrigger value="timelogs">Time Logs</TabsTrigger>
               </TabsList>
               <TabsContent value="comments">
                 <BugCommentThread
@@ -348,6 +364,17 @@ export function BugDetailPage() {
                   bugId={bugId}
                   members={members}
                 />
+              </TabsContent>
+              <TabsContent value="timelogs" className="max-h-[500px] overflow-y-auto">
+                {aggregatedTimeLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No time logged on linked tasks yet.</p>
+                ) : (
+                  <TimeLogsList
+                    timeLogs={aggregatedTimeLogs}
+                    currentUserId=""
+                    onDelete={() => {}}
+                  />
+                )}
               </TabsContent>
             </Tabs>
           </div>
@@ -613,6 +640,9 @@ export function BugDetailPage() {
               </div>
 
               <Separator />
+
+              {/* Time Tracking (aggregated from linked tasks) */}
+              <BugTimeTrackingCard bug={bug} />
 
               {/* Linked Tasks */}
               <div className="flex flex-col gap-1.5">
