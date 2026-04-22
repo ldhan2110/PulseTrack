@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
-import { ArrowLeft, Trash2, Loader2, Check, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2, Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,7 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useBugByKey, useUpdateBug, useDeleteBug, useLinkBugTasks, useUnlinkBugTask } from '@/hooks/useBugs';
+import { useBugByKey, useUpdateBug, useDeleteBug, useLinkBugTasks, useUnlinkBugTask, useCreateFixTask } from '@/hooks/useBugs';
+import { CreateFixTaskDialog } from '@/components/bugs/CreateFixTaskDialog';
 import { useTasks } from '@/hooks/useTasks';
 import { useMembers } from '@/hooks/useMembers';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -100,6 +101,8 @@ export function BugDetailPage() {
   const deleteBug = useDeleteBug(projectId);
   const linkBugTasks = useLinkBugTasks(projectId);
   const unlinkBugTask = useUnlinkBugTask(projectId);
+  const createFixTask = useCreateFixTask(projectId);
+  const [fixTaskDialogOpen, setFixTaskDialogOpen] = useState(false);
   const { data: tasks = [] } = useTasks(projectId);
   const { data: workflow } = useWorkflow(projectId, 'BUG');
   const validTransitions = useValidTransitions(workflow, bug?.workflowStatusId ?? null);
@@ -676,6 +679,15 @@ export function BugDetailPage() {
                     ))}
                   </div>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 h-7 text-xs mt-1"
+                  onClick={() => setFixTaskDialogOpen(true)}
+                >
+                  <Plus className="size-3" />
+                  Create Fix Task
+                </Button>
               </div>
 
               {/* Reporter */}
@@ -737,6 +749,21 @@ export function BugDetailPage() {
             </div>
           </div>
         </div>
+      <CreateFixTaskDialog
+        open={fixTaskDialogOpen}
+        onOpenChange={setFixTaskDialogOpen}
+        defaultTitle={`Fix [${bug.bugKey}]: ${bug.title}`}
+        defaultAssigneeId={bug.assigneeId}
+        tasks={tasks}
+        members={members}
+        onSubmit={(data) => {
+          createFixTask.mutate(
+            { bugId: bug.id, data },
+            { onSuccess: () => setFixTaskDialogOpen(false) },
+          );
+        }}
+        isLoading={createFixTask.isPending}
+      />
       </div>
     </div>
   );
