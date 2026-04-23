@@ -49,6 +49,7 @@ export function BugFilters({
   const [searchValue, setSearchValue] = useState(globalFilter);
   const [assigneeSearch, setAssigneeSearch] = useState('');
   const [ownerSearch, setOwnerSearch] = useState('');
+  const [reporterSearch, setReporterSearch] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,12 +87,14 @@ export function BugFilters({
   const selectedStatuses = (getFilterValue('workflowStatusId') as string[] | undefined) ?? [];
   const selectedAssignees = (getFilterValue('assigneeId') as string[] | undefined) ?? [];
   const selectedOwners = (getFilterValue('ownerId') as string[] | undefined) ?? [];
+  const selectedReporters = (getFilterValue('reporterId') as string[] | undefined) ?? [];
 
   const hasAnyFilter =
     selectedSeverities.length > 0 ||
     selectedStatuses.length > 0 ||
     selectedAssignees.length > 0 ||
     selectedOwners.length > 0 ||
+    selectedReporters.length > 0 ||
     searchValue !== '';
 
   const clearAllFilters = () => {
@@ -130,6 +133,14 @@ export function BugFilters({
     if (idx >= 0) current.splice(idx, 1);
     else current.push(userId);
     setFilterValue('ownerId', current.length > 0 ? current : undefined);
+  };
+
+  const toggleReporter = (userId: string) => {
+    const current = [...selectedReporters];
+    const idx = current.indexOf(userId);
+    if (idx >= 0) current.splice(idx, 1);
+    else current.push(userId);
+    setFilterValue('reporterId', current.length > 0 ? current : undefined);
   };
 
   return (
@@ -332,6 +343,71 @@ export function BugFilters({
                   <Checkbox
                     checked={selectedOwners.includes(member.userId)}
                     onCheckedChange={() => toggleOwner(member.userId)}
+                  />
+                  <Avatar className="size-5">
+                    {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}
+                    <AvatarFallback className="text-[9px]">
+                      {getInitials(member.user.name ?? member.user.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{member.user.name ?? member.user.username}</span>
+                </label>
+              ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Reporter filter */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn('h-8 gap-1.5', selectedReporters.length > 0 && 'border-primary')}
+          >
+            Reporter
+            {selectedReporters.length > 0 && (
+              <Badge variant="secondary" className="size-5 p-0 flex items-center justify-center text-[10px] rounded-full">
+                {selectedReporters.length}
+              </Badge>
+            )}
+            <ChevronDown className="size-3.5 text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-52 p-2" align="start" onCloseAutoFocus={() => setReporterSearch('')}>
+          <div className="relative mb-2">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search..."
+              value={reporterSearch}
+              onChange={(e) => setReporterSearch(e.target.value)}
+              className="pl-7 h-7 text-xs"
+            />
+          </div>
+          <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+            {(!reporterSearch || 'unassigned'.includes(reporterSearch.toLowerCase())) && (
+              <label className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm">
+                <Checkbox
+                  checked={selectedReporters.includes('unassigned')}
+                  onCheckedChange={() => toggleReporter('unassigned')}
+                />
+                <span className="text-muted-foreground">Unassigned</span>
+              </label>
+            )}
+            {members
+              .filter((m) => {
+                if (!reporterSearch) return true;
+                const name = (m.user.name ?? m.user.username).toLowerCase();
+                return name.includes(reporterSearch.toLowerCase());
+              })
+              .map((member) => (
+                <label
+                  key={member.userId}
+                  className="flex items-center gap-2 cursor-pointer rounded px-2 py-1.5 hover:bg-muted text-sm"
+                >
+                  <Checkbox
+                    checked={selectedReporters.includes(member.userId)}
+                    onCheckedChange={() => toggleReporter(member.userId)}
                   />
                   <Avatar className="size-5">
                     {member.user.imageUrl && <AvatarImage src={member.user.imageUrl} alt={member.user.name ?? member.user.username} />}

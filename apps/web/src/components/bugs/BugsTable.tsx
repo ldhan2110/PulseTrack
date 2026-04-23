@@ -127,6 +127,18 @@ export const bugOwnerFilterFn = (
   return false;
 };
 
+export const bugReporterFilterFn = (
+  row: { getValue: (id: string) => unknown },
+  columnId: string,
+  filterValue: string[],
+) => {
+  if (!filterValue || filterValue.length === 0) return true;
+  const val = row.getValue(columnId) as string | null;
+  if (filterValue.includes('unassigned') && (val === null || val === undefined)) return true;
+  if (val && filterValue.includes(val)) return true;
+  return false;
+};
+
 interface BugsTableProps {
   bugs: Bug[];
   projectId: string;
@@ -245,7 +257,7 @@ export function BugsTable({
       },
       {
         accessorKey: 'reporterId',
-        header: 'Reporter',
+        header: ({ column }) => <SortHeader label="Reporter" column={column} />,
         cell: ({ row }) => {
           const reporter = row.original.reporter;
           if (!reporter) {
@@ -262,7 +274,8 @@ export function BugsTable({
           );
         },
         size: 140,
-        enableSorting: false,
+        filterFn: bugReporterFilterFn,
+        enableColumnFilter: true,
       },
       {
         id: 'linkedTasks',

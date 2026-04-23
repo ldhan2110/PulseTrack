@@ -630,11 +630,7 @@ export class BugsService {
       where: { taskId },
       include: {
         bug: {
-          include: {
-            reporter: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
-            assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
-            workflowStatus: true,
-          },
+          include: BUG_RELATIONS,
         },
       },
     });

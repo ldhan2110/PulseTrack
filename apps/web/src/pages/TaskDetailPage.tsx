@@ -50,6 +50,7 @@ import { getParentProgress } from '@/components/tasks/task-progress-utils';
 import { TimeLogsList } from '@/components/tasks/TimeLogsList';
 import { SubTaskCard } from '@/components/tasks/SubTaskCard';
 import { AddSubTaskModal } from '@/components/tasks/AddSubTaskModal';
+import { BugCard } from '@/components/bugs/BugCard';
 import type { AcceptanceCriteria, Priority } from '@/lib/types';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -615,38 +616,27 @@ export function TaskDetailPage() {
 
           {/* Bugs Section */}
           {task && (
-            <div className="flex flex-col gap-2">
+            <div className="rounded-lg border p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-[13px] font-semibold text-muted-foreground">
-                  Bugs ({linkedBugs.length})
-                </h2>
+                <h3 className="text-sm font-semibold">Bugs ({linkedBugs.length})</h3>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="h-7 text-xs gap-1"
+                  className="h-7 gap-1"
                   onClick={() => navigate(`/projects/${projectPrefix}/bugs`)}
                 >
-                  <Plus className="size-3" />
+                  <Plus className="size-3.5" />
                   Report Bug
                 </Button>
               </div>
-              {linkedBugs.length > 0 && (
-                <div className="flex flex-col gap-1">
+              {linkedBugs.length > 0 ? (
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
                   {linkedBugs.map((bug) => (
-                    <Link
-                      key={bug.id}
-                      to={`/projects/${projectPrefix}/bugs/${bug.bugKey}`}
-                      className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
-                    >
-                      <span
-                        className="size-2 rounded-full shrink-0"
-                        style={{ backgroundColor: bug.workflowStatus?.color ?? '#6b7280' }}
-                      />
-                      <span className="flex-1 truncate">{bug.title}</span>
-                      <span className="text-xs font-medium text-muted-foreground">{bug.severity}</span>
-                    </Link>
+                    <BugCard key={bug.id} bug={bug} />
                   ))}
                 </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No bugs linked</p>
               )}
             </div>
           )}
