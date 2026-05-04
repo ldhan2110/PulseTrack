@@ -144,11 +144,11 @@ export function TestCaseForm({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-2xl max-h-[85vh] max-w-none overflow-y-auto" style={{ maxWidth: "none" }}>
+      <DialogContent className="w-2xl max-h-[85vh] max-w-none flex flex-col overflow-hidden" style={{ maxWidth: "none" }}>
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Test Case' : 'New Test Case'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form id="tc-form" onSubmit={handleSubmit} className="flex flex-col gap-4 min-h-0 flex-1 overflow-y-auto pr-1">
           {/* Title */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tc-title" className="text-[13px] font-semibold">
@@ -267,27 +267,26 @@ export function TestCaseForm({
             <Label className="text-[13px] font-semibold">Steps</Label>
             <StepsBuilder steps={steps} onChange={setSteps} />
           </div>
-
-          <DialogFooter className="mt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => handleOpenChange(false)}
-              disabled={mutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending
-                ? isEditing
-                  ? 'Saving...'
-                  : 'Creating...'
-                : isEditing
-                  ? 'Save Changes'
-                  : 'Create Test Case'}
-            </Button>
-          </DialogFooter>
         </form>
+        <DialogFooter className="shrink-0 border-t pt-3 mt-0">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => handleOpenChange(false)}
+            disabled={mutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" form="tc-form" disabled={mutation.isPending}>
+            {mutation.isPending
+              ? isEditing
+                ? 'Saving...'
+                : 'Creating...'
+              : isEditing
+                ? 'Save Changes'
+                : 'Create Test Case'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

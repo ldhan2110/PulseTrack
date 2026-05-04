@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, List } from 'lucide-react';
 
 export interface TestStep {
   position: number;
@@ -18,8 +19,17 @@ function reindex(steps: TestStep[]): TestStep[] {
   return steps.map((s, i) => ({ ...s, position: i }));
 }
 
+function parseLines(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.replace(/^\s*(?:\d+[.)]\s*|[-•*]\s*)/, '').trim())
+    .filter(Boolean);
+}
+
 export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkText, setBulkText] = useState('');
 
   const addStep = () => {
     const updated = [...steps, { position: steps.length, action: '', expectedResult: '' }];
@@ -50,6 +60,60 @@ export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
       addStep();
     }
   };
+
+  const handleBulkAdd = () => {
+    const actions = parseLines(bulkText);
+    if (actions.length === 0) return;
+    const newSteps: TestStep[] = actions.map((action) => ({
+      position: 0,
+      action,
+      expectedResult: '',
+    }));
+    onChange(reindex([...steps, ...newSteps]));
+    setBulkText('');
+    setBulkMode(false);
+  };
+
+  if (bulkMode) {
+    return (
+      <div ref={containerRef} className="flex flex-col gap-2">
+        {steps.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {steps.length} existing step{steps.length !== 1 ? 's' : ''} — new lines will be appended
+          </p>
+        )}
+        <Textarea
+          value={bulkText}
+          onChange={(e) => setBulkText(e.target.value)}
+          placeholder={"Type or paste steps, one per line:\n1. Open login page\n2. Enter credentials\n3. Click submit"}
+          rows={6}
+          autoFocus
+          className="text-sm"
+        />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleBulkAdd}
+            disabled={!bulkText.trim()}
+            className="text-xs gap-1"
+          >
+            <Plus className="size-3" />
+            Add {parseLines(bulkText).length || ''} Step{parseLines(bulkText).length !== 1 ? 's' : ''}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => { setBulkText(''); setBulkMode(false); }}
+            className="text-xs"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="flex flex-col gap-2">
@@ -86,16 +150,28 @@ export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
           </Button>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={addStep}
-        className="self-start text-xs gap-1"
-      >
-        <Plus className="size-3" />
-        Add Step
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={addStep}
+          className="self-start text-xs gap-1"
+        >
+          <Plus className="size-3" />
+          Add Step
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setBulkMode(true)}
+          className="self-start text-xs gap-1"
+        >
+          <List className="size-3" />
+          Bulk Add
+        </Button>
+      </div>
     </div>
   );
 }
