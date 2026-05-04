@@ -4,6 +4,7 @@ import { Command as CommandPrimitive } from "cmdk"
 import { cn } from "@/lib/utils"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -57,7 +58,9 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        <DialogBody className="p-0">
+          {children}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

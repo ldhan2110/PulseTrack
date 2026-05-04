@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -114,6 +115,7 @@ export function ExportTestCasesDialog({ open, onOpenChange, projectId, projectPr
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <div className="flex flex-col gap-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
           {/* Search section */}
           <div>
@@ -228,6 +230,7 @@ export function ExportTestCasesDialog({ open, onOpenChange, projectId, projectPr
         </div>
 
         <Separator />
+        </DialogBody>
 
         <DialogFooter className="gap-2 sm:justify-between">
           <div className="text-xs text-muted-foreground self-center">

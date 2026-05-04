@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -358,100 +359,102 @@ export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: Workflow
           <DialogHeader>
             <DialogTitle>{editingNodeId ? 'Edit Status' : 'Add Status'}</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-4 py-2">
-            <div className="flex flex-col gap-1.5">
-              <Label>Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => {
-                  const name = e.target.value;
-                  const key = name.toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_');
-                  setFormData((f) => ({ ...f, name, key: editingNodeId ? f.key : key }));
-                }}
-                placeholder="e.g. In Review"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Key</Label>
-              <Input
-                value={formData.key}
-                onChange={(e) => setFormData((f) => ({ ...f, key: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '') }))}
-                placeholder="e.g. IN_REVIEW"
-                disabled={!!editingNodeId}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Color</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={formData.color}
-                  onChange={(e) => setFormData((f) => ({ ...f, color: e.target.value }))}
-                  className="size-8 rounded border cursor-pointer"
-                />
-                <Input
-                  value={formData.color}
-                  onChange={(e) => setFormData((f) => ({ ...f, color: e.target.value }))}
-                  className="w-28"
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label>Default status for new tasks</Label>
-              <Switch
-                checked={formData.isDefault}
-                onCheckedChange={(v) => setFormData((f) => ({ ...f, isDefault: v }))}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label>Closed (counts as "done")</Label>
-              <Switch
-                checked={formData.isClosed}
-                onCheckedChange={(v) => setFormData((f) => ({ ...f, isClosed: v }))}
-              />
-            </div>
-            <div className="border-t pt-3 mt-1 flex flex-col gap-3">
-              <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Date Automation</Label>
+          <DialogBody>
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <Label>Action on enter</Label>
-                <Select
-                  value={formData.autoDateAction ?? 'none'}
-                  onValueChange={(v) => setFormData((f) => ({
-                    ...f,
-                    autoDateAction: v === 'none' ? null : (v as AutoDateAction),
-                    autoDateField: v === 'none' ? null : f.autoDateField,
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="set">Set date to now</SelectItem>
-                    <SelectItem value="clear">Clear date</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const key = name.toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_');
+                    setFormData((f) => ({ ...f, name, key: editingNodeId ? f.key : key }));
+                  }}
+                  placeholder="e.g. In Review"
+                />
               </div>
-              {formData.autoDateAction && (
+              <div className="flex flex-col gap-1.5">
+                <Label>Key</Label>
+                <Input
+                  value={formData.key}
+                  onChange={(e) => setFormData((f) => ({ ...f, key: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '') }))}
+                  placeholder="e.g. IN_REVIEW"
+                  disabled={!!editingNodeId}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData((f) => ({ ...f, color: e.target.value }))}
+                    className="size-8 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={formData.color}
+                    onChange={(e) => setFormData((f) => ({ ...f, color: e.target.value }))}
+                    className="w-28"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Default status for new tasks</Label>
+                <Switch
+                  checked={formData.isDefault}
+                  onCheckedChange={(v) => setFormData((f) => ({ ...f, isDefault: v }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Closed (counts as "done")</Label>
+                <Switch
+                  checked={formData.isClosed}
+                  onCheckedChange={(v) => setFormData((f) => ({ ...f, isClosed: v }))}
+                />
+              </div>
+              <div className="border-t pt-3 mt-1 flex flex-col gap-3">
+                <Label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Date Automation</Label>
                 <div className="flex flex-col gap-1.5">
-                  <Label>Date field</Label>
+                  <Label>Action on enter</Label>
                   <Select
-                    value={formData.autoDateField ?? ''}
-                    onValueChange={(v) => setFormData((f) => ({ ...f, autoDateField: v as AutoDateField }))}
+                    value={formData.autoDateAction ?? 'none'}
+                    onValueChange={(v) => setFormData((f) => ({
+                      ...f,
+                      autoDateAction: v === 'none' ? null : (v as AutoDateAction),
+                      autoDateField: v === 'none' ? null : f.autoDateField,
+                    }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a date field" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.entries(DATE_FIELD_LABELS) as [AutoDateField, string][]).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
-                      ))}
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="set">Set date to now</SelectItem>
+                      <SelectItem value="clear">Clear date</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+                {formData.autoDateAction && (
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Date field</Label>
+                    <Select
+                      value={formData.autoDateField ?? ''}
+                      onValueChange={(v) => setFormData((f) => ({ ...f, autoDateField: v as AutoDateField }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a date field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.entries(DATE_FIELD_LABELS) as [AutoDateField, string][]).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleFormSave} disabled={!formData.name || !formData.key || (!!formData.autoDateAction && !formData.autoDateField)}>

@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -51,6 +52,7 @@ export function ImagePreviewModal({
         <DialogTitle className="text-sm font-medium truncate max-w-[80vw]">
           {attachment.filename}
         </DialogTitle>
+        <DialogBody className="p-0 flex flex-col items-center gap-4">
         <img
           src={staticUrl}
           alt={attachment.filename}
@@ -63,6 +65,7 @@ export function ImagePreviewModal({
           <Download className="size-3.5" />
           Download
         </Button>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

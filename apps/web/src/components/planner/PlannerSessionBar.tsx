@@ -5,7 +5,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -110,13 +110,15 @@ export function PlannerSessionBar({
           <DialogHeader>
             <DialogTitle>New Planning Session</DialogTitle>
           </DialogHeader>
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="e.g., Initial Requirements - Apr 2026"
-            onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
-            autoFocus
-          />
+          <DialogBody>
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g., Initial Requirements - Apr 2026"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+              autoFocus
+            />
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
             <Button onClick={handleCreate} disabled={!newName.trim()}>Create</Button>

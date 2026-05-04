@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,6 +102,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
           <DialogTitle>Manage Suite{suite ? ` - ${suite.name}` : ''}</DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         {/* Current members */}
         <div className="flex flex-col gap-2">
           <span className="text-[13px] font-semibold">Members ({suite?.members?.length ?? 0})</span>
@@ -191,6 +193,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
             </Button>
           )}
         </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

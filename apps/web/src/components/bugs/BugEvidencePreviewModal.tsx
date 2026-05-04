@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -98,6 +99,7 @@ export function BugEvidencePreviewModal({
           )}
         </DialogTitle>
 
+        <DialogBody className="p-0 flex flex-col items-center gap-4">
         <div className="relative flex items-center justify-center min-h-50">
           {hasPrev && (
             <Button
@@ -155,6 +157,7 @@ export function BugEvidencePreviewModal({
           <Download className="size-3.5" />
           Download
         </Button>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

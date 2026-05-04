@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -148,6 +149,7 @@ export function TestCaseForm({
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Test Case' : 'New Test Case'}</DialogTitle>
         </DialogHeader>
+        <DialogBody>
         <form id="tc-form" onSubmit={handleSubmit} className="flex flex-col gap-4 min-h-0 flex-1 overflow-y-auto pr-1">
           {/* Title */}
           <div className="flex flex-col gap-1.5">
@@ -268,6 +270,7 @@ export function TestCaseForm({
             <StepsBuilder steps={steps} onChange={setSteps} />
           </div>
         </form>
+        </DialogBody>
         <DialogFooter className="shrink-0 border-t pt-3 mt-0">
           <Button
             type="button"

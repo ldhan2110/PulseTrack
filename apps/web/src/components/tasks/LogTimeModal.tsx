@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 
 interface LogTimeModalProps {
@@ -63,85 +64,87 @@ export function LogTimeModal({
         <DialogHeader>
           <DialogTitle>Log Time</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground mb-1 block">Hours</label>
-              <input
-                type="number"
-                min={0}
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                placeholder="0"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                autoFocus
-              />
+        <DialogBody>
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Hours</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={hours}
+                  onChange={(e) => setHours(e.target.value)}
+                  placeholder="0"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  autoFocus
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Minutes</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={minutes}
+                  onChange={(e) => setMinutes(e.target.value)}
+                  placeholder="0"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex-[1.5]">
+                <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                <input
+                  type="date"
+                  value={loggedAt}
+                  onChange={(e) => setLoggedAt(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
             </div>
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground mb-1 block">Minutes</label>
-              <input
-                type="number"
-                min={0}
-                max={59}
-                value={minutes}
-                onChange={(e) => setMinutes(e.target.value)}
-                placeholder="0"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex-[1.5]">
-              <label className="text-xs text-muted-foreground mb-1 block">Date</label>
-              <input
-                type="date"
-                value={loggedAt}
-                onChange={(e) => setLoggedAt(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Comment</label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="What did you work on?"
-              rows={3}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs text-muted-foreground">Progress</label>
-              <span className="text-xs font-medium">{progress ?? 0}%</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={5}
-                value={progress ?? 0}
-                onChange={(e) => {
-                  setProgress(Number(e.target.value));
-                  setProgressTouched(true);
-                }}
-                className="flex-1 h-2 accent-green-500"
-              />
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={progress ?? 0}
-                onChange={(e) => {
-                  setProgress(Number(e.target.value));
-                  setProgressTouched(true);
-                }}
-                className="w-14 rounded-md border border-input bg-background px-2 py-1 text-xs text-center"
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Comment</label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="What did you work on?"
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
               />
             </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-muted-foreground">Progress</label>
+                <span className="text-xs font-medium">{progress ?? 0}%</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={progress ?? 0}
+                  onChange={(e) => {
+                    setProgress(Number(e.target.value));
+                    setProgressTouched(true);
+                  }}
+                  className="flex-1 h-2 accent-green-500"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={progress ?? 0}
+                  onChange={(e) => {
+                    setProgress(Number(e.target.value));
+                    setProgressTouched(true);
+                  }}
+                  className="w-14 rounded-md border border-input bg-background px-2 py-1 text-xs text-center"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Cancel

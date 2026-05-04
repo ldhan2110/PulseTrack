@@ -26,6 +26,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { useRemoteBranches, useTaskBranches, useCreateBranch, useCreatePr, useDeleteBranch } from '@/hooks/useBranches';
 import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
@@ -184,33 +185,35 @@ export function BranchCard({ projectId, taskId }: Props) {
             <DialogHeader>
               <DialogTitle>Create Branch</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Branch Type</Label>
-                <Select value={branchType} onValueChange={(v) => setBranchType(v as BranchType)}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BRANCH_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <DialogBody>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Branch Type</Label>
+                  <Select value={branchType} onValueChange={(v) => setBranchType(v as BranchType)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BRANCH_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Source Branch</Label>
+                  <BranchCombobox
+                    value={sourceBranch}
+                    onChange={setSourceBranch}
+                    branches={remoteBranches}
+                    loading={branchesLoading}
+                    placeholder="Default branch"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Source Branch</Label>
-                <BranchCombobox
-                  value={sourceBranch}
-                  onChange={setSourceBranch}
-                  branches={remoteBranches}
-                  loading={branchesLoading}
-                  placeholder="Default branch"
-                />
-              </div>
-            </div>
+            </DialogBody>
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline" size="sm">Cancel</Button>
@@ -239,9 +242,11 @@ export function BranchCard({ projectId, taskId }: Props) {
           <DialogHeader>
             <DialogTitle>Remove Branch Record</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will only remove the branch record from PulseTrack. The actual git branch and any PR/MR will remain untouched.
-          </p>
+          <DialogBody>
+            <p className="text-sm text-muted-foreground">
+              This will only remove the branch record from PulseTrack. The actual git branch and any PR/MR will remain untouched.
+            </p>
+          </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" size="sm">Cancel</Button>
@@ -318,18 +323,20 @@ export function BranchCard({ projectId, taskId }: Props) {
                 <DialogHeader>
                   <DialogTitle>Create {providerLabel}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-3 py-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Target Branch</Label>
-                    <BranchCombobox
-                      value={targetBranch}
-                      onChange={setTargetBranch}
-                      branches={remoteBranches}
-                      loading={branchesLoading}
-                      placeholder="Default branch"
-                    />
+                <DialogBody>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Target Branch</Label>
+                      <BranchCombobox
+                        value={targetBranch}
+                        onChange={setTargetBranch}
+                        branches={remoteBranches}
+                        loading={branchesLoading}
+                        placeholder="Default branch"
+                      />
+                    </div>
                   </div>
-                </div>
+                </DialogBody>
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button variant="outline" size="sm">Cancel</Button>

@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -174,6 +175,7 @@ export function GenerateTestCasesModal({
 
         {isIdle || isFailed ? (
           <>
+            <DialogBody>
             {isFailed && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
                 <AlertTriangle className="size-4 shrink-0" />
@@ -322,6 +324,7 @@ export function GenerateTestCasesModal({
                 </div>
               )}
             </div>
+            </DialogBody>
 
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -333,6 +336,7 @@ export function GenerateTestCasesModal({
           </>
         ) : (
           /* Processing State */
+          <DialogBody>
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
@@ -358,6 +362,7 @@ export function GenerateTestCasesModal({
               </Button>
             </div>
           </div>
+          </DialogBody>
         )}
       </DialogContent>
     </Dialog>

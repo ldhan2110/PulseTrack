@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -170,12 +171,12 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-full max-w-[50vw] h-[90vh] max-h-[90vh] flex flex-col" style={{maxWidth: "50vw"}}>
+      <DialogContent className="w-full max-w-[50vw] max-h-[80vh] flex flex-col" style={{maxWidth: "50vw"}}>
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
-          <div className="overflow-y-auto flex-1 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <DialogBody className="overflow-y-auto flex-1 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border">
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="task-title" required>Title</FieldLabel>
@@ -342,9 +343,9 @@ export function CreateTaskDialog({
               </Field>
             </div>
           </FieldGroup>
-          </div>
+          </DialogBody>
 
-          <DialogFooter className="mt-6 shrink-0">
+          <DialogFooter className="shrink-0">
             <Button
               type="button"
               variant="ghost"

@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,6 +81,7 @@ export function CreateFixTaskDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <DialogBody>
         <div className="space-y-4 py-2">
           {/* Title */}
           <div className="space-y-2">
@@ -209,6 +211,7 @@ export function CreateFixTaskDialog({
             </Popover>
           </div>
         </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

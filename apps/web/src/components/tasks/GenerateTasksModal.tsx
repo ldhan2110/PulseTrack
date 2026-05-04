@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -181,6 +182,7 @@ export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing,
           </DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         {step === 'failed' ? (
           <div className="py-8 space-y-4">
             <div className="flex flex-col items-center gap-3 text-center">
@@ -303,6 +305,7 @@ export function GenerateTasksModal({ open, onOpenChange, onSubmit, isProcessing,
             </div>
           </div>
         )}
+        </DialogBody>
 
         <DialogFooter>
           {step === 'failed' ? (

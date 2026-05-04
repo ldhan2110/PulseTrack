@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -127,6 +128,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
           <DialogTitle>Add Members</DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         <FieldGroup>
           <Field>
             <FieldLabel>Search users</FieldLabel>
@@ -239,6 +241,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
             </Field>
           )}
         </FieldGroup>
+        </DialogBody>
 
         <DialogFooter className="mt-2">
           <Button

@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 
 interface AddSubTaskModalProps {
@@ -41,7 +42,7 @@ export function AddSubTaskModal({ open, onOpenChange, onSave }: AddSubTaskModalP
         <DialogHeader>
           <DialogTitle>Add Sub-task</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
+        <DialogBody>
           <label className="text-xs text-muted-foreground mb-1 block">Title</label>
           <input
             type="text"
@@ -52,7 +53,7 @@ export function AddSubTaskModal({ open, onOpenChange, onSave }: AddSubTaskModalP
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             autoFocus
           />
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Cancel

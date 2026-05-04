@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -120,6 +121,7 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
           <DialogTitle>Export Tasks to Excel</DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         <div className="grid grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto">
           {/* Search */}
           <div className="col-span-2">
@@ -289,6 +291,7 @@ export function ExportTasksDialog({ open, onOpenChange, projectId }: ExportTasks
             </label>
           </div>
         </div>
+        </DialogBody>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => handleExport(false)} disabled={exporting}>

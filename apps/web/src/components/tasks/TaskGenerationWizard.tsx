@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -314,6 +315,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
           </DialogTitle>
         </DialogHeader>
 
+        <DialogBody className="p-0">
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left sidebar — task list */}
           <div className="w-56 border-r shrink-0">
@@ -605,6 +607,7 @@ export function TaskGenerationWizard({ open, onOpenChange, tasks, projectId, onC
             )}
           </div>
         </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

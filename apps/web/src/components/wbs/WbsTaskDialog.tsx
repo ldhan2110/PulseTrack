@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,46 +97,48 @@ export function WbsTaskDialog({ mode, projectId, onClose }: WbsTaskDialogProps) 
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit ${titleLabel}` : `New ${titleLabel}`}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`${titleLabel} title`} autoFocus />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Description</label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" rows={2} />
-          </div>
-          {showDates && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Plan Start</label>
-                <Input type="date" value={planStart} onChange={(e) => setPlanStart(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Plan End</label>
-                <Input type="date" value={planEnd} onChange={(e) => setPlanEnd(e.target.value)} />
-              </div>
+        <DialogBody>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Title</label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`${titleLabel} title`} autoFocus />
             </div>
-          )}
-          {showActuals && (
-            <>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Description</label>
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" rows={2} />
+            </div>
+            {showDates && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Actual Start</label>
-                  <Input type="date" value={actualStart} onChange={(e) => setActualStart(e.target.value)} />
+                  <label className="text-xs font-medium text-muted-foreground">Plan Start</label>
+                  <Input type="date" value={planStart} onChange={(e) => setPlanStart(e.target.value)} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Actual End</label>
-                  <Input type="date" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} />
+                  <label className="text-xs font-medium text-muted-foreground">Plan End</label>
+                  <Input type="date" value={planEnd} onChange={(e) => setPlanEnd(e.target.value)} />
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">Progress (%)</label>
-                <Input type="number" min="0" max="100" value={progress} onChange={(e) => setProgress(e.target.value)} />
-              </div>
-            </>
-          )}
-        </div>
+            )}
+            {showActuals && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Actual Start</label>
+                    <Input type="date" value={actualStart} onChange={(e) => setActualStart(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Actual End</label>
+                    <Input type="date" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Progress (%)</label>
+                  <Input type="number" min="0" max="100" value={progress} onChange={(e) => setProgress(e.target.value)} />
+                </div>
+              </>
+            )}
+          </div>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" onClick={handleSubmit} disabled={!title.trim()}>

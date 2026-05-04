@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 
 interface SetEstimateModalProps {
@@ -58,32 +59,34 @@ export function SetEstimateModal({
         <DialogHeader>
           <DialogTitle>Set Estimate</DialogTitle>
         </DialogHeader>
-        <div className="flex gap-3 py-4">
-          <div className="flex-1">
-            <label className="text-xs text-muted-foreground mb-1 block">Hours</label>
-            <input
-              type="number"
-              min={0}
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              placeholder="0"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              autoFocus
-            />
+        <DialogBody>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">Hours</label>
+              <input
+                type="number"
+                min={0}
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                autoFocus
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">Minutes</label>
+              <input
+                type="number"
+                min={0}
+                max={59}
+                value={minutes}
+                onChange={(e) => setMinutes(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
           </div>
-          <div className="flex-1">
-            <label className="text-xs text-muted-foreground mb-1 block">Minutes</label>
-            <input
-              type="number"
-              min={0}
-              max={59}
-              value={minutes}
-              onChange={(e) => setMinutes(e.target.value)}
-              placeholder="0"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
+        </DialogBody>
         <DialogFooter className="flex justify-between sm:justify-between">
           <Button variant="destructive" size="sm" onClick={handleClear}>
             Clear

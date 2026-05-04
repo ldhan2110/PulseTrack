@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,6 +186,7 @@ export function CreateExecutionDialog({
           <DialogTitle>New Test Execution</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
+          <DialogBody>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="exec-name" required>Name</FieldLabel>
@@ -358,8 +360,9 @@ export function CreateExecutionDialog({
               </Field>
             )}
           </FieldGroup>
+          </DialogBody>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter>
             <Button
               type="button"
               variant="ghost"

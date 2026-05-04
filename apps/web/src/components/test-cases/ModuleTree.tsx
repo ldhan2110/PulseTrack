@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -347,16 +348,18 @@ export function ModuleTree({
           <DialogHeader>
             <DialogTitle>Create Module</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-semibold leading-none">Name</label>
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Module name"
-              autoFocus
-              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateModule(); }}
-            />
-          </div>
+          <DialogBody>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-semibold leading-none">Name</label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Module name"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateModule(); }}
+              />
+            </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setCreateModuleOpen(false)}>
               Cancel
@@ -374,16 +377,18 @@ export function ModuleTree({
           <DialogHeader>
             <DialogTitle>Create Suite</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-semibold leading-none">Name</label>
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Suite name"
-              autoFocus
-              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateSuite(); }}
-            />
-          </div>
+          <DialogBody>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-semibold leading-none">Name</label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Suite name"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateSuite(); }}
+              />
+            </div>
+          </DialogBody>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setCreateSuiteOpen(false)}>
               Cancel

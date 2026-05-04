@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,62 +138,64 @@ export function CreateSprintDialog({
           <DialogTitle>Create Sprint</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            {errors.overlap && (
-              <Alert variant="destructive" className="text-sm">
-                {errors.overlap}
-              </Alert>
-            )}
-
-            <Field>
-              <FieldLabel htmlFor="sprint-name" required>
-                Name
-              </FieldLabel>
-              <Input
-                id="sprint-name"
-                placeholder="Sprint name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                aria-invalid={!!errors.name}
-                autoFocus
-              />
-              {errors.name && (
-                <p className="text-xs text-destructive">{errors.name}</p>
+          <DialogBody>
+            <FieldGroup>
+              {errors.overlap && (
+                <Alert variant="destructive" className="text-sm">
+                  {errors.overlap}
+                </Alert>
               )}
-            </Field>
 
-            <div className="grid grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="sprint-start">Start Date</FieldLabel>
+                <FieldLabel htmlFor="sprint-name" required>
+                  Name
+                </FieldLabel>
                 <Input
-                  id="sprint-start"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  aria-invalid={!!errors.startDate}
+                  id="sprint-name"
+                  placeholder="Sprint name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  aria-invalid={!!errors.name}
+                  autoFocus
                 />
-                {errors.startDate && (
-                  <p className="text-xs text-destructive">{errors.startDate}</p>
+                {errors.name && (
+                  <p className="text-xs text-destructive">{errors.name}</p>
                 )}
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="sprint-end">End Date</FieldLabel>
-                <Input
-                  id="sprint-end"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  aria-invalid={!!errors.endDate}
-                />
-                {errors.endDate && (
-                  <p className="text-xs text-destructive">{errors.endDate}</p>
-                )}
-              </Field>
-            </div>
-          </FieldGroup>
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="sprint-start">Start Date</FieldLabel>
+                  <Input
+                    id="sprint-start"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    aria-invalid={!!errors.startDate}
+                  />
+                  {errors.startDate && (
+                    <p className="text-xs text-destructive">{errors.startDate}</p>
+                  )}
+                </Field>
 
-          <DialogFooter className="mt-6">
+                <Field>
+                  <FieldLabel htmlFor="sprint-end">End Date</FieldLabel>
+                  <Input
+                    id="sprint-end"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    aria-invalid={!!errors.endDate}
+                  />
+                  {errors.endDate && (
+                    <p className="text-xs text-destructive">{errors.endDate}</p>
+                  )}
+                </Field>
+              </div>
+            </FieldGroup>
+          </DialogBody>
+
+          <DialogFooter>
             <Button
               type="button"
               variant="ghost"

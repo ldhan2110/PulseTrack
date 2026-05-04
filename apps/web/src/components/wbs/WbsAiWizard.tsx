@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody } from '@/components/ui/dialog';
 import { WizardScopeStep, type ScopeData } from './wizard/WizardScopeStep';
 import { WizardTeamStep, type TeamData } from './wizard/WizardTeamStep';
 import { WizardConstraintsStep, type ConstraintsData } from './wizard/WizardConstraintsStep';
@@ -117,7 +117,7 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
               <DialogTitle>AI WBS — Review &amp; Refine</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-hidden">
+            <DialogBody className="p-0 flex-1 overflow-hidden">
               <WizardPreviewChat
                 projectId={projectId}
                 phases={generatedPhases}
@@ -126,7 +126,7 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
                 onCancel={handleClose}
                 isImporting={bulkCreate.isPending}
               />
-            </div>
+            </DialogBody>
           </>
         ) : (
           <>
@@ -134,6 +134,7 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
               <DialogTitle>AI WBS Wizard</DialogTitle>
             </DialogHeader>
 
+            <DialogBody className="p-0 flex-1 flex flex-col min-h-0">
             {/* Step indicator */}
             <div className="flex items-center px-6 py-4 shrink-0">
               {STEPS.map((s, i) => (
@@ -200,6 +201,7 @@ export function WbsAiWizard({ open, onClose, projectId }: WbsAiWizardProps) {
                 />
               )}
             </div>
+            </DialogBody>
 
             {/* Navigation */}
             <div className="flex items-center justify-between border-t border-border px-6 py-4 shrink-0">

@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,53 +81,55 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
           <DialogTitle>Create Project</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="project-name">Name</FieldLabel>
-              <Input
-                id="project-name"
-                placeholder="Enter project name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoFocus
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="project-prefix">Task Key Prefix *</FieldLabel>
-              <Input
-                id="project-prefix"
-                placeholder="e.g. PM, ACME"
-                value={prefix}
-                onChange={(e) => {
-                  const upper = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                  setPrefix(upper);
-                  if (upper && !/^[A-Z]{2,10}$/.test(upper)) {
-                    setPrefixError('Must be 2-10 uppercase letters');
-                  } else {
-                    setPrefixError('');
-                  }
-                }}
-              />
-              {prefixError && <p className="text-xs text-destructive">{prefixError}</p>}
-              {prefix && !prefixError && (
-                <p className="text-xs text-muted-foreground">
-                  Tasks will be: {prefix}-1, {prefix}-2, ...
-                </p>
-              )}
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="project-description">Description</FieldLabel>
-              <Textarea
-                id="project-description"
-                placeholder="Describe the project (optional)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </Field>
-          </FieldGroup>
-          <DialogFooter className="mt-6">
+          <DialogBody>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="project-name">Name</FieldLabel>
+                <Input
+                  id="project-name"
+                  placeholder="Enter project name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="project-prefix">Task Key Prefix *</FieldLabel>
+                <Input
+                  id="project-prefix"
+                  placeholder="e.g. PM, ACME"
+                  value={prefix}
+                  onChange={(e) => {
+                    const upper = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                    setPrefix(upper);
+                    if (upper && !/^[A-Z]{2,10}$/.test(upper)) {
+                      setPrefixError('Must be 2-10 uppercase letters');
+                    } else {
+                      setPrefixError('');
+                    }
+                  }}
+                />
+                {prefixError && <p className="text-xs text-destructive">{prefixError}</p>}
+                {prefix && !prefixError && (
+                  <p className="text-xs text-muted-foreground">
+                    Tasks will be: {prefix}-1, {prefix}-2, ...
+                  </p>
+                )}
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="project-description">Description</FieldLabel>
+                <Textarea
+                  id="project-description"
+                  placeholder="Describe the project (optional)"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </Field>
+            </FieldGroup>
+          </DialogBody>
+          <DialogFooter>
             <Button
               type="button"
               variant="ghost"

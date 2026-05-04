@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Unlink, Search } from 'lucide-react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,7 @@ export function WbsBacklogLink({ nodeType, nodeId, backlogItemId, projectId }: W
           <DialogHeader>
             <DialogTitle>Link Backlog Item</DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <div className="space-y-2">
             <div className="relative">
               <Search className="absolute left-2 top-2 size-4 text-muted-foreground" />
@@ -92,6 +93,7 @@ export function WbsBacklogLink({ nodeType, nodeId, backlogItemId, projectId }: W
               )}
             </div>
           </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </>

@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,6 +162,7 @@ export function BugAutoFillDialog({
           <DialogTitle>Create Bug from Failed Test</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
+          <DialogBody>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="bug-af-title" required>Title</FieldLabel>
@@ -285,8 +287,9 @@ export function BugAutoFillDialog({
               </Popover>
             </Field>
           </FieldGroup>
+          </DialogBody>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter>
             <Button
               type="button"
               variant="ghost"

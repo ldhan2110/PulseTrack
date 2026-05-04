@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -114,116 +114,118 @@ export function WbsImportDialog({ open, onClose, projectId }: Props) {
           <DialogTitle>Import WBS from Excel</DialogTitle>
         </DialogHeader>
 
-        {/* Dropzone — shown when no file selected */}
-        {!parseResult && (
-          <div
-            className={`flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-colors cursor-pointer
-              ${dragging ? 'border-blue-500 bg-blue-50' : 'border-muted-foreground/30 hover:border-blue-400 hover:bg-muted/30'}`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => inputRef.current?.click()}
-          >
-            <Upload className="size-8 text-muted-foreground" />
-            <div className="text-center">
-              <p className="text-sm font-medium">Drop an Excel file here or click to browse</p>
-              <p className="text-xs text-muted-foreground mt-1">Accepts .xlsx files exported from WBS</p>
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".xlsx"
-              className="hidden"
-              onChange={handleInputChange}
-            />
-          </div>
-        )}
-
-        {/* Parse error */}
-        {parseError && (
-          <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            <AlertCircle className="size-4 shrink-0" />
-            {parseError}
-          </div>
-        )}
-
-        {/* Preview table — shown after successful parse */}
-        {parseResult && (
-          <div className="flex flex-col gap-3">
-            {/* File info bar */}
-            <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
-              <div className="flex items-center gap-2 text-sm">
-                <FileSpreadsheet className="size-4 text-green-600" />
-                <span className="font-medium truncate max-w-xs">{fileName}</span>
-                <span className="text-muted-foreground">
-                  — {totalItems} items
-                  {parseResult.errors > 0 && (
-                    <span className="text-amber-600 ml-1">({parseResult.errors} warning{parseResult.errors !== 1 ? 's' : ''})</span>
-                  )}
-                </span>
+        <DialogBody>
+          {/* Dropzone — shown when no file selected */}
+          {!parseResult && (
+            <div
+              className={`flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-10 transition-colors cursor-pointer
+                ${dragging ? 'border-blue-500 bg-blue-50' : 'border-muted-foreground/30 hover:border-blue-400 hover:bg-muted/30'}`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => inputRef.current?.click()}
+            >
+              <Upload className="size-8 text-muted-foreground" />
+              <div className="text-center">
+                <p className="text-sm font-medium">Drop an Excel file here or click to browse</p>
+                <p className="text-xs text-muted-foreground mt-1">Accepts .xlsx files exported from WBS</p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-muted-foreground"
-                onClick={handleClear}
-              >
-                <X className="size-4" />
-              </Button>
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".xlsx"
+                className="hidden"
+                onChange={handleInputChange}
+              />
             </div>
+          )}
 
-            {/* Preview table */}
-            <div className="max-h-80 overflow-y-auto rounded-md border text-sm">
-              <table className="w-full">
-                <thead className="sticky top-0 bg-muted/80 backdrop-blur">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground w-20">Level</th>
-                    <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Title</th>
-                    <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground w-24">Plan Start</th>
-                    <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground w-24">Plan End</th>
-                    <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground w-16">Progress</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parseResult.previewRows.map((row, idx) => (
-                    <tr
-                      key={idx}
-                      className={`border-t ${row.error ? 'bg-amber-50' : 'hover:bg-muted/30'}`}
-                    >
-                      <td className="px-3 py-1.5">
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs font-medium ${LEVEL_BADGE_CLASS[row.level]}`}
-                        >
-                          {LEVEL_LABELS[row.level]}
-                        </Badge>
-                      </td>
-                      <td className={`px-3 py-1.5 ${LEVEL_INDENT[row.level]}`}>
-                        <div className="flex items-center gap-1.5">
-                          <span className={row.level === 0 ? 'font-semibold' : ''}>{row.title}</span>
-                          {row.error && (
-                            <span title={row.error}>
-                              <AlertCircle className="size-3.5 text-amber-500 shrink-0" />
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-1.5 text-muted-foreground text-xs">
-                        {row.planStart ?? '—'}
-                      </td>
-                      <td className="px-3 py-1.5 text-muted-foreground text-xs">
-                        {row.planEnd ?? '—'}
-                      </td>
-                      <td className="px-3 py-1.5 text-right text-xs">
-                        {row.progress}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Parse error */}
+          {parseError && (
+            <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <AlertCircle className="size-4 shrink-0" />
+              {parseError}
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Preview table — shown after successful parse */}
+          {parseResult && (
+            <div className="flex flex-col gap-3">
+              {/* File info bar */}
+              <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <FileSpreadsheet className="size-4 text-green-600" />
+                  <span className="font-medium truncate max-w-xs">{fileName}</span>
+                  <span className="text-muted-foreground">
+                    — {totalItems} items
+                    {parseResult.errors > 0 && (
+                      <span className="text-amber-600 ml-1">({parseResult.errors} warning{parseResult.errors !== 1 ? 's' : ''})</span>
+                    )}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground"
+                  onClick={handleClear}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+
+              {/* Preview table */}
+              <div className="max-h-80 overflow-y-auto rounded-md border text-sm">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-muted/80 backdrop-blur">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground w-20">Level</th>
+                      <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Title</th>
+                      <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground w-24">Plan Start</th>
+                      <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground w-24">Plan End</th>
+                      <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground w-16">Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {parseResult.previewRows.map((row, idx) => (
+                      <tr
+                        key={idx}
+                        className={`border-t ${row.error ? 'bg-amber-50' : 'hover:bg-muted/30'}`}
+                      >
+                        <td className="px-3 py-1.5">
+                          <Badge
+                            variant="secondary"
+                            className={`text-xs font-medium ${LEVEL_BADGE_CLASS[row.level]}`}
+                          >
+                            {LEVEL_LABELS[row.level]}
+                          </Badge>
+                        </td>
+                        <td className={`px-3 py-1.5 ${LEVEL_INDENT[row.level]}`}>
+                          <div className="flex items-center gap-1.5">
+                            <span className={row.level === 0 ? 'font-semibold' : ''}>{row.title}</span>
+                            {row.error && (
+                              <span title={row.error}>
+                                <AlertCircle className="size-3.5 text-amber-500 shrink-0" />
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-1.5 text-muted-foreground text-xs">
+                          {row.planStart ?? '—'}
+                        </td>
+                        <td className="px-3 py-1.5 text-muted-foreground text-xs">
+                          {row.planEnd ?? '—'}
+                        </td>
+                        <td className="px-3 py-1.5 text-right text-xs">
+                          {row.progress}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </DialogBody>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" size="sm" onClick={handleClose}>

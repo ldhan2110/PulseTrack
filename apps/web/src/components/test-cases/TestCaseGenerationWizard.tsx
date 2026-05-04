@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -234,6 +235,7 @@ export function TestCaseGenerationWizard({
           </DialogTitle>
         </DialogHeader>
 
+        <DialogBody className="p-0">
         <div className="flex min-h-125 max-h-[calc(85vh-120px)]">
           {/* Left sidebar */}
           <div className="w-62.5 border-r overflow-y-auto shrink-0">
@@ -473,6 +475,7 @@ export function TestCaseGenerationWizard({
             </div>
           )}
         </div>
+        </DialogBody>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-3 border-t">

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogBody,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -250,6 +251,7 @@ export function ImportTestCasesDialog({
           <DialogTitle>Import Test Cases from Excel</DialogTitle>
         </DialogHeader>
 
+        <DialogBody>
         {!rows ? (
           /* ─── Upload state ─── */
           <div className="flex flex-col gap-3">
@@ -377,6 +379,7 @@ export function ImportTestCasesDialog({
             </div>
           </div>
         )}
+        </DialogBody>
 
         {rows && (
           <DialogFooter className="flex items-center justify-between sm:justify-between">
