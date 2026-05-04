@@ -217,6 +217,7 @@ model User {
   wikiAnnotations         WikiAnnotation[]          @relation("WikiAnnotationAuthor")
   savedFilters            SavedFilter[]
   commentLikes            CommentLike[]     @relation("CommentLikeUser")
+  requestedAiBugFixes     AiBugFix[]    @relation("AiBugFixRequester")
 }
 
 model Project {
@@ -264,6 +265,7 @@ model Project {
   wbsPhases       WbsPhase[]
   wbsDependencies WbsDependency[]
   savedFilters    SavedFilter[]
+  aiBugFixes       AiBugFix[]
 }
 
 model ProjectMember {
@@ -473,6 +475,7 @@ model Bug {
   attachments    BugAttachment[]
   comments       Comment[]
   history        BugHistory[]
+  aiBugFixes     AiBugFix[]
 }
 
 model BugTask {
@@ -563,6 +566,39 @@ model BugHistory {
 
   bug   Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
   actor User @relation("BugHistoryActor", fields: [actorId], references: [id])
+}
+
+// =====================
+// AI BUG FIX
+// =====================
+
+model AiBugFix {
+  id             String    @id @default(cuid())
+  bugId          String
+  projectId      String
+  requesterId    String
+  status         String    @default("queued")  // queued | preparing | fixing | pushing | creating-mr | completed | failed | cancelled
+  targetBranch   String
+  branchName     String?
+  worktreePath   String?
+  guidance       String?   @db.Text
+  includeTests   Boolean   @default(true)
+  rootCause      String?   @db.Text
+  solution       String?   @db.Text
+  filesChanged   String?   @db.Text
+  prUrl          String?
+  prNumber       Int?
+  errorMessage   String?
+  attempt        Int       @default(1)
+  jobId          String?
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  bug       Bug     @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requester User    @relation("AiBugFixRequester", fields: [requesterId], references: [id])
+
+  @@index([bugId, status])
 }
 
 // =====================
