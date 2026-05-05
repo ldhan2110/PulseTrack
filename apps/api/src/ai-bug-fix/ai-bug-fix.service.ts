@@ -104,6 +104,15 @@ export class AiBugFixService {
     return this.prisma.aiBugFix.findUniqueOrThrow({ where: { id: fixId } });
   }
 
+  async deleteRecord(fixId: string) {
+    const record = await this.prisma.aiBugFix.findUniqueOrThrow({ where: { id: fixId } });
+    if (IN_PROGRESS_STATUSES.includes(record.status)) {
+      throw new ConflictException('Cannot delete an in-progress fix. Cancel it first.');
+    }
+    await this.prisma.aiBugFix.delete({ where: { id: fixId } });
+    return { deleted: true };
+  }
+
   async fetchBugWithRelations(bugId: string) {
     return this.prisma.bug.findUniqueOrThrow({
       where: { id: bugId },

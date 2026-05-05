@@ -8,6 +8,7 @@ import { join, resolve, isAbsolute } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ConfigService } from '@nestjs/config';
+import { GIT_PATH } from '../common/git-path.util';
 import { decrypt } from '../common/encryption.util';
 
 const execFileAsync = promisify(execFile);
@@ -47,7 +48,7 @@ export class RepositoryCloneProcessor extends WorkerHost {
       url.username = 'oauth2';
       url.password = token;
 
-      await execFileAsync('git', ['clone', url.toString(), workspacePath], {
+      await execFileAsync(GIT_PATH, ['clone', url.toString(), workspacePath], {
         timeout: 300_000, // 5 minutes
       });
 

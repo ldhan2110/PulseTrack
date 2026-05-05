@@ -180,7 +180,7 @@ export class BugsController {
     return this.aiBugFixService.findFix(fixId);
   }
 
-  @Delete(':bugId/ai-fixes/:fixId')
+  @Delete(':bugId/ai-fixes/:fixId/cancel')
   @RequirePermission('bugs', 'update')
   async cancelAiFix(
     @Param('fixId') fixId: string,
@@ -197,6 +197,12 @@ export class BugsController {
     await this.aiBugFixService.updateRecord(fixId, { status: 'cancelled', completedAt: new Date() });
 
     return { cancelled: true };
+  }
+
+  @Delete(':bugId/ai-fixes/:fixId')
+  @RequirePermission('bugs', 'delete')
+  deleteAiFix(@Param('fixId') fixId: string) {
+    return this.aiBugFixService.deleteRecord(fixId);
   }
 
   @Get(':bugId')

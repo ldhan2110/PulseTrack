@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { PrismaService } from '../prisma/prisma.service';
+import { GIT_PATH } from '../common/git-path.util';
 
 const execFileAsync = promisify(execFile);
 
@@ -36,7 +37,7 @@ export class AiBugFixCleanupService {
 
       if (orphan.worktreePath && orphan.project.repositoryConfig?.workspacePath) {
         try {
-          await execFileAsync('git', ['worktree', 'remove', orphan.worktreePath, '--force'], {
+          await execFileAsync(GIT_PATH, ['worktree', 'remove', orphan.worktreePath, '--force'], {
             cwd: orphan.project.repositoryConfig.workspacePath,
             timeout: 30_000,
           });
@@ -47,7 +48,7 @@ export class AiBugFixCleanupService {
 
       if (orphan.branchName && orphan.project.repositoryConfig?.workspacePath) {
         try {
-          await execFileAsync('git', ['branch', '-D', orphan.branchName], {
+          await execFileAsync(GIT_PATH, ['branch', '-D', orphan.branchName], {
             cwd: orphan.project.repositoryConfig.workspacePath,
             timeout: 10_000,
           });

@@ -303,7 +303,9 @@ export const api = {
   getAiBugFix: (projectId: string, bugId: string, fixId: string) =>
     request<AiBugFix>(`/projects/${projectId}/bugs/${bugId}/ai-fixes/${fixId}`),
   cancelAiBugFix: (projectId: string, bugId: string, fixId: string) =>
-    request<{ cancelled: boolean; reason?: string }>(`/projects/${projectId}/bugs/${bugId}/ai-fixes/${fixId}`, { method: 'DELETE' }),
+    request<{ cancelled: boolean; reason?: string }>(`/projects/${projectId}/bugs/${bugId}/ai-fixes/${fixId}/cancel`, { method: 'DELETE' }),
+  deleteAiBugFix: (projectId: string, bugId: string, fixId: string) =>
+    request<{ deleted: boolean }>(`/projects/${projectId}/bugs/${bugId}/ai-fixes/${fixId}`, { method: 'DELETE' }),
   getTaskBugs: (projectId: string, taskId: string) =>
     request<Bug[]>(`/projects/${projectId}/tasks/${taskId}/bugs`),
 

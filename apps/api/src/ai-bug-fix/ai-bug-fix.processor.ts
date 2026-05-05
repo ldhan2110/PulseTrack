@@ -1,25 +1,17 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { spawn, ChildProcess, execFileSync } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AiBugFixService } from './ai-bug-fix.service';
 import { GitProviderFactory } from '../branches/providers/git-provider.factory';
+import { GIT_PATH } from '../common/git-path.util';
 import type { AiFixJobData } from './dto/ai-fix-job.dto';
 
 const execFileAsync = promisify(execFile);
-
-/** Resolve absolute git path at startup so PM2's limited PATH doesn't break spawns. */
-const GIT_PATH = (() => {
-  try {
-    return execFileSync('which', ['git'], { encoding: 'utf8', shell: true }).trim();
-  } catch {
-    return 'git'; // fallback to PATH lookup
-  }
-})();
 
 @Processor('ai-bug-fix', { concurrency: 4 })
 export class AiBugFixProcessor extends WorkerHost {

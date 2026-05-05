@@ -1,7 +1,8 @@
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ExternalLink, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useAiBugFixes } from '@/hooks/useAiBugFix';
+import { useAiBugFixes, useDeleteAiBugFix } from '@/hooks/useAiBugFix';
 import type { AiBugFix } from '@/lib/types';
 
 interface AiFixHistoryProps {
@@ -20,8 +21,11 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
   'creating-mr': 'secondary',
 };
 
+const DELETABLE_STATUSES = ['completed', 'failed', 'cancelled'];
+
 export function AiFixHistory({ projectId, bugId }: AiFixHistoryProps) {
   const { data: fixes, isLoading } = useAiBugFixes(projectId, bugId);
+  const deleteMutation = useDeleteAiBugFix(projectId);
 
   if (isLoading || !fixes || fixes.length === 0) return null;
 
@@ -35,9 +39,21 @@ export function AiFixHistory({ projectId, bugId }: AiFixHistoryProps) {
           <div key={fix.id} className="rounded border p-2 text-sm space-y-1">
             <div className="flex items-center justify-between">
               <span className="font-medium">Attempt {fix.attempt}</span>
-              <Badge variant={STATUS_VARIANT[fix.status] ?? 'secondary'}>
-                {fix.status}
-              </Badge>
+              <div className="flex items-center gap-1">
+                <Badge variant={STATUS_VARIANT[fix.status] ?? 'secondary'}>
+                  {fix.status}
+                </Badge>
+                {DELETABLE_STATUSES.includes(fix.status) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                    onClick={() => deleteMutation.mutate({ bugId, fixId: fix.id })}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
             {fix.rootCause && (
               <p className="text-xs text-muted-foreground line-clamp-2">{fix.rootCause}</p>

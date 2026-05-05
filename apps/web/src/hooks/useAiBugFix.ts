@@ -43,6 +43,21 @@ export function useCancelAiBugFix(projectId: string) {
   });
 }
 
+export function useDeleteAiBugFix(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bugId, fixId }: { bugId: string; fixId: string }) =>
+      api.deleteAiBugFix(projectId, bugId, fixId),
+    onSuccess: (_data, { bugId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['ai-bug-fixes', projectId, bugId] });
+      toast.success('AI fix attempt deleted');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
 export function useAiBugFixProgress(fixId: string | null) {
   const socket = useSocket();
   const [step, setStep] = useState<AiBugFixStatus | 'idle'>('idle');
