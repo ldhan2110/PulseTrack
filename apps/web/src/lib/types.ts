@@ -354,6 +354,34 @@ export interface Bug {
   attachments?: BugAttachment[];
 }
 
+// ─── AI Bug Fix ───────────────────────────────────────────────────────────────
+
+export type AiBugFixStatus = 'queued' | 'preparing' | 'fixing' | 'pushing' | 'creating-mr' | 'completed' | 'failed' | 'cancelled';
+
+export interface AiBugFix {
+  id: string;
+  bugId: string;
+  projectId: string;
+  requesterId: string;
+  status: AiBugFixStatus;
+  targetBranch: string;
+  branchName: string | null;
+  worktreePath: string | null;
+  guidance: string | null;
+  includeTests: boolean;
+  rootCause: string | null;
+  solution: string | null;
+  filesChanged: string | null;
+  prUrl: string | null;
+  prNumber: number | null;
+  errorMessage: string | null;
+  attempt: number;
+  jobId: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  requester?: { id: string; name: string | null; username: string; imageUrl: string | null };
+}
+
 export interface CreateBugPayload {
   title: string;
   description?: string;

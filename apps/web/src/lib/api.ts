@@ -18,6 +18,7 @@ import type {
   UpdateSprintPayload,
   SprintStats,
   Bug,
+  AiBugFix,
   CreateBugPayload,
   UpdateBugPayload,
   DashboardData,
@@ -294,6 +295,15 @@ export const api = {
     request<Bug>(`/projects/${projectId}/bugs/${bugId}/tasks/${taskId}`, { method: 'DELETE' }),
   createFixTask: (projectId: string, bugId: string, data: { parentId?: string; assigneeId?: string }) =>
     request<Task>(`/projects/${projectId}/bugs/${bugId}/create-fix-task`, { method: 'POST', body: JSON.stringify(data) }),
+  // ─── AI Bug Fix ──────────────────────────────────────────────────────────
+  startAiBugFix: (projectId: string, bugId: string, data: { targetBranch: string; guidance?: string; includeTests?: boolean }) =>
+    request<{ fixId: string; jobId: string }>(`/projects/${projectId}/bugs/${bugId}/ai-fix`, { method: 'POST', body: JSON.stringify(data) }),
+  getAiBugFixes: (projectId: string, bugId: string) =>
+    request<AiBugFix[]>(`/projects/${projectId}/bugs/${bugId}/ai-fixes`),
+  getAiBugFix: (projectId: string, bugId: string, fixId: string) =>
+    request<AiBugFix>(`/projects/${projectId}/bugs/${bugId}/ai-fixes/${fixId}`),
+  cancelAiBugFix: (projectId: string, bugId: string, fixId: string) =>
+    request<{ cancelled: boolean; reason?: string }>(`/projects/${projectId}/bugs/${bugId}/ai-fixes/${fixId}`, { method: 'DELETE' }),
   getTaskBugs: (projectId: string, taskId: string) =>
     request<Bug[]>(`/projects/${projectId}/tasks/${taskId}/bugs`),
 
