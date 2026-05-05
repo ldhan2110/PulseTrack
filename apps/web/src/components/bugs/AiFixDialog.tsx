@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, ExternalLink, XCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, XCircle, CheckCircle2 } from 'lucide-react';
 import { useStartAiBugFix, useCancelAiBugFix, useAiBugFixProgress, useAiBugFixes } from '@/hooks/useAiBugFix';
 import type { AiBugFix } from '@/lib/types';
 
@@ -38,10 +38,19 @@ const STEP_LABELS: Record<string, string> = {
   preparing: 'Preparing worktree...',
   fixing: 'AI is analyzing and fixing the bug...',
   pushing: 'Pushing changes...',
-  'creating-mr': 'Creating merge request...',
   completed: 'Completed',
   failed: 'Failed',
   cancelled: 'Cancelled',
+};
+
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  completed: 'default',
+  failed: 'destructive',
+  cancelled: 'outline',
+  queued: 'secondary',
+  preparing: 'secondary',
+  fixing: 'secondary',
+  pushing: 'secondary',
 };
 
 export function AiFixDialog({
@@ -108,7 +117,7 @@ export function AiFixDialog({
         <DialogHeader>
           <DialogTitle>AI Bug Fix</DialogTitle>
           <DialogDescription>
-            AI will analyze the bug, fix the code, and create a merge request.
+            AI will analyze the bug, fix the code, and push to a new branch.
           </DialogDescription>
         </DialogHeader>
 
@@ -125,13 +134,13 @@ export function AiFixDialog({
                     {previousFixes.map((fix: AiBugFix) => (
                       <div key={fix.id} className="flex items-center justify-between gap-2">
                         <span className="text-muted-foreground">Attempt {fix.attempt}</span>
-                        <Badge variant={fix.status === 'completed' ? 'default' : 'destructive'}>
+                        <Badge variant={STATUS_VARIANT[fix.status] ?? 'secondary'}>
                           {fix.status}
                         </Badge>
-                        {fix.prUrl && (
-                          <a href={fix.prUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs flex items-center gap-1">
-                            MR <ExternalLink className="h-3 w-3" />
-                          </a>
+                        {fix.branchName && (
+                          <span className="text-xs text-muted-foreground font-mono truncate max-w-[160px]">
+                            {fix.branchName}
+                          </span>
                         )}
                       </div>
                     ))}
@@ -206,15 +215,11 @@ export function AiFixDialog({
                       <span className="font-semibold">Solution:</span> {progress.result.solution}
                     </div>
                   )}
-                  {progress.result.prUrl && (
-                    <a
-                      href={progress.result.prUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-blue-500 hover:underline font-medium"
-                    >
-                      Open Merge Request <ExternalLink className="h-3 w-3" />
-                    </a>
+                  {progress.result.branchName && (
+                    <div>
+                      <span className="font-semibold">Branch:</span>{' '}
+                      <code className="text-xs bg-muted px-1 py-0.5 rounded">{progress.result.branchName}</code>
+                    </div>
                   )}
                 </div>
               )}

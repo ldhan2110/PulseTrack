@@ -290,27 +290,6 @@ Key: ${bug.bugKey ?? 'N/A'}`);
     };
   }
 
-  buildMrDescription(bug: { bugKey: string | null; title: string }, analysis: AiFixAnalysis): string {
-    const lines: string[] = [];
-
-    if (analysis.rootCause) {
-      lines.push('## Root Cause', analysis.rootCause, '');
-    }
-    if (analysis.solution) {
-      lines.push('## Solution', analysis.solution, '');
-    }
-    if (analysis.filesChanged) {
-      lines.push('## Files Changed', analysis.filesChanged, '');
-    }
-
-    lines.push('## Bug Reference', `${bug.bugKey ?? 'N/A'}: ${bug.title}`);
-
-    if (!analysis.rootCause && !analysis.solution) {
-      return `## AI Bug Fix\nAutomated fix for ${bug.bugKey}: ${bug.title}\nAI analysis not available — review changes manually.`;
-    }
-
-    return lines.join('\n');
-  }
 
   generateBranchName(bugKey: string | null, title: string, attempt: number): string {
     const slug = this.slugify(title);

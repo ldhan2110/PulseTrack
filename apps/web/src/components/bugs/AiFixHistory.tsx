@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAiBugFixes, useDeleteAiBugFix } from '@/hooks/useAiBugFix';
 import type { AiBugFix } from '@/lib/types';
@@ -18,7 +18,6 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
   preparing: 'secondary',
   fixing: 'secondary',
   pushing: 'secondary',
-  'creating-mr': 'secondary',
 };
 
 const DELETABLE_STATUSES = ['completed', 'failed', 'cancelled'];
@@ -60,15 +59,8 @@ export function AiFixHistory({ projectId, bugId }: AiFixHistoryProps) {
             )}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{formatDistanceToNow(new Date(fix.createdAt), { addSuffix: true })}</span>
-              {fix.prUrl && (
-                <a
-                  href={fix.prUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline flex items-center gap-1"
-                >
-                  MR #{fix.prNumber} <ExternalLink className="h-3 w-3" />
-                </a>
+              {fix.branchName && (
+                <code className="font-mono truncate max-w-[160px]">{fix.branchName}</code>
               )}
             </div>
             {fix.errorMessage && (

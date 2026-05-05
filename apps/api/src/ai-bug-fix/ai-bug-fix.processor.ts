@@ -7,7 +7,6 @@ import { promisify } from 'util';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AiBugFixService } from './ai-bug-fix.service';
-import { GitProviderFactory } from '../branches/providers/git-provider.factory';
 import { GIT_PATH } from '../common/git-path.util';
 import type { AiFixJobData } from './dto/ai-fix-job.dto';
 
@@ -23,7 +22,6 @@ export class AiBugFixProcessor extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly aiService: AiBugFixService,
-    private readonly providerFactory: GitProviderFactory,
   ) {
     super();
   }
@@ -173,7 +171,7 @@ export class AiBugFixProcessor extends WorkerHost {
         },
       });
 
-      // --- PUSH + CREATE MR ---
+      // --- PUSH ---
       await this.updateStatus(fixId, 'pushing');
       this.emitProgress(userId, fixId, 'pushing');
       logBuffer.text += `\n$ git push origin ${branchName}\n`;
@@ -184,41 +182,17 @@ export class AiBugFixProcessor extends WorkerHost {
         timeout: 120_000,
       });
 
-      await this.updateStatus(fixId, 'creating-mr');
-      this.emitProgress(userId, fixId, 'creating-mr');
-      logBuffer.text += '$ Creating merge request...\n';
-      this.emitStream(userId, fixId, logBuffer.text);
-
-      const provider = this.providerFactory.create(config.repoProvider);
-      const mrDescription = this.aiService.buildMrDescription(bug, analysis);
-      const mrTitle = `fix(${bug.bugKey ?? 'bug'}): ${bug.title}`.slice(0, 200);
-
-      const result = await provider.createPr({
-        repoUrl: config.repoUrl,
-        token: config.repoToken,
-        title: mrTitle,
-        description: mrDescription,
-        sourceBranch: branchName,
-        targetBranch,
-      });
-
       await this.prisma.aiBugFix.update({
         where: { id: fixId },
-        data: {
-          prUrl: result.prUrl,
-          prNumber: result.prNumber,
-          status: 'completed',
-          completedAt: new Date(),
-        },
+        data: { status: 'completed', completedAt: new Date() },
       });
 
-      logBuffer.text += `\nDone — MR created: ${result.prUrl}\n`;
+      logBuffer.text += `\nDone — branch pushed: ${branchName}\n`;
       this.emitStream(userId, fixId, logBuffer.text);
 
       this.notifications.notifyUser(userId, 'ai-bug-fix:completed', {
         fixId,
-        prUrl: result.prUrl,
-        prNumber: result.prNumber,
+        branchName,
         rootCause: analysis.rootCause,
         solution: analysis.solution,
       });

@@ -356,7 +356,7 @@ export interface Bug {
 
 // ─── AI Bug Fix ───────────────────────────────────────────────────────────────
 
-export type AiBugFixStatus = 'queued' | 'preparing' | 'fixing' | 'pushing' | 'creating-mr' | 'completed' | 'failed' | 'cancelled';
+export type AiBugFixStatus = 'queued' | 'preparing' | 'fixing' | 'pushing' | 'completed' | 'failed' | 'cancelled';
 
 export interface AiBugFix {
   id: string;

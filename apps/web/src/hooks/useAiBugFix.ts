@@ -63,8 +63,7 @@ export function useAiBugFixProgress(fixId: string | null) {
   const [step, setStep] = useState<AiBugFixStatus | 'idle'>('idle');
   const [logText, setLogText] = useState('');
   const [result, setResult] = useState<{
-    prUrl?: string;
-    prNumber?: number;
+    branchName?: string;
     rootCause?: string | null;
     solution?: string | null;
   } | null>(null);
@@ -81,11 +80,11 @@ export function useAiBugFixProgress(fixId: string | null) {
       if (data.fixId === fixId) setLogText(data.text);
     };
 
-    const onCompleted = (data: { fixId: string; prUrl: string; prNumber: number; rootCause: string | null; solution: string | null }) => {
+    const onCompleted = (data: { fixId: string; branchName: string; rootCause: string | null; solution: string | null }) => {
       if (data.fixId === fixId) {
         setStep('completed');
-        setResult({ prUrl: data.prUrl, prNumber: data.prNumber, rootCause: data.rootCause, solution: data.solution });
-        toast.success('AI fix completed — MR created');
+        setResult({ branchName: data.branchName, rootCause: data.rootCause, solution: data.solution });
+        toast.success('AI fix completed — branch pushed');
       }
     };
 
