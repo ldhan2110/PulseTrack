@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useSocket } from '../socket/useSocket';
-import type { AiBugFixStatus, AiBugFix } from '../lib/types';
+import type { AiBugFixStatus } from '../lib/types';
 
 export function useAiBugFixes(projectId: string, bugId: string) {
   return useQuery({

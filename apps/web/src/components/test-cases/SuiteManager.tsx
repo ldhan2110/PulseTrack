@@ -188,7 +188,7 @@ export function SuiteManager({ open, onOpenChange, projectId, suiteId }: SuiteMa
     });
   };
 
-  const toggleGroupSelect = (moduleKey: string, cases: TestCase[]) => {
+  const toggleGroupSelect = (_moduleKey: string, cases: TestCase[]) => {
     const allSelected = cases.every((tc) => selectedIds.has(tc.id));
     setSelectedIds((prev) => {
       const next = new Set(prev);
