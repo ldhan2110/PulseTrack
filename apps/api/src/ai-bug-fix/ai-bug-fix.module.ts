@@ -13,6 +13,6 @@ import { BranchesModule } from '../branches/branches.module';
     BullModule.registerQueue({ name: 'ai-bug-fix' }),
   ],
   providers: [AiBugFixService, AiBugFixProcessor, AiBugFixCleanupService],
-  exports: [AiBugFixService, AiBugFixProcessor],
+  exports: [AiBugFixService, AiBugFixProcessor, BullModule],
 })
 export class AiBugFixModule {}

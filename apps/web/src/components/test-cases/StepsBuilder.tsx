@@ -61,6 +61,13 @@ export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
     }
   };
 
+  const enterBulkMode = () => {
+    if (steps.length > 0) {
+      setBulkText(steps.map((s) => s.action).join('\n'));
+    }
+    setBulkMode(true);
+  };
+
   const handleBulkAdd = () => {
     const actions = parseLines(bulkText);
     if (actions.length === 0) return;
@@ -69,7 +76,7 @@ export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
       action,
       expectedResult: '',
     }));
-    onChange(reindex([...steps, ...newSteps]));
+    onChange(reindex(newSteps));
     setBulkText('');
     setBulkMode(false);
   };
@@ -79,7 +86,7 @@ export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
       <div ref={containerRef} className="flex flex-col gap-2">
         {steps.length > 0 && (
           <p className="text-xs text-muted-foreground">
-            {steps.length} existing step{steps.length !== 1 ? 's' : ''} — new lines will be appended
+            Editing {steps.length} step{steps.length !== 1 ? 's' : ''} — submit will replace all
           </p>
         )}
         <Textarea
@@ -165,7 +172,7 @@ export function StepsBuilder({ steps, onChange }: StepsBuilderProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setBulkMode(true)}
+          onClick={enterBulkMode}
           className="self-start text-xs gap-1"
         >
           <List className="size-3" />
