@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execFileSync } from 'child_process';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +11,15 @@ import { GitProviderFactory } from '../branches/providers/git-provider.factory';
 import type { AiFixJobData } from './dto/ai-fix-job.dto';
 
 const execFileAsync = promisify(execFile);
+
+/** Resolve absolute git path at startup so PM2's limited PATH doesn't break spawns. */
+const GIT_PATH = (() => {
+  try {
+    return execFileSync('which', ['git'], { encoding: 'utf8', shell: true }).trim();
+  } catch {
+    return 'git'; // fallback to PATH lookup
+  }
+})();
 
 @Processor('ai-bug-fix', { concurrency: 4 })
 export class AiBugFixProcessor extends WorkerHost {
@@ -121,12 +130,12 @@ export class AiBugFixProcessor extends WorkerHost {
       // git pull in main worktree
       logBuffer.text += '$ git pull\n';
       this.emitStream(userId, fixId, logBuffer.text);
-      await execFileAsync('git', ['pull'], { cwd: config.workspacePath, timeout: 60_000 });
+      await execFileAsync(GIT_PATH, ['pull'], { cwd: config.workspacePath, timeout: 60_000 });
 
       // Create worktree
       logBuffer.text += `$ git worktree add ${worktreePath} -b ${branchName} origin/${targetBranch}\n`;
       this.emitStream(userId, fixId, logBuffer.text);
-      await execFileAsync('git', [
+      await execFileAsync(GIT_PATH, [
         'worktree', 'add', worktreePath, '-b', branchName, `origin/${targetBranch}`,
       ], { cwd: config.workspacePath, timeout: 30_000 });
 
@@ -178,7 +187,7 @@ export class AiBugFixProcessor extends WorkerHost {
       logBuffer.text += `\n$ git push origin ${branchName}\n`;
       this.emitStream(userId, fixId, logBuffer.text);
 
-      await execFileAsync('git', ['push', 'origin', branchName], {
+      await execFileAsync(GIT_PATH, ['push', 'origin', branchName], {
         cwd: worktreePath,
         timeout: 120_000,
       });
@@ -243,7 +252,7 @@ export class AiBugFixProcessor extends WorkerHost {
       // Cleanup worktree
       if (worktreePath) {
         try {
-          await execFileAsync('git', ['worktree', 'remove', worktreePath, '--force'], {
+          await execFileAsync(GIT_PATH, ['worktree', 'remove', worktreePath, '--force'], {
             cwd: (await this.aiService.getProjectAiConfig(projectId).catch(() => null))?.workspacePath ?? process.cwd(),
             timeout: 30_000,
           });
@@ -256,7 +265,7 @@ export class AiBugFixProcessor extends WorkerHost {
         try {
           const config = await this.aiService.getProjectAiConfig(projectId).catch(() => null);
           if (config) {
-            await execFileAsync('git', ['branch', '-D', branchName], {
+            await execFileAsync(GIT_PATH, ['branch', '-D', branchName], {
               cwd: config.workspacePath,
               timeout: 10_000,
             });
