@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
-import { ArrowLeft, Trash2, Loader2, Check, ChevronsUpDown, Plus } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2, Check, ChevronsUpDown, Plus, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,9 +28,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useBugByKey, useUpdateBug, useDeleteBug, useLinkBugTasks, useUnlinkBugTask, useCreateFixTask } from '@/hooks/useBugs';
 import { CreateFixTaskDialog } from '@/components/bugs/CreateFixTaskDialog';
+import { AiFixDialog } from '@/components/bugs/AiFixDialog';
+import { AiFixHistory } from '@/components/bugs/AiFixHistory';
 import { useTasks } from '@/hooks/useTasks';
 import { useMembers } from '@/hooks/useMembers';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { useProject } from '@/hooks/useProjects';
 import { useWorkflow, useValidTransitions } from '@/hooks/useWorkflow';
 import { useAuth } from '@/auth/useAuth';
@@ -105,6 +109,13 @@ export function BugDetailPage() {
   const unlinkBugTask = useUnlinkBugTask(projectId);
   const createFixTask = useCreateFixTask(projectId);
   const [fixTaskDialogOpen, setFixTaskDialogOpen] = useState(false);
+  const [aiFixOpen, setAiFixOpen] = useState(false);
+
+  const { data: remoteBranches = [], isLoading: branchesLoading } = useQuery({
+    queryKey: ['remote-branches', projectId],
+    queryFn: () => api.getRemoteBranches(projectId),
+    enabled: !!projectId && aiFixOpen,
+  });
 
   // Flatten time logs from all linked tasks and their sub-tasks for display
   const aggregatedTimeLogs = (bug?.bugTasks ?? []).flatMap((bt) => {
@@ -718,7 +729,19 @@ export function BugDetailPage() {
                   <Plus className="size-3" />
                   Create Fix Task
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-1.5 h-7 text-xs mt-1"
+                  onClick={() => setAiFixOpen(true)}
+                >
+                  <Wand2 className="size-3" />
+                  AI Fix
+                </Button>
               </div>
+
+              {/* AI Fix History */}
+              <AiFixHistory projectId={projectId} bugId={bug.id} />
 
               {/* Reporter */}
               {bug.reporter && (
@@ -779,6 +802,14 @@ export function BugDetailPage() {
             </div>
           </div>
         </div>
+      <AiFixDialog
+        open={aiFixOpen}
+        onOpenChange={setAiFixOpen}
+        projectId={projectId}
+        bugId={bug.id}
+        remoteBranches={remoteBranches}
+        branchesLoading={branchesLoading}
+      />
       <CreateFixTaskDialog
         open={fixTaskDialogOpen}
         onOpenChange={setFixTaskDialogOpen}
