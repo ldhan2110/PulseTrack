@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { WatchersModule } from '../watchers/watchers.module';
 import { TasksModule } from '../tasks/tasks.module';
+import { AiBugFixModule } from '../ai-bug-fix/ai-bug-fix.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { TasksModule } from '../tasks/tasks.module';
     NotificationsModule,
     WatchersModule,
     forwardRef(() => TasksModule),
+    AiBugFixModule,
   ],
   controllers: [BugsController],
   providers: [BugsService],
