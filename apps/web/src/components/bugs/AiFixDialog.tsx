@@ -20,9 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, XCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, XCircle, CheckCircle2, GitBranch, ExternalLink } from 'lucide-react';
 import { useStartAiBugFix, useCancelAiBugFix, useAiBugFixProgress, useAiBugFixes } from '@/hooks/useAiBugFix';
+import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import type { AiBugFix } from '@/lib/types';
+
+function buildBranchUrl(repoUrl: string, provider: string, branchName: string): string {
+  const base = repoUrl.replace(/\.git$/, '');
+  if (provider === 'gitlab') return `${base}/-/tree/${branchName}`;
+  return `${base}/tree/${branchName}`;
+}
 
 interface AiFixDialogProps {
   open: boolean;
@@ -71,6 +78,7 @@ export function AiFixDialog({
   const cancelFix = useCancelAiBugFix(projectId);
   const progress = useAiBugFixProgress(activeFixId);
   const { data: previousFixes } = useAiBugFixes(projectId, bugId);
+  const { data: repoConfig } = useRepositoryConfig(projectId);
 
   // Auto-scroll log
   useEffect(() => {
@@ -137,11 +145,21 @@ export function AiFixDialog({
                         <Badge variant={STATUS_VARIANT[fix.status] ?? 'secondary'}>
                           {fix.status}
                         </Badge>
-                        {fix.branchName && (
-                          <span className="text-xs text-muted-foreground font-mono truncate max-w-[160px]">
+                        {fix.branchName && repoConfig?.repoUrl ? (
+                          <a
+                            href={buildBranchUrl(repoConfig.repoUrl, repoConfig.provider, fix.branchName)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-mono text-blue-500 hover:underline truncate max-w-[160px] inline-flex items-center gap-0.5"
+                          >
+                            <GitBranch className="h-2.5 w-2.5 shrink-0" />
                             {fix.branchName}
-                          </span>
-                        )}
+                          </a>
+                        ) : fix.branchName ? (
+                          <code className="text-xs font-mono text-muted-foreground truncate max-w-[160px]">
+                            {fix.branchName}
+                          </code>
+                        ) : null}
                       </div>
                     ))}
                   </div>
@@ -216,9 +234,21 @@ export function AiFixDialog({
                     </div>
                   )}
                   {progress.result.branchName && (
-                    <div>
-                      <span className="font-semibold">Branch:</span>{' '}
-                      <code className="text-xs bg-muted px-1 py-0.5 rounded">{progress.result.branchName}</code>
+                    <div className="flex items-center gap-1.5">
+                      <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      {repoConfig?.repoUrl ? (
+                        <a
+                          href={buildBranchUrl(repoConfig.repoUrl, repoConfig.provider, progress.result.branchName)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-mono text-blue-500 hover:underline inline-flex items-center gap-1"
+                        >
+                          {progress.result.branchName}
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                        </a>
+                      ) : (
+                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{progress.result.branchName}</code>
+                      )}
                     </div>
                   )}
                 </div>

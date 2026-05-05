@@ -24,11 +24,13 @@ export class AiBugFixService {
   }
 
   private slugify(text: string): string {
-    return text
+    const slug = text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
-      .slice(0, 40);
+      .slice(0, 20);
+    // Avoid trailing dash from mid-word cut
+    return slug.replace(/-$/, '');
   }
 
   async getProjectAiConfig(projectId: string) {
