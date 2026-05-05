@@ -6,6 +6,6 @@ import { GitProviderFactory } from './providers/git-provider.factory';
 @Module({
   controllers: [BranchesController],
   providers: [BranchesService, GitProviderFactory],
-  exports: [BranchesService],
+  exports: [BranchesService, GitProviderFactory],
 })
 export class BranchesModule {}

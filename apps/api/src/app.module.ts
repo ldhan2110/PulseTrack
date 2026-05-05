@@ -40,11 +40,14 @@ import { ReportConfigModule } from './report-config/report-config.module';
 import { ReportGeneratorModule } from './report-generator/report-generator.module';
 import { PlannerModule } from './planner/planner.module';
 import { PlannerAiConfigModule } from './planner-ai-config/planner-ai-config.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { WbsModule } from './wbs/wbs.module';
+import { AiBugFixModule } from './ai-bug-fix/ai-bug-fix.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     QueueModule,
     AuthModule,
@@ -66,6 +69,7 @@ import { WbsModule } from './wbs/wbs.module';
     AiTaskGenerationModule,
     AiTestCaseGenerationModule,
     AiWbsGenerationModule,
+    AiBugFixModule,
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,
