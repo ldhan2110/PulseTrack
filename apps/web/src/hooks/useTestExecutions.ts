@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-
-// TODO: implement — add proper api methods when backend is ready
+import { toast } from 'sonner';
 
 export function useTestExecutions(projectId: string) {
   return useQuery({
     queryKey: ['test-executions', projectId],
-    queryFn: () => (api as any).getTestExecutions?.(projectId) ?? [],
+    queryFn: () => api.getTestExecutions(projectId),
     enabled: !!projectId,
   });
 }
@@ -14,7 +13,7 @@ export function useTestExecutions(projectId: string) {
 export function useTestExecution(projectId: string, executionId: string) {
   return useQuery({
     queryKey: ['test-execution', projectId, executionId],
-    queryFn: () => (api as any).getTestExecution?.(projectId, executionId) ?? null,
+    queryFn: () => api.getTestExecution(projectId, executionId),
     enabled: !!projectId && !!executionId,
   });
 }
@@ -22,15 +21,55 @@ export function useTestExecution(projectId: string, executionId: string) {
 export function useTestExecutionByKey(projectId: string, executionKey: string) {
   return useQuery({
     queryKey: ['test-execution-key', projectId, executionKey],
-    queryFn: () => (api as any).getTestExecutionByKey?.(projectId, executionKey) ?? null,
+    queryFn: () => api.getTestExecutionByKey(projectId, executionKey),
     enabled: !!projectId && !!executionKey,
+  });
+}
+
+export function useCreateTestExecution(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: import('@/lib/types').CreateTestExecutionPayload) =>
+      api.createTestExecution(projectId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+      toast.success('Test execution created');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useUpdateExecutionCaseResult(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { executionCaseId: string; data: { result: string; notes?: string } }) =>
+      api.updateExecutionCaseResult(projectId, params.executionCaseId, params.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['test-execution', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-execution-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+    },
+  });
+}
+
+export function useUpdateTestExecutionStatus(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { executionId: string; status: string }) =>
+      api.updateTestExecutionStatus(projectId, params.executionId, params.status),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['test-execution', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+    },
   });
 }
 
 export function useBulkDeleteTestExecutions(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (ids: string[]) => (api as any).bulkDeleteTestExecutions?.(projectId, ids) ?? Promise.resolve(),
+    mutationFn: (ids: string[]) => api.bulkDeleteTestExecutions(projectId, ids),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
     },
@@ -40,9 +79,10 @@ export function useBulkDeleteTestExecutions(projectId: string) {
 export function useDeleteTestExecution(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => (api as any).deleteTestExecution?.(projectId, id) ?? Promise.resolve(),
+    mutationFn: (id: string) => api.deleteTestExecution(projectId, id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+      toast.success('Test execution deleted');
     },
   });
 }
@@ -51,9 +91,10 @@ export function useUploadExecutionEvidence(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (params: { executionCaseId: string; file: File }) =>
-      (api as any).uploadExecutionEvidence?.(projectId, params.executionCaseId, params.file) ?? Promise.resolve(),
+      api.uploadExecutionEvidence(projectId, params.executionCaseId, params.file),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-execution', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-execution-key', projectId] });
     },
   });
 }
@@ -62,9 +103,10 @@ export function useDeleteExecutionEvidence(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (attachmentId: string) =>
-      (api as any).deleteExecutionEvidence?.(projectId, attachmentId) ?? Promise.resolve(),
+      api.deleteExecutionEvidence(projectId, attachmentId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-execution', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-execution-key', projectId] });
     },
   });
 }
