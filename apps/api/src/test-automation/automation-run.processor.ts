@@ -113,12 +113,54 @@ export class AutomationRunProcessor extends WorkerHost {
         env[v.key] = v.value;
       }
 
+      // Build step function for semantic grouping
+      const stepFn = async (name: string, fn: () => Promise<void>) => {
+        const start = Date.now();
+        try {
+          await fn();
+          let screenshot = '';
+          try {
+            const buf = await page!.screenshot({ type: 'jpeg', quality: 60 });
+            screenshot = buf.toString('base64');
+          } catch {
+            // page may be closed
+          }
+          const stepData = {
+            name,
+            type: 'custom' as const,
+            status: 'passed' as const,
+            duration: Date.now() - start,
+            screenshot,
+          };
+          this.emit(runnerId, 'automation:step', { runId, ...stepData });
+        } catch (err) {
+          let screenshot = '';
+          try {
+            const buf = await page!.screenshot({ type: 'jpeg', quality: 60 });
+            screenshot = buf.toString('base64');
+          } catch {
+            // page may be closed
+          }
+          const stepData = {
+            name,
+            type: 'custom' as const,
+            status: 'failed' as const,
+            duration: Date.now() - start,
+            screenshot,
+            error: err instanceof Error ? err.message : String(err),
+          };
+          this.emit(runnerId, 'automation:step', { runId, ...stepData });
+          throw err;
+        }
+      };
+
       // Build sandbox context
       const sandboxContext: SandboxContext = {
         page: wrappedPage,
         expect,
         baseUrl: baseUrl || '',
         env,
+        step: stepFn,
       };
 
       // Execute script
