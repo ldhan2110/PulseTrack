@@ -104,6 +104,9 @@ import type {
   SavedFilter,
   CreateSavedFilterPayload,
   UpdateSavedFilterPayload,
+  TestCaseAutomation,
+  AutomationRun,
+  ProjectVariable,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -962,4 +965,45 @@ export const api = {
 
   unlinkWbsSubtaskBacklog: (subtaskId: string) =>
     request<WbsSubtask>(`/wbs/subtasks/${subtaskId}/link-backlog`, { method: 'DELETE' }),
+
+  // ─── Test Automation ──────────────────────────────────────────
+  getAutomation: (testCaseId: string) =>
+    request<TestCaseAutomation | null>(`/test-automation/${testCaseId}`),
+
+  upsertAutomation: (testCaseId: string, data: { script: string; baseUrl?: string; timeoutMs?: number }) =>
+    request<TestCaseAutomation>(`/test-automation/${testCaseId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteAutomation: (testCaseId: string) =>
+    request<void>(`/test-automation/${testCaseId}`, { method: 'DELETE' }),
+
+  triggerAutomationRun: (testCaseId: string) =>
+    request<AutomationRun>(`/test-automation/${testCaseId}/run`, { method: 'POST' }),
+
+  cancelAutomationRun: (runId: string) =>
+    request<{ cancelled: boolean }>(`/test-automation/runs/${runId}/cancel`, { method: 'DELETE' }),
+
+  getAutomationRuns: (testCaseId: string) =>
+    request<AutomationRun[]>(`/test-automation/${testCaseId}/runs`),
+
+  // ─── Project Variables ────────────────────────────────────────
+  getProjectVariables: (projectId: string) =>
+    request<ProjectVariable[]>(`/projects/${projectId}/variables`),
+
+  createProjectVariable: (projectId: string, data: { key: string; value: string; isSecret?: boolean }) =>
+    request<ProjectVariable>(`/projects/${projectId}/variables`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateProjectVariable: (id: string, projectId: string, data: { value?: string; isSecret?: boolean }) =>
+    request<ProjectVariable>(`/projects/${projectId}/variables/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteProjectVariable: (id: string, projectId: string) =>
+    request<void>(`/projects/${projectId}/variables/${id}`, { method: 'DELETE' }),
 };

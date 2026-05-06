@@ -1364,3 +1364,37 @@ export interface AiWbsGenerationJobResult {
 export interface WbsChatResponse {
   phases: any[];
 }
+
+// ─── Test Automation ────────────────────────────────────────────
+export type AutomationRunStatus = 'RUNNING' | 'PASSED' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';
+
+export interface TestCaseAutomation {
+  id: string;
+  testCaseId: string;
+  script: string;
+  baseUrl: string | null;
+  timeoutMs: number;
+  createdAt: string;
+  updatedAt: string;
+  runs: AutomationRun[];
+}
+
+export interface AutomationRun {
+  id: string;
+  automationId: string;
+  status: AutomationRunStatus;
+  duration: number | null;
+  logs: Array<{ level: string; message: string; timestamp: number }> | null;
+  error: string | null;
+  runnerId: string;
+  runner: { id: string; name: string | null; username: string; imageUrl: string | null };
+  createdAt: string;
+}
+
+export interface ProjectVariable {
+  id: string;
+  projectId: string;
+  key: string;
+  value: string;
+  isSecret: boolean;
+}
