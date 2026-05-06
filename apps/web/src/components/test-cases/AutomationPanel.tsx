@@ -6,6 +6,11 @@ import { BrowserPreview } from './BrowserPreview';
 import { StepReport } from './StepReport';
 import { AutomationToolbar } from './AutomationToolbar';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable';
 
 const DEFAULT_SCRIPT = `// Available context: page, expect, baseUrl, env
 // Example:
@@ -66,17 +71,19 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 flex min-h-0">
-        <div className="w-1/2 border-r flex flex-col min-h-0">
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+        <ResizablePanel defaultSize={50} minSize={25} className="flex flex-col min-h-0">
           <AutomationEditor
             script={script}
             onChange={handleScriptChange}
             logs={run.logs}
             isSaving={upsert.isPending}
           />
-        </div>
+        </ResizablePanel>
 
-        <div className="w-1/2 flex flex-col min-h-0">
+        <ResizableHandle withHandle />
+
+        <ResizablePanel defaultSize={50} minSize={25} className="flex flex-col min-h-0">
           {!run.isRunning && run.steps.length > 0 ? (
             <StepReport steps={run.steps} />
           ) : (
@@ -85,8 +92,8 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
               isRunning={run.isRunning}
             />
           )}
-        </div>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       <AutomationToolbar
         status={run.status}
