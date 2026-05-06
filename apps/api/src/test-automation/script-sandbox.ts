@@ -1,5 +1,3 @@
-import { VM } from 'vm2';
-
 export interface SandboxContext {
   page: unknown;
   expect: unknown;
@@ -25,28 +23,29 @@ export async function executeSandboxedScript(
 ): Promise<SandboxResult> {
   const start = Date.now();
 
-  const wrappedScript = `
-    (async () => {
-      const { page, expect, baseUrl, env } = __context__;
-      const console = { log: (...args) => __onLog__(args.map(String).join(' ')) };
-      ${script}
-    })()
-  `;
+  // Build async function with context destructured as params
+  // Using AsyncFunction constructor instead of vm2 — Playwright's browser
+  // provides the real sandbox; vm2's Proxy wrappers break complex native objects.
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
-  const vm = new VM({
-    timeout: options.timeoutMs,
-    sandbox: {
-      __context__: context,
-      __onLog__: options.onLog,
-    },
-    eval: false,
-    wasm: false,
-  });
+  const fn = new AsyncFunction(
+    'page',
+    'expect',
+    'baseUrl',
+    'env',
+    'console',
+    script,
+  );
+
+  const sandboxConsole = {
+    log: (...args: unknown[]) => options.onLog(args.map(String).join(' ')),
+    warn: (...args: unknown[]) => options.onLog('[warn] ' + args.map(String).join(' ')),
+    error: (...args: unknown[]) => options.onLog('[error] ' + args.map(String).join(' ')),
+  };
 
   try {
-    const promise = vm.run(wrappedScript);
     await Promise.race([
-      promise,
+      fn(context.page, context.expect, context.baseUrl, context.env, sandboxConsole),
       new Promise((_, reject) =>
         setTimeout(
           () => reject(new Error(`Script timed out after ${options.timeoutMs}ms`)),

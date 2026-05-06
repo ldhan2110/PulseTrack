@@ -36,10 +36,15 @@ export class AutomationRunProcessor extends WorkerHost {
         viewport: { width: 1280, height: 720 },
       });
 
-      // SSRF protection: block private IPs
+      // SSRF protection: block private IPs (allow baseUrl host)
+      const allowedHost = baseUrl ? new URL(baseUrl).hostname : null;
       await context.route('**/*', (route) => {
         const url = new URL(route.request().url());
         const hostname = url.hostname;
+        // Allow the configured baseUrl host
+        if (allowedHost && hostname === allowedHost) {
+          return route.continue();
+        }
         const blocked =
           hostname === 'localhost' ||
           hostname === '127.0.0.1' ||
