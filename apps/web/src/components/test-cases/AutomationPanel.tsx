@@ -3,6 +3,7 @@ import { useTestAutomation, useUpsertAutomation } from '@/hooks/useTestAutomatio
 import { useAutomationRun } from '@/hooks/useAutomationRun';
 import { AutomationEditor } from './AutomationEditor';
 import { BrowserPreview } from './BrowserPreview';
+import { StepReport } from './StepReport';
 import { AutomationToolbar } from './AutomationToolbar';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -76,10 +77,14 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
         </div>
 
         <div className="w-1/2 flex flex-col min-h-0">
-          <BrowserPreview
-            frame={run.frame}
-            isRunning={run.isRunning}
-          />
+          {!run.isRunning && run.steps.length > 0 ? (
+            <StepReport steps={run.steps} />
+          ) : (
+            <BrowserPreview
+              frame={run.frame}
+              isRunning={run.isRunning}
+            />
+          )}
         </div>
       </div>
 
