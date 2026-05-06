@@ -178,6 +178,14 @@ enum SyncStatus {
   FAILED
 }
 
+enum AutomationRunStatus {
+  RUNNING
+  PASSED
+  FAILED
+  CANCELLED
+  TIMEOUT
+}
+
 // =====================
 // CORE MODELS
 // =====================
@@ -218,6 +226,7 @@ model User {
   savedFilters            SavedFilter[]
   commentLikes            CommentLike[]     @relation("CommentLikeUser")
   requestedAiBugFixes     AiBugFix[]    @relation("AiBugFixRequester")
+  automationRuns          AutomationRun[] @relation("AutomationRunner")
 }
 
 model Project {
@@ -266,6 +275,7 @@ model Project {
   wbsDependencies WbsDependency[]
   savedFilters    SavedFilter[]
   aiBugFixes       AiBugFix[]
+  variables        ProjectVariable[]
 }
 
 model ProjectMember {
@@ -800,6 +810,7 @@ model TestCase {
   links           TestCaseLink[]
   suiteMemberships TestSuiteMember[]
   executionCases  TestExecutionCase[]
+  automation      TestCaseAutomation?
 }
 
 model TestCaseStep {
@@ -1094,4 +1105,47 @@ model SavedFilter {
 
   @@unique([userId, projectId, entityType, name])
   @@index([userId, projectId, entityType])
+}
+
+// =====================
+// TEST CASE AUTOMATION
+// =====================
+
+model TestCaseAutomation {
+  id         String   @id @default(cuid())
+  testCaseId String   @unique
+  script     String   @db.Text
+  baseUrl    String?
+  timeoutMs  Int      @default(30000)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  testCase TestCase        @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  runs     AutomationRun[]
+}
+
+model AutomationRun {
+  id           String              @id @default(cuid())
+  automationId String
+  status       AutomationRunStatus @default(RUNNING)
+  duration     Int?
+  logs         Json?
+  error        String?             @db.Text
+  runnerId     String
+  createdAt    DateTime            @default(now())
+
+  automation TestCaseAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  runner     User               @relation("AutomationRunner", fields: [runnerId], references: [id])
+}
+
+model ProjectVariable {
+  id        String  @id @default(cuid())
+  projectId String
+  key       String
+  value     String
+  isSecret  Boolean @default(false)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, key])
 }
