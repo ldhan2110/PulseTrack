@@ -43,6 +43,7 @@ import { PlannerAiConfigModule } from './planner-ai-config/planner-ai-config.mod
 import { ScheduleModule } from '@nestjs/schedule';
 import { WbsModule } from './wbs/wbs.module';
 import { AiBugFixModule } from './ai-bug-fix/ai-bug-fix.module';
+import { TestAutomationModule } from './test-automation/test-automation.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { AiBugFixModule } from './ai-bug-fix/ai-bug-fix.module';
     PlannerModule,
     PlannerAiConfigModule,
     WbsModule,
+    TestAutomationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
