@@ -90,7 +90,6 @@ export function ExecutionDetail({
   execution,
   onStartRunner,
   onBack,
-  members,
   deleteButton,
 }: ExecutionDetailProps) {
   const cases = execution.cases ?? [];
