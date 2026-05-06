@@ -1,5 +1,5 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger, forwardRef } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { chromium, type Browser, type Page } from 'playwright';
 import { expect } from 'playwright/test';
@@ -14,6 +14,7 @@ export class AutomationRunProcessor extends WorkerHost {
   private readonly activeBrowsers = new Map<string, Browser>();
 
   constructor(
+    @Inject(forwardRef(() => AutomationRunService))
     private readonly runService: AutomationRunService,
     private readonly variablesService: ProjectVariablesService,
     private readonly notifications: NotificationsService,
