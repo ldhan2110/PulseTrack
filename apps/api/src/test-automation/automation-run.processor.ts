@@ -36,7 +36,13 @@ export class AutomationRunProcessor extends WorkerHost {
       this.logger.log(`[process] Launching chromium...`);
       browser = await chromium.launch({
         headless: true,
-        args: ['--headless=new'],
+        args: [
+          '--headless=new',
+          '--disable-web-security',
+          '--disable-features=BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults',
+          '--disable-extensions',
+          '--allow-running-insecure-content',
+        ],
       });
       this.activeBrowsers.set(runId, browser);
       this.logger.log(`[process] Chromium launched OK`);
