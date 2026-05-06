@@ -125,7 +125,7 @@ export function ModuleTree({
 
   const handleCreateSuite = () => {
     if (!newName.trim()) return;
-    createSuite.mutate({ name: newName.trim() }, {
+    createSuite.mutate({ name: newName.trim(), moduleId: selectedModuleId ?? '' }, {
       onSuccess: () => {
         setNewName('');
         setCreateSuiteOpen(false);
@@ -313,7 +313,7 @@ export function ModuleTree({
             ) : (
               <span className="truncate flex-1">{suite.name}</span>
             )}
-            <span className="text-xs text-muted-foreground">{suite._count?.members ?? 0}</span>
+            <span className="text-xs text-muted-foreground">{suite._count?.testCases ?? 0}</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button

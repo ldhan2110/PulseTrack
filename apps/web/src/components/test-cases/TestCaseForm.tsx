@@ -61,8 +61,8 @@ export function TestCaseForm({
 
   useEffect(() => {
     if (open && editingCase) {
-      setTitle(editingCase.title);
-      setModuleId(editingCase.moduleId);
+      setTitle(editingCase.title ?? '');
+      setModuleId(editingCase.moduleId ?? '');
       setPriority(editingCase.priority ?? '');
       setPreconditions(editingCase.preconditions ?? '');
       setExpectedResult(editingCase.expectedResult ?? '');

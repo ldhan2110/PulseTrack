@@ -294,7 +294,7 @@ export function TestCasesTable({
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <Table containerClassName="max-h-[calc(100vh-220px)]">
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">

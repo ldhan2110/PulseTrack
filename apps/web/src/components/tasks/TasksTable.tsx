@@ -386,7 +386,7 @@ export function TasksTable({
           }
           return row.estimatedMinutes ?? 0;
         },
-        cell: ({ getValue }: { getValue: () => unknown }) => {
+        cell: ({ getValue }) => {
           const val = getValue() as number;
           return <span className="text-xs">{val > 0 ? formatMinutes(val) : '—'}</span>;
         },
@@ -420,9 +420,9 @@ export function TasksTable({
           }
           return row.timeLogs?.reduce((s, tl) => s + tl.minutes, 0) ?? 0;
         },
-        cell: ({ getValue, row }: { getValue: () => unknown; row: { original: Task } }) => {
+        cell: ({ getValue, row }: any) => {
           const logged = getValue() as number;
-          const task = row.original;
+          const task = row.original as Task;
           const estimated = (task.children?.length ?? 0) > 0
             ? task.children!.reduce((sum, c) => sum + (c.estimatedMinutes ?? 0), 0)
             : (task.estimatedMinutes ?? 0);

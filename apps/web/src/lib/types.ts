@@ -29,8 +29,8 @@ export interface WorkflowAllowedAssignee {
   userId: string;
   username: string;
   email: string;
-  imageUrl: string | null;
   name: string | null;
+  imageUrl: string | null;
 }
 
 export interface WorkflowData {
@@ -1397,4 +1397,100 @@ export interface ProjectVariable {
   key: string;
   value: string;
   isSecret: boolean;
+}
+
+// ─── Test Cases ─────────────────────────────────────────────────────────────
+
+export type TestCaseStatus = 'DRAFT' | 'ACTIVE' | 'DEPRECATED';
+
+export interface TestStep {
+  position: number;
+  action: string;
+  expectedResult: string;
+}
+
+export interface TestCase {
+  id: string;
+  testCaseKey?: string;
+  title: string;
+  description?: string;
+  preconditions?: string;
+  expectedResult?: string;
+  status: TestCaseStatus;
+  priority: Priority | null;
+  moduleId: string;
+  suiteId?: string;
+  projectId?: string;
+  tags?: string[];
+  steps?: TestStep[];
+  estimatedMinutes?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  creator?: Pick<User, 'id' | 'username' | 'email' | 'name' | 'imageUrl'>;
+  _count?: { steps: number };
+  [key: string]: unknown;
+}
+
+export interface TestModule {
+  id: string;
+  name: string;
+  projectId: string;
+  parentId?: string | null;
+  position: number;
+  _count?: { testCases: number; members?: number };
+  children?: TestModule[];
+}
+
+export interface TestSuite {
+  id: string;
+  name: string;
+  moduleId: string;
+  projectId: string;
+  _count?: { testCases: number };
+}
+
+export interface BulkImportTestCaseItem {
+  title: string;
+  description?: string;
+  priority?: Priority;
+  moduleId?: string;
+  moduleName?: string;
+  preconditions?: string;
+  expectedResult?: string;
+  tags?: string[];
+  estimatedMinutes?: number;
+  steps?: TestStep[];
+  [key: string]: unknown;
+}
+
+export interface GeneratedTestCase {
+  title: string;
+  description?: string;
+  preconditions?: string;
+  expectedResult?: string;
+  priority?: string;
+  estimatedMinutes?: number | null;
+  tags?: string[];
+  steps?: GeneratedTestCaseStep[];
+  sourceTaskTitle?: string;
+  suggestedModule?: string;
+  [key: string]: unknown;
+}
+
+export interface GeneratedTestCaseStep {
+  position?: number;
+  action: string;
+  expectedResult: string;
+}
+
+// ─── Test Executions ────────────────────────────────────────────────────────
+
+export interface TestExecution {
+  id: string;
+  name?: string;
+  status?: string;
+  assigneeId?: string;
+  sprint?: { id: string; name: string } | null;
+  cases?: unknown[];
+  [key: string]: unknown;
 }

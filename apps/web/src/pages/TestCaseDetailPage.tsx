@@ -127,7 +127,7 @@ export function TestCaseDetailPage() {
       setTagsInput(testCase.tags?.join(', ') ?? '');
       setEstValue(testCase.estimatedMinutes?.toString() ?? '');
       setSteps(
-        testCase.steps?.map((s) => ({
+        testCase.steps?.map((s: { position: number; action: string; expectedResult: string }) => ({
           position: s.position,
           action: s.action,
           expectedResult: s.expectedResult,
@@ -601,13 +601,13 @@ export function TestCaseDetailPage() {
               <div className="flex flex-col gap-1">
                 <SidebarLabel>Created</SidebarLabel>
                 <span className="text-sm text-muted-foreground">
-                  {formatRelative(testCase.createdAt)}
+                  {testCase.createdAt ? formatRelative(testCase.createdAt) : '—'}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
                 <SidebarLabel>Updated</SidebarLabel>
                 <span className="text-sm text-muted-foreground">
-                  {formatRelative(testCase.updatedAt)}
+                  {testCase.updatedAt ? formatRelative(testCase.updatedAt) : '—'}
                 </span>
               </div>
 

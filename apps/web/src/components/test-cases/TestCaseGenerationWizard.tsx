@@ -65,10 +65,10 @@ export function TestCaseGenerationWizard({
         wizardStatus: 'pending',
         editTitle: tc.title,
         editPreconditions: tc.preconditions ?? '',
-        editExpectedResult: tc.expectedResult,
-        editPriority: tc.priority,
-        editEstimatedMinutes: tc.estimatedMinutes,
-        editTags: [...tc.tags],
+        editExpectedResult: tc.expectedResult ?? '',
+        editPriority: tc.priority ?? 'MEDIUM',
+        editEstimatedMinutes: tc.estimatedMinutes ?? null,
+        editTags: [...(tc.tags ?? [])],
         editModuleId: matchedModule?.id ?? modules[0]?.id ?? '',
         editSteps: tc.steps ? tc.steps.map((s) => ({ ...s })) : [],
       };
@@ -88,8 +88,8 @@ export function TestCaseGenerationWizard({
     let lastTitle = '';
     items.forEach((item, i) => {
       if (item.sourceTaskTitle !== lastTitle) {
-        groups.push({ title: item.sourceTaskTitle, indices: [i] });
-        lastTitle = item.sourceTaskTitle;
+        groups.push({ title: item.sourceTaskTitle ?? '', indices: [i] });
+        lastTitle = item.sourceTaskTitle ?? '';
       } else {
         groups[groups.length - 1].indices.push(i);
       }
@@ -147,17 +147,18 @@ export function TestCaseGenerationWizard({
         moduleId: current.editModuleId,
         steps: current.editSteps.length > 0
           ? current.editSteps.map((s) => ({
-              position: s.position,
+              position: s.position ?? 0,
               action: s.action,
               expectedResult: s.expectedResult,
             }))
           : undefined,
       });
 
+      const created = result as { testCaseKey?: string } | undefined;
       setItems((prev) =>
         prev.map((item, i) =>
           i === currentIndex
-            ? { ...item, wizardStatus: 'approved', createdKey: result.testCaseKey ?? undefined }
+            ? { ...item, wizardStatus: 'approved', createdKey: created?.testCaseKey ?? undefined }
             : item,
         ),
       );
@@ -191,17 +192,18 @@ export function TestCaseGenerationWizard({
           moduleId: item.editModuleId,
           steps: item.editSteps.length > 0
             ? item.editSteps.map((s) => ({
-                position: s.position,
+                position: s.position ?? 0,
                 action: s.action,
                 expectedResult: s.expectedResult,
               }))
             : undefined,
         });
 
+        const created = result as { testCaseKey?: string } | undefined;
         setItems((prev) =>
           prev.map((itm, idx) =>
             idx === i
-              ? { ...itm, wizardStatus: 'approved', createdKey: result.testCaseKey ?? undefined }
+              ? { ...itm, wizardStatus: 'approved', createdKey: created?.testCaseKey ?? undefined }
               : itm,
           ),
         );

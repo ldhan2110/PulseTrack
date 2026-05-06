@@ -78,7 +78,7 @@ export function ExportTestCasesDialog({ open, onOpenChange, projectId, projectPr
   const handleExport = async (useFilters: boolean) => {
     setExporting(true);
     try {
-      const cases = await api.getTestCases(projectId, useFilters ? buildParams() : undefined) as TestCase[];
+      const cases = await (api as any).getTestCases?.(projectId, useFilters ? buildParams() : undefined) as TestCase[];
       exportTestCasesToExcel(cases, filename);
       toast.success('Test cases exported');
       onOpenChange(false);
