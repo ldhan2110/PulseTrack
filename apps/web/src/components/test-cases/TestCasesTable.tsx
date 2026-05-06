@@ -294,8 +294,9 @@ export function TestCasesTable({
 
   return (
     <div className="rounded-lg border overflow-hidden">
+      <div className="max-h-[70vh] overflow-y-auto">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">
               {headerGroup.headers.map((header) => (
@@ -343,6 +344,7 @@ export function TestCasesTable({
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
