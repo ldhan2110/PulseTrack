@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { AutomationPanel } from '@/components/test-cases/AutomationPanel';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useUiStore } from '@/store/uiStore';
 import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
@@ -83,6 +84,7 @@ export function TestCaseDetailPage() {
 
   const { data: testCase, isLoading, isError } = useTestCaseByKey(projectId, testCaseKey);
   const testCaseId = testCase?.id ?? '';
+  const [mode, setMode] = useState<'manual' | 'automation'>('manual');
   const { data: modules = [] } = useTestModules(projectId);
   const { can } = usePermissions(projectId);
   const canManage = can('testCases', 'delete');
@@ -341,8 +343,36 @@ export function TestCaseDetailPage() {
 
       {/* Content split */}
       <div className="flex gap-8">
-        {/* Left: preconditions, expected result, steps */}
-        <div className="flex-1 flex flex-col gap-6">
+        {/* Left panel */}
+        <div className="flex-1 flex flex-col">
+          {/* Mode toggle */}
+          <div className="flex items-center mb-4">
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  mode === 'manual'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setMode('manual')}
+              >
+                Manual
+              </button>
+              <button
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  mode === 'automation'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                }`}
+                onClick={() => setMode('automation')}
+              >
+                Automation
+              </button>
+            </div>
+          </div>
+
+          {mode === 'manual' ? (
+          <div className="flex flex-col gap-6">
           {/* Preconditions */}
           <div className="flex flex-col gap-2">
             <h2 className="text-[13px] font-semibold text-muted-foreground">Preconditions</h2>
@@ -400,6 +430,12 @@ export function TestCaseDetailPage() {
               <StepsBuilder steps={steps} onChange={handleStepsChange} />
             </div>
           </div>
+          </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden" style={{ height: 'calc(100vh - 280px)' }}>
+              <AutomationPanel testCaseId={testCaseId} />
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDEBAR */}
