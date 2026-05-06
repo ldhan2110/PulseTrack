@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AutomationRunProcessor } from './automation-run.processor';
 
 export interface AutomationJobData {
   runId: string;
@@ -19,6 +20,8 @@ export class AutomationRunService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('test-automation') private readonly queue: Queue,
+    @Inject(forwardRef(() => AutomationRunProcessor))
+    private readonly processor: AutomationRunProcessor,
   ) {}
 
   async triggerRun(testCaseId: string, runnerId: string) {
@@ -70,8 +73,10 @@ export class AutomationRunService {
       where: { id: runId },
     });
     if (!run) throw new NotFoundException('Run not found');
+
+    // If already terminal, return current status instead of throwing
     if (run.status !== 'RUNNING') {
-      throw new ConflictException('Run is not active');
+      return { cancelled: false, status: run.status };
     }
 
     await this.prisma.automationRun.update({
@@ -79,8 +84,12 @@ export class AutomationRunService {
       data: { status: 'CANCELLED' },
     });
 
+    // Close the active browser to kill the running script
+    await this.processor.cancelRun(runId);
+
+    // Remove from queue if still waiting
     const job = await this.queue.getJob(runId);
-    if (job) await job.remove();
+    if (job) await job.remove().catch(() => {});
 
     return { cancelled: true };
   }
