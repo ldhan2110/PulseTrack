@@ -26,11 +26,19 @@ export class AutomationRunProcessor extends WorkerHost {
     let browser: Browser | undefined;
     let page: Page | undefined;
 
+    this.logger.log(`[process] START runId=${runId} runnerId=${runnerId} baseUrl=${baseUrl} timeoutMs=${timeoutMs}`);
+
     try {
       this.emit(runnerId, 'automation:status', { runId, status: 'RUNNING' });
 
-      browser = await chromium.launch({ headless: true });
+      // Use headed chromium (not headless shell) for CDP screencast support
+      this.logger.log(`[process] Launching chromium...`);
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--headless=new'],
+      });
       this.activeBrowsers.set(runId, browser);
+      this.logger.log(`[process] Chromium launched OK`);
 
       const context = await browser.newContext({
         viewport: { width: 1280, height: 720 },
@@ -59,6 +67,7 @@ export class AutomationRunProcessor extends WorkerHost {
         return route.continue();
       });
       page = await context.newPage();
+      const { page: wrappedPage, getSteps } = this.wrapPageForCapture(page, runId, runnerId);
 
       // Start CDP screencast
       const cdp = await context.newCDPSession(page);
@@ -70,7 +79,12 @@ export class AutomationRunProcessor extends WorkerHost {
         everyNthFrame: 1,
       });
 
+      let frameCount = 0;
       cdp.on('Page.screencastFrame', (params) => {
+        frameCount++;
+        if (frameCount <= 3 || frameCount % 10 === 0) {
+          this.logger.log(`[process] CDP frame #${frameCount} received (${params.data?.length ?? 0} bytes) → emitting to runnerId=${runnerId}`);
+        }
         this.emit(runnerId, 'automation:frame', {
           runId,
           data: params.data,
@@ -79,6 +93,17 @@ export class AutomationRunProcessor extends WorkerHost {
         void cdp.send('Page.screencastFrameAck', {
           sessionId: params.sessionId,
         });
+      });
+
+      // Force initial frame by navigating to about:blank explicitly
+      await page.goto('about:blank');
+      // Send a manual screenshot as first frame to unblock UI
+      const initialFrame = await page.screenshot({ type: 'jpeg', quality: 60 });
+      this.logger.log(`[process] Initial screenshot captured (${initialFrame.length} bytes) → emitting to runnerId=${runnerId}`);
+      this.emit(runnerId, 'automation:frame', {
+        runId,
+        data: initialFrame.toString('base64'),
+        timestamp: Date.now(),
       });
 
       // Build env vars
@@ -90,13 +115,14 @@ export class AutomationRunProcessor extends WorkerHost {
 
       // Build sandbox context
       const sandboxContext: SandboxContext = {
-        page,
+        page: wrappedPage,
         expect,
         baseUrl: baseUrl || '',
         env,
       };
 
       // Execute script
+      this.logger.log(`[process] Executing script (${script.length} chars)...`);
       const logs: Array<{ level: string; message: string; timestamp: number }> = [];
 
       const result = await executeSandboxedScript(script, sandboxContext, {
@@ -107,6 +133,8 @@ export class AutomationRunProcessor extends WorkerHost {
           this.emit(runnerId, 'automation:log', { runId, ...entry });
         },
       });
+
+      this.logger.log(`[process] Script done: success=${result.success} duration=${result.duration}ms totalFrames=${frameCount} error=${result.error ?? 'none'}`);
 
       // Stop screencast
       await cdp.send('Page.stopScreencast').catch(() => {});
@@ -166,6 +194,58 @@ export class AutomationRunProcessor extends WorkerHost {
   }
 
   private emit(userId: string, event: string, data: unknown): void {
+    this.logger.debug(`[emit] event=${event} → user:${userId}`);
     this.notifications.notifyUser(userId, event, data);
+  }
+
+  private wrapPageForCapture(
+    page: Page,
+    runId: string,
+    runnerId: string,
+  ): { page: Page; getSteps: () => Array<{ name: string; type: string; status: string; duration: number; screenshot: string }> } {
+    const steps: Array<{ name: string; type: string; status: string; duration: number; screenshot: string }> = [];
+    const self = this;
+
+    const captureStep = async (name: string, type: string, startTime: number, error?: string) => {
+      let screenshot = '';
+      try {
+        const buf = await page.screenshot({ type: 'jpeg', quality: 60 });
+        screenshot = buf.toString('base64');
+      } catch {
+        // page may be closed
+      }
+      const step = {
+        name,
+        type,
+        status: error ? 'failed' : 'passed',
+        duration: Date.now() - startTime,
+        screenshot,
+        ...(error ? { error } : {}),
+      };
+      steps.push(step);
+      self.emit(runnerId, 'automation:step', { runId, ...step });
+    };
+
+    const methodsToWrap = ['goto', 'click', 'fill', 'check', 'uncheck', 'selectOption', 'press', 'type'] as const;
+
+    for (const method of methodsToWrap) {
+      const original = (page as any)[method].bind(page);
+      (page as any)[method] = async (...args: any[]) => {
+        const start = Date.now();
+        const label = method === 'goto'
+          ? `goto ${args[0]}`
+          : `${method} ${typeof args[0] === 'string' ? args[0] : ''}`;
+        try {
+          const result = await original(...args);
+          await captureStep(label, method === 'goto' ? 'navigation' : 'action', start);
+          return result;
+        } catch (err) {
+          await captureStep(label, method === 'goto' ? 'navigation' : 'action', start, err instanceof Error ? err.message : String(err));
+          throw err;
+        }
+      };
+    }
+
+    return { page, getSteps: () => steps };
   }
 }
