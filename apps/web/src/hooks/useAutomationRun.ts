@@ -66,6 +66,21 @@ export function useAutomationRun(testCaseId: string) {
     stopTimer();
   }, [stopTimer]);
 
+  // DEBUG: log socket connection state
+  useEffect(() => {
+    if (!socket) { console.warn('[useAutomationRun] socket is null'); return; }
+    console.log('[useAutomationRun] socket.connected=', socket.connected, 'socket.id=', socket.id);
+    const debugAll = (event: string, ...args: unknown[]) => {
+      if (event.startsWith('automation:')) {
+        console.log('[useAutomationRun] received event:', event, 'runIdRef=', runIdRef.current, 'payload runId=', (args[0] as any)?.runId);
+      }
+    };
+    socket.onAny(debugAll);
+    socket.on('connect', () => console.log('[useAutomationRun] socket connected, id=', socket.id));
+    socket.on('disconnect', (reason) => console.warn('[useAutomationRun] socket disconnected:', reason));
+    return () => { socket.offAny(debugAll); };
+  }, [socket]);
+
   // WebSocket listeners — use ref to avoid race condition where events
   // arrive before useEffect re-runs with new runId
   useEffect(() => {

@@ -1,6 +1,6 @@
-import { createContext, useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
-import keycloak from '../auth/keycloak';
+import { AuthContext } from '../auth/AuthProvider';
 import { getSocket } from './instance';
 
 export const SocketContext = createContext<Socket | null>(null);
@@ -10,31 +10,21 @@ interface SocketProviderProps {
 }
 
 export function SocketProvider({ children }: SocketProviderProps) {
+  const auth = useContext(AuthContext);
   const socket = getSocket();
 
   useEffect(() => {
-    if (!socket.connected) {
+    if (!auth?.token) return;
+
+    // Update auth token and (re)connect
+    socket.auth = { token: auth.token };
+    if (socket.connected) {
+      // Token refreshed — reconnect so gateway re-authenticates
+      socket.disconnect().connect();
+    } else {
       socket.connect();
     }
-
-    function handleConnectError(err: Error) {
-      if (
-        err.message === 'Unauthorized' ||
-        err.message.toLowerCase().includes('auth') ||
-        (err as unknown as { data?: { type?: string } }).data?.type ===
-          'UnauthorizedError'
-      ) {
-        socket.auth = { token: keycloak.token };
-        socket.connect();
-      }
-    }
-
-    socket.on('connect_error', handleConnectError);
-
-    return () => {
-      socket.off('connect_error', handleConnectError);
-    };
-  }, [socket]);
+  }, [socket, auth?.token]);
 
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>

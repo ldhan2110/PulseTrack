@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, BadGatewayException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
@@ -38,7 +38,7 @@ export class AutomationRunService {
       where: { automationId: automation.id, status: 'RUNNING' },
     });
     if (activeRun) {
-      throw new ConflictException('A run is already in progress for this test case');
+      throw new BadGatewayException('A run is already in progress for this test case');
     }
 
     const run = await this.prisma.automationRun.create({
