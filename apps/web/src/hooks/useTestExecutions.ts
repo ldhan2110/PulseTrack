@@ -46,3 +46,25 @@ export function useDeleteTestExecution(projectId: string) {
     },
   });
 }
+
+export function useUploadExecutionEvidence(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { executionCaseId: string; file: File }) =>
+      (api as any).uploadExecutionEvidence?.(projectId, params.executionCaseId, params.file) ?? Promise.resolve(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+    },
+  });
+}
+
+export function useDeleteExecutionEvidence(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (attachmentId: string) =>
+      (api as any).deleteExecutionEvidence?.(projectId, attachmentId) ?? Promise.resolve(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['test-executions', projectId] });
+    },
+  });
+}

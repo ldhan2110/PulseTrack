@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { TestCase } from '@/lib/types';
+import type { TestCase, CreateTestCasePayload, UpdateTestCasePayload } from '@/lib/types';
 
 // TODO: implement — add proper api methods when backend is ready
 
@@ -23,7 +23,7 @@ export function useTestCaseByKey(projectId: string, caseKey: string) {
 export function useCreateTestCase(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<TestCase>) => (api as any).createTestCase?.(projectId, data) ?? Promise.resolve(),
+    mutationFn: (data: CreateTestCasePayload) => (api as any).createTestCase?.(projectId, data) ?? Promise.resolve(),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] });
     },
@@ -33,7 +33,7 @@ export function useCreateTestCase(projectId: string) {
 export function useUpdateTestCase(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: { testCaseId: string; data: Partial<TestCase> } | (Partial<TestCase> & { id: string })) => {
+    mutationFn: (params: { testCaseId: string; data: UpdateTestCasePayload } | (Partial<TestCase> & { id: string })) => {
       const id = 'testCaseId' in params ? params.testCaseId : params.id;
       const data = 'data' in params ? params.data : params;
       return (api as any).updateTestCase?.(projectId, id, data) ?? Promise.resolve();

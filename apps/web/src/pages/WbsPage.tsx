@@ -64,7 +64,7 @@ export function WbsPage() {
 
       <div className="flex-1 overflow-hidden">
         {viewMode === 'gantt' ? (
-          <ResizablePanelGroup orientation="horizontal" className="h-full">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
             <ResizablePanel defaultSize={45} minSize={30}>
               <WbsTaskTree
                 phases={phases}

@@ -64,7 +64,7 @@ export function PlannerPage() {
         onCreateOpenChange={setCreateOpen}
       />
       {activeSessionId ? (
-        <ResizablePanelGroup orientation="horizontal" className="flex-1">
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel defaultSize={50} minSize={30}>
             <PlannerChatPanel
               sessionId={activeSessionId}
