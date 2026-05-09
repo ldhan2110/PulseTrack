@@ -81,7 +81,8 @@ export class AiBugFixProcessor extends WorkerHost {
         if (code === 0 || code === null) {
           resolve(stdoutChunks.join(''));
         } else {
-          reject(new Error(`CLI exited with code ${code}`));
+          const tail = logBuffer.text.slice(-500).trim();
+          reject(new Error(`CLI exited with code ${code}. Last output:\n${tail}`));
         }
       });
     });

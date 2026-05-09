@@ -250,7 +250,7 @@ Key: ${bug.bugKey ?? 'N/A'}`);
   buildCliArgs(provider: string, model: string, prompt: string): string[] {
     switch (provider) {
       case 'claude':
-        return ['--dangerously-skip-permissions', '-p', prompt, '--output-format', 'text', '--model', model];
+        return ['--dangerously-skip-permissions', '-p', prompt, '--output-format', 'text', '--model', model, '--max-turns', '200'];
       case 'gemini':
         return ['-p', prompt, '--model', model];
       case 'codex':
