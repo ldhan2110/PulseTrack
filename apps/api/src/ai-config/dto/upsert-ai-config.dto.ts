@@ -20,6 +20,11 @@ export class UpsertAiConfigDto {
   @IsOptional()
   baseUrl?: string;
 
+  @ValidateIf((o) => o.provider === 'custom')
+  @IsOptional()
+  @IsIn(['openai', 'anthropic', 'gemini'])
+  adapterType?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(10000)

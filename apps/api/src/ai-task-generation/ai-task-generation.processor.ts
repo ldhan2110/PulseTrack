@@ -74,7 +74,7 @@ export class AiTaskGenerationProcessor extends WorkerHost {
 
     try {
       const config = await this.aiConfigLoader.load(projectId);
-      const client = createAiClient(config.provider, config.apiKey, config.baseUrl);
+      const client = createAiClient(config.provider, config.apiKey, config.baseUrl, config.adapterType);
 
       // Step 1: git pull
       currentStep = 'pulling';
