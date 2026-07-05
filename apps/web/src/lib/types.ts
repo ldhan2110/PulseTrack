@@ -631,13 +631,14 @@ export interface CreatePrPayload {
 
 // ─── AI Config ───────────────────────────────────────────────────────────────
 
-export type AiProvider = 'claude' | 'gemini' | 'codex';
+export type AiProvider = 'claude' | 'gemini' | 'codex' | 'custom';
 
 export interface AiConfig {
   id: string;
   provider: AiProvider;
   model: string;
   apiKey: string; // masked
+  baseUrl: string | null;
   projectContext: string | null;
 }
 
@@ -645,6 +646,7 @@ export interface UpsertAiConfigPayload {
   provider: AiProvider;
   model: string;
   apiKey: string;
+  baseUrl?: string;
   projectContext?: string;
 }
 

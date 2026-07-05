@@ -17,7 +17,7 @@ import { useAiConfig, useUpsertAiConfig, useUpdateProjectContext, useGeneratePro
 import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
 import type { AiProvider } from '@/lib/types';
 
-const PROVIDER_MODELS: Record<AiProvider, string[]> = {
+const PROVIDER_MODELS: Record<Exclude<AiProvider, 'custom'>, string[]> = {
   claude: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
   codex: ['o3', 'o4-mini', 'gpt-4.1'],
@@ -41,6 +41,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   const [model, setModel] = useState('claude-sonnet-4-6');
   const [apiKey, setApiKey] = useState('');
   const [projectContext, setProjectContext] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
@@ -49,6 +50,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
       setProvider(config.provider);
       setModel(config.model);
       setApiKey('');
+      setBaseUrl(config.baseUrl ?? '');
       setProjectContext(config.projectContext ?? '');
       setInitialized(true);
     }
@@ -57,7 +59,12 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   // Update model list when provider changes
   const handleProviderChange = (value: AiProvider) => {
     setProvider(value);
-    setModel(PROVIDER_MODELS[value][0]);
+    if (value === 'custom') {
+      setModel('');
+    } else {
+      setModel(PROVIDER_MODELS[value][0]);
+      setBaseUrl('');
+    }
   };
 
   const handleSave = () => {
@@ -65,6 +72,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
       provider,
       model,
       apiKey: apiKey || (config?.apiKey ?? ''),
+      ...(provider === 'custom' && baseUrl ? { baseUrl } : {}),
     });
     setInitialized(false);
   };
@@ -111,29 +119,52 @@ export function AiConfigCard({ projectId, canManage }: Props) {
                 <SelectItem value="claude">Claude</SelectItem>
                 <SelectItem value="gemini">Gemini</SelectItem>
                 <SelectItem value="codex">Codex</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>Model</Label>
-            <Select
-              value={model}
-              onValueChange={setModel}
-              disabled={!canManage}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PROVIDER_MODELS[provider].map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {provider === 'custom' ? (
+              <Input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="e.g. gpt-4o, llama-3, mistral-large"
+                disabled={!canManage}
+              />
+            ) : (
+              <Select
+                value={model}
+                onValueChange={setModel}
+                disabled={!canManage}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVIDER_MODELS[provider].map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
+
+        {provider === 'custom' && (
+          <div className="space-y-2">
+            <Label htmlFor="baseUrl">Base URL</Label>
+            <Input
+              id="baseUrl"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="https://your-llm-endpoint.com/v1"
+              disabled={!canManage}
+            />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="apiKey">API Key</Label>

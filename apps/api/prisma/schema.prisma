@@ -692,9 +692,10 @@ model TaskBranch {
 model AiConfig {
   id             String   @id @default(cuid())
   projectId      String   @unique
-  provider       String   // claude | gemini | codex
+  provider       String   // claude | gemini | codex | custom
   model          String
   apiKey         String   // AES-256-GCM encrypted
+  baseUrl        String?
   projectContext String?  @db.VarChar(2000)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

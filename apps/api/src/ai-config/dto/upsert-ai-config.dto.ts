@@ -1,9 +1,9 @@
-import { IsString, IsNotEmpty, IsIn, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsIn, IsOptional, IsUrl, MaxLength, ValidateIf } from 'class-validator';
 
 export class UpsertAiConfigDto {
   @IsString()
   @IsNotEmpty()
-  @IsIn(['claude', 'gemini', 'codex'])
+  @IsIn(['claude', 'gemini', 'codex', 'custom'])
   provider: string;
 
   @IsString()
@@ -13,6 +13,12 @@ export class UpsertAiConfigDto {
   @IsString()
   @IsNotEmpty()
   apiKey: string;
+
+  @ValidateIf((o) => o.provider === 'custom')
+  @IsNotEmpty()
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  baseUrl?: string;
 
   @IsOptional()
   @IsString()
