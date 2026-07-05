@@ -35,6 +35,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
   const [accessToken, setAccessToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [provider, setProvider] = useState<'github' | 'gitlab'>('gitlab');
+  const [branch, setBranch] = useState('');
   const [initialized, setInitialized] = useState(false);
   const socket = useSocket();
 
@@ -43,6 +44,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
       setRepoUrl(config.repoUrl ?? '');
       setAccessToken('');
       setProvider(config.provider ?? 'gitlab');
+      setBranch(config.branch ?? '');
       setInitialized(true);
     }
   }, [config, initialized]);
@@ -61,6 +63,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
       repoUrl: repoUrl.trim(),
       accessToken: accessToken || (config?.accessToken ?? ''),
       provider,
+      ...(branch.trim() ? { branch: branch.trim() } : {}),
     });
     setInitialized(false);
   };
@@ -122,6 +125,16 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
               <SelectItem value="github">GitHub</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="branch">Branch</Label>
+          <Input
+            id="branch"
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+            placeholder="Default branch"
+            disabled={!canManage}
+          />
         </div>
         {config?.cloneStatus === 'failed' && config.cloneError && (
           <p className="text-xs text-destructive">{config.cloneError}</p>

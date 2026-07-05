@@ -590,6 +590,7 @@ export interface RepositoryConfig {
   repoUrl: string;
   accessToken: string; // masked
   provider: 'github' | 'gitlab';
+  branch: string | null;
   cloneStatus: CloneStatus;
   cloneError: string | null;
   workspacePath: string | null;
@@ -599,6 +600,7 @@ export interface UpsertRepositoryConfigPayload {
   repoUrl: string;
   accessToken: string;
   provider?: 'github' | 'gitlab';
+  branch?: string;
 }
 
 // ─── Task Branches ──────────────────────────────────────────────────────────

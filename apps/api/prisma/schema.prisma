@@ -664,6 +664,7 @@ model RepositoryConfig {
   cloneStatus   String   @default("pending") // pending | cloning | cloned | failed
   cloneError    String?
   workspacePath String?
+  branch        String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

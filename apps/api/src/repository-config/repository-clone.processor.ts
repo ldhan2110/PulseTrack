@@ -48,7 +48,11 @@ export class RepositoryCloneProcessor extends WorkerHost {
       url.username = 'oauth2';
       url.password = token;
 
-      await execFileAsync(GIT_PATH, ['clone', url.toString(), workspacePath], {
+      const cloneArgs = ['clone'];
+      if (repoConfig.branch) cloneArgs.push('--branch', repoConfig.branch);
+      cloneArgs.push(url.toString(), workspacePath);
+
+      await execFileAsync(GIT_PATH, cloneArgs, {
         timeout: 300_000, // 5 minutes
       });
 

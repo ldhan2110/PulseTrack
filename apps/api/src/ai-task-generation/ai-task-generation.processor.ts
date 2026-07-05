@@ -2,86 +2,30 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { spawn } from 'child_process';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AiTaskGenerationService } from './ai-task-generation.service';
+import { AgentRunner } from '../ai/agent-runner.service';
+import { AiConfigLoader } from '../ai/ai-config-loader.service';
+import { createAiClient } from '../ai/ai-client.factory';
+import { OutputParser } from '../ai/output-parser.service';
+import { PromptAssembler } from '../ai/prompt-assembler.service';
+import { SkillRegistry } from '../ai/skill-registry.service';
 import type { GenerationJobData, GenerationJobResult } from './dto/generate-tasks.dto';
 
 @Processor('ai-task-generation', { concurrency: 4 })
 export class AiTaskGenerationProcessor extends WorkerHost {
   private readonly logger = new Logger(AiTaskGenerationProcessor.name);
+  private readonly outputParser = new OutputParser();
+  private readonly promptAssembler = new PromptAssembler();
 
   constructor(
     private readonly aiService: AiTaskGenerationService,
     private readonly notifications: NotificationsService,
+    private readonly agentRunner: AgentRunner,
+    private readonly aiConfigLoader: AiConfigLoader,
+    private readonly skillRegistry: SkillRegistry,
   ) {
     super();
-  }
-
-  /**
-   * Spawn a CLI process with stdin closed (prevents "no stdin data" warnings)
-   * and stream stdout/stderr to the NestJS logger in real-time.
-   * Returns the full stdout buffer once the process exits.
-   *
-   * @param onChunk optional callback invoked with each stdout chunk for live streaming
-   */
-  private runCliStreaming(
-    command: string,
-    args: string[],
-    opts: { cwd: string; timeout: number; env?: Record<string, string | undefined> },
-    jobId: string | undefined,
-    onChunk?: (text: string) => void,
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const child = spawn(command, args, {
-        cwd: opts.cwd,
-        env: opts.env as NodeJS.ProcessEnv,
-        stdio: ['ignore', 'pipe', 'pipe'], // Close stdin to prevent "no stdin data" warning
-      });
-
-      const stdoutChunks: string[] = [];
-      let killed = false;
-
-      // Manual timeout — spawn doesn't have a built-in timeout option
-      const timer = setTimeout(() => {
-        killed = true;
-        child.kill('SIGTERM');
-        reject(new Error(`CLI timed out after ${opts.timeout}ms`));
-      }, opts.timeout);
-
-      child.stdout.on('data', (chunk: Buffer) => {
-        const text = chunk.toString();
-        stdoutChunks.push(text);
-        onChunk?.(text);
-        for (const line of text.split('\n').filter(Boolean)) {
-          this.logger.log(`[Job ${jobId}] ${line}`);
-        }
-      });
-
-      child.stderr.on('data', (chunk: Buffer) => {
-        const text = chunk.toString();
-        // Also forward stderr to onChunk so the user can see warnings
-        onChunk?.(text);
-        for (const line of text.split('\n').filter(Boolean)) {
-          this.logger.warn(`[Job ${jobId}] ${line}`);
-        }
-      });
-
-      child.on('error', (err) => {
-        clearTimeout(timer);
-        reject(err);
-      });
-
-      child.on('close', (code) => {
-        clearTimeout(timer);
-        if (killed) return; // Already rejected by timeout
-        if (code === 0 || code === null) {
-          resolve(stdoutChunks.join(''));
-        } else {
-          reject(new Error(`CLI exited with code ${code}`));
-        }
-      });
-    });
   }
 
   private emitStep(
@@ -99,16 +43,10 @@ export class AiTaskGenerationProcessor extends WorkerHost {
 
   private getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
-      if (error.message.includes('TIMEOUT') || error.message.includes('timed out')) {
+      if (error.message.includes('timed out') || error.message.includes('TIMEOUT')) {
         return 'AI generation timed out — try a simpler prompt or disable codebase scan';
       }
-      if (error.message.includes('ENOENT')) {
-        return 'AI CLI not found — check server configuration';
-      }
-      if (error.message.includes('exited with code')) {
-        return `AI CLI process failed (${error.message})`;
-      }
-      if (error.message.includes('invalid JSON') || error.message.includes('missing "tasks"')) {
+      if (error.message.includes('invalid JSON') || error.message.includes('missing "tasks"') || error.message.includes('No JSON')) {
         return 'AI returned an invalid response — please retry';
       }
       if (error.message.includes('AI configuration') || error.message.includes('Repository must')) {
@@ -123,8 +61,6 @@ export class AiTaskGenerationProcessor extends WorkerHost {
     const { projectId, userId, prompt, scanCodebase, breakIntoSubTasks, uploadedFilePaths } =
       job.data;
 
-    // Shared log buffer — accumulates across all steps so the frontend
-    // terminal shows the entire session history.
     let logBuffer = '';
     let currentStep = 'queued';
     const emitStream = (chunk: string) => {
@@ -137,112 +73,121 @@ export class AiTaskGenerationProcessor extends WorkerHost {
     };
 
     try {
-      const config = await this.aiService.getProjectAiConfig(projectId);
+      const config = await this.aiConfigLoader.load(projectId);
+      const client = createAiClient(config.provider, config.apiKey, config.baseUrl);
 
       // Step 1: git pull
       currentStep = 'pulling';
       this.emitStep(userId, job, 'pulling');
       emitStream('$ git pull\n');
 
-      const pullOutput = await this.runCliStreaming('git', ['pull'], {
-        cwd: config.workspacePath,
-        timeout: 60_000,
-      }, job.id, emitStream);
-
-      if (!pullOutput.trim()) emitStream('Already up to date.\n');
+      const { execSync } = await import('child_process');
+      try {
+        const pullOutput = execSync('git pull', {
+          cwd: config.workspacePath,
+          encoding: 'utf-8',
+          timeout: 60_000,
+        });
+        emitStream(pullOutput || 'Already up to date.\n');
+      } catch {
+        emitStream('Already up to date.\n');
+      }
       emitStream('\n');
 
       // Step 2: Build code graph + scan (if requested)
       let scanResults: string | null = null;
       if (scanCodebase) {
-        // Step 2a: Build/update the code knowledge graph
+        // Step 2a: Build code graph
         currentStep = 'building-graph';
         this.emitStep(userId, job, 'building-graph');
-        emitStream(`$ ${config.cli} (building code graph)\n`);
+        emitStream('Building code graph...\n');
 
-        const graphPrompt = this.aiService.buildGraphPrompt();
-        const graphArgs = this.aiService.buildCliArgs(config.provider, config.model, graphPrompt, []);
-        const graphEnv = this.aiService.buildCliEnv(config.provider, config.apiKey);
-
-        await this.runCliStreaming(config.cli, graphArgs, {
-          cwd: config.workspacePath,
-          timeout: 300_000,
-          env: { ...process.env, ...graphEnv },
-        }, job.id, emitStream);
-
+        const graphResult = await this.agentRunner.run({
+          client,
+          model: config.model,
+          system: 'You are a code analysis assistant.',
+          prompt: this.aiService.buildGraphPrompt(),
+          maxTurns: 1,
+          onTextChunk: emitStream,
+        });
         emitStream('\n');
 
-        // Step 2b: Scan codebase using the freshly built graph
+        // Step 2b: Scan codebase
         currentStep = 'scanning';
         this.emitStep(userId, job, 'scanning');
-        emitStream(`$ ${config.cli} (scanning codebase with code-graph)\n`);
+        emitStream('Scanning codebase...\n');
 
-        const scanPrompt = this.aiService.buildScanPrompt(prompt);
-        const scanArgs = this.aiService.buildCliArgs(config.provider, config.model, scanPrompt, []);
-        const scanEnv = this.aiService.buildCliEnv(config.provider, config.apiKey);
+        const scanResult = await this.agentRunner.run({
+          client,
+          model: config.model,
+          system: 'You are a code analysis assistant.',
+          prompt: this.aiService.buildScanPrompt(prompt),
+          maxTurns: 1,
+          onTextChunk: emitStream,
+        });
 
-        const scanOutput = await this.runCliStreaming(config.cli, scanArgs, {
-          cwd: config.workspacePath,
-          timeout: 300_000,
-          env: { ...process.env, ...scanEnv },
-        }, job.id, emitStream);
-
-        scanResults = scanOutput.trim();
+        scanResults = scanResult.text.trim();
         emitStream('\n');
       }
 
-      // Step 3: Build and run generation prompt
+      // Step 3: Generate tasks
       currentStep = 'generating';
       this.emitStep(userId, job, 'generating');
-      emitStream(`$ ${config.cli} (generating tasks)\n`);
+      emitStream('Generating tasks...\n');
 
-      let generationPrompt = this.aiService.buildGenerationPrompt({
-        userPrompt: prompt,
-        projectContext: config.projectContext,
-        scanResults,
-        breakIntoSubTasks,
+      // Load skill and build system prompt
+      const skillContent = await this.skillRegistry.load('task-generation');
+      const systemPrompt = this.promptAssembler.assemble([
+        { key: 'skill', content: skillContent },
+        { key: 'context', content: config.projectContext },
+        ...(scanResults ? [{ key: 'scan', content: `## Codebase Scan Results\n${scanResults}` }] : []),
+      ]);
+
+      // Build user prompt with sub-task instruction and file contents
+      let userPrompt = prompt;
+      if (breakIntoSubTasks) {
+        userPrompt += '\n\nInclude sub-tasks: break each parent task into 2-5 focused sub-tasks in the "subTasks" array.';
+      } else {
+        userPrompt += '\n\nDo NOT include "subTasks" in the output. Generate only top-level tasks.';
+      }
+
+      userPrompt = await this.aiService.augmentPromptWithFiles(
+        userPrompt,
+        uploadedFilePaths,
+        config.provider,
+      );
+
+      const result = await this.agentRunner.run({
+        client,
+        model: config.model,
+        system: systemPrompt,
+        prompt: userPrompt,
+        maxTurns: 1,
+        onTextChunk: emitStream,
       });
-
-      generationPrompt = await this.aiService.augmentPromptWithFiles(
-        generationPrompt,
-        uploadedFilePaths,
-        config.provider,
-      );
-
-      const genArgs = this.aiService.buildCliArgs(
-        config.provider,
-        config.model,
-        generationPrompt,
-        uploadedFilePaths,
-      );
-      const genEnv = this.aiService.buildCliEnv(config.provider, config.apiKey);
-
-      // Use a generous 10-minute timeout — AI generation varies widely in duration.
-      const rawOutput = await this.runCliStreaming(config.cli, genArgs, {
-        cwd: config.workspacePath,
-        timeout: 600_000,
-        env: { ...process.env, ...genEnv },
-      }, job.id, emitStream);
 
       // Step 4: Parse output
       currentStep = 'parsing';
       this.emitStep(userId, job, 'parsing');
       emitStream('\nParsing AI output...\n');
 
-      const result = this.aiService.parseAndValidateOutput(rawOutput);
+      const parsed = this.outputParser.extractJSON<GenerationJobResult>(result.text);
+      this.aiService.validateOutput(parsed);
 
-      emitStream(`Done — generated ${result.tasks.length} task(s).\n`);
+      emitStream(`Done — generated ${parsed.tasks.length} task(s).\n`);
 
-      // Notify completion
       this.notifications.notifyUser(userId, 'ai-generation:completed', {
         jobId: job.id,
-        taskCount: result.tasks.length,
+        taskCount: parsed.tasks.length,
       });
 
-      return result;
+      return parsed;
     } catch (error) {
       const message = this.getErrorMessage(error);
-      this.logger.error(`[Job ${job.id}] Failed: ${message}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `[Job ${job.id}] Failed: ${message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
 
       emitStream(`\nError: ${message}\n`);
 

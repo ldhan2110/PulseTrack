@@ -14,4 +14,8 @@ export class UpsertRepositoryConfigDto {
   @IsIn(['github', 'gitlab'])
   @IsOptional()
   provider?: string;
+
+  @IsString()
+  @IsOptional()
+  branch?: string;
 }

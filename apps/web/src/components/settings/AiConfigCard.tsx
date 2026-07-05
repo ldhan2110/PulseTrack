@@ -23,6 +23,8 @@ const PROVIDER_MODELS: Record<Exclude<AiProvider, 'custom'>, string[]> = {
   codex: ['o3', 'o4-mini', 'gpt-4.1'],
 };
 
+const ALL_MODELS = Object.values(PROVIDER_MODELS).flat();
+
 const CONTEXT_MAX_LENGTH = 10000;
 
 interface Props {
@@ -60,7 +62,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   const handleProviderChange = (value: AiProvider) => {
     setProvider(value);
     if (value === 'custom') {
-      setModel('');
+      setModel(ALL_MODELS[0]);
     } else {
       setModel(PROVIDER_MODELS[value][0]);
       setBaseUrl('');
@@ -126,12 +128,22 @@ export function AiConfigCard({ projectId, canManage }: Props) {
           <div className="space-y-2">
             <Label>Model</Label>
             {provider === 'custom' ? (
-              <Input
+              <Select
                 value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="e.g. gpt-4o, llama-3, mistral-large"
+                onValueChange={setModel}
                 disabled={!canManage}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_MODELS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : (
               <Select
                 value={model}

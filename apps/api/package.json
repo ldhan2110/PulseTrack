@@ -18,6 +18,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@nestjs/bullmq": "^11.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -44,6 +45,7 @@
     "jwks-rsa": "^3.2.0",
     "nestjs-pino": "^4.4.0",
     "nodemailer": "^8.0.5",
+    "openai": "^6.45.0",
     "openid-client": "^6.8.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
