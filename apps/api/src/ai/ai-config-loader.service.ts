@@ -8,6 +8,7 @@ export interface AiProjectConfig {
   model: string;
   apiKey: string;
   baseUrl: string | null;
+  adapterType: string | null;
   projectContext: string | null;
   workspacePath: string;
 }
@@ -46,6 +47,7 @@ export class AiConfigLoader {
       model: aiConfig.model,
       apiKey,
       baseUrl: aiConfig.baseUrl,
+      adapterType: aiConfig.adapterType,
       projectContext: aiConfig.projectContext,
       workspacePath: repoConfig.workspacePath!,
     };

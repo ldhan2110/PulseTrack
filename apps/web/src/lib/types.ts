@@ -635,12 +635,15 @@ export interface CreatePrPayload {
 
 export type AiProvider = 'claude' | 'gemini' | 'codex' | 'custom';
 
+export type AiAdapterType = 'openai' | 'anthropic' | 'gemini';
+
 export interface AiConfig {
   id: string;
   provider: AiProvider;
   model: string;
   apiKey: string; // masked
   baseUrl: string | null;
+  adapterType: AiAdapterType | null;
   projectContext: string | null;
 }
 
@@ -649,6 +652,7 @@ export interface UpsertAiConfigPayload {
   model: string;
   apiKey: string;
   baseUrl?: string;
+  adapterType?: AiAdapterType;
   projectContext?: string;
 }
 

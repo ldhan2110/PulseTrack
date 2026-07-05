@@ -15,15 +15,13 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useAiConfig, useUpsertAiConfig, useUpdateProjectContext, useGenerateProjectContext } from '@/hooks/useAiConfig';
 import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
-import type { AiProvider } from '@/lib/types';
+import type { AiProvider, AiAdapterType } from '@/lib/types';
 
 const PROVIDER_MODELS: Record<Exclude<AiProvider, 'custom'>, string[]> = {
   claude: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5'],
   gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
   codex: ['o3', 'o4-mini', 'gpt-4.1'],
 };
-
-const ALL_MODELS = Object.values(PROVIDER_MODELS).flat();
 
 const CONTEXT_MAX_LENGTH = 10000;
 
@@ -44,6 +42,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   const [apiKey, setApiKey] = useState('');
   const [projectContext, setProjectContext] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
+  const [adapterType, setAdapterType] = useState<AiAdapterType>('openai');
   const [showKey, setShowKey] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
@@ -53,6 +52,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
       setModel(config.model);
       setApiKey('');
       setBaseUrl(config.baseUrl ?? '');
+      setAdapterType(config.adapterType ?? 'openai');
       setProjectContext(config.projectContext ?? '');
       setInitialized(true);
     }
@@ -62,21 +62,25 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   const handleProviderChange = (value: AiProvider) => {
     setProvider(value);
     if (value === 'custom') {
-      setModel(ALL_MODELS[0]);
+      setModel('');
     } else {
       setModel(PROVIDER_MODELS[value][0]);
       setBaseUrl('');
+      setAdapterType('openai');
     }
   };
 
   const handleSave = () => {
-    upsert.mutate({
-      provider,
-      model,
-      apiKey: apiKey || (config?.apiKey ?? ''),
-      ...(provider === 'custom' && baseUrl ? { baseUrl } : {}),
-    });
-    setInitialized(false);
+    upsert.mutate(
+      {
+        provider,
+        model,
+        apiKey: apiKey || (config?.apiKey ?? ''),
+        ...(provider === 'custom' && baseUrl ? { baseUrl } : {}),
+        ...(provider === 'custom' ? { adapterType } : {}),
+      },
+      { onSuccess: () => setInitialized(false) },
+    );
   };
 
   const handleSaveContext = () => {
@@ -128,22 +132,12 @@ export function AiConfigCard({ projectId, canManage }: Props) {
           <div className="space-y-2">
             <Label>Model</Label>
             {provider === 'custom' ? (
-              <Select
+              <Input
                 value={model}
-                onValueChange={setModel}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="pu/claude-sonnet-4-6"
                 disabled={!canManage}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ALL_MODELS.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             ) : (
               <Select
                 value={model}
@@ -166,16 +160,37 @@ export function AiConfigCard({ projectId, canManage }: Props) {
         </div>
 
         {provider === 'custom' && (
-          <div className="space-y-2">
-            <Label htmlFor="baseUrl">Base URL</Label>
-            <Input
-              id="baseUrl"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://your-llm-endpoint.com/v1"
-              disabled={!canManage}
-            />
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>API Format</Label>
+                <Select
+                  value={adapterType}
+                  onValueChange={(v) => setAdapterType(v as AiAdapterType)}
+                  disabled={!canManage}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="openai">OpenAI Compatible</SelectItem>
+                    <SelectItem value="anthropic">Anthropic Compatible</SelectItem>
+                    <SelectItem value="gemini">Gemini Compatible</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="baseUrl">Base URL</Label>
+                <Input
+                  id="baseUrl"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  placeholder="https://your-llm-endpoint.com/v1"
+                  disabled={!canManage}
+                />
+              </div>
+            </div>
+          </>
         )}
 
         <div className="space-y-2">

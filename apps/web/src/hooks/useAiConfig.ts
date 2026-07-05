@@ -16,8 +16,8 @@ export function useUpsertAiConfig(projectId: string) {
   return useMutation({
     mutationFn: (data: UpsertAiConfigPayload) => api.upsertAiConfig(projectId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['aiConfig', projectId] });
       toast.success('AI configuration saved');
+      return queryClient.invalidateQueries({ queryKey: ['aiConfig', projectId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to save AI configuration');

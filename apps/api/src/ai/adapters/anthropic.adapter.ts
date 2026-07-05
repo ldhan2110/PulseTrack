@@ -14,8 +14,8 @@ import type {
 export class AnthropicAdapter implements AiClient {
   private client: Anthropic;
 
-  constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey });
+  constructor(apiKey: string, baseURL?: string) {
+    this.client = new Anthropic({ apiKey, ...(baseURL && { baseURL }) });
   }
 
   async chat(request: AiChatRequest): Promise<AiChatResponse> {
