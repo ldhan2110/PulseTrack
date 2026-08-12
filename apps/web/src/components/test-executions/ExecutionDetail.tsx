@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Play, Bug } from 'lucide-react';
+import { ArrowLeft, Play, Bug, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api';
 import { useUpdateExecutionCaseResult } from '@/hooks/useTestExecutions';
 import { BugAutoFillDialog } from './BugAutoFillDialog';
 import type { TestExecution, TestExecutionCase, TestResultStatus, Member } from '@/lib/types';
@@ -130,6 +131,19 @@ export function ExecutionDetail({
               Resume Testing
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const blob = await api.downloadExecutionReport(projectId, execution.id, 'pdf');
+              const url = URL.createObjectURL(blob);
+              window.open(url, '_blank', 'noopener');
+              setTimeout(() => URL.revokeObjectURL(url), 60_000);
+            }}
+          >
+            <FileText className="size-4 mr-1" />
+            Report
+          </Button>
           {deleteButton}
         </div>
       </div>

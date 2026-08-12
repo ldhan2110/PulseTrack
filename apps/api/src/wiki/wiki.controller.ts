@@ -1,20 +1,15 @@
 import {
   Controller, Get, Post, Put, Delete, Param, Query, Body, Req, UseGuards,
 } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { WikiService } from './wiki.service';
-import { WikiGenerationService } from '../wiki-generation/wiki-generation.service';
 
 @Controller('projects/:projectId/wiki')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
 export class WikiController {
   constructor(
     private readonly service: WikiService,
-    private readonly wikiGenService: WikiGenerationService,
-    @InjectQueue('wiki-generation') private readonly queue: Queue,
   ) {}
 
   @Get('pages')
@@ -65,27 +60,6 @@ export class WikiController {
     @Req() req: any,
   ) {
     return this.service.deleteAnnotation(annotationId, req.user.id);
-  }
-
-  @Post('qa')
-  async askQuestion(
-    @Param('projectId') projectId: string,
-    @Req() req: any,
-    @Body() body: { question: string },
-  ) {
-    const wikiPath = this.wikiGenService.getWikiPath(projectId);
-
-    const job = await this.queue.add('wiki-qa', {
-      projectId,
-      userId: req.user.id,
-      question: body.question,
-      wikiPath,
-    }, {
-      removeOnComplete: { age: 86400 },
-      removeOnFail: { age: 86400 },
-    });
-
-    return { jobId: job.id };
   }
 
   @Get('qa/history')

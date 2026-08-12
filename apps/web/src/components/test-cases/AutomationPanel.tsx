@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { useTestAutomation, useUpsertAutomation } from '@/hooks/useTestAutomation';
+import { useTestAutomation, useUpsertAutomation, useGenerateScript } from '@/hooks/useTestAutomation';
 import { useAutomationRun } from '@/hooks/useAutomationRun';
 import { AutomationEditor } from './AutomationEditor';
 import { BrowserPreview } from './BrowserPreview';
@@ -22,12 +22,14 @@ const DEFAULT_SCRIPT = `// Available context: page, expect, baseUrl, env
 
 interface AutomationPanelProps {
   testCaseId: string;
+  projectId: string;
 }
 
 export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
   const { data: automation, isLoading } = useTestAutomation(testCaseId);
   const upsert = useUpsertAutomation(testCaseId);
   const run = useAutomationRun(testCaseId);
+  const generate = useGenerateScript(testCaseId);
 
   const [localScript, setLocalScript] = useState<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +61,17 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
   const handleStop = useCallback(() => {
     run.cancelRun.mutate();
   }, [run.cancelRun]);
+
+  const handleGenerate = useCallback(() => {
+    const targetUrl = automation?.baseUrl ?? window.prompt('Target URL to generate script for:') ?? '';
+    if (!targetUrl) return;
+    generate.mutate(targetUrl, {
+      onSuccess: ({ script }) => {
+        setLocalScript(script);
+        upsert.mutate({ script });
+      },
+    });
+  }, [automation?.baseUrl, generate, upsert]);
 
   if (isLoading) {
     return (
@@ -102,6 +115,8 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
         onRun={handleRun}
         onStop={handleStop}
         isRunPending={run.triggerRun.isPending}
+        onGenerate={handleGenerate}
+        isGeneratePending={generate.isPending}
       />
     </div>
   );

@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AutomationRunService } from '../test-automation/automation-run.service';
 import { CreateTestExecutionDto } from './dto/create-test-execution.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
 import type { TestExecutionStatus, TestResultStatus } from '@prisma/client';
+import { renderReportHtml, type ReportData, type ReportCase } from './execution-report';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,7 +14,10 @@ const USER_SELECT = { id: true, username: true, email: true, name: true, imageUr
 
 @Injectable()
 export class TestExecutionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private automationRuns: AutomationRunService,
+  ) {}
 
   async findAll(projectId: string) {
     const executions = await this.prisma.testExecution.findMany({
@@ -58,7 +63,62 @@ export class TestExecutionsService {
     });
   }
 
-  async create(projectId: string, dto: CreateTestExecutionDto) {
+  /** Gather one execution into the report view (header + cases + latest run + screenshot). */
+  async buildReportHtml(executionId: string): Promise<string> {
+    const exec = await this.findOne(executionId);
+    if (!exec) throw new NotFoundException('Execution not found');
+
+    const cases: ReportCase[] = [];
+    for (const c of exec.cases) {
+      const automation = await this.prisma.testCaseAutomation.findUnique({
+        where: { testCaseId: c.testCaseId },
+      });
+      const run = automation
+        ? await this.prisma.automationRun.findFirst({
+            where: { automationId: automation.id },
+            orderBy: { createdAt: 'desc' },
+          })
+        : null;
+      const logs = (run?.logs ?? {}) as {
+        steps?: { name: string; status: string; duration: number }[];
+      };
+
+      // Latest pass-*/failure-* image → inline data URI.
+      const shot = c.attachments.find((a) => a.mimeType.startsWith('image/'));
+      let screenshot: string | null = null;
+      if (shot) {
+        const filePath = path.join(UPLOAD_DIR, shot.executionCaseId, shot.storedName);
+        if (fs.existsSync(filePath)) {
+          screenshot = `data:${shot.mimeType};base64,${fs.readFileSync(filePath).toString('base64')}`;
+        }
+      }
+
+      cases.push({
+        name: c.testCase?.title ?? c.testCaseId,
+        result: c.result,
+        notes: c.notes,
+        executedBy: c.executedBy?.name ?? c.executedBy?.username ?? null,
+        status: run?.status ?? null,
+        duration: run?.duration ?? null,
+        error: run?.error ?? null,
+        steps: logs.steps ?? [],
+        screenshot,
+      });
+    }
+
+    const data: ReportData = {
+      executionKey: exec.executionKey ?? '',
+      name: exec.name,
+      status: exec.status,
+      assignee: exec.assignee?.name ?? exec.assignee?.username ?? null,
+      sprint: exec.sprint?.name ?? null,
+      createdAt: exec.createdAt?.toISOString().slice(0, 10) ?? null,
+      cases,
+    };
+    return renderReportHtml(data);
+  }
+
+  async create(projectId: string, dto: CreateTestExecutionDto, userId: string) {
     // Merge suite members + cherry-picked IDs
     const testCaseIdSet = new Set<string>(dto.testCaseIds ?? []);
 
@@ -72,7 +132,7 @@ export class TestExecutionsService {
 
     const testCaseIds = Array.from(testCaseIdSet);
 
-    return this.prisma.$transaction(async (tx) => {
+    const execution = await this.prisma.$transaction(async (tx) => {
       // Atomically increment testExecutionSeq to generate executionKey
       const project = await tx.project.update({
         where: { id: projectId },
@@ -105,6 +165,35 @@ export class TestExecutionsService {
         },
       });
     });
+
+    // Auto-run cases that have an automation script (fire-and-forget, execution lane)
+    const scripted = await this.prisma.testCaseAutomation.findMany({
+      where: { testCaseId: { in: testCaseIds } },
+      select: { testCaseId: true },
+    });
+    const scriptedSet = new Set(scripted.map((a) => a.testCaseId));
+    const scriptedCases = execution.cases.filter((c) => scriptedSet.has(c.testCase.id));
+
+    if (scriptedCases.length > 0) {
+      // Mark running so the list/detail shows progress before the worker finishes
+      await this.prisma.testExecutionCase.updateMany({
+        where: { id: { in: scriptedCases.map((c) => c.id) } },
+        data: { result: 'IN_PROGRESS' },
+      });
+      await this.prisma.testExecution.update({
+        where: { id: execution.id },
+        data: { status: 'IN_PROGRESS' },
+      });
+      await Promise.all(
+        scriptedCases.map((c) =>
+          this.automationRuns
+            .triggerRun(c.testCase.id, userId, 'execution', c.id)
+            .catch(() => {}),
+        ),
+      );
+    }
+
+    return execution;
   }
 
   async findByKey(executionKey: string) {

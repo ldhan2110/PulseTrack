@@ -84,8 +84,6 @@ import type {
   PlannerFeature,
   CreateFeaturePayload,
   UpdateFeaturePayload,
-  PlannerAiConfig,
-  UpsertPlannerAiConfigPayload,
   WbsPhase,
   WbsTask,
   WbsSubtask,
@@ -401,15 +399,6 @@ export const api = {
       method: 'POST',
     }),
 
-  // ─── Planner AI Config ──────────────────────────────────────────────────────
-  getPlannerAiConfig: (projectId: string) =>
-    request<PlannerAiConfig | null>(`/projects/${projectId}/settings/planner-ai`),
-  upsertPlannerAiConfig: (projectId: string, data: UpsertPlannerAiConfigPayload) =>
-    request<PlannerAiConfig>(`/projects/${projectId}/settings/planner-ai`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-
   // ─── Report Config ──────────────────────────────────────────────────────────
   getReportConfig: (projectId: string) =>
     request<ReportConfig | null>(`/projects/${projectId}/settings/report`),
@@ -720,6 +709,28 @@ export const api = {
     request<void>(`/projects/${projectId}/test-executions/attachments/${attachmentId}`, { method: 'DELETE' }),
   getExecutionEvidenceDownloadUrl: (projectId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
+  downloadExecutionEvidence: async (projectId: string, attachmentId: string): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(
+      `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    return res.blob();
+  },
+  downloadExecutionReport: async (
+    projectId: string,
+    executionId: string,
+    format: 'html' | 'pdf',
+  ): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(
+      `${API_BASE}/projects/${projectId}/test-executions/${executionId}/report?format=${format}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) throw new Error(`Report failed: ${res.status}`);
+    return res.blob();
+  },
 
   // ─── Wiki Config ──────────────────────────────────────────────────────
   getWikiConfig: (projectId: string) =>
@@ -981,12 +992,20 @@ export const api = {
 
   triggerAutomationRun: (testCaseId: string) =>
     request<AutomationRun>(`/test-automation/${testCaseId}/run`, { method: 'POST' }),
+  executeAutomationRun: (testCaseId: string) =>
+    request<AutomationRun>(`/test-automation/${testCaseId}/execute`, { method: 'POST' }),
 
   cancelAutomationRun: (runId: string) =>
     request<{ cancelled: boolean }>(`/test-automation/runs/${runId}/cancel`, { method: 'DELETE' }),
 
   getAutomationRuns: (testCaseId: string) =>
     request<AutomationRun[]>(`/test-automation/${testCaseId}/runs`),
+
+  generateAutomationScript: (testCaseId: string, targetUrl: string) =>
+    request<{ script: string }>(
+      `/test-automation/${testCaseId}/generate-script`,
+      { method: 'POST', body: JSON.stringify({ targetUrl }) },
+    ),
 
   // ─── Project Variables ────────────────────────────────────────
   getProjectVariables: (projectId: string) =>

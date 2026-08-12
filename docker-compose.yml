@@ -25,6 +25,16 @@ services:
       timeout: 3s
       retries: 10
 
+  playwright-mcp:
+    image: mcr.microsoft.com/playwright:latest
+    # ponytail: image bundles chromium-1129 but mcp 0.0.79 wants 1237 — install the
+    # matching browser into a persistent volume once. Bump both together on upgrade.
+    command: ["sh", "-c", "npx -y playwright-core@1.63.0-alpha-2026-08-05 install chromium && npx -y @playwright/mcp@0.0.79 --headless --browser chromium --host 0.0.0.0 --port 8931"]
+    ports:
+      - "8931:8931"
+    volumes:
+      - playwright_browsers:/ms-playwright
+
 # Application services (api, web) use condition: service_healthy to wait for
 # postgres and redis before starting. Example (added when containerizing in later phase):
 # api:
@@ -36,3 +46,4 @@ services:
 
 volumes:
   postgres_data:
+  playwright_browsers:

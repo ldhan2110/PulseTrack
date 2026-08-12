@@ -8,10 +8,18 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TestAutomationService } from './test-automation.service';
 import { AutomationRunService } from './automation-run.service';
+import { AgentsService } from '../agents/agents.service';
 import { UpsertAutomationDto } from './dto/upsert-automation.dto';
+
+class GenerateScriptDto {
+  @IsString()
+  @IsNotEmpty()
+  targetUrl!: string;
+}
 
 @Controller('test-automation')
 @UseGuards(JwtAuthGuard)
@@ -19,7 +27,20 @@ export class TestAutomationController {
   constructor(
     private readonly automationService: TestAutomationService,
     private readonly runService: AutomationRunService,
+    private readonly agents: AgentsService,
   ) {}
+
+  @Post(':testCaseId/generate-script')
+  async generateScript(
+    @Param('testCaseId') testCaseId: string,
+    @Body() dto: GenerateScriptDto,
+  ) {
+    const script = await this.agents.run('testcase-script', {
+      testCaseId,
+      targetUrl: dto.targetUrl,
+    });
+    return { script };
+  }
 
   @Post(':testCaseId')
   upsert(
@@ -44,7 +65,15 @@ export class TestAutomationController {
     @Param('testCaseId') testCaseId: string,
     @Req() req: { user: { id: string } },
   ) {
-    return this.runService.triggerRun(testCaseId, req.user.id);
+    return this.runService.triggerRun(testCaseId, req.user.id, 'live');
+  }
+
+  @Post(':testCaseId/execute')
+  triggerExecution(
+    @Param('testCaseId') testCaseId: string,
+    @Req() req: { user: { id: string } },
+  ) {
+    return this.runService.triggerRun(testCaseId, req.user.id, 'execution');
   }
 
   @Delete('runs/:runId/cancel')

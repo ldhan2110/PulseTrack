@@ -158,19 +158,6 @@ model StatusAssigneeRule {
   @@unique([statusId, memberId])
 }
 
-enum AiJobStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
-enum AiJobType {
-  STORY_GENERATION
-  TASK_ASSIGNMENT
-  DAILY_REPORT
-  WEEKLY_REPORT
-}
 
 enum SyncStatus {
   PENDING
@@ -207,7 +194,6 @@ model User {
   createdTasks      Task[]    @relation("TaskCreator")
   comments          Comment[]
   timeLogs          TimeLog[]
-  aiJobsRequested   AiJob[]
   reportedBugs      Bug[]     @relation("BugReporter")
   assignedBugs      Bug[]     @relation("BugAssignee")
   ownedBugs         Bug[]     @relation("BugOwner")
@@ -225,7 +211,6 @@ model User {
   wikiAnnotations         WikiAnnotation[]          @relation("WikiAnnotationAuthor")
   savedFilters            SavedFilter[]
   commentLikes            CommentLike[]     @relation("CommentLikeUser")
-  requestedAiBugFixes     AiBugFix[]    @relation("AiBugFixRequester")
   automationRuns          AutomationRun[] @relation("AutomationRunner")
 }
 
@@ -251,7 +236,6 @@ model Project {
   sprints        Sprint[]
   tasks          Task[]
   bugs           Bug[]
-  aiJobs         AiJob[]
   reports        Report[]
   blueprintSyncs BlueprintSync[]
   workflowLayout      Json?
@@ -259,14 +243,12 @@ model Project {
   workflowTransitions WorkflowTransition[]
   repositoryConfig    RepositoryConfig?
   aiConfig            AiConfig?
-  plannerAiConfig     PlannerAiConfig?
   notifications       Notification[]
   testModules    TestModule[]
   testCases      TestCase[]
   testSuites     TestSuite[]
   testExecutions TestExecution[]
   customRoles    CustomRole[]
-  wikiConfig       WikiConfig?
   wikiAnnotations  WikiAnnotation[]
   reportConfig     ReportConfig?
   branches         TaskBranch[]
@@ -274,7 +256,6 @@ model Project {
   wbsPhases       WbsPhase[]
   wbsDependencies WbsDependency[]
   savedFilters    SavedFilter[]
-  aiBugFixes       AiBugFix[]
   variables        ProjectVariable[]
 }
 
@@ -400,23 +381,6 @@ model TimeLog {
 // AI INFRASTRUCTURE
 // =====================
 
-model AiJob {
-  id          String      @id @default(cuid())
-  type        AiJobType
-  status      AiJobStatus @default(PENDING)
-  input       Json        // Serialized context for Claude
-  output      Json?       // Structured result from Claude
-  error       String?
-  bullmqJobId String?     // BullMQ job ID for tracking
-  projectId   String
-  requestedBy String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  project     Project     @relation(fields: [projectId], references: [id])
-  user        User        @relation(fields: [requestedBy], references: [id])
-}
-
 // =====================
 // REPORTS
 // =====================
@@ -485,7 +449,6 @@ model Bug {
   attachments    BugAttachment[]
   comments       Comment[]
   history        BugHistory[]
-  aiBugFixes     AiBugFix[]
 }
 
 model BugTask {
@@ -579,39 +542,6 @@ model BugHistory {
 }
 
 // =====================
-// AI BUG FIX
-// =====================
-
-model AiBugFix {
-  id             String    @id @default(cuid())
-  bugId          String
-  projectId      String
-  requesterId    String
-  status         String    @default("queued")  // queued | preparing | fixing | pushing | creating-mr | completed | failed | cancelled
-  targetBranch   String
-  branchName     String?
-  worktreePath   String?
-  guidance       String?   @db.Text
-  includeTests   Boolean   @default(true)
-  rootCause      String?   @db.Text
-  solution       String?   @db.Text
-  filesChanged   String?   @db.Text
-  prUrl          String?
-  prNumber       Int?
-  errorMessage   String?
-  attempt        Int       @default(1)
-  jobId          String?
-  createdAt      DateTime  @default(now())
-  completedAt    DateTime?
-
-  bug       Bug     @relation(fields: [bugId], references: [id], onDelete: Cascade)
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  requester User    @relation("AiBugFixRequester", fields: [requesterId], references: [id])
-
-  @@index([bugId, status])
-}
-
-// =====================
 // NOTIFICATIONS & WATCHERS
 // =====================
 
@@ -701,30 +631,6 @@ model AiConfig {
   projectContext String?  @db.VarChar(2000)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model PlannerAiConfig {
-  id        String   @id @default(cuid())
-  projectId String   @unique
-  provider  String   @default("openrouter")
-  model     String
-  apiKey    String   // AES-256-GCM encrypted
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-}
-
-model WikiConfig {
-  id              String   @id @default(cuid())
-  projectId       String   @unique
-  autoUpdate      String   @default("manual")
-  sections        String[] @default(["architecture", "modules", "features", "business-logic", "api-reference", "data-models", "glossary"])
-  lastGeneratedAt DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }

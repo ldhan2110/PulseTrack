@@ -660,21 +660,6 @@ export interface UpdateProjectContextPayload {
   projectContext: string;
 }
 
-// ─── Planner AI Config ───────────────────────────────────────────────────────
-
-export interface PlannerAiConfig {
-  id: string;
-  provider: string;
-  model: string;
-  apiKey: string; // masked
-}
-
-export interface UpsertPlannerAiConfigPayload {
-  provider: string;
-  model: string;
-  apiKey?: string;
-}
-
 // ─── AI Task Generation ─────────────────────────────────────────────────────
 
 export interface GeneratedTask {
@@ -1392,7 +1377,10 @@ export interface AutomationRun {
   automationId: string;
   status: AutomationRunStatus;
   duration: number | null;
-  logs: Array<{ level: string; message: string; timestamp: number }> | null;
+  logs: {
+    messages: Array<{ level: string; message: string; timestamp: number }>;
+    steps: Array<{ name: string; type: string; status: string; duration: number; error?: string }>;
+  } | null;
   error: string | null;
   runnerId: string;
   runner: { id: string; name: string | null; username: string; imageUrl: string | null };

@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-07-05T09:39:48.681Z",
+  "sections": [
+    "architecture",
+    "modules",
+    "features",
+    "business-logic",
+    "api-reference",
+    "data-models",
+    "glossary",
+    "user-guide"
+  ],
+  "stats": {
+    "totalPages": 0,
+    "pagesPerSection": {
+      "architecture": 0,
+      "modules": 0,
+      "features": 0,
+      "business-logic": 0,
+      "api-reference": 0,
+      "data-models": 0,
+      "glossary": 0,
+      "user-guide": 0
+    }
+  },
+  "generationLog": {
+    "provider": "custom",
+    "model": "cc/claude-sonnet-4-6",
+    "errors": []
+  }
+}

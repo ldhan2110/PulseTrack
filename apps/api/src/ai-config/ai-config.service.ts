@@ -25,6 +25,9 @@ export class AiConfigService {
 
   async upsert(projectId: string, dto: UpsertAiConfigDto) {
     const encryptedKey = encrypt(dto.apiKey, this.encryptionKey);
+    const isCustom = dto.provider === 'custom';
+    const baseUrl = isCustom ? (dto.baseUrl ?? null) : null;
+    const adapterType = isCustom ? (dto.adapterType ?? 'openai') : null;
 
     const config = await this.prisma.aiConfig.upsert({
       where: { projectId },
@@ -33,12 +36,16 @@ export class AiConfigService {
         provider: dto.provider,
         model: dto.model,
         apiKey: encryptedKey,
+        baseUrl,
+        adapterType,
         projectContext: dto.projectContext ?? null,
       },
       update: {
         provider: dto.provider,
         model: dto.model,
         apiKey: encryptedKey,
+        baseUrl,
+        adapterType,
         ...(dto.projectContext !== undefined && { projectContext: dto.projectContext }),
       },
     });
