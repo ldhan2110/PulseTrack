@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 import { api } from '@/lib/api';
 import { useTestAutomation } from '@/hooks/useTestAutomation';
 import { cn } from '@/lib/utils';
@@ -52,9 +55,11 @@ export function AutomationRunView({ testCaseId }: AutomationRunViewProps) {
         {/* Script */}
         <div className="px-3 py-2 border-b">
           <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Script</div>
-          <pre className="text-[11px] font-mono whitespace-pre-wrap break-words bg-muted/30 rounded p-2">
-            {automation?.script ?? '// No script'}
-          </pre>
+          <div className="text-[11px] [&_pre]:m-0 [&_pre]:rounded [&_pre]:p-2 [&_pre]:overflow-auto [&_code]:font-mono">
+            <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+              {'```javascript\n' + (automation?.script ?? '// No script') + '\n```'}
+            </ReactMarkdown>
+          </div>
         </div>
 
         {/* Error */}
@@ -67,12 +72,29 @@ export function AutomationRunView({ testCaseId }: AutomationRunViewProps) {
           </div>
         )}
 
+        {/* Steps */}
+        {latest?.logs?.steps && latest.logs.steps.length > 0 && (
+          <div className="px-3 py-2 border-b">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Steps</div>
+            <div className="text-[11px] font-mono space-y-0.5">
+              {latest.logs.steps.map((s, i) => (
+                <div key={i} className="flex items-baseline gap-2 whitespace-pre-wrap break-words">
+                  <span className={s.status === 'failed' ? 'text-red-500' : 'text-green-500'}>
+                    {s.status === 'failed' ? '✗' : '✓'}
+                  </span>
+                  <span className="flex-1">{s.name}</span>
+                  <span className="text-muted-foreground">{s.duration}ms</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Logs */}
-        {latest?.logs && latest.logs.length > 0 && (
+        {latest?.logs?.messages && latest.logs.messages.length > 0 && (
           <div className="px-3 py-2">
             <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Logs</div>
             <div className="text-[11px] font-mono space-y-0.5">
-              {latest.logs.map((l, i) => (
+              {latest.logs.messages.map((l, i) => (
                 <div key={i} className="whitespace-pre-wrap break-words">
                   <span className="text-muted-foreground">[{l.level}]</span> {l.message}
                 </div>

@@ -199,10 +199,13 @@ export abstract class AutomationRunProcessor extends WorkerHost {
           ? 'TIMEOUT'
           : 'FAILED';
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const steps = getSteps().map(({ screenshot, ...s }) => s);
+
       await this.runService.updateRunResult(runId, {
         status,
         duration: result.duration,
-        logs: logs.length > 0 ? logs : undefined,
+        logs: { messages: logs, steps },
         error: result.error,
       });
 
@@ -220,12 +223,9 @@ export abstract class AutomationRunProcessor extends WorkerHost {
       }
 
       if (executionCaseId) {
-        let shot: string | undefined;
-        if (status !== 'PASSED') {
-          shot = await page?.screenshot({ type: 'jpeg', quality: 60 })
-            .then((b) => b.toString('base64'))
-            .catch(() => undefined);
-        }
+        const shot = await page?.screenshot({ type: 'jpeg', quality: 60 })
+          .then((b) => b.toString('base64'))
+          .catch(() => undefined);
         await this.runService.completeExecutionCaseRun(executionCaseId, runnerId, status, shot);
       }
     } catch (err) {

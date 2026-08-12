@@ -150,25 +150,41 @@ export class AutomationRunService {
     screenshotBase64?: string,
   ) {
     const result = status === 'PASSED' ? 'PASS' : 'FAIL';
-    await this.prisma.testExecutionCase
+    const updated = await this.prisma.testExecutionCase
       .update({
         where: { id: executionCaseId },
         data: { result, executedById: runnerId, executedAt: new Date() },
       })
-      .catch(() => {});
+      .catch(() => null);
 
-    if (result === 'FAIL' && screenshotBase64) {
+    // If all cases in the execution are now run, mark the execution COMPLETED
+    if (updated) {
+      const allCases = await this.prisma.testExecutionCase.findMany({
+        where: { executionId: updated.executionId },
+        select: { result: true },
+      });
+      const allDone = allCases.every((c) => c.result !== 'NOT_RUN' && c.result !== 'IN_PROGRESS');
+      await this.prisma.testExecution
+        .update({
+          where: { id: updated.executionId },
+          data: { status: allDone ? 'COMPLETED' : 'IN_PROGRESS' },
+        })
+        .catch(() => {});
+    }
+
+    if (screenshotBase64) {
       try {
         const dir = path.join(EVIDENCE_DIR, executionCaseId);
         fs.mkdirSync(dir, { recursive: true });
         const storedName = `${randomUUID()}.jpg`;
         const buf = Buffer.from(screenshotBase64, 'base64');
         fs.writeFileSync(path.join(dir, storedName), buf);
+        const prefix = result === 'PASS' ? 'pass' : 'failure';
         await this.prisma.testExecutionAttachment.create({
           data: {
             executionCaseId,
             uploaderId: runnerId,
-            filename: `failure-${Date.now()}.jpg`,
+            filename: `${prefix}-${Date.now()}.jpg`,
             storedName,
             mimeType: 'image/jpeg',
             size: buf.length,

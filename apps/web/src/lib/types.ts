@@ -1377,7 +1377,10 @@ export interface AutomationRun {
   automationId: string;
   status: AutomationRunStatus;
   duration: number | null;
-  logs: Array<{ level: string; message: string; timestamp: number }> | null;
+  logs: {
+    messages: Array<{ level: string; message: string; timestamp: number }>;
+    steps: Array<{ name: string; type: string; status: string; duration: number; error?: string }>;
+  } | null;
   error: string | null;
   runnerId: string;
   runner: { id: string; name: string | null; username: string; imageUrl: string | null };
