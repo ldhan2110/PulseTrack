@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
@@ -6,10 +7,13 @@ import 'highlight.js/styles/github-dark.css';
 import { api } from '@/lib/api';
 import { useTestAutomation } from '@/hooks/useTestAutomation';
 import { cn } from '@/lib/utils';
-import type { AutomationRun } from '@/lib/types';
+import type { AutomationRun, TestExecutionAttachment } from '@/lib/types';
 
 interface AutomationRunViewProps {
   testCaseId: string;
+  projectId: string;
+  /** Attachments of the current execution case (holds the captured snapshot). */
+  attachments?: TestExecutionAttachment[];
 }
 
 const STATUS_META: Record<string, { label: string; className: string; icon: 'ok' | 'fail' | 'run' }> = {
@@ -21,8 +25,9 @@ const STATUS_META: Record<string, { label: string; className: string; icon: 'ok'
 };
 
 /** Read-only view of the persisted automation run: script + logs/error text. */
-export function AutomationRunView({ testCaseId }: AutomationRunViewProps) {
+export function AutomationRunView({ testCaseId, projectId, attachments = [] }: AutomationRunViewProps) {
   const { data: automation } = useTestAutomation(testCaseId);
+  const queryClient = useQueryClient();
 
   const { data: runs = [] } = useQuery({
     queryKey: ['test-automation-runs', testCaseId],
@@ -35,6 +40,46 @@ export function AutomationRunView({ testCaseId }: AutomationRunViewProps) {
 
   const latest = runs[0];
   const meta = latest ? STATUS_META[latest.status] ?? STATUS_META.RUNNING : null;
+
+  // Snapshot lives on the execution-case (parent) query; refetch it when the run
+  // leaves RUNNING so the freshly-captured screenshot appears without a reload.
+  const prevStatus = useRef(latest?.status);
+  useEffect(() => {
+    if (prevStatus.current === 'RUNNING' && latest?.status && latest.status !== 'RUNNING') {
+      void queryClient.invalidateQueries({ queryKey: ['test-execution-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-execution', projectId] });
+    }
+    prevStatus.current = latest?.status;
+  }, [latest?.status, projectId, queryClient]);
+
+  // The captured snapshot is the most recent image attachment (pass-*/failure-*).
+  const snapshot = [...attachments]
+    .filter((a) => a.mimeType.startsWith('image/'))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+
+  // The download endpoint is JWT-guarded, so a bare <img src> 401s (no auth
+  // header). Fetch the blob with the token and render via object URL.
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!snapshot) {
+      setSnapshotUrl(null);
+      return;
+    }
+    let url: string | null = null;
+    let cancelled = false;
+    api
+      .downloadExecutionEvidence(projectId, snapshot.id)
+      .then((blob) => {
+        if (cancelled) return;
+        url = URL.createObjectURL(blob);
+        setSnapshotUrl(url);
+      })
+      .catch(() => setSnapshotUrl(null));
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [snapshot, projectId]);
 
   return (
     <div className="flex flex-col h-full">
@@ -69,6 +114,16 @@ export function AutomationRunView({ testCaseId }: AutomationRunViewProps) {
             <pre className="text-[11px] font-mono whitespace-pre-wrap break-words text-red-600 dark:text-red-400">
               {latest.error}
             </pre>
+          </div>
+        )}
+
+        {/* Snapshot */}
+        {snapshot && snapshotUrl && (
+          <div className="px-3 py-2 border-b">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Snapshot</div>
+            <a href={snapshotUrl} target="_blank" rel="noopener noreferrer">
+              <img src={snapshotUrl} alt={snapshot.filename} className="max-w-full rounded border" />
+            </a>
           </div>
         )}
 

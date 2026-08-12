@@ -325,6 +325,8 @@ export function ExecutionRunner({
                 <AutomationRunView
                   key={currentCase.id}
                   testCaseId={tc.id}
+                  projectId={projectId}
+                  attachments={currentCase.attachments ?? []}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

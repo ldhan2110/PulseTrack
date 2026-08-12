@@ -709,6 +709,28 @@ export const api = {
     request<void>(`/projects/${projectId}/test-executions/attachments/${attachmentId}`, { method: 'DELETE' }),
   getExecutionEvidenceDownloadUrl: (projectId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
+  downloadExecutionEvidence: async (projectId: string, attachmentId: string): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(
+      `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    return res.blob();
+  },
+  downloadExecutionReport: async (
+    projectId: string,
+    executionId: string,
+    format: 'html' | 'pdf',
+  ): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(
+      `${API_BASE}/projects/${projectId}/test-executions/${executionId}/report?format=${format}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) throw new Error(`Report failed: ${res.status}`);
+    return res.blob();
+  },
 
   // ─── Wiki Config ──────────────────────────────────────────────────────
   getWikiConfig: (projectId: string) =>

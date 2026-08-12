@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, Param, Patch, Post,
+  Body, Controller, Delete, Get, Param, Patch, Post, Query,
   Req, Res, UseGuards, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -15,6 +15,7 @@ import { TestExecutionsService } from './test-executions.service';
 import { CreateTestExecutionDto } from './dto/create-test-execution.dto';
 import { BulkDeleteTestExecutionsDto } from './dto/bulk-delete-test-executions.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
+import { renderPdf } from '../test-automation/pdf-render';
 import type { TestExecutionStatus } from '@prisma/client';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'test-executions');
@@ -37,6 +38,24 @@ export class TestExecutionsController {
   @Get(':executionId')
   findOne(@Param('executionId') executionId: string) {
     return this.service.findOne(executionId);
+  }
+
+  @Get(':executionId/report')
+  async report(
+    @Param('executionId') executionId: string,
+    @Query('format') format: 'html' | 'pdf' = 'html',
+    @Res() res: Response,
+  ) {
+    const html = await this.service.buildReportHtml(executionId);
+    if (format === 'pdf') {
+      const pdf = await renderPdf(html);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${executionId}.pdf"`);
+      res.send(pdf);
+      return;
+    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
   }
 
   @Post()

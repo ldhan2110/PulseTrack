@@ -4,6 +4,7 @@ import { AutomationRunService } from '../test-automation/automation-run.service'
 import { CreateTestExecutionDto } from './dto/create-test-execution.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
 import type { TestExecutionStatus, TestResultStatus } from '@prisma/client';
+import { renderReportHtml, type ReportData, type ReportCase } from './execution-report';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -60,6 +61,61 @@ export class TestExecutionsService {
         },
       },
     });
+  }
+
+  /** Gather one execution into the report view (header + cases + latest run + screenshot). */
+  async buildReportHtml(executionId: string): Promise<string> {
+    const exec = await this.findOne(executionId);
+    if (!exec) throw new NotFoundException('Execution not found');
+
+    const cases: ReportCase[] = [];
+    for (const c of exec.cases) {
+      const automation = await this.prisma.testCaseAutomation.findUnique({
+        where: { testCaseId: c.testCaseId },
+      });
+      const run = automation
+        ? await this.prisma.automationRun.findFirst({
+            where: { automationId: automation.id },
+            orderBy: { createdAt: 'desc' },
+          })
+        : null;
+      const logs = (run?.logs ?? {}) as {
+        steps?: { name: string; status: string; duration: number }[];
+      };
+
+      // Latest pass-*/failure-* image → inline data URI.
+      const shot = c.attachments.find((a) => a.mimeType.startsWith('image/'));
+      let screenshot: string | null = null;
+      if (shot) {
+        const filePath = path.join(UPLOAD_DIR, shot.executionCaseId, shot.storedName);
+        if (fs.existsSync(filePath)) {
+          screenshot = `data:${shot.mimeType};base64,${fs.readFileSync(filePath).toString('base64')}`;
+        }
+      }
+
+      cases.push({
+        name: c.testCase?.title ?? c.testCaseId,
+        result: c.result,
+        notes: c.notes,
+        executedBy: c.executedBy?.name ?? c.executedBy?.username ?? null,
+        status: run?.status ?? null,
+        duration: run?.duration ?? null,
+        error: run?.error ?? null,
+        steps: logs.steps ?? [],
+        screenshot,
+      });
+    }
+
+    const data: ReportData = {
+      executionKey: exec.executionKey ?? '',
+      name: exec.name,
+      status: exec.status,
+      assignee: exec.assignee?.name ?? exec.assignee?.username ?? null,
+      sprint: exec.sprint?.name ?? null,
+      createdAt: exec.createdAt?.toISOString().slice(0, 10) ?? null,
+      cases,
+    };
+    return renderReportHtml(data);
   }
 
   async create(projectId: string, dto: CreateTestExecutionDto, userId: string) {
