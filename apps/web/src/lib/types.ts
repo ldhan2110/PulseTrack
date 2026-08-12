@@ -660,21 +660,6 @@ export interface UpdateProjectContextPayload {
   projectContext: string;
 }
 
-// ─── Planner AI Config ───────────────────────────────────────────────────────
-
-export interface PlannerAiConfig {
-  id: string;
-  provider: string;
-  model: string;
-  apiKey: string; // masked
-}
-
-export interface UpsertPlannerAiConfigPayload {
-  provider: string;
-  model: string;
-  apiKey?: string;
-}
-
 // ─── AI Task Generation ─────────────────────────────────────────────────────
 
 export interface GeneratedTask {

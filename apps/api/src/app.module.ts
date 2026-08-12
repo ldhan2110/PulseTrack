@@ -20,9 +20,6 @@ import { WorkflowModule } from './workflow/workflow.module';
 import { RepositoryConfigModule } from './repository-config/repository-config.module';
 import { BranchesModule } from './branches/branches.module';
 import { AiConfigModule } from './ai-config/ai-config.module';
-import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
-import { AiTestCaseGenerationModule } from './ai-testcase-generation/ai-testcase-generation.module';
-import { AiWbsGenerationModule } from './ai-wbs-generation/ai-wbs-generation.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 import { WatchersModule } from './watchers/watchers.module';
@@ -33,16 +30,12 @@ import { TestCasesModule } from './test-cases/test-cases.module';
 import { TestSuitesModule } from './test-suites/test-suites.module';
 import { TestExecutionsModule } from './test-executions/test-executions.module';
 import { RolesModule } from './roles/roles.module';
-import { WikiConfigModule } from './wiki-config/wiki-config.module';
-import { WikiGenerationModule } from './wiki-generation/wiki-generation.module';
 import { WikiModule } from './wiki/wiki.module';
 import { ReportConfigModule } from './report-config/report-config.module';
 import { ReportGeneratorModule } from './report-generator/report-generator.module';
 import { PlannerModule } from './planner/planner.module';
-import { PlannerAiConfigModule } from './planner-ai-config/planner-ai-config.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WbsModule } from './wbs/wbs.module';
-import { AiBugFixModule } from './ai-bug-fix/ai-bug-fix.module';
 import { TestAutomationModule } from './test-automation/test-automation.module';
 
 @Module({
@@ -67,10 +60,6 @@ import { TestAutomationModule } from './test-automation/test-automation.module';
     RepositoryConfigModule,
     BranchesModule,
     AiConfigModule,
-    AiTaskGenerationModule,
-    AiTestCaseGenerationModule,
-    AiWbsGenerationModule,
-    AiBugFixModule,
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,
@@ -81,13 +70,10 @@ import { TestAutomationModule } from './test-automation/test-automation.module';
     TestSuitesModule,
     TestExecutionsModule,
     RolesModule,
-    WikiConfigModule,
-    WikiGenerationModule,
     WikiModule,
     ReportConfigModule,
     ReportGeneratorModule,
     PlannerModule,
-    PlannerAiConfigModule,
     WbsModule,
     TestAutomationModule,
   ],

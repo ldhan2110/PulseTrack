@@ -84,8 +84,6 @@ import type {
   PlannerFeature,
   CreateFeaturePayload,
   UpdateFeaturePayload,
-  PlannerAiConfig,
-  UpsertPlannerAiConfigPayload,
   WbsPhase,
   WbsTask,
   WbsSubtask,
@@ -399,15 +397,6 @@ export const api = {
   generateProjectContext: (projectId: string) =>
     request<{ projectContext: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
       method: 'POST',
-    }),
-
-  // ─── Planner AI Config ──────────────────────────────────────────────────────
-  getPlannerAiConfig: (projectId: string) =>
-    request<PlannerAiConfig | null>(`/projects/${projectId}/settings/planner-ai`),
-  upsertPlannerAiConfig: (projectId: string, data: UpsertPlannerAiConfigPayload) =>
-    request<PlannerAiConfig>(`/projects/${projectId}/settings/planner-ai`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
     }),
 
   // ─── Report Config ──────────────────────────────────────────────────────────

@@ -30,9 +30,9 @@ export class NotificationEmailProcessor extends WorkerHost {
       secure: smtpSecure,
       requireTLS: true,
       name: "cyberlogitec.com",
-      tls: {
-        ca: require("fs").readFileSync("/etc/ssl/certs/ca-certificates.crt"),
-      },
+      // tls: {
+      //   ca: require("fs").readFileSync("/etc/ssl/certs/ca-certificates.crt"),
+      // },
       ...(smtpUser ? { auth: { user: smtpUser, pass: this.config.get('SMTP_PASS') } } : {}),
     });
   }

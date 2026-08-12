@@ -13,7 +13,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({ name: 'ai-jobs' }),
     BullModule.registerQueue({ name: 'notification-email' }),
     BullModule.registerQueue({ name: 'report-generation' }),
   ],

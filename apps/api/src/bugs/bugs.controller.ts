@@ -12,21 +12,12 @@ import { UpdateBugDto } from './dto/update-bug.dto';
 import { BulkImportBugsDto } from './dto/bulk-import-bugs.dto';
 import { LinkTasksDto } from './dto/link-tasks.dto';
 import { CreateFixTaskDto } from './dto/create-fix-task.dto';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { AiBugFixService } from '../ai-bug-fix/ai-bug-fix.service';
-import { AiBugFixProcessor } from '../ai-bug-fix/ai-bug-fix.processor';
-import { CreateAiFixDto } from '../ai-bug-fix/dto/create-ai-fix.dto';
-import type { AiFixJobData } from '../ai-bug-fix/dto/ai-fix-job.dto';
 
 @Controller('projects/:projectId/bugs')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
 export class BugsController {
   constructor(
     private bugsService: BugsService,
-    private aiBugFixService: AiBugFixService,
-    private aiBugFixProcessor: AiBugFixProcessor,
-    @InjectQueue('ai-bug-fix') private readonly aiBugFixQueue: Queue,
   ) {}
 
   @Get()
@@ -126,83 +117,6 @@ export class BugsController {
   @Get(':bugId/tasks')
   getLinkedTasks(@Param('bugId') bugId: string) {
     return this.bugsService.getLinkedTasks(bugId);
-  }
-
-  @Post(':bugId/ai-fix')
-  @RequirePermission('bugs', 'update')
-  async startAiFix(
-    @Param('projectId') projectId: string,
-    @Param('bugId') bugId: string,
-    @Req() req: any,
-    @Body() dto: CreateAiFixDto,
-  ) {
-    await this.aiBugFixService.assertNotInProgress(bugId);
-    const attempt = await this.aiBugFixService.getNextAttempt(bugId);
-
-    const record = await this.aiBugFixService.createRecord({
-      bugId,
-      projectId,
-      requesterId: req.user.id,
-      targetBranch: dto.targetBranch,
-      guidance: dto.guidance ?? null,
-      includeTests: dto.includeTests ?? true,
-      attempt,
-    });
-
-    const jobData: AiFixJobData = {
-      fixId: record.id,
-      bugId,
-      projectId,
-      userId: req.user.id,
-      targetBranch: dto.targetBranch,
-      guidance: dto.guidance ?? null,
-      includeTests: dto.includeTests ?? true,
-    };
-
-    const job = await this.aiBugFixQueue.add('fix', jobData, {
-      jobId: record.id,
-      removeOnComplete: { age: 86400 },
-      removeOnFail: { age: 86400 },
-    });
-
-    await this.aiBugFixService.updateRecord(record.id, { jobId: job.id });
-
-    return { fixId: record.id, jobId: job.id };
-  }
-
-  @Get(':bugId/ai-fixes')
-  getAiFixes(@Param('bugId') bugId: string) {
-    return this.aiBugFixService.findFixes(bugId);
-  }
-
-  @Get(':bugId/ai-fixes/:fixId')
-  getAiFix(@Param('fixId') fixId: string) {
-    return this.aiBugFixService.findFix(fixId);
-  }
-
-  @Delete(':bugId/ai-fixes/:fixId/cancel')
-  @RequirePermission('bugs', 'update')
-  async cancelAiFix(
-    @Param('fixId') fixId: string,
-  ) {
-    const record = await this.aiBugFixService.findFixRecord(fixId);
-
-    if (!['queued', 'preparing', 'fixing', 'pushing', 'creating-mr'].includes(record.status)) {
-      return { cancelled: false, reason: 'Fix is not in progress' };
-    }
-
-    // Kill the CLI process if running
-    this.aiBugFixProcessor.killProcess(fixId);
-
-    await this.aiBugFixService.updateRecord(fixId, { status: 'cancelled', completedAt: new Date() });
-
-    return { cancelled: true };
-  }
-
-  @Delete(':bugId/ai-fixes/:fixId')
-  @RequirePermission('bugs', 'delete')
-  deleteAiFix(@Param('fixId') fixId: string) {
-    return this.aiBugFixService.deleteRecord(fixId);
   }
 
   @Get(':bugId')

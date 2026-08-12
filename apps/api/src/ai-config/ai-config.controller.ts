@@ -3,7 +3,6 @@ import {
   Get,
   Put,
   Patch,
-  Post,
   Param,
   Body,
   UseGuards,
@@ -12,7 +11,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { AiConfigService } from './ai-config.service';
-import { AiContextGeneratorService } from './ai-context-generator.service';
 import { UpsertAiConfigDto } from './dto/upsert-ai-config.dto';
 import { UpdateProjectContextDto } from './dto/update-project-context.dto';
 
@@ -21,7 +19,6 @@ import { UpdateProjectContextDto } from './dto/update-project-context.dto';
 export class AiConfigController {
   constructor(
     private readonly service: AiConfigService,
-    private readonly contextGenerator: AiContextGeneratorService,
   ) {}
 
   @Get()
@@ -48,12 +45,5 @@ export class AiConfigController {
     @Body() dto: UpdateProjectContextDto,
   ) {
     return this.service.updateContext(projectId, dto.projectContext);
-  }
-
-  @Post('context/generate')
-  @UseGuards(ProjectRolesGuard)
-  @RequirePermission('projectSettings', 'update')
-  generateContext(@Param('projectId') projectId: string) {
-    return this.contextGenerator.generate(projectId);
   }
 }
