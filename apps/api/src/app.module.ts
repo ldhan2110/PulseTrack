@@ -37,6 +37,7 @@ import { PlannerModule } from './planner/planner.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WbsModule } from './wbs/wbs.module';
 import { TestAutomationModule } from './test-automation/test-automation.module';
+import { AgentsModule } from './agents/agents.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { TestAutomationModule } from './test-automation/test-automation.module';
     PlannerModule,
     WbsModule,
     TestAutomationModule,
+    AgentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AgentsModule } from '../agents/agents.module';
 import { TestAutomationService } from './test-automation.service';
 import { AutomationRunService } from './automation-run.service';
 import { AutomationRunProcessor } from './automation-run.processor';
@@ -11,6 +12,7 @@ import { ProjectVariablesController } from './project-variables.controller';
 @Module({
   imports: [
     NotificationsModule,
+    AgentsModule,
     BullModule.registerQueue({ name: 'test-automation' }),
   ],
   controllers: [TestAutomationController, ProjectVariablesController],

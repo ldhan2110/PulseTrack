@@ -24,6 +24,16 @@ export function useUpsertAutomation(testCaseId: string) {
   });
 }
 
+export function useGenerateScript(testCaseId: string) {
+  return useMutation({
+    mutationFn: (targetUrl: string) =>
+      api.generateAutomationScript(testCaseId, targetUrl),
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
 export function useDeleteAutomation(testCaseId: string) {
   const queryClient = useQueryClient();
   return useMutation({

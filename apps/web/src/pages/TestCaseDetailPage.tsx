@@ -433,7 +433,7 @@ export function TestCaseDetailPage() {
           </div>
           ) : (
             <div className="border rounded-lg overflow-hidden" style={{ height: 'calc(100vh - 280px)' }}>
-              <AutomationPanel testCaseId={testCaseId} />
+              <AutomationPanel testCaseId={testCaseId} projectId={projectId} />
             </div>
           )}
         </div>

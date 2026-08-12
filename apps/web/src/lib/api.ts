@@ -977,6 +977,12 @@ export const api = {
   getAutomationRuns: (testCaseId: string) =>
     request<AutomationRun[]>(`/test-automation/${testCaseId}/runs`),
 
+  generateAutomationScript: (testCaseId: string, targetUrl: string) =>
+    request<{ script: string }>(
+      `/test-automation/${testCaseId}/generate-script`,
+      { method: 'POST', body: JSON.stringify({ targetUrl }) },
+    ),
+
   // ─── Project Variables ────────────────────────────────────────
   getProjectVariables: (projectId: string) =>
     request<ProjectVariable[]>(`/projects/${projectId}/variables`),
