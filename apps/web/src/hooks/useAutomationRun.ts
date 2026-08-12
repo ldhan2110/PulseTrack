@@ -20,7 +20,7 @@ interface StepEntry {
   error?: string;
 }
 
-export function useAutomationRun(testCaseId: string) {
+export function useAutomationRun(testCaseId: string, mode: 'live' | 'execution' = 'live') {
   const socket = useSocket();
   const queryClient = useQueryClient();
 
@@ -144,7 +144,7 @@ export function useAutomationRun(testCaseId: string) {
 
   // Trigger run mutation
   const triggerRun = useMutation({
-    mutationFn: () => api.triggerAutomationRun(testCaseId),
+    mutationFn: () => mode === 'execution' ? api.executeAutomationRun(testCaseId) : api.triggerAutomationRun(testCaseId),
     onSuccess: (run) => {
       runIdRef.current = run.id;
       setRunId(run.id);

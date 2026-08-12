@@ -1,58 +1,86 @@
-import { useEffect, useRef } from 'react';
-import { useAutomationRun } from '@/hooks/useAutomationRun';
-import { BrowserPreview } from '@/components/test-cases/BrowserPreview';
-import { StepReport } from '@/components/test-cases/StepReport';
-import { AutomationToolbar } from '@/components/test-cases/AutomationToolbar';
-import type { TestResultStatus } from '@/lib/types';
+import { useQuery } from '@tanstack/react-query';
+import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useTestAutomation } from '@/hooks/useTestAutomation';
+import { cn } from '@/lib/utils';
+import type { AutomationRun } from '@/lib/types';
 
 interface AutomationRunViewProps {
   testCaseId: string;
-  onResultChange?: (result: TestResultStatus) => void;
 }
 
-/** Maps automation terminal status → execution case result */
-function mapAutoStatus(status: string): TestResultStatus | null {
-  switch (status) {
-    case 'PASSED': return 'PASS';
-    case 'FAILED': return 'FAIL';
-    case 'TIMEOUT': return 'FAIL';
-    default: return null;
-  }
-}
+const STATUS_META: Record<string, { label: string; className: string; icon: 'ok' | 'fail' | 'run' }> = {
+  RUNNING: { label: 'Running…', className: 'text-yellow-500', icon: 'run' },
+  PASSED: { label: 'Passed', className: 'text-green-500', icon: 'ok' },
+  FAILED: { label: 'Failed', className: 'text-red-500', icon: 'fail' },
+  TIMEOUT: { label: 'Timed out', className: 'text-red-500', icon: 'fail' },
+  CANCELLED: { label: 'Cancelled', className: 'text-muted-foreground', icon: 'fail' },
+};
 
-export function AutomationRunView({ testCaseId, onResultChange }: AutomationRunViewProps) {
-  const run = useAutomationRun(testCaseId);
-  const prevStatusRef = useRef(run.status);
+/** Read-only view of the persisted automation run: script + logs/error text. */
+export function AutomationRunView({ testCaseId }: AutomationRunViewProps) {
+  const { data: automation } = useTestAutomation(testCaseId);
 
-  // Auto-fill result when automation completes
-  useEffect(() => {
-    if (run.status === prevStatusRef.current) return;
-    prevStatusRef.current = run.status;
+  const { data: runs = [] } = useQuery({
+    queryKey: ['test-automation-runs', testCaseId],
+    queryFn: () => api.getAutomationRuns(testCaseId),
+    enabled: !!testCaseId,
+    // Poll while the latest run is still executing (server-side auto-run)
+    refetchInterval: (query) =>
+      (query.state.data as AutomationRun[] | undefined)?.[0]?.status === 'RUNNING' ? 3000 : false,
+  });
 
-    const mapped = mapAutoStatus(run.status);
-    if (mapped && onResultChange) {
-      onResultChange(mapped);
-    }
-  }, [run.status, onResultChange]);
+  const latest = runs[0];
+  const meta = latest ? STATUS_META[latest.status] ?? STATUS_META.RUNNING : null;
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 min-h-0">
-        {!run.isRunning && run.steps.length > 0 ? (
-          <StepReport steps={run.steps} />
-        ) : (
-          <BrowserPreview frame={run.frame} isRunning={run.isRunning} />
+      {/* Status bar */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 border-b text-xs">
+        {meta?.icon === 'ok' && <CheckCircle2 className="size-3.5 text-green-500" />}
+        {meta?.icon === 'fail' && <XCircle className="size-3.5 text-red-500" />}
+        {meta?.icon === 'run' && <Loader2 className="size-3.5 animate-spin text-yellow-500" />}
+        <span className={cn('font-medium', meta?.className ?? 'text-muted-foreground')}>
+          {meta?.label ?? 'Not run'}
+        </span>
+        {latest?.duration != null && (
+          <span className="text-muted-foreground">{(latest.duration / 1000).toFixed(1)}s</span>
         )}
       </div>
 
-      <AutomationToolbar
-        status={run.status}
-        elapsed={run.elapsed}
-        isRunning={run.isRunning}
-        onRun={() => run.triggerRun.mutate()}
-        onStop={() => run.cancelRun.mutate()}
-        isRunPending={run.triggerRun.isPending}
-      />
+      <div className="flex-1 min-h-0 overflow-auto">
+        {/* Script */}
+        <div className="px-3 py-2 border-b">
+          <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Script</div>
+          <pre className="text-[11px] font-mono whitespace-pre-wrap break-words bg-muted/30 rounded p-2">
+            {automation?.script ?? '// No script'}
+          </pre>
+        </div>
+
+        {/* Error */}
+        {latest?.error && (
+          <div className="px-3 py-2 border-b">
+            <div className="text-[10px] font-semibold text-red-500 uppercase tracking-wide mb-1">Error</div>
+            <pre className="text-[11px] font-mono whitespace-pre-wrap break-words text-red-600 dark:text-red-400">
+              {latest.error}
+            </pre>
+          </div>
+        )}
+
+        {/* Logs */}
+        {latest?.logs && latest.logs.length > 0 && (
+          <div className="px-3 py-2">
+            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Logs</div>
+            <div className="text-[11px] font-mono space-y-0.5">
+              {latest.logs.map((l, i) => (
+                <div key={i} className="whitespace-pre-wrap break-words">
+                  <span className="text-muted-foreground">[{l.level}]</span> {l.message}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

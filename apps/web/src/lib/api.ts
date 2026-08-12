@@ -970,6 +970,8 @@ export const api = {
 
   triggerAutomationRun: (testCaseId: string) =>
     request<AutomationRun>(`/test-automation/${testCaseId}/run`, { method: 'POST' }),
+  executeAutomationRun: (testCaseId: string) =>
+    request<AutomationRun>(`/test-automation/${testCaseId}/execute`, { method: 'POST' }),
 
   cancelAutomationRun: (runId: string) =>
     request<{ cancelled: boolean }>(`/test-automation/runs/${runId}/cancel`, { method: 'DELETE' }),

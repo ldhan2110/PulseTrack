@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AutomationRunService } from '../test-automation/automation-run.service';
 import { CreateTestExecutionDto } from './dto/create-test-execution.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
 import type { TestExecutionStatus, TestResultStatus } from '@prisma/client';
@@ -12,7 +13,10 @@ const USER_SELECT = { id: true, username: true, email: true, name: true, imageUr
 
 @Injectable()
 export class TestExecutionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private automationRuns: AutomationRunService,
+  ) {}
 
   async findAll(projectId: string) {
     const executions = await this.prisma.testExecution.findMany({
@@ -58,7 +62,7 @@ export class TestExecutionsService {
     });
   }
 
-  async create(projectId: string, dto: CreateTestExecutionDto) {
+  async create(projectId: string, dto: CreateTestExecutionDto, userId: string) {
     // Merge suite members + cherry-picked IDs
     const testCaseIdSet = new Set<string>(dto.testCaseIds ?? []);
 
@@ -72,7 +76,7 @@ export class TestExecutionsService {
 
     const testCaseIds = Array.from(testCaseIdSet);
 
-    return this.prisma.$transaction(async (tx) => {
+    const execution = await this.prisma.$transaction(async (tx) => {
       // Atomically increment testExecutionSeq to generate executionKey
       const project = await tx.project.update({
         where: { id: projectId },
@@ -105,6 +109,35 @@ export class TestExecutionsService {
         },
       });
     });
+
+    // Auto-run cases that have an automation script (fire-and-forget, execution lane)
+    const scripted = await this.prisma.testCaseAutomation.findMany({
+      where: { testCaseId: { in: testCaseIds } },
+      select: { testCaseId: true },
+    });
+    const scriptedSet = new Set(scripted.map((a) => a.testCaseId));
+    const scriptedCases = execution.cases.filter((c) => scriptedSet.has(c.testCase.id));
+
+    if (scriptedCases.length > 0) {
+      // Mark running so the list/detail shows progress before the worker finishes
+      await this.prisma.testExecutionCase.updateMany({
+        where: { id: { in: scriptedCases.map((c) => c.id) } },
+        data: { result: 'IN_PROGRESS' },
+      });
+      await this.prisma.testExecution.update({
+        where: { id: execution.id },
+        data: { status: 'IN_PROGRESS' },
+      });
+      await Promise.all(
+        scriptedCases.map((c) =>
+          this.automationRuns
+            .triggerRun(c.testCase.id, userId, 'execution', c.id)
+            .catch(() => {}),
+        ),
+      );
+    }
+
+    return execution;
   }
 
   async findByKey(executionKey: string) {

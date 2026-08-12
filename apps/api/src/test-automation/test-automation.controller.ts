@@ -65,7 +65,15 @@ export class TestAutomationController {
     @Param('testCaseId') testCaseId: string,
     @Req() req: { user: { id: string } },
   ) {
-    return this.runService.triggerRun(testCaseId, req.user.id);
+    return this.runService.triggerRun(testCaseId, req.user.id, 'live');
+  }
+
+  @Post(':testCaseId/execute')
+  triggerExecution(
+    @Param('testCaseId') testCaseId: string,
+    @Req() req: { user: { id: string } },
+  ) {
+    return this.runService.triggerRun(testCaseId, req.user.id, 'execution');
   }
 
   @Delete('runs/:runId/cancel')

@@ -44,8 +44,9 @@ export class TestExecutionsController {
   create(
     @Param('projectId') projectId: string,
     @Body() dto: CreateTestExecutionDto,
+    @Req() req: { user: { id: string } },
   ) {
-    return this.service.create(projectId, dto);
+    return this.service.create(projectId, dto, req.user.id);
   }
 
   @Patch(':executionId/status')

@@ -2,8 +2,18 @@ import { Injectable, NotFoundException, Inject, forwardRef, BadGatewayException 
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
-import { AutomationRunProcessor } from './automation-run.processor';
+
+const EVIDENCE_DIR = path.join(process.cwd(), 'uploads', 'test-executions');
+import {
+  LiveAutomationProcessor,
+  ExecutionAutomationProcessor,
+} from './automation-run.processor';
+
+export type RunMode = 'live' | 'execution';
 
 export interface AutomationJobData {
   runId: string;
@@ -13,18 +23,23 @@ export interface AutomationJobData {
   timeoutMs: number;
   projectId: string;
   runnerId: string;
+  mode: RunMode;
+  executionCaseId?: string;
 }
 
 @Injectable()
 export class AutomationRunService {
   constructor(
     private readonly prisma: PrismaService,
-    @InjectQueue('test-automation') private readonly queue: Queue,
-    @Inject(forwardRef(() => AutomationRunProcessor))
-    private readonly processor: AutomationRunProcessor,
+    @InjectQueue('test-automation-live') private readonly liveQueue: Queue,
+    @InjectQueue('test-automation-execution') private readonly executionQueue: Queue,
+    @Inject(forwardRef(() => LiveAutomationProcessor))
+    private readonly liveProcessor: LiveAutomationProcessor,
+    @Inject(forwardRef(() => ExecutionAutomationProcessor))
+    private readonly executionProcessor: ExecutionAutomationProcessor,
   ) {}
 
-  async triggerRun(testCaseId: string, runnerId: string) {
+  async triggerRun(testCaseId: string, runnerId: string, mode: RunMode = 'live', executionCaseId?: string) {
     const automation = await this.prisma.testCaseAutomation.findUnique({
       where: { testCaseId },
       include: { testCase: { select: { projectId: true } } },
@@ -57,9 +72,12 @@ export class AutomationRunService {
       timeoutMs: automation.timeoutMs,
       projectId: automation.testCase.projectId,
       runnerId,
+      mode,
+      executionCaseId,
     };
 
-    await this.queue.add('execute', jobData, {
+    const queue = mode === 'live' ? this.liveQueue : this.executionQueue;
+    await queue.add('execute', jobData, {
       jobId: run.id,
       removeOnComplete: true,
       removeOnFail: true,
@@ -84,12 +102,15 @@ export class AutomationRunService {
       data: { status: 'CANCELLED' },
     });
 
-    // Close the active browser to kill the running script
-    await this.processor.cancelRun(runId);
+    // Close the active browser to kill the running script (lives in one lane)
+    await this.liveProcessor.cancelRun(runId);
+    await this.executionProcessor.cancelRun(runId);
 
     // Remove from queue if still waiting
-    const job = await this.queue.getJob(runId);
-    if (job) await job.remove().catch(() => {});
+    const liveJob = await this.liveQueue.getJob(runId);
+    if (liveJob) await liveJob.remove().catch(() => {});
+    const execJob = await this.executionQueue.getJob(runId);
+    if (execJob) await execJob.remove().catch(() => {});
 
     return { cancelled: true };
   }
@@ -115,5 +136,47 @@ export class AutomationRunService {
       where: { id: runId },
       data,
     });
+  }
+
+  /**
+   * Attribute a finished server-side execution run to its execution case:
+   * map status → result and persist. On failure, store the screenshot (if any)
+   * as an evidence attachment. Best-effort — never throws into the worker.
+   */
+  async completeExecutionCaseRun(
+    executionCaseId: string,
+    runnerId: string,
+    status: 'PASSED' | 'FAILED' | 'TIMEOUT',
+    screenshotBase64?: string,
+  ) {
+    const result = status === 'PASSED' ? 'PASS' : 'FAIL';
+    await this.prisma.testExecutionCase
+      .update({
+        where: { id: executionCaseId },
+        data: { result, executedById: runnerId, executedAt: new Date() },
+      })
+      .catch(() => {});
+
+    if (result === 'FAIL' && screenshotBase64) {
+      try {
+        const dir = path.join(EVIDENCE_DIR, executionCaseId);
+        fs.mkdirSync(dir, { recursive: true });
+        const storedName = `${randomUUID()}.jpg`;
+        const buf = Buffer.from(screenshotBase64, 'base64');
+        fs.writeFileSync(path.join(dir, storedName), buf);
+        await this.prisma.testExecutionAttachment.create({
+          data: {
+            executionCaseId,
+            uploaderId: runnerId,
+            filename: `failure-${Date.now()}.jpg`,
+            storedName,
+            mimeType: 'image/jpeg',
+            size: buf.length,
+          },
+        });
+      } catch {
+        // evidence is best-effort
+      }
+    }
   }
 }

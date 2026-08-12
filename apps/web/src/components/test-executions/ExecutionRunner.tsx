@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ArrowLeft, Zap, Keyboard } from 'lucide-react';
+import { ArrowLeft, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -61,7 +61,6 @@ export function ExecutionRunner({
   const [currentIndex, setCurrentIndex] = useState(
     Math.min(Math.max(0, initialCaseIndex), cases.length - 1),
   );
-  const [mode, setMode] = useState<'manual' | 'auto'>('manual');
   const [notes, setNotes] = useState<string>('');
   const [bugDialogOpen, setBugDialogOpen] = useState(false);
   const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -73,11 +72,6 @@ export function ExecutionRunner({
   // Check if current case has automation
   const { data: automation } = useTestAutomation(tc?.id ?? '');
   const hasAutomation = !!automation?.script;
-
-  // Reset mode when switching cases if no automation
-  useEffect(() => {
-    if (!hasAutomation && mode === 'auto') setMode('manual');
-  }, [currentIndex, hasAutomation, mode]);
 
   // Sync notes from case data
   useEffect(() => {
@@ -129,14 +123,6 @@ export function ExecutionRunner({
       }, 800);
     },
     [currentCase, updateResult],
-  );
-
-  // Auto-result from automation
-  const handleAutoResult = useCallback(
-    (result: TestResultStatus) => {
-      setResult(result);
-    },
-    [setResult],
   );
 
   // Keyboard shortcuts
@@ -204,32 +190,6 @@ export function ExecutionRunner({
           </span>
         </div>
 
-        {/* Mode toggle */}
-        <div className="flex bg-muted rounded-md p-0.5">
-          <button
-            className={cn(
-              'px-3 py-1 text-xs font-medium rounded transition-colors',
-              mode === 'manual' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
-            )}
-            onClick={() => setMode('manual')}
-          >
-            Manual
-          </button>
-          <button
-            className={cn(
-              'px-3 py-1 text-xs font-medium rounded transition-colors',
-              mode === 'auto' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              !hasAutomation && 'opacity-40 cursor-not-allowed',
-            )}
-            onClick={() => hasAutomation && setMode('auto')}
-            disabled={!hasAutomation}
-            title={!hasAutomation ? 'No automation script for this case' : undefined}
-          >
-            <Zap className="size-3 inline mr-1" />
-            Auto
-          </button>
-        </div>
-
         {/* Result buttons */}
         <div className="flex items-center gap-1">
           {RESULT_OPTIONS.map((opt) => (
@@ -294,7 +254,7 @@ export function ExecutionRunner({
 
         {/* Content */}
         <div className="flex-1 min-h-0 min-w-0">
-          {mode === 'manual' ? (
+          {!hasAutomation ? (
             <div className="h-full overflow-y-auto">
               <CaseStepsView
                 title={tc.title}
@@ -363,8 +323,8 @@ export function ExecutionRunner({
 
               <ResizablePanel defaultSize={60} minSize={30}>
                 <AutomationRunView
+                  key={currentCase.id}
                   testCaseId={tc.id}
-                  onResultChange={handleAutoResult}
                 />
               </ResizablePanel>
             </ResizablePanelGroup>

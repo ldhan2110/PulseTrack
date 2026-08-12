@@ -15,6 +15,9 @@ export function useTestExecution(projectId: string, executionId: string) {
     queryKey: ['test-execution', projectId, executionId],
     queryFn: () => api.getTestExecution(projectId, executionId),
     enabled: !!projectId && !!executionId,
+    // Poll while any case is still running (server-side auto-run in progress)
+    refetchInterval: (query) =>
+      query.state.data?.cases?.some((c) => c.result === 'IN_PROGRESS') ? 3000 : false,
   });
 }
 

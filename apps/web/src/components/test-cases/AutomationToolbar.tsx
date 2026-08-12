@@ -9,8 +9,8 @@ interface AutomationToolbarProps {
   onRun: () => void;
   onStop: () => void;
   isRunPending: boolean;
-  onGenerate: () => void;
-  isGeneratePending: boolean;
+  onGenerate?: () => void;
+  isGeneratePending?: boolean;
 }
 
 function formatElapsed(ms: number): string {
@@ -51,20 +51,22 @@ export function AutomationToolbar({
       </div>
 
       <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="h-7 gap-1"
-          onClick={onGenerate}
-          disabled={isGeneratePending || isRunning}
-        >
-          {isGeneratePending ? (
-            <Loader2 className="size-3 animate-spin" />
-          ) : (
-            <Sparkles className="size-3" />
-          )}
-          Generate Script
-        </Button>
+        {onGenerate && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-7 gap-1"
+            onClick={onGenerate}
+            disabled={isGeneratePending || isRunning}
+          >
+            {isGeneratePending ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Sparkles className="size-3" />
+            )}
+            Generate Script
+          </Button>
+        )}
         {isRunning ? (
           <Button variant="secondary" size="sm" className="h-7 gap-1" onClick={onStop}>
             <Square className="size-3" />
