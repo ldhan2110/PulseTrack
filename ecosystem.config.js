@@ -5,7 +5,7 @@ module.exports = {
       name: 'pm-api',
       cwd: './apps/api',
       script: 'dist/src/main.js',
-      env: { NODE_ENV: 'production', PORT: 3000 },
+      env: { NODE_ENV: 'production', PORT: 8081 },
     },
     {
       name: 'pm-web',
