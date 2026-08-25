@@ -13,7 +13,7 @@ export function useTestAutomation(testCaseId: string) {
 export function useUpsertAutomation(testCaseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { script: string; baseUrl?: string; timeoutMs?: number }) =>
+    mutationFn: (data: { script: string; timeoutMs?: number }) =>
       api.upsertAutomation(testCaseId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-automation', testCaseId] });
@@ -26,8 +26,7 @@ export function useUpsertAutomation(testCaseId: string) {
 
 export function useGenerateScript(testCaseId: string) {
   return useMutation({
-    mutationFn: (targetUrl: string) =>
-      api.generateAutomationScript(testCaseId, targetUrl),
+    mutationFn: () => api.generateAutomationScript(testCaseId),
     onError: (err: Error) => {
       toast.error(err.message);
     },

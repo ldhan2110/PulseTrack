@@ -1365,7 +1365,6 @@ export interface TestCaseAutomation {
   id: string;
   testCaseId: string;
   script: string;
-  baseUrl: string | null;
   timeoutMs: number;
   createdAt: string;
   updatedAt: string;

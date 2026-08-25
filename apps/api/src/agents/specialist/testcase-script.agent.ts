@@ -10,7 +10,6 @@ import { SYSTEM_PROMPT, buildUserPrompt } from '../prompts/testcase-script.promp
 
 export interface TestcaseScriptCtx {
   testCaseId: string;
-  targetUrl: string;
 }
 
 /**
@@ -34,7 +33,7 @@ export class TestcaseScriptAgent implements Agent {
   ) {}
 
   async run(ctx: unknown): Promise<string> {
-    const { testCaseId, targetUrl } = ctx as TestcaseScriptCtx;
+    const { testCaseId } = ctx as TestcaseScriptCtx;
 
     const testCase = await this.prisma.testCase.findUnique({
       where: { id: testCaseId },
@@ -66,7 +65,7 @@ export class TestcaseScriptAgent implements Agent {
         ],
       });
       const res = await agent.invoke(
-        { messages: [{ role: 'user', content: buildUserPrompt(testCase, targetUrl) }] },
+        { messages: [{ role: 'user', content: buildUserPrompt(testCase) }] },
         // ponytail: recursionLimit=60 ≈ old 30-step cap; raise if flows truncate.
         { recursionLimit: 60 },
       );

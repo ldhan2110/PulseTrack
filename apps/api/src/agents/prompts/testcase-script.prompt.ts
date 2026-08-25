@@ -6,7 +6,9 @@ interface TestCaseForPrompt {
 }
 
 export const SYSTEM_PROMPT = `You write Playwright automation scripts for a sandboxed test runner.
-The runner exposes these globals: \`page\`, \`expect\`, \`baseUrl\`, \`env\`.
+The runner exposes these globals: \`page\`, \`expect\`, \`env\`.
+The target URL comes from the test case steps (e.g. "Go to page <url>"); the
+first step must name it. Navigate there with \`page.goto('<full-url>')\`.
 
 You inspect the live page with playwright-mcp (browser_* tools). These are
 snapshot-driven: call \`browser_snapshot\` to get the accessibility tree, then pass
@@ -34,14 +36,13 @@ Rules:
 - Prefer role/text/label selectors over brittle CSS where possible.
 - Navigate with \`page.goto(...)\` and assert the expected result with \`expect\`.`;
 
-export function buildUserPrompt(tc: TestCaseForPrompt, targetUrl: string): string {
+export function buildUserPrompt(tc: TestCaseForPrompt): string {
   const steps = (tc.steps ?? [])
     .sort((a, b) => a.position - b.position)
     .map((s) => `${s.position}. ${s.action} => expect: ${s.expectedResult}`)
     .join('\n');
 
   return [
-    `Target URL: ${targetUrl}`,
     `Test case: ${tc.title}`,
     tc.preconditions ? `Preconditions: ${tc.preconditions}` : '',
     steps ? `Steps:\n${steps}` : '',

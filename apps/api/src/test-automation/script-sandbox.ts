@@ -1,7 +1,6 @@
 export interface SandboxContext {
   page: unknown;
   expect: unknown;
-  baseUrl: string;
   env: Record<string, string>;
   step: (name: string, fn: () => Promise<void>) => Promise<void>;
 }
@@ -32,7 +31,6 @@ export async function executeSandboxedScript(
   const fn = new AsyncFunction(
     'page',
     'expect',
-    'baseUrl',
     'env',
     'console',
     'step',
@@ -47,7 +45,7 @@ export async function executeSandboxedScript(
 
   try {
     await Promise.race([
-      fn(context.page, context.expect, context.baseUrl, context.env, sandboxConsole, context.step),
+      fn(context.page, context.expect, context.env, sandboxConsole, context.step),
       new Promise((_, reject) =>
         setTimeout(
           () => reject(new Error(`Script timed out after ${options.timeoutMs}ms`)),

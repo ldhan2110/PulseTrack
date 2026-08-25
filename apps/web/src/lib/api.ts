@@ -981,7 +981,7 @@ export const api = {
   getAutomation: (testCaseId: string) =>
     request<TestCaseAutomation | null>(`/test-automation/${testCaseId}`),
 
-  upsertAutomation: (testCaseId: string, data: { script: string; baseUrl?: string; timeoutMs?: number }) =>
+  upsertAutomation: (testCaseId: string, data: { script: string; timeoutMs?: number }) =>
     request<TestCaseAutomation>(`/test-automation/${testCaseId}`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -1001,10 +1001,10 @@ export const api = {
   getAutomationRuns: (testCaseId: string) =>
     request<AutomationRun[]>(`/test-automation/${testCaseId}/runs`),
 
-  generateAutomationScript: (testCaseId: string, targetUrl: string) =>
+  generateAutomationScript: (testCaseId: string) =>
     request<{ script: string }>(
       `/test-automation/${testCaseId}/generate-script`,
-      { method: 'POST', body: JSON.stringify({ targetUrl }) },
+      { method: 'POST' },
     ),
 
   // ─── Project Variables ────────────────────────────────────────

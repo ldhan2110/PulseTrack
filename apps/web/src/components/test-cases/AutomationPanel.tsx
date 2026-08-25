@@ -12,9 +12,9 @@ import {
   ResizableHandle,
 } from '@/components/ui/resizable';
 
-const DEFAULT_SCRIPT = `// Available context: page, expect, baseUrl, env
+const DEFAULT_SCRIPT = `// Available context: page, expect, env
 // Example:
-// await page.goto(baseUrl + '/login');
+// await page.goto('https://example.com/login');
 // await page.fill('#email', env.TEST_EMAIL);
 // await page.click('button[type="submit"]');
 // await expect(page).toHaveURL('/dashboard');
@@ -63,15 +63,13 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
   }, [run.cancelRun]);
 
   const handleGenerate = useCallback(() => {
-    const targetUrl = automation?.baseUrl ?? window.prompt('Target URL to generate script for:') ?? '';
-    if (!targetUrl) return;
-    generate.mutate(targetUrl, {
+    generate.mutate(undefined, {
       onSuccess: ({ script }) => {
         setLocalScript(script);
         upsert.mutate({ script });
       },
     });
-  }, [automation?.baseUrl, generate, upsert]);
+  }, [generate, upsert]);
 
   if (isLoading) {
     return (

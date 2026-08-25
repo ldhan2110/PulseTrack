@@ -5,10 +5,6 @@ export class UpsertAutomationDto {
   script: string;
 
   @IsOptional()
-  @IsString()
-  baseUrl?: string;
-
-  @IsOptional()
   @IsInt()
   @Min(5000)
   @Max(120000)
