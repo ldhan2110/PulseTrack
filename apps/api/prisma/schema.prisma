@@ -241,7 +241,7 @@ model Project {
   workflowLayout      Json?
   workflowStatuses    WorkflowStatus[]
   workflowTransitions WorkflowTransition[]
-  repositoryConfig    RepositoryConfig?
+  repositories        Repository[]
   aiConfig            AiConfig?
   notifications       Notification[]
   testModules    TestModule[]
@@ -585,9 +585,10 @@ model TicketWatcher {
 // REPOSITORY & AI CONFIG
 // =====================
 
-model RepositoryConfig {
+model Repository {
   id            String   @id @default(cuid())
-  projectId     String   @unique
+  projectId     String
+  name          String
   repoUrl       String
   provider      String   @default("gitlab") // "github" | "gitlab"
   accessToken   String   // AES-256-GCM encrypted
@@ -598,13 +599,17 @@ model RepositoryConfig {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project  Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branches TaskBranch[]
+
+  @@unique([projectId, name])
 }
 
 model TaskBranch {
   id            String   @id @default(cuid())
   taskId        String
   projectId     String
+  repositoryId  String
   branchName    String
   branchType    String              // feat | fix | chore | hotfix | refactor
   sequence      Int      @default(1)
@@ -614,10 +619,12 @@ model TaskBranch {
   prStatus      String?             // open | merged | closed
   createdAt     DateTime @default(now())
 
-  task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task       Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
   @@unique([taskId, branchName])
+  @@index([repositoryId])
 }
 
 model AiConfig {

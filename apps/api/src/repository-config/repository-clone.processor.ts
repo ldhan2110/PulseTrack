@@ -23,18 +23,17 @@ export class RepositoryCloneProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<{ projectId: string }>): Promise<void> {
-    const { projectId } = job.data;
+  async process(job: Job<{ projectId: string; repositoryId: string }>): Promise<void> {
+    const { projectId, repositoryId } = job.data;
+    const repo = await this.prisma.repository.findUnique({ where: { id: repositoryId } });
+    if (!repo || repo.projectId !== projectId) return;
+
     const configDir = this.config.get<string>('WORKSPACE_DIR', 'workspaces');
     const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), '..', '..', configDir);
-    const workspacePath = join(baseDir, projectId);
+    const safeName = repo.name.replace(/[^A-Za-z0-9_-]/g, '');
+    const workspacePath = join(baseDir, projectId, 'projects', safeName);
 
     try {
-      const repoConfig = await this.prisma.repositoryConfig.findUnique({
-        where: { projectId },
-      });
-      if (!repoConfig) return;
-
       // Clean existing workspace if present
       if (existsSync(workspacePath)) {
         await rm(workspacePath, { recursive: true, force: true });
@@ -43,38 +42,40 @@ export class RepositoryCloneProcessor extends WorkerHost {
 
       // Decrypt token and build authenticated URL
       const encryptionKey = this.config.getOrThrow<string>('ENCRYPTION_KEY');
-      const token = decrypt(repoConfig.accessToken, encryptionKey);
-      const url = new URL(repoConfig.repoUrl);
+      const token = decrypt(repo.accessToken, encryptionKey);
+      const url = new URL(repo.repoUrl);
       url.username = 'oauth2';
       url.password = token;
 
       const cloneArgs = ['clone'];
-      if (repoConfig.branch) cloneArgs.push('--branch', repoConfig.branch);
+      if (repo.branch) cloneArgs.push('--branch', repo.branch);
       cloneArgs.push(url.toString(), workspacePath);
 
       await execFileAsync(GIT_PATH, cloneArgs, {
         timeout: 300_000, // 5 minutes
       });
 
-      await this.prisma.repositoryConfig.update({
-        where: { projectId },
+      await this.prisma.repository.update({
+        where: { id: repositoryId },
         data: { cloneStatus: 'cloned', workspacePath, cloneError: null },
       });
 
       this.notifications.notifyProject(projectId, 'repository:status', {
         projectId,
+        repositoryId,
         cloneStatus: 'cloned',
         workspacePath,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown clone error';
-      await this.prisma.repositoryConfig.update({
-        where: { projectId },
+      await this.prisma.repository.update({
+        where: { id: repositoryId },
         data: { cloneStatus: 'failed', cloneError: message },
       });
 
       this.notifications.notifyProject(projectId, 'repository:status', {
         projectId,
+        repositoryId,
         cloneStatus: 'failed',
         cloneError: message,
       });

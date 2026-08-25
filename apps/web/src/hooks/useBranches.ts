@@ -3,11 +3,11 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import type { CreateBranchPayload, CreatePrPayload } from '../lib/types';
 
-export function useRemoteBranches(projectId: string) {
+export function useRemoteBranches(projectId: string, repositoryId: string) {
   return useQuery({
-    queryKey: ['remoteBranches', projectId],
-    queryFn: () => api.getRemoteBranches(projectId),
-    enabled: !!projectId,
+    queryKey: ['remoteBranches', projectId, repositoryId],
+    queryFn: () => api.getRemoteBranches(projectId, repositoryId),
+    enabled: !!projectId && !!repositoryId,
     staleTime: 60_000,
   });
 }

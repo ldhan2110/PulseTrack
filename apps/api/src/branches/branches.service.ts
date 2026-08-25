@@ -26,16 +26,21 @@ export class BranchesService {
       .slice(0, 50);
   }
 
-  async listRemoteBranches(projectId: string): Promise<string[]> {
-    const repoConfig = await this.prisma.repositoryConfig.findUnique({
-      where: { projectId },
-    });
-    if (!repoConfig) throw new NotFoundException('Repository not configured for this project');
+  private async getRepository(projectId: string, repositoryId: string) {
+    const repo = await this.prisma.repository.findUnique({ where: { id: repositoryId } });
+    if (!repo || repo.projectId !== projectId) {
+      throw new NotFoundException('Repository not found for this project');
+    }
+    return repo;
+  }
 
-    const token = decrypt(repoConfig.accessToken, this.encryptionKey);
-    const provider = this.providerFactory.create(repoConfig.provider);
+  async listRemoteBranches(projectId: string, repositoryId: string): Promise<string[]> {
+    const repo = await this.getRepository(projectId, repositoryId);
 
-    return provider.listBranches({ repoUrl: repoConfig.repoUrl, token });
+    const token = decrypt(repo.accessToken, this.encryptionKey);
+    const provider = this.providerFactory.create(repo.provider);
+
+    return provider.listBranches({ repoUrl: repo.repoUrl, token });
   }
 
   async listByTask(projectId: string, taskId: string) {
@@ -46,10 +51,7 @@ export class BranchesService {
   }
 
   async createBranch(projectId: string, taskId: string, dto: CreateBranchDto) {
-    const repoConfig = await this.prisma.repositoryConfig.findUnique({
-      where: { projectId },
-    });
-    if (!repoConfig) throw new NotFoundException('Repository not configured for this project');
+    const repo = await this.getRepository(projectId, dto.repositoryId);
 
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
@@ -68,11 +70,11 @@ export class BranchesService {
     const suffix = sequence > 1 ? `-${sequence}` : '';
     const branchName = `${dto.branchType}/${task.taskKey}-${slug}${suffix}`;
 
-    const token = decrypt(repoConfig.accessToken, this.encryptionKey);
-    const provider = this.providerFactory.create(repoConfig.provider);
+    const token = decrypt(repo.accessToken, this.encryptionKey);
+    const provider = this.providerFactory.create(repo.provider);
 
     await provider.createBranch({
-      repoUrl: repoConfig.repoUrl,
+      repoUrl: repo.repoUrl,
       token,
       branchName,
       sourceBranch: dto.sourceBranch,
@@ -82,6 +84,7 @@ export class BranchesService {
       data: {
         taskId,
         projectId,
+        repositoryId: repo.id,
         branchName,
         branchType: dto.branchType,
         sequence,
@@ -97,19 +100,16 @@ export class BranchesService {
     if (!branch || branch.projectId !== projectId) throw new NotFoundException('Branch not found');
     if (branch.prUrl) throw new BadRequestException('PR/MR already exists for this branch');
 
-    const repoConfig = await this.prisma.repositoryConfig.findUnique({
-      where: { projectId },
-    });
-    if (!repoConfig) throw new NotFoundException('Repository not configured');
+    const repo = await this.getRepository(projectId, branch.repositoryId);
 
-    const token = decrypt(repoConfig.accessToken, this.encryptionKey);
-    const provider = this.providerFactory.create(repoConfig.provider);
+    const token = decrypt(repo.accessToken, this.encryptionKey);
+    const provider = this.providerFactory.create(repo.provider);
 
     const prTitle = `${branch.branchType}(${branch.task.taskKey}): ${branch.task.title}`;
     const prDescription = this.buildPrDescription(branch.task);
 
     const result = await provider.createPr({
-      repoUrl: repoConfig.repoUrl,
+      repoUrl: repo.repoUrl,
       token,
       title: prTitle,
       description: prDescription,

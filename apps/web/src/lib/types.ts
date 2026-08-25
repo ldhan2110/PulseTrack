@@ -585,8 +585,10 @@ export interface BugHistoryEntry {
 
 export type CloneStatus = 'pending' | 'cloning' | 'cloned' | 'failed';
 
-export interface RepositoryConfig {
+export interface Repository {
   id: string;
+  projectId: string;
+  name: string;
   repoUrl: string;
   accessToken: string; // masked
   provider: 'github' | 'gitlab';
@@ -596,7 +598,8 @@ export interface RepositoryConfig {
   workspacePath: string | null;
 }
 
-export interface UpsertRepositoryConfigPayload {
+export interface CreateRepositoryPayload {
+  name: string;
   repoUrl: string;
   accessToken: string;
   provider?: 'github' | 'gitlab';
@@ -611,6 +614,7 @@ export interface TaskBranch {
   id: string;
   taskId: string;
   projectId: string;
+  repositoryId: string;
   branchName: string;
   branchType: BranchType;
   sequence: number;
@@ -622,6 +626,7 @@ export interface TaskBranch {
 }
 
 export interface CreateBranchPayload {
+  repositoryId: string;
   branchType: BranchType;
   sourceBranch?: string;
 }

@@ -33,8 +33,8 @@ import type {
   WorkflowStatus,
   SaveWorkflowPayload,
   WorkflowAllowedAssignee,
-  RepositoryConfig,
-  UpsertRepositoryConfigPayload,
+  Repository,
+  CreateRepositoryPayload,
   AiConfig,
   UpsertAiConfigPayload,
   UpdateProjectContextPayload,
@@ -370,16 +370,16 @@ export const api = {
   deleteSavedFilter: (projectId: string, id: string) =>
     request<void>(`/projects/${projectId}/saved-filters/${id}`, { method: 'DELETE' }),
 
-  // ─── Repository Config ────────────────────────────────────────────────────
-  getRepositoryConfig: (projectId: string) =>
-    request<RepositoryConfig | null>(`/projects/${projectId}/settings/repository`),
-  upsertRepositoryConfig: (projectId: string, data: UpsertRepositoryConfigPayload) =>
-    request<RepositoryConfig>(`/projects/${projectId}/settings/repository`, {
-      method: 'PUT',
+  // ─── Repositories ─────────────────────────────────────────────────────────
+  getRepositories: (projectId: string) =>
+    request<Repository[]>(`/projects/${projectId}/settings/repository`),
+  addRepository: (projectId: string, data: CreateRepositoryPayload) =>
+    request<Repository>(`/projects/${projectId}/settings/repository`, {
+      method: 'POST',
       body: JSON.stringify(data),
     }),
-  deleteRepositoryConfig: (projectId: string) =>
-    request<void>(`/projects/${projectId}/settings/repository`, { method: 'DELETE' }),
+  removeRepository: (projectId: string, repositoryId: string) =>
+    request<void>(`/projects/${projectId}/settings/repository/${repositoryId}`, { method: 'DELETE' }),
 
   // ─── AI Config ────────────────────────────────────────────────────────────
   getAiConfig: (projectId: string) =>
@@ -780,8 +780,8 @@ export const api = {
     request<void>(`/projects/${projectId}/wiki/qa/${qaId}`, { method: 'DELETE' }),
 
   // ─── Task Branches ──────────────────────────────────────────────────────
-  getRemoteBranches: (projectId: string) =>
-    request<string[]>(`/projects/${projectId}/remote-branches`),
+  getRemoteBranches: (projectId: string, repositoryId: string) =>
+    request<string[]>(`/projects/${projectId}/remote-branches?repositoryId=${repositoryId}`),
   getTaskBranches: (projectId: string, taskId: string) =>
     request<TaskBranch[]>(`/projects/${projectId}/tasks/${taskId}/branches`),
   createTaskBranch: (projectId: string, taskId: string, data: CreateBranchPayload) =>

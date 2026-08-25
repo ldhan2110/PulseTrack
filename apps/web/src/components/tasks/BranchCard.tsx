@@ -29,7 +29,7 @@ import {
   DialogBody,
 } from '@/components/ui/dialog';
 import { useRemoteBranches, useTaskBranches, useCreateBranch, useCreatePr, useDeleteBranch } from '@/hooks/useBranches';
-import { useRepositoryConfig } from '@/hooks/useRepositoryConfig';
+import { useRepositories } from '@/hooks/useRepositoryConfig';
 import type { BranchType, TaskBranch } from '@/lib/types';
 
 const BRANCH_TYPES: { value: BranchType; label: string }[] = [
@@ -119,13 +119,13 @@ interface Props {
 }
 
 export function BranchCard({ projectId, taskId }: Props) {
-  const { data: repoConfig } = useRepositoryConfig(projectId);
+  const { data: repos = [] } = useRepositories(projectId);
   const { data: branches = [] } = useTaskBranches(projectId, taskId);
   const createBranch = useCreateBranch(projectId, taskId);
   const createPr = useCreatePr(projectId, taskId);
   const deleteBranch = useDeleteBranch(projectId, taskId);
-  const { data: remoteBranches = [], isLoading: branchesLoading } = useRemoteBranches(projectId);
 
+  const [repositoryId, setRepositoryId] = useState('');
   const [branchType, setBranchType] = useState<BranchType>('feat');
   const [sourceBranch, setSourceBranch] = useState('');
   const [targetBranch, setTargetBranch] = useState('');
@@ -134,11 +134,16 @@ export function BranchCard({ projectId, taskId }: Props) {
   const [deleteDialogBranchId, setDeleteDialogBranchId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  if (!repoConfig || repoConfig.cloneStatus !== 'cloned') return null;
+  const clonedRepos = repos.filter((r) => r.cloneStatus === 'cloned');
+  const selectedRepo = clonedRepos.find((r) => r.id === repositoryId) ?? clonedRepos[0];
+  const { data: remoteBranches = [], isLoading: branchesLoading } = useRemoteBranches(projectId, selectedRepo?.id ?? '');
+
+  if (clonedRepos.length === 0) return null;
 
   const handleCreateBranch = () => {
+    if (!selectedRepo) return;
     createBranch.mutate(
-      { branchType, sourceBranch: sourceBranch || undefined },
+      { repositoryId: selectedRepo.id, branchType, sourceBranch: sourceBranch || undefined },
       {
         onSuccess: () => {
           setCreateOpen(false);
@@ -166,7 +171,7 @@ export function BranchCard({ projectId, taskId }: Props) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const providerLabel = repoConfig.provider === 'github' ? 'PR' : 'MR';
+  const providerLabel = (selectedRepo?.provider ?? 'gitlab') === 'github' ? 'PR' : 'MR';
 
   return (
     <div className="border border-border rounded-lg p-3 space-y-3">
@@ -187,6 +192,21 @@ export function BranchCard({ projectId, taskId }: Props) {
             </DialogHeader>
             <DialogBody>
               <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Repository</Label>
+                  <Select value={selectedRepo?.id ?? ''} onValueChange={setRepositoryId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clonedRepos.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Branch Type</Label>
                   <Select value={branchType} onValueChange={(v) => setBranchType(v as BranchType)}>

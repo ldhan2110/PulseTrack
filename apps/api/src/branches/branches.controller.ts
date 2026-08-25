@@ -4,6 +4,7 @@ import {
   Post,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
 } from '@nestjs/common';
@@ -19,8 +20,11 @@ export class BranchesController {
   constructor(private readonly service: BranchesService) {}
 
   @Get('remote-branches')
-  listRemoteBranches(@Param('projectId') projectId: string) {
-    return this.service.listRemoteBranches(projectId);
+  listRemoteBranches(
+    @Param('projectId') projectId: string,
+    @Query('repositoryId') repositoryId: string,
+  ) {
+    return this.service.listRemoteBranches(projectId, repositoryId);
   }
 
   @Get('tasks/:taskId/branches')

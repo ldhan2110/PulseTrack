@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GitBranch, Eye, EyeOff } from 'lucide-react';
+import { GitBranch, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useRepositoryConfig, useUpsertRepositoryConfig } from '@/hooks/useRepositoryConfig';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+  DialogBody,
+} from '@/components/ui/dialog';
+import { useRepositories, useAddRepository, useRemoveRepository } from '@/hooks/useRepositoryConfig';
 import { useSocket } from '@/socket/useSocket';
 import type { CloneStatus } from '@/lib/types';
 
@@ -29,25 +39,19 @@ interface Props {
 }
 
 export function RepositorySettingsCard({ projectId, canManage }: Props) {
-  const { data: config, refetch } = useRepositoryConfig(projectId);
-  const upsert = useUpsertRepositoryConfig(projectId);
+  const { data: repos = [], refetch } = useRepositories(projectId);
+  const addRepo = useAddRepository(projectId);
+  const removeRepo = useRemoveRepository(projectId);
+  const socket = useSocket();
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [name, setName] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [provider, setProvider] = useState<'github' | 'gitlab'>('gitlab');
   const [branch, setBranch] = useState('');
-  const [initialized, setInitialized] = useState(false);
-  const socket = useSocket();
-
-  useEffect(() => {
-    if (config && !initialized) {
-      setRepoUrl(config.repoUrl ?? '');
-      setAccessToken('');
-      setProvider(config.provider ?? 'gitlab');
-      setBranch(config.branch ?? '');
-      setInitialized(true);
-    }
-  }, [config, initialized]);
+  const [removeId, setRemoveId] = useState<string | null>(null);
 
   // Listen for clone status updates via Socket.IO
   useEffect(() => {
@@ -57,98 +61,188 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
     return () => { socket.off('repository:status', handler); };
   }, [socket, refetch]);
 
-  const handleSave = () => {
-    if (!repoUrl.trim()) return;
-    upsert.mutate({
-      repoUrl: repoUrl.trim(),
-      accessToken: accessToken || (config?.accessToken ?? ''),
-      provider,
-      ...(branch.trim() ? { branch: branch.trim() } : {}),
-    });
-    setInitialized(false);
+  const resetForm = () => {
+    setName('');
+    setRepoUrl('');
+    setAccessToken('');
+    setProvider('gitlab');
+    setBranch('');
   };
 
-  const cloneStatus = config?.cloneStatus ?? 'pending';
-  const badge = STATUS_BADGE[cloneStatus];
+  const handleAdd = () => {
+    if (!name.trim() || !repoUrl.trim() || !accessToken.trim()) return;
+    addRepo.mutate(
+      {
+        name: name.trim(),
+        repoUrl: repoUrl.trim(),
+        accessToken: accessToken.trim(),
+        provider,
+        ...(branch.trim() ? { branch: branch.trim() } : {}),
+      },
+      {
+        onSuccess: () => {
+          setAddOpen(false);
+          resetForm();
+        },
+      },
+    );
+  };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div className="flex items-center gap-2">
           <GitBranch className="size-5 text-indigo-500" />
-          <CardTitle>Repository</CardTitle>
+          <CardTitle>Repositories</CardTitle>
         </div>
-        {config && (
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+        {canManage && (
+          <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1">
+                <Plus className="size-4" /> Add
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Repository</DialogTitle>
+              </DialogHeader>
+              <DialogBody>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="web (letters, digits, -, _)"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repoUrl">Repository URL</Label>
+                    <Input
+                      id="repoUrl"
+                      value={repoUrl}
+                      onChange={(e) => setRepoUrl(e.target.value)}
+                      placeholder="https://gitlab.company.com/team/repo.git"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accessToken">Access Token</Label>
+                    <div className="relative">
+                      <Input
+                        id="accessToken"
+                        type={showToken ? 'text' : 'password'}
+                        value={accessToken}
+                        onChange={(e) => setAccessToken(e.target.value)}
+                        placeholder="Enter access token"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowToken(!showToken)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Provider</Label>
+                    <Select value={provider} onValueChange={(v) => setProvider(v as 'github' | 'gitlab')}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gitlab">GitLab</SelectItem>
+                        <SelectItem value="github">GitHub</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="branch">Branch</Label>
+                    <Input
+                      id="branch"
+                      value={branch}
+                      onChange={(e) => setBranch(e.target.value)}
+                      placeholder="Default branch"
+                    />
+                  </div>
+                </div>
+              </DialogBody>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline" size="sm">Cancel</Button>
+                </DialogClose>
+                <Button
+                  size="sm"
+                  onClick={handleAdd}
+                  disabled={!name.trim() || !repoUrl.trim() || !accessToken.trim() || addRepo.isPending}
+                >
+                  {addRepo.isPending ? 'Adding...' : 'Add & Clone'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="repoUrl">Repository URL</Label>
-          <Input
-            id="repoUrl"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
-            placeholder="https://gitlab.company.com/team/repo.git"
-            disabled={!canManage}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="accessToken">Access Token</Label>
-          <div className="relative">
-            <Input
-              id="accessToken"
-              type={showToken ? 'text' : 'password'}
-              value={accessToken}
-              onChange={(e) => setAccessToken(e.target.value)}
-              placeholder={config?.accessToken || 'Enter access token'}
-              disabled={!canManage}
-              className="pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowToken(!showToken)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showToken ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label>Provider</Label>
-          <Select value={provider} onValueChange={(v) => setProvider(v as 'github' | 'gitlab')} disabled={!canManage}>
-            <SelectTrigger className="h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gitlab">GitLab</SelectItem>
-              <SelectItem value="github">GitHub</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="branch">Branch</Label>
-          <Input
-            id="branch"
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-            placeholder="Default branch"
-            disabled={!canManage}
-          />
-        </div>
-        {config?.cloneStatus === 'failed' && config.cloneError && (
-          <p className="text-xs text-destructive">{config.cloneError}</p>
+      <CardContent className="space-y-3">
+        {repos.length === 0 && (
+          <p className="text-sm text-muted-foreground">No repositories yet.</p>
         )}
-        {canManage && (
-          <Button
-            onClick={handleSave}
-            disabled={!repoUrl.trim() || upsert.isPending}
-            size="sm"
-          >
-            {upsert.isPending ? 'Saving...' : 'Save & Clone'}
-          </Button>
-        )}
+        {repos.map((repo) => {
+          const badge = STATUS_BADGE[repo.cloneStatus];
+          return (
+            <div key={repo.id} className="flex items-start justify-between gap-2 rounded-lg border border-border p-3">
+              <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">{repo.name}</span>
+                  <Badge variant={badge.variant}>{badge.label}</Badge>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">{repo.repoUrl}</p>
+                {repo.cloneStatus === 'failed' && repo.cloneError && (
+                  <p className="text-xs text-destructive">{repo.cloneError}</p>
+                )}
+              </div>
+              {canManage && (
+                <button
+                  onClick={() => setRemoveId(repo.id)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              )}
+            </div>
+          );
+        })}
       </CardContent>
+
+      <Dialog open={!!removeId} onOpenChange={(o) => { if (!o) setRemoveId(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Repository</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <p className="text-sm text-muted-foreground">
+              This removes the repository and its cloned folder. Other repositories are unaffected.
+            </p>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Cancel</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (removeId) removeRepo.mutate(removeId, { onSuccess: () => setRemoveId(null) });
+              }}
+              disabled={removeRepo.isPending}
+            >
+              {removeRepo.isPending ? 'Removing...' : 'Remove'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

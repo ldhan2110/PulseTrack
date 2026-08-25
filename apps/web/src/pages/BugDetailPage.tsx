@@ -35,6 +35,7 @@ import { useMembers } from '@/hooks/useMembers';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useRepositories } from '@/hooks/useRepositoryConfig';
 import { useProject } from '@/hooks/useProjects';
 import { useWorkflow, useValidTransitions } from '@/hooks/useWorkflow';
 import { useAuth } from '@/auth/useAuth';
@@ -111,10 +112,12 @@ export function BugDetailPage() {
   const [fixTaskDialogOpen, setFixTaskDialogOpen] = useState(false);
   const [aiFixOpen, setAiFixOpen] = useState(false);
 
+  const { data: repositories = [] } = useRepositories(projectId);
+  const fixRepo = repositories.find((r) => r.cloneStatus === 'cloned');
   const { data: remoteBranches = [], isLoading: branchesLoading } = useQuery({
-    queryKey: ['remote-branches', projectId],
-    queryFn: () => api.getRemoteBranches(projectId),
-    enabled: !!projectId && aiFixOpen,
+    queryKey: ['remote-branches', projectId, fixRepo?.id],
+    queryFn: () => api.getRemoteBranches(projectId, fixRepo!.id),
+    enabled: !!projectId && !!fixRepo && aiFixOpen,
   });
 
   // Flatten time logs from all linked tasks and their sub-tasks for display

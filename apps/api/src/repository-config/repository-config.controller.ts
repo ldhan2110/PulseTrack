@@ -1,7 +1,7 @@
 import {
   Controller,
   Get,
-  Put,
+  Post,
   Delete,
   Param,
   Body,
@@ -11,7 +11,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { RepositoryConfigService } from './repository-config.service';
-import { UpsertRepositoryConfigDto } from './dto/upsert-repository-config.dto';
+import { CreateRepositoryDto } from './dto/create-repository.dto';
 
 @Controller('projects/:projectId/settings/repository')
 @UseGuards(JwtAuthGuard)
@@ -20,24 +20,27 @@ export class RepositoryConfigController {
 
   @Get()
   @UseGuards(ProjectRolesGuard)
-  findOne(@Param('projectId') projectId: string) {
+  list(@Param('projectId') projectId: string) {
     return this.service.findByProjectId(projectId);
   }
 
-  @Put()
+  @Post()
   @UseGuards(ProjectRolesGuard)
   @RequirePermission('projectSettings', 'update')
-  upsert(
+  add(
     @Param('projectId') projectId: string,
-    @Body() dto: UpsertRepositoryConfigDto,
+    @Body() dto: CreateRepositoryDto,
   ) {
-    return this.service.upsert(projectId, dto);
+    return this.service.add(projectId, dto);
   }
 
-  @Delete()
+  @Delete(':repositoryId')
   @UseGuards(ProjectRolesGuard)
   @RequirePermission('projectSettings', 'update')
-  remove(@Param('projectId') projectId: string) {
-    return this.service.remove(projectId);
+  remove(
+    @Param('projectId') projectId: string,
+    @Param('repositoryId') repositoryId: string,
+  ) {
+    return this.service.remove(projectId, repositoryId);
   }
 }

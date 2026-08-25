@@ -1,11 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
+import { existsSync } from 'fs';
+import { rm } from 'fs/promises';
+import { join, resolve, isAbsolute } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { encrypt, maskToken } from '../common/encryption.util';
-import { UpsertRepositoryConfigDto } from './dto/upsert-repository-config.dto';
+import { CreateRepositoryDto } from './dto/create-repository.dto';
 
 @Injectable()
 export class RepositoryConfigService {
@@ -21,50 +24,61 @@ export class RepositoryConfigService {
   }
 
   async findByProjectId(projectId: string) {
-    const config = await this.prisma.repositoryConfig.findUnique({
+    const repos = await this.prisma.repository.findMany({
       where: { projectId },
+      orderBy: { createdAt: 'asc' },
     });
-    if (!config) return null;
-    return { ...config, accessToken: maskToken(config.accessToken) };
+    return repos.map((r) => ({ ...r, accessToken: maskToken(r.accessToken) }));
   }
 
-  async upsert(projectId: string, dto: UpsertRepositoryConfigDto) {
+  async add(projectId: string, dto: CreateRepositoryDto) {
+    const existing = await this.prisma.repository.findUnique({
+      where: { projectId_name: { projectId, name: dto.name } },
+    });
+    if (existing) throw new ConflictException(`Repository "${dto.name}" already exists in this project`);
+
     const encryptedToken = encrypt(dto.accessToken, this.encryptionKey);
 
-    const config = await this.prisma.repositoryConfig.upsert({
-      where: { projectId },
-      create: {
+    const repo = await this.prisma.repository.create({
+      data: {
         projectId,
+        name: dto.name,
         repoUrl: dto.repoUrl,
         accessToken: encryptedToken,
         provider: dto.provider ?? 'gitlab',
         branch: dto.branch || null,
         cloneStatus: 'cloning',
-      },
-      update: {
-        repoUrl: dto.repoUrl,
-        accessToken: encryptedToken,
-        provider: dto.provider ?? 'gitlab',
-        branch: dto.branch || null,
-        cloneStatus: 'cloning',
-        cloneError: null,
-        workspacePath: null,
       },
     });
 
-    await this.cloneQueue.add('clone', { projectId }, { attempts: 2, backoff: { type: 'exponential', delay: 5000 } });
+    await this.cloneQueue.add(
+      'clone',
+      { projectId, repositoryId: repo.id },
+      { attempts: 2, backoff: { type: 'exponential', delay: 5000 } },
+    );
 
     this.notifications.notifyProject(projectId, 'repository:status', {
       projectId,
+      repositoryId: repo.id,
       cloneStatus: 'cloning',
     });
 
-    return { ...config, accessToken: maskToken(dto.accessToken) };
+    return { ...repo, accessToken: maskToken(repo.accessToken) };
   }
 
-  async remove(projectId: string) {
-    const existing = await this.prisma.repositoryConfig.findUnique({ where: { projectId } });
-    if (!existing) throw new NotFoundException('Repository config not found');
-    await this.prisma.repositoryConfig.delete({ where: { projectId } });
+  async remove(projectId: string, repositoryId: string) {
+    const repo = await this.prisma.repository.findUnique({ where: { id: repositoryId } });
+    if (!repo || repo.projectId !== projectId) throw new NotFoundException('Repository not found');
+
+    await this.prisma.repository.delete({ where: { id: repositoryId } });
+
+    if (repo.workspacePath && existsSync(repo.workspacePath)) {
+      await rm(repo.workspacePath, { recursive: true, force: true });
+    } else {
+      const configDir = this.config.get<string>('WORKSPACE_DIR', 'workspaces');
+      const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), '..', '..', configDir);
+      const dir = join(baseDir, projectId, 'projects', repo.name);
+      if (existsSync(dir)) await rm(dir, { recursive: true, force: true });
+    }
   }
 }
