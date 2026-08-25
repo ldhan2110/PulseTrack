@@ -22,12 +22,12 @@ export abstract class AutomationRunProcessor extends WorkerHost {
   }
 
   async process(job: Job<AutomationJobData>): Promise<void> {
-    const { runId, script, baseUrl, timeoutMs, projectId, runnerId, mode, executionCaseId } = job.data;
+    const { runId, script, timeoutMs, projectId, runnerId, mode, executionCaseId } = job.data;
     const live = mode === 'live';
     let browser: Browser | undefined;
     let page: Page | undefined;
 
-    this.logger.log(`[process] START runId=${runId} runnerId=${runnerId} baseUrl=${baseUrl} timeoutMs=${timeoutMs}`);
+    this.logger.log(`[process] START runId=${runId} runnerId=${runnerId} timeoutMs=${timeoutMs}`);
 
     try {
       this.emit(runnerId, 'automation:status', { runId, status: 'RUNNING' });
@@ -51,28 +51,6 @@ export abstract class AutomationRunProcessor extends WorkerHost {
         viewport: { width: 1280, height: 720 },
       });
 
-      // SSRF protection: block private IPs (allow baseUrl host)
-      const allowedHost = baseUrl ? new URL(baseUrl).hostname : null;
-      await context.route('**/*', (route) => {
-        const url = new URL(route.request().url());
-        const hostname = url.hostname;
-        // Allow the configured baseUrl host
-        if (allowedHost && hostname === allowedHost) {
-          return route.continue();
-        }
-        const blocked =
-          hostname === 'localhost' ||
-          hostname === '127.0.0.1' ||
-          hostname.startsWith('10.') ||
-          hostname.startsWith('172.16.') ||
-          hostname.startsWith('192.168.') ||
-          hostname === '169.254.169.254' ||
-          hostname === '0.0.0.0';
-        if (blocked) {
-          return route.abort('blockedbyclient');
-        }
-        return route.continue();
-      });
       page = await context.newPage();
       const { page: wrappedPage, getSteps } = this.wrapPageForCapture(page, runId, runnerId, live);
 
@@ -169,7 +147,6 @@ export abstract class AutomationRunProcessor extends WorkerHost {
       const sandboxContext: SandboxContext = {
         page: wrappedPage,
         expect,
-        baseUrl: baseUrl || '',
         env,
         step: stepFn,
       };

@@ -1024,7 +1024,6 @@ model TestCaseAutomation {
   id         String   @id @default(cuid())
   testCaseId String   @unique
   script     String   @db.Text
-  baseUrl    String?
   timeoutMs  Int      @default(30000)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

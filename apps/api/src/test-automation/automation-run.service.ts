@@ -19,7 +19,6 @@ export interface AutomationJobData {
   runId: string;
   automationId: string;
   script: string;
-  baseUrl: string | null;
   timeoutMs: number;
   projectId: string;
   runnerId: string;
@@ -68,7 +67,6 @@ export class AutomationRunService {
       runId: run.id,
       automationId: automation.id,
       script: automation.script,
-      baseUrl: automation.baseUrl,
       timeoutMs: automation.timeoutMs,
       projectId: automation.testCase.projectId,
       runnerId,
