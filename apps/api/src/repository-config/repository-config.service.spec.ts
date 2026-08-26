@@ -32,6 +32,7 @@ describe('RepositoryConfigService', () => {
     service = new RepositoryConfigService(
       mockPrisma as any,
       mockQueue as any,
+      mockQueue as any,
       mockNotifications as any,
       mockConfig as any,
     );

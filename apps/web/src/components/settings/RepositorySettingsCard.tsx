@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GitBranch, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
+import { GitBranch, Eye, EyeOff, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,15 +22,22 @@ import {
   DialogClose,
   DialogBody,
 } from '@/components/ui/dialog';
-import { useRepositories, useAddRepository, useRemoveRepository } from '@/hooks/useRepositoryConfig';
+import { useRepositories, useAddRepository, useRemoveRepository, usePullRepository } from '@/hooks/useRepositoryConfig';
 import { useSocket } from '@/socket/useSocket';
-import type { CloneStatus } from '@/lib/types';
+import type { CloneStatus, IndexStatus } from '@/lib/types';
 
 const STATUS_BADGE: Record<CloneStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   pending: { label: 'Pending', variant: 'secondary' },
   cloning: { label: 'Cloning...', variant: 'outline' },
   cloned: { label: 'Cloned', variant: 'default' },
   failed: { label: 'Failed', variant: 'destructive' },
+};
+
+const INDEX_BADGE: Record<IndexStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  pending: { label: 'Not indexed', variant: 'secondary' },
+  indexing: { label: 'Indexing...', variant: 'outline' },
+  indexed: { label: 'Indexed', variant: 'default' },
+  failed: { label: 'Index failed', variant: 'destructive' },
 };
 
 interface Props {
@@ -42,6 +49,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
   const { data: repos = [], refetch } = useRepositories(projectId);
   const addRepo = useAddRepository(projectId);
   const removeRepo = useRemoveRepository(projectId);
+  const pullRepo = usePullRepository(projectId);
   const socket = useSocket();
 
   const [addOpen, setAddOpen] = useState(false);
@@ -191,25 +199,40 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
         )}
         {repos.map((repo) => {
           const badge = STATUS_BADGE[repo.cloneStatus];
+          const indexBadge = INDEX_BADGE[repo.indexStatus];
           return (
             <div key={repo.id} className="flex items-start justify-between gap-2 rounded-lg border border-border p-3">
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">{repo.name}</span>
                   <Badge variant={badge.variant}>{badge.label}</Badge>
+                  <Badge variant={indexBadge.variant}>{indexBadge.label}</Badge>
                 </div>
                 <p className="truncate text-xs text-muted-foreground">{repo.repoUrl}</p>
                 {repo.cloneStatus === 'failed' && repo.cloneError && (
                   <p className="text-xs text-destructive">{repo.cloneError}</p>
                 )}
+                {repo.indexStatus === 'failed' && repo.indexError && (
+                  <p className="text-xs text-destructive">{repo.indexError}</p>
+                )}
               </div>
               {canManage && (
-                <button
-                  onClick={() => setRemoveId(repo.id)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => pullRepo.mutate(repo.id)}
+                    disabled={repo.cloneStatus !== 'cloned' || pullRepo.isPending || repo.indexStatus === 'indexing'}
+                    title="Pull latest & re-index"
+                    className="text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  >
+                    <RefreshCw className={`size-4 ${repo.indexStatus === 'indexing' ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button
+                    onClick={() => setRemoveId(repo.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
               )}
             </div>
           );

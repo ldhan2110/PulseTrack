@@ -383,6 +383,10 @@ export const api = {
     }),
   removeRepository: (projectId: string, repositoryId: string) =>
     request<void>(`/projects/${projectId}/settings/repository/${repositoryId}`, { method: 'DELETE' }),
+  pullRepository: (projectId: string, repositoryId: string) =>
+    request<{ pulled: boolean }>(`/projects/${projectId}/settings/repository/${repositoryId}/pull`, {
+      method: 'POST',
+    }),
 
   // ─── AI Config ────────────────────────────────────────────────────────────
   getAiConfig: (projectId: string) =>

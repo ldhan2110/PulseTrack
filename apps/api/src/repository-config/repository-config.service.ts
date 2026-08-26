@@ -2,19 +2,25 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { existsSync } from 'fs';
 import { rm } from 'fs/promises';
 import { join, resolve, isAbsolute } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { GIT_PATH } from '../common/git-path.util';
 import { encrypt, maskToken } from '../common/encryption.util';
 import { CreateRepositoryDto } from './dto/create-repository.dto';
+
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class RepositoryConfigService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue('repository-clone') private readonly cloneQueue: Queue,
+    @InjectQueue('repository-index') private readonly indexQueue: Queue,
     private readonly notifications: NotificationsService,
     private readonly config: ConfigService,
   ) {}
@@ -66,6 +72,24 @@ export class RepositoryConfigService {
     return { ...repo, accessToken: maskToken(repo.accessToken) };
   }
 
+  async pull(projectId: string, repositoryId: string) {
+    const repo = await this.prisma.repository.findUnique({ where: { id: repositoryId } });
+    if (!repo || repo.projectId !== projectId) throw new NotFoundException('Repository not found');
+    if (repo.cloneStatus !== 'cloned' || !repo.workspacePath || !existsSync(repo.workspacePath)) {
+      throw new ConflictException('Repository is not cloned yet');
+    }
+
+    await execFileAsync(GIT_PATH, ['pull'], { cwd: repo.workspacePath, timeout: 300_000 });
+
+    await this.indexQueue.add(
+      'index',
+      { projectId, repositoryId },
+      { attempts: 1, removeOnComplete: true },
+    );
+
+    return { pulled: true };
+  }
+
   async remove(projectId: string, repositoryId: string) {
     const repo = await this.prisma.repository.findUnique({ where: { id: repositoryId } });
     if (!repo || repo.projectId !== projectId) throw new NotFoundException('Repository not found');
@@ -73,6 +97,12 @@ export class RepositoryConfigService {
     await this.prisma.repository.delete({ where: { id: repositoryId } });
 
     if (repo.workspacePath && existsSync(repo.workspacePath)) {
+      // Deregister from ~/.gitnexus/registry.json before deleting the folder
+      // (clean operates on the cwd repo). Best-effort — never block removal.
+      await execFileAsync('gitnexus', ['clean'], {
+        cwd: repo.workspacePath,
+        timeout: 60_000,
+      }).catch(() => undefined);
       await rm(repo.workspacePath, { recursive: true, force: true });
     } else {
       const configDir = this.config.get<string>('WORKSPACE_DIR', 'workspaces');

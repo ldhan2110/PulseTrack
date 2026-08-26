@@ -1,5 +1,5 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
+import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
+import { Job, Queue } from 'bullmq';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { existsSync } from 'fs';
@@ -19,6 +19,7 @@ export class RepositoryCloneProcessor extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly config: ConfigService,
+    @InjectQueue('repository-index') private readonly indexQueue: Queue,
   ) {
     super();
   }
@@ -66,6 +67,13 @@ export class RepositoryCloneProcessor extends WorkerHost {
         cloneStatus: 'cloned',
         workspacePath,
       });
+
+      // Kick off background code-graph indexing now that the clone exists.
+      await this.indexQueue.add(
+        'index',
+        { projectId, repositoryId },
+        { attempts: 1, removeOnComplete: true },
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown clone error';
       await this.prisma.repository.update({

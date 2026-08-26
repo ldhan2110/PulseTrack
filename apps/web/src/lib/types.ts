@@ -584,6 +584,7 @@ export interface BugHistoryEntry {
 // ─── Repository Config ──────────────────────────────────────────────────────
 
 export type CloneStatus = 'pending' | 'cloning' | 'cloned' | 'failed';
+export type IndexStatus = 'pending' | 'indexing' | 'indexed' | 'failed';
 
 export interface Repository {
   id: string;
@@ -595,6 +596,8 @@ export interface Repository {
   branch: string | null;
   cloneStatus: CloneStatus;
   cloneError: string | null;
+  indexStatus: IndexStatus;
+  indexError: string | null;
   workspacePath: string | null;
 }
 

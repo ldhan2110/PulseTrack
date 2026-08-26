@@ -34,6 +34,16 @@ export class RepositoryConfigController {
     return this.service.add(projectId, dto);
   }
 
+  @Post(':repositoryId/pull')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'update')
+  pull(
+    @Param('projectId') projectId: string,
+    @Param('repositoryId') repositoryId: string,
+  ) {
+    return this.service.pull(projectId, repositoryId);
+  }
+
   @Delete(':repositoryId')
   @UseGuards(ProjectRolesGuard)
   @RequirePermission('projectSettings', 'update')

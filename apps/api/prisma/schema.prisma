@@ -595,6 +595,8 @@ model Repository {
   accessToken   String   // AES-256-GCM encrypted
   cloneStatus   String   @default("pending") // pending | cloning | cloned | failed
   cloneError    String?
+  indexStatus   String   @default("pending") // pending | indexing | indexed | failed
+  indexError    String?
   workspacePath String?
   branch        String?
   createdAt     DateTime @default(now())

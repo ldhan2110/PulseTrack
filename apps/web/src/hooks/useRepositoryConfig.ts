@@ -9,8 +9,10 @@ export function useRepositories(projectId: string) {
     queryFn: () => api.getRepositories(projectId),
     enabled: !!projectId,
     refetchInterval: (query) => {
-      const anyCloning = query.state.data?.some((r) => r.cloneStatus === 'cloning');
-      return anyCloning ? 3000 : false;
+      const busy = query.state.data?.some(
+        (r) => r.cloneStatus === 'cloning' || r.indexStatus === 'indexing',
+      );
+      return busy ? 3000 : false;
     },
   });
 }
@@ -32,6 +34,20 @@ export function useAddRepository(projectId: string) {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to add repository');
+    },
+  });
+}
+
+export function usePullRepository(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (repositoryId: string) => api.pullRepository(projectId, repositoryId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['repositories', projectId] });
+      toast.success('Pulled. Re-indexing started...');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }
