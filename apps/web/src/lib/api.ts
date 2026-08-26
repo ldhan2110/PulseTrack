@@ -38,6 +38,9 @@ import type {
   AiConfig,
   UpsertAiConfigPayload,
   UpdateProjectContextPayload,
+  Skill,
+  CreateSkillPayload,
+  UpdateSkillPayload,
   AiGenerationJobResult,
   BugAttachment,
   WorkflowKind,
@@ -397,6 +400,24 @@ export const api = {
   generateProjectContext: (projectId: string) =>
     request<{ projectContext: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
       method: 'POST',
+    }),
+
+  // ─── Skills ───────────────────────────────────────────────────────────────
+  getSkills: (projectId: string) =>
+    request<Skill[]>(`/projects/${projectId}/settings/skills`),
+  createSkill: (projectId: string, data: CreateSkillPayload) =>
+    request<Skill>(`/projects/${projectId}/settings/skills`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateSkill: (projectId: string, skillId: string, data: UpdateSkillPayload) =>
+    request<Skill>(`/projects/${projectId}/settings/skills/${skillId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteSkill: (projectId: string, skillId: string) =>
+    request<{ success: boolean }>(`/projects/${projectId}/settings/skills/${skillId}`, {
+      method: 'DELETE',
     }),
 
   // ─── Report Config ──────────────────────────────────────────────────────────

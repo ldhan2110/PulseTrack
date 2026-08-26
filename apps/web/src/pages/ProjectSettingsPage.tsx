@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WorkflowEditor } from '@/components/workflow/WorkflowEditor';
 import { RepositorySettingsCard } from '@/components/settings/RepositorySettingsCard';
 import { AiConfigCard } from '@/components/settings/AiConfigCard';
+import { SkillsSection } from '@/components/settings/SkillsSection';
 import { ReportSettingsCard } from '@/components/settings/ReportSettingsCard';
 import { RolesPermissionsTab } from '@/components/settings/RolesPermissionsTab';
 import { WikiConfigCard } from '@/components/settings/WikiConfigCard';
@@ -253,6 +254,7 @@ export function ProjectSettingsPage() {
         {canManage && (
           <TabsContent value="ai" className="space-y-6 mt-6">
             <AiConfigCard projectId={projectId} canManage={canManage} />
+            <SkillsSection projectId={projectId} canManage={canManage} />
           </TabsContent>
         )}
 

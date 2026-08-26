@@ -661,6 +661,33 @@ export interface UpsertAiConfigPayload {
   projectContext?: string;
 }
 
+export interface Skill {
+  id: string;
+  projectId: string;
+  key: string;
+  name: string;
+  description: string | null;
+  content: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSkillPayload {
+  key: string;
+  name: string;
+  description?: string;
+  content: string;
+  enabled?: boolean;
+}
+
+export interface UpdateSkillPayload {
+  name?: string;
+  description?: string;
+  content?: string;
+  enabled?: boolean;
+}
+
 export interface UpdateProjectContextPayload {
   projectContext: string;
 }

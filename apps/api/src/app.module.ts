@@ -20,6 +20,7 @@ import { WorkflowModule } from './workflow/workflow.module';
 import { RepositoryConfigModule } from './repository-config/repository-config.module';
 import { BranchesModule } from './branches/branches.module';
 import { AiConfigModule } from './ai-config/ai-config.module';
+import { SkillsModule } from './skills/skills.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 import { WatchersModule } from './watchers/watchers.module';
@@ -61,6 +62,7 @@ import { AgentsModule } from './agents/agents.module';
     RepositoryConfigModule,
     BranchesModule,
     AiConfigModule,
+SkillsModule,
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,
