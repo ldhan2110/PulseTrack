@@ -25,11 +25,11 @@ interface AutomationPanelProps {
   projectId: string;
 }
 
-export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
+export function AutomationPanel({ testCaseId, projectId }: AutomationPanelProps) {
   const { data: automation, isLoading } = useTestAutomation(testCaseId);
   const upsert = useUpsertAutomation(testCaseId);
   const run = useAutomationRun(testCaseId);
-  const generate = useGenerateScript(testCaseId);
+  const generate = useGenerateScript(testCaseId, projectId);
 
   const [localScript, setLocalScript] = useState<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,13 +63,11 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
   }, [run.cancelRun]);
 
   const handleGenerate = useCallback(() => {
-    generate.mutate(undefined, {
-      onSuccess: ({ script }) => {
-        setLocalScript(script);
-        upsert.mutate({ script });
-      },
-    });
-  }, [generate, upsert]);
+    // Worker auto-saves the script to the DB on completion; drop any local edit
+    // so the freshly-saved script loads via the refetched automation query.
+    setLocalScript(null);
+    generate.generate.mutate();
+  }, [generate]);
 
   if (isLoading) {
     return (
@@ -114,7 +112,8 @@ export function AutomationPanel({ testCaseId }: AutomationPanelProps) {
         onStop={handleStop}
         isRunPending={run.triggerRun.isPending}
         onGenerate={handleGenerate}
-        isGeneratePending={generate.isPending}
+        isGeneratePending={generate.isActive}
+        generateStep={generate.step}
       />
     </div>
   );

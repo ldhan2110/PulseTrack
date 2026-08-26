@@ -32,7 +32,7 @@ export class TestcaseScriptAgent implements Agent {
     private readonly config: ConfigService,
   ) {}
 
-  async run(ctx: unknown): Promise<string> {
+  async run(ctx: unknown, onStep?: (line: string) => void): Promise<string> {
     const { testCaseId } = ctx as TestcaseScriptCtx;
 
     const testCase = await this.prisma.testCase.findUnique({
@@ -64,17 +64,29 @@ export class TestcaseScriptAgent implements Agent {
           }),
         ],
       });
-      const res = await agent.invoke(
+      let text = '';
+      let writeAnnounced = false;
+      const stream = await agent.streamEvents(
         { messages: [{ role: 'user', content: buildUserPrompt(testCase) }] },
         // ponytail: recursionLimit=60 ≈ old 30-step cap; raise if flows truncate.
-        { recursionLimit: 60 },
+        { version: 'v2', recursionLimit: 60 },
       );
-      const msgs = res.messages;
-      const last = msgs[msgs.length - 1];
-      const text =
-        typeof last.content === 'string'
-          ? last.content
-          : last.content.map((c: any) => (c.type === 'text' ? c.text : '')).join('');
+      for await (const ev of stream) {
+        if (ev.event === 'on_tool_start') {
+          onStep?.('🌐 Inspecting page…');
+        } else if (ev.event === 'on_chat_model_start') {
+          text = '';
+        } else if (ev.event === 'on_chat_model_stream') {
+          if (!writeAnnounced) {
+            writeAnnounced = true;
+            onStep?.('✍️ Writing script…');
+          }
+          const content = ev.data?.chunk?.content;
+          if (typeof content === 'string') text += content;
+          else if (Array.isArray(content))
+            text += content.map((c: any) => (c.type === 'text' ? c.text : '')).join('');
+        }
+      }
       return stripFences(text);
     } finally {
       await close();

@@ -11,6 +11,7 @@ interface AutomationToolbarProps {
   isRunPending: boolean;
   onGenerate?: () => void;
   isGeneratePending?: boolean;
+  generateStep?: string;
 }
 
 function formatElapsed(ms: number): string {
@@ -35,6 +36,7 @@ export function AutomationToolbar({
   isRunPending,
   onGenerate,
   isGeneratePending,
+  generateStep,
 }: AutomationToolbarProps) {
   const statusInfo = STATUS_LABELS[status] ?? STATUS_LABELS.idle;
 
@@ -47,6 +49,9 @@ export function AutomationToolbar({
         <span className={statusInfo.className}>{statusInfo.text}</span>
         {(isRunning || elapsed > 0) && (
           <span className="text-muted-foreground">{formatElapsed(elapsed)}</span>
+        )}
+        {isGeneratePending && generateStep && (
+          <span className="text-muted-foreground">{generateStep}</span>
         )}
       </div>
 

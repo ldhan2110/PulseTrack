@@ -10,7 +10,7 @@ interface JobData {
   projectId: string;
 }
 
-@Processor('ai-project-context', { concurrency: 1 })
+@Processor('ai-project-context', { concurrency: 3 })
 export class AiConfigContextProcessor extends WorkerHost {
   private readonly logger = new Logger(AiConfigContextProcessor.name);
 

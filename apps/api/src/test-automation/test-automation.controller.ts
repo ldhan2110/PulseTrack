@@ -11,7 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TestAutomationService } from './test-automation.service';
 import { AutomationRunService } from './automation-run.service';
-import { AgentsService } from '../agents/agents.service';
+import { TestcaseScriptService } from './testcase-script.service';
 import { UpsertAutomationDto } from './dto/upsert-automation.dto';
 
 @Controller('test-automation')
@@ -20,13 +20,17 @@ export class TestAutomationController {
   constructor(
     private readonly automationService: TestAutomationService,
     private readonly runService: AutomationRunService,
-    private readonly agents: AgentsService,
+    private readonly scriptService: TestcaseScriptService,
   ) {}
 
   @Post(':testCaseId/generate-script')
-  async generateScript(@Param('testCaseId') testCaseId: string) {
-    const script = await this.agents.run('testcase-script', { testCaseId });
-    return { script };
+  generateScript(@Param('testCaseId') testCaseId: string) {
+    return this.scriptService.enqueue(testCaseId);
+  }
+
+  @Get(':testCaseId/generate-script/:jobId')
+  getScriptJob(@Param('jobId') jobId: string) {
+    return this.scriptService.getResult(jobId);
   }
 
   @Post(':testCaseId')

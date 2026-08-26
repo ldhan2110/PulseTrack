@@ -1031,9 +1031,13 @@ export const api = {
     request<AutomationRun[]>(`/test-automation/${testCaseId}/runs`),
 
   generateAutomationScript: (testCaseId: string) =>
-    request<{ script: string }>(
+    request<{ jobId: string }>(
       `/test-automation/${testCaseId}/generate-script`,
       { method: 'POST' },
+    ),
+  getScriptJob: (testCaseId: string, jobId: string) =>
+    request<{ status: 'waiting' | 'active' | 'completed' | 'failed'; step?: string; error?: string }>(
+      `/test-automation/${testCaseId}/generate-script/${jobId}`,
     ),
 
   // ─── Project Variables ────────────────────────────────────────

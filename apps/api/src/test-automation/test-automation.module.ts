@@ -8,6 +8,8 @@ import {
   LiveAutomationProcessor,
   ExecutionAutomationProcessor,
 } from './automation-run.processor';
+import { TestcaseScriptProcessor } from './testcase-script.processor';
+import { TestcaseScriptService } from './testcase-script.service';
 import { ProjectVariablesService } from './project-variables.service';
 import { TestAutomationController } from './test-automation.controller';
 import { ProjectVariablesController } from './project-variables.controller';
@@ -19,6 +21,7 @@ import { ProjectVariablesController } from './project-variables.controller';
     BullModule.registerQueue(
       { name: 'test-automation-live' },
       { name: 'test-automation-execution' },
+      { name: 'ai-testcase-script' },
     ),
   ],
   controllers: [TestAutomationController, ProjectVariablesController],
@@ -27,6 +30,8 @@ import { ProjectVariablesController } from './project-variables.controller';
     AutomationRunService,
     LiveAutomationProcessor,
     ExecutionAutomationProcessor,
+    TestcaseScriptProcessor,
+    TestcaseScriptService,
     ProjectVariablesService,
   ],
   exports: [TestAutomationService, AutomationRunService],
