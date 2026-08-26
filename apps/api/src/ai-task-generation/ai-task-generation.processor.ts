@@ -34,8 +34,17 @@ export class AiTaskGenerationProcessor extends WorkerHost {
     });
 
     try {
+      const displayLines: string[] = [];
+      const onStep = (line: string) => {
+        displayLines.push(line);
+        void job.updateProgress({ step: 'generating', displayLines });
+        this.notifications.notifyProject(projectId, 'ai-generation:stream', {
+          jobId,
+          displayLines,
+        });
+      };
       const ctx: BaUserStoryCtx = { projectId, prompt, breakIntoSubTasks, documents };
-      const tasks = (await this.agents.run('ba-user-story', ctx)) as GeneratedTask[];
+      const tasks = (await this.agents.run('ba-user-story', ctx, onStep)) as GeneratedTask[];
       this.notifications.notifyProject(projectId, 'ai-generation:completed', {
         jobId,
         taskCount: tasks.length,

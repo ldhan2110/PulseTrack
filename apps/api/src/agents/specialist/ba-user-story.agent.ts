@@ -24,6 +24,26 @@ export interface GeneratedTask {
   subTasks?: GeneratedTask[];
 }
 
+/** Static, arg-free progress labels keyed by tool name. Unknown → generic. */
+const TOOL_LABELS: Record<string, string> = {
+  load_skill: '📖 Loading a project skill…',
+  list_repos: '🔍 Scanning the repository…',
+  query: '🗄 Querying the code domain…',
+  cypher: '🗄 Querying the code domain…',
+  context: '🔍 Reading code context…',
+  detect_changes: '🔍 Scanning the repository…',
+  check: '🔍 Scanning the repository…',
+  impact: '🔍 Analyzing impact…',
+  explain: '🔍 Reading code context…',
+  pdg_query: '🗄 Querying the code domain…',
+  route_map: '🗺 Mapping routes…',
+  tool_map: '🗺 Mapping tools…',
+  shape_check: '🔍 Scanning the repository…',
+  api_impact: '🔍 Analyzing impact…',
+  group_list: '🔍 Scanning the repository…',
+  trace: '🔍 Tracing code paths…',
+};
+
 /** Pull the first fenced JSON block (or the raw text) and parse it as tasks. */
 function parseTasks(text: string): GeneratedTask[] {
   const t = text.trim();
@@ -39,6 +59,15 @@ function parseTasks(text: string): GeneratedTask[] {
     throw new BadRequestException('AI task output was not a list.');
   }
   return parsed as GeneratedTask[];
+}
+
+/** Non-throwing parse for salvage: returns tasks or null when unparseable. */
+function tryParseTasks(text: string): GeneratedTask[] | null {
+  try {
+    return parseTasks(text);
+  } catch {
+    return null;
+  }
 }
 
 /** Flatten nested subTasks into top-level tasks (used when breakIntoSubTasks is false). */
@@ -61,7 +90,7 @@ export class BaUserStoryAgent implements Agent {
     private readonly config: ConfigService,
   ) {}
 
-  async run(ctx: unknown): Promise<GeneratedTask[]> {
+  async run(ctx: unknown, onStep?: (line: string) => void): Promise<GeneratedTask[]> {
     const { projectId, prompt, breakIntoSubTasks, documents } = ctx as BaUserStoryCtx;
 
     const cfg = await this.prisma.aiConfig.findUnique({ where: { projectId } });
@@ -101,30 +130,63 @@ export class BaUserStoryAgent implements Agent {
         tools: [...skillTools, ...(gitnexusTools as any[])],
         systemPrompt,
       });
-      const res = await agent.invoke(
-        {
-          messages: [
-            {
-              role: 'user',
-              content: buildUserPrompt({
-                prompt,
-                projectContext: cfg.projectContext,
-                breakIntoSubTasks,
-                documents,
-              }),
-            },
-          ],
-        },
-        { recursionLimit: 40 },
-      );
-      const msgs = res.messages;
-      const last = msgs[msgs.length - 1];
-      const text =
-        typeof last.content === 'string'
-          ? last.content
-          : last.content.map((c: any) => (c.type === 'text' ? c.text : '')).join('');
-      const tasks = parseTasks(text);
-      return breakIntoSubTasks ? tasks : flatten(tasks);
+      const input = {
+        messages: [
+          {
+            role: 'user',
+            content: buildUserPrompt({
+              prompt,
+              projectContext: cfg.projectContext,
+              breakIntoSubTasks,
+              documents,
+            }),
+          },
+        ],
+      };
+
+      // Latest assistant text, accumulated for salvage on limit/timeout. Never emitted.
+      let lastText = '';
+      let genAnnounced = false;
+      try {
+        const stream = await agent.streamEvents(input, {
+          version: 'v2',
+          recursionLimit: 120,
+          signal: AbortSignal.timeout(5 * 60_000),
+        });
+        for await (const ev of stream) {
+          if (ev.event === 'on_tool_start') {
+            onStep?.(TOOL_LABELS[ev.name] ?? '⚙ Working…');
+          } else if (ev.event === 'on_chat_model_start') {
+            // New model turn — keep only the latest call's text for parse/salvage.
+            lastText = '';
+          } else if (ev.event === 'on_chat_model_stream') {
+            if (!genAnnounced) {
+              genAnnounced = true;
+              onStep?.('✍️ Generating tasks…');
+            }
+            const chunk = ev.data?.chunk;
+            const content = chunk?.content;
+            if (typeof content === 'string') lastText += content;
+            else if (Array.isArray(content))
+              lastText += content.map((c: any) => (c.type === 'text' ? c.text : '')).join('');
+          }
+        }
+        const tasks = parseTasks(lastText);
+        return breakIntoSubTasks ? tasks : flatten(tasks);
+      } catch (err: any) {
+        const isLimit =
+          err?.name === 'GraphRecursionError' ||
+          err?.name === 'AbortError' ||
+          /recursion/i.test(err?.message ?? '');
+        if (isLimit) {
+          const salvaged = tryParseTasks(lastText);
+          if (salvaged) return breakIntoSubTasks ? salvaged : flatten(salvaged);
+          throw new BadRequestException(
+            'Task generation stopped: took too long or too many steps.',
+          );
+        }
+        throw err;
+      }
     } finally {
       if (closeGitnexus) await closeGitnexus();
     }

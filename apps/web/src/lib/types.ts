@@ -743,7 +743,8 @@ export interface AiGenerationFailedEvent {
 
 export interface AiGenerationStreamEvent {
   jobId: string;
-  text: string;
+  displayLines?: string[];
+  text?: string;
 }
 
 // ─── AI Test Case Generation ────────────────────────────────────────────────

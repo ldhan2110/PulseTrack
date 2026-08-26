@@ -22,9 +22,9 @@ export class AgentsService {
     this.registry.set(agent.kind, agent);
   }
 
-  run(kind: string, ctx: unknown): Promise<unknown> {
+  run(kind: string, ctx: unknown, onStep?: (line: string) => void): Promise<unknown> {
     const agent = this.registry.get(kind);
     if (!agent) throw new NotFoundException(`Unknown agent kind: ${kind}`);
-    return agent.run(ctx);
+    return agent.run(ctx, onStep);
   }
 }

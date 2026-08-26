@@ -10,6 +10,18 @@ import { SYSTEM_PROMPT, buildUserPrompt } from '../prompts/project-context.promp
 
 const CONTEXT_MAX_LENGTH = 10000;
 
+/** Static, arg-free progress labels keyed by tool name. Unknown → generic. */
+const TOOL_LABELS: Record<string, string> = {
+  list_repos: '🔍 Scanning the repository…',
+  query: '🗄 Querying the code domain…',
+  cypher: '🗄 Querying the code domain…',
+  context: '🔍 Reading code context…',
+  detect_changes: '🔍 Scanning the repository…',
+  impact: '🔍 Analyzing impact…',
+  explain: '🔍 Reading code context…',
+  trace: '🔍 Tracing code paths…',
+};
+
 export interface ProjectContextCtx {
   projectId: string;
 }
@@ -23,7 +35,7 @@ export class ProjectContextAgent implements Agent {
     private readonly config: ConfigService,
   ) {}
 
-  async run(ctx: unknown): Promise<string> {
+  async run(ctx: unknown, onStep?: (line: string) => void): Promise<string> {
     const { projectId } = ctx as ProjectContextCtx;
 
     const cfg = await this.prisma.aiConfig.findUnique({ where: { projectId } });
@@ -58,16 +70,28 @@ export class ProjectContextAgent implements Agent {
               `${indexedNames.join(', ')}. Pass the repo name as the \`repo\` argument ` +
               `to inspect structure, call graphs, and impact before writing the summary.`,
           });
-          const res = await agent.invoke(
+          let text = '';
+          let writeAnnounced = false;
+          const stream = await agent.streamEvents(
             { messages: [{ role: 'user', content: buildUserPrompt(fingerprints) }] },
-            { recursionLimit: 40 },
+            { version: 'v2', recursionLimit: 40 },
           );
-          const msgs = res.messages;
-          const last = msgs[msgs.length - 1];
-          const text =
-            typeof last.content === 'string'
-              ? last.content
-              : last.content.map((c: any) => (c.type === 'text' ? c.text : '')).join('');
+          for await (const ev of stream) {
+            if (ev.event === 'on_tool_start') {
+              onStep?.(TOOL_LABELS[ev.name] ?? '⚙ Working…');
+            } else if (ev.event === 'on_chat_model_start') {
+              text = '';
+            } else if (ev.event === 'on_chat_model_stream') {
+              if (!writeAnnounced) {
+                writeAnnounced = true;
+                onStep?.('✍️ Writing context…');
+              }
+              const content = ev.data?.chunk?.content;
+              if (typeof content === 'string') text += content;
+              else if (Array.isArray(content))
+                text += content.map((c: any) => (c.type === 'text' ? c.text : '')).join('');
+            }
+          }
           return text.slice(0, CONTEXT_MAX_LENGTH);
         } finally {
           await close();
@@ -77,6 +101,7 @@ export class ProjectContextAgent implements Agent {
       }
     }
 
+    onStep?.('🔍 Analyzing repositories…');
     const response = await model.invoke([
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: buildUserPrompt(fingerprints) },

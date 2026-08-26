@@ -1,17 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, maskToken } from '../common/encryption.util';
-import { AgentsService } from '../agents/agents.service';
-import type { ProjectContextCtx } from '../agents/specialist/project-context.agent';
 import { UpsertAiConfigDto } from './dto/upsert-ai-config.dto';
+
+type ContextJobStatus = 'waiting' | 'active' | 'completed' | 'failed';
+
+export interface ContextJobResult {
+  status: ContextJobStatus;
+  step?: string;
+  error?: string;
+}
 
 @Injectable()
 export class AiConfigService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly agents: AgentsService,
+    @InjectQueue('ai-project-context') private readonly contextQueue: Queue,
   ) {}
 
   private get encryptionKey(): string {
@@ -75,15 +83,33 @@ export class AiConfigService {
     return { ...updated, apiKey: maskToken(updated.apiKey) };
   }
 
-  async generateContext(projectId: string): Promise<{ projectContext: string }> {
-    const ctx: ProjectContextCtx = { projectId };
-    const projectContext = (await this.agents.run('project-context', ctx)) as string;
+  /**
+   * Enqueue a context-generation job. Deterministic jobId `ctx-<projectId>` +
+   * removeOnComplete/Fail means a re-click while a run is active resolves to the
+   * same job (BullMQ rejects a duplicate id), and a new run is allowed once the
+   * previous one finished. Returns the active/new jobId either way.
+   */
+  async generateContext(projectId: string): Promise<{ jobId: string }> {
+    const jobId = `ctx-${projectId}`;
+    await this.contextQueue.add(
+      'generate',
+      { projectId },
+      { jobId, removeOnComplete: true, removeOnFail: true },
+    );
+    return { jobId };
+  }
 
-    await this.prisma.aiConfig.update({
-      where: { projectId },
-      data: { projectContext },
-    });
+  async getContextJobResult(jobId: string): Promise<ContextJobResult> {
+    const job = await this.contextQueue.getJob(jobId);
+    if (!job) return { status: 'failed', error: 'Job not found' };
 
-    return { projectContext };
+    const state = await job.getState();
+    if (state === 'completed') return { status: 'completed' };
+    if (state === 'failed') return { status: 'failed', error: job.failedReason ?? 'Generation failed' };
+    if (state === 'active') {
+      const progress = job.progress as { step?: string };
+      return { status: 'active', step: progress?.step };
+    }
+    return { status: 'waiting' };
   }
 }

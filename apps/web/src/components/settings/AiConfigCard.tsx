@@ -35,7 +35,8 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   const { data: repoConfig } = useRepositoryConfig(projectId);
   const upsert = useUpsertAiConfig(projectId);
   const updateContext = useUpdateProjectContext(projectId);
-  const generateContext = useGenerateProjectContext(projectId);
+  const { generate: generateContext, isActive: isGenerating, step: generateStep } =
+    useGenerateProjectContext(projectId);
 
   const [provider, setProvider] = useState<AiProvider>('claude');
   const [model, setModel] = useState('claude-sonnet-4-6');
@@ -88,18 +89,19 @@ export function AiConfigCard({ projectId, canManage }: Props) {
   };
 
   const handleGenerate = () => {
-    generateContext.mutate(undefined, {
-      onSuccess: (data) => {
-        setProjectContext(data.projectContext);
-      },
-    });
+    generateContext.mutate();
   };
+
+  // When a run ends, the hook refetches aiConfig — reload the persisted context.
+  useEffect(() => {
+    if (!isGenerating) setInitialized(false);
+  }, [isGenerating]);
 
   const canGenerate =
     repoConfig?.cloneStatus === 'cloned' &&
     config !== null &&
     config !== undefined &&
-    !generateContext.isPending;
+    !isGenerating;
 
   return (
     <Card>
@@ -245,10 +247,15 @@ export function AiConfigCard({ projectId, canManage }: Props) {
                 }
               >
                 <Sparkles className="size-4 mr-1" />
-                {generateContext.isPending ? 'Generating...' : 'Generate with AI'}
+                {isGenerating ? 'Generating...' : 'Generate with AI'}
               </Button>
             )}
           </div>
+          {isGenerating && generateStep && (
+            <p className="text-xs text-muted-foreground truncate" aria-live="polite">
+              {generateStep}
+            </p>
+          )}
           <Textarea
             id="projectContext"
             value={projectContext}
@@ -259,7 +266,7 @@ export function AiConfigCard({ projectId, canManage }: Props) {
             }}
             placeholder="Describe your project's tech stack, architecture, and conventions..."
             rows={5}
-            disabled={!canManage || generateContext.isPending}
+            disabled={!canManage || isGenerating}
           />
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Provide context about your codebase for better AI results</span>

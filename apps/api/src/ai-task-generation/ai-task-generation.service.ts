@@ -15,6 +15,7 @@ export interface AiGenerationJobResult {
   step?: string;
   tasks?: GeneratedTask[];
   error?: string;
+  displayLines?: string[];
 }
 
 /** Extract plain text from uploaded documents. txt/md only; binary formats skipped. */
@@ -58,7 +59,8 @@ export class AiTaskGenerationService {
       return { status: 'failed', error: job.failedReason ?? 'Generation failed' };
     }
     if (state === 'active') {
-      return { status: 'active', step: (job.progress as { step?: string })?.step };
+      const progress = job.progress as { step?: string; displayLines?: string[] };
+      return { status: 'active', step: progress?.step, displayLines: progress?.displayLines };
     }
     return { status: 'waiting' };
   }

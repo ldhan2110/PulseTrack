@@ -22,13 +22,14 @@ describe('AiConfigService', () => {
     getOrThrow: vi.fn().mockReturnValue(ENCRYPTION_KEY),
   };
 
-  const mockAgents = {
-    run: vi.fn(),
+  const mockQueue = {
+    add: vi.fn(),
+    getJob: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new AiConfigService(mockPrisma as any, mockConfig as any, mockAgents as any);
+    service = new AiConfigService(mockPrisma as any, mockConfig as any, mockQueue as any);
   });
 
   describe('findByProjectId', () => {
@@ -82,17 +83,47 @@ describe('AiConfigService', () => {
   });
 
   describe('generateContext', () => {
-    it('delegates to the project-context agent and persists', async () => {
-      mockAgents.run.mockResolvedValue('generated context');
+    it('enqueues with a deterministic per-project jobId and returns it', async () => {
+      mockQueue.add.mockResolvedValue({ id: 'ctx-proj-1' });
 
       const result = await service.generateContext('proj-1');
 
-      expect(mockAgents.run).toHaveBeenCalledWith('project-context', { projectId: 'proj-1' });
-      expect(result.projectContext).toBe('generated context');
-      expect(mockPrisma.aiConfig.update).toHaveBeenCalledWith({
-        where: { projectId: 'proj-1' },
-        data: { projectContext: 'generated context' },
+      expect(result.jobId).toBe('ctx-proj-1');
+      expect(mockQueue.add).toHaveBeenCalledWith(
+        'generate',
+        { projectId: 'proj-1' },
+        { jobId: 'ctx-proj-1', removeOnComplete: true, removeOnFail: true },
+      );
+    });
+
+    it('re-enqueue while active resolves to the same jobId (dedup)', async () => {
+      // BullMQ keeps the existing job when the deterministic id is already present;
+      // add() resolves to that same job, so the returned jobId is stable.
+      mockQueue.add.mockResolvedValue({ id: 'ctx-proj-1' });
+
+      const first = await service.generateContext('proj-1');
+      const second = await service.generateContext('proj-1');
+
+      expect(first.jobId).toBe('ctx-proj-1');
+      expect(second.jobId).toBe('ctx-proj-1');
+    });
+  });
+
+  describe('getContextJobResult', () => {
+    it('returns active status with the latest step', async () => {
+      mockQueue.getJob.mockResolvedValue({
+        getState: vi.fn().mockResolvedValue('active'),
+        progress: { step: '🔍 Scanning the repository…' },
       });
+
+      const r = await service.getContextJobResult('ctx-proj-1');
+      expect(r).toEqual({ status: 'active', step: '🔍 Scanning the repository…' });
+    });
+
+    it('reports a removed (finished) job as not found', async () => {
+      mockQueue.getJob.mockResolvedValue(null);
+      const r = await service.getContextJobResult('ctx-proj-1');
+      expect(r.status).toBe('failed');
     });
   });
 });

@@ -402,9 +402,13 @@ export const api = {
       body: JSON.stringify(data),
     }),
   generateProjectContext: (projectId: string) =>
-    request<{ projectContext: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
+    request<{ jobId: string }>(`/projects/${projectId}/settings/ai/context/generate`, {
       method: 'POST',
     }),
+  getProjectContextJob: (projectId: string, jobId: string) =>
+    request<{ status: 'waiting' | 'active' | 'completed' | 'failed'; step?: string; error?: string }>(
+      `/projects/${projectId}/settings/ai/context/generate/${jobId}`,
+    ),
 
   // ─── Skills ───────────────────────────────────────────────────────────────
   getSkills: (projectId: string) =>

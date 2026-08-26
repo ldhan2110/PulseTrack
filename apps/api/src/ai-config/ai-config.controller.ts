@@ -54,4 +54,11 @@ export class AiConfigController {
   generateContext(@Param('projectId') projectId: string) {
     return this.service.generateContext(projectId);
   }
+
+  @Get('context/generate/:jobId')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'update')
+  getContextJob(@Param('jobId') jobId: string) {
+    return this.service.getContextJobResult(jobId);
+  }
 }
