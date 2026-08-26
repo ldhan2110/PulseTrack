@@ -10,7 +10,11 @@ import { MultiServerMCPClient } from '@langchain/mcp-adapters';
 export async function gitnexusMcpTools() {
   const client = new MultiServerMCPClient({
     mcpServers: {
-      gitnexus: { transport: 'stdio', command: 'gitnexus', args: ['mcp'] },
+      gitnexus: {
+        transport: 'stdio',
+        command: process.env.GITNEXUS_BIN || 'gitnexus',
+        args: ['mcp'],
+      },
     },
   });
   const tools = await client.getTools();
