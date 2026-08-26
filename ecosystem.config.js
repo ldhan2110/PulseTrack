@@ -5,11 +5,7 @@ module.exports = {
       name: 'pm-api',
       cwd: './apps/api',
       script: 'dist/src/main.js',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 8081,
-        GITNEXUS_BIN: '/home/cps/.nvm/versions/node/v22.23.2/bin/gitnexus',
-      },
+      env: { NODE_ENV: 'production', PORT: 8081 },
     },
     {
       name: 'pm-web',
