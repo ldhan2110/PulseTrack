@@ -68,8 +68,8 @@ export class TestcaseScriptAgent implements Agent {
       let writeAnnounced = false;
       const stream = await agent.streamEvents(
         { messages: [{ role: 'user', content: buildUserPrompt(testCase) }] },
-        // ponytail: recursionLimit=60 ≈ old 30-step cap; raise if flows truncate.
-        { version: 'v2', recursionLimit: 60 },
+        // ponytail: recursionLimit raised 60→150, complex multi-step test flows hit 60.
+        { version: 'v2', recursionLimit: 150 },
       );
       for await (const ev of stream) {
         if (ev.event === 'on_tool_start') {
