@@ -638,7 +638,7 @@ model AiConfig {
   apiKey         String   // AES-256-GCM encrypted
   baseUrl        String?
   adapterType    String?  // openai | anthropic | gemini — wire protocol for custom provider
-  projectContext String?  @db.VarChar(2000)
+  projectContext String?  @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

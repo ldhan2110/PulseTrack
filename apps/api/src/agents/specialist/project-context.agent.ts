@@ -8,7 +8,7 @@ import { modelFor } from '../ai-client';
 import { codegraphMcpTools } from '../mcp/codegraph-mcp.client';
 import { SYSTEM_PROMPT, buildUserPrompt } from '../prompts/project-context.prompt';
 
-const CONTEXT_MAX_LENGTH = 2000; // matches AiConfig.projectContext @db.VarChar(2000)
+const CONTEXT_MAX_LENGTH = 10000; // sanity cap; AiConfig.projectContext is @db.Text (unbounded)
 
 /** Static, arg-free progress labels keyed by tool name. Unknown → generic. */
 const TOOL_LABELS: Record<string, string> = {

@@ -18,8 +18,7 @@ User, Role, Carrier, Route, Invoice. Extract the ones that actually exist in
 THIS repo (from entity/model names, tables, key modules), and explain each in
 business terms.
 
-Write a SHORT summary (max ~1800 characters — a hard DB limit of 2000 applies,
-so stay under it). Concise, no long prose, no code
+Write a SHORT summary (max ~2500 characters). Concise, no long prose, no code
 paths, no per-workflow walkthroughs. Just enough to orient a downstream task:
 
 - Domain: what industry/problem this serves + who the users are (1-2 sentences).
