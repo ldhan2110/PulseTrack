@@ -1,13 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Agent } from './agent.interface';
 import { TestcaseScriptAgent } from './specialist/testcase-script.agent';
+import { ProjectContextAgent } from './specialist/project-context.agent';
 
 @Injectable()
 export class AgentsService {
   private readonly registry = new Map<string, Agent>();
 
-  constructor(testcaseScript: TestcaseScriptAgent) {
+  constructor(
+    testcaseScript: TestcaseScriptAgent,
+    projectContext: ProjectContextAgent,
+  ) {
     this.register(testcaseScript);
+    this.register(projectContext);
   }
 
   private register(agent: Agent) {

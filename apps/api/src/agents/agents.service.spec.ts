@@ -9,7 +9,12 @@ describe('AgentsService', () => {
     run: vi.fn().mockResolvedValue('script'),
   } as unknown as TestcaseScriptAgent;
 
-  const service = new AgentsService(stubAgent);
+  const stubProjectContext = {
+    kind: 'project-context',
+    run: vi.fn().mockResolvedValue('context'),
+  } as unknown as TestcaseScriptAgent;
+
+  const service = new AgentsService(stubAgent, stubProjectContext as any);
 
   it('dispatches to the registered agent', async () => {
     await expect(service.run('testcase-script', { a: 1 })).resolves.toBe('script');

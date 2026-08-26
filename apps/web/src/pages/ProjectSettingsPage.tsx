@@ -88,6 +88,7 @@ export function ProjectSettingsPage() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           {canManage && <TabsTrigger value="workflow">Workflow</TabsTrigger>}
+          {canManage && <TabsTrigger value="ai">Agent</TabsTrigger>}
           {can('members', 'update') && <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>}
           {canManage && <TabsTrigger value="wiki">Wiki</TabsTrigger>}
         </TabsList>
@@ -228,9 +229,6 @@ export function ProjectSettingsPage() {
           {/* Repository Settings Card */}
           <RepositorySettingsCard projectId={projectId} canManage={canManage} />
 
-          {/* AI Configuration Card */}
-          <AiConfigCard projectId={projectId} canManage={canManage} />
-
           {/* Report Settings Card */}
           <ReportSettingsCard projectId={projectId} canManage={canManage} />
         </TabsContent>
@@ -249,6 +247,12 @@ export function ProjectSettingsPage() {
                 <WorkflowEditor projectId={projectId} canManage={canManage} kind="BUG" />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+        )}
+
+        {canManage && (
+          <TabsContent value="ai" className="space-y-6 mt-6">
+            <AiConfigCard projectId={projectId} canManage={canManage} />
           </TabsContent>
         )}
 
