@@ -3,6 +3,7 @@ import {
   Get,
   Put,
   Patch,
+  Post,
   Param,
   Body,
   UseGuards,
@@ -45,5 +46,12 @@ export class AiConfigController {
     @Body() dto: UpdateProjectContextDto,
   ) {
     return this.service.updateContext(projectId, dto.projectContext);
+  }
+
+  @Post('context/generate')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'update')
+  generateContext(@Param('projectId') projectId: string) {
+    return this.service.generateContext(projectId);
   }
 }

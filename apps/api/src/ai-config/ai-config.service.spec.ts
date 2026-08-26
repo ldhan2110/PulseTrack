@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AiConfigService } from './ai-config.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
+
+const mockInvoke = vi.fn();
+vi.mock('../agents/ai-client', () => ({
+  modelFor: () => ({ invoke: mockInvoke }),
+}));
+vi.mock('./repo-fingerprint.util', () => ({
+  buildRepoFingerprint: vi.fn(async (path: string, name: string) =>
+    path ? `### Repository: ${name}` : null,
+  ),
+}));
 
 describe('AiConfigService', () => {
   let service: AiConfigService;
@@ -10,6 +20,10 @@ describe('AiConfigService', () => {
     aiConfig: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
+      update: vi.fn(),
+    },
+    repository: {
+      findMany: vi.fn(),
     },
   };
 
@@ -70,6 +84,29 @@ describe('AiConfigService', () => {
     it('throws NotFoundException when config does not exist', async () => {
       mockPrisma.aiConfig.findUnique.mockResolvedValue(null);
       await expect(service.updateContext('proj-1', 'New context')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('generateContext', () => {
+    it('calls the model once, truncates to 10k, and persists', async () => {
+      mockPrisma.aiConfig.findUnique.mockResolvedValue({ id: 'ac-1', projectId: 'proj-1', provider: 'claude', model: 'm', apiKey: 'enc' });
+      mockPrisma.repository.findMany.mockResolvedValue([{ name: 'api', cloneStatus: 'cloned', workspacePath: '/ws/api' }]);
+      mockInvoke.mockResolvedValue({ content: 'x'.repeat(15000) });
+
+      const result = await service.generateContext('proj-1');
+
+      expect(mockInvoke).toHaveBeenCalledOnce();
+      expect(result.projectContext).toHaveLength(10000);
+      expect(mockPrisma.aiConfig.update).toHaveBeenCalledWith({
+        where: { projectId: 'proj-1' },
+        data: { projectContext: 'x'.repeat(10000) },
+      });
+    });
+
+    it('throws BadRequestException when no cloned repos', async () => {
+      mockPrisma.aiConfig.findUnique.mockResolvedValue({ id: 'ac-1', projectId: 'proj-1', provider: 'claude', model: 'm', apiKey: 'enc' });
+      mockPrisma.repository.findMany.mockResolvedValue([]);
+      await expect(service.generateContext('proj-1')).rejects.toThrow(BadRequestException);
     });
   });
 });

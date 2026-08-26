@@ -401,7 +401,7 @@ export const api = {
 
   // ─── Report Config ──────────────────────────────────────────────────────────
   getReportConfig: (projectId: string) =>
-    request<ReportConfig | null>(`/projects/${projectId}/settings/report`),
+    request<ReportConfig | null>(`/projects/${projectId}/settings/report`).then((r) => r ?? null),
   upsertReportConfig: (projectId: string, data: UpsertReportConfigPayload) =>
     request<ReportConfig>(`/projects/${projectId}/settings/report`, {
       method: 'PUT',
