@@ -29,7 +29,7 @@ services:
     image: mcr.microsoft.com/playwright:latest
     # ponytail: image bundles chromium-1129 but mcp 0.0.79 wants 1237 — install the
     # matching browser into a persistent volume once. Bump both together on upgrade.
-    command: ["sh", "-c", "npx -y playwright-core@1.63.0-alpha-2026-08-05 install chromium && npx -y @playwright/mcp@0.0.79 --headless --browser chromium --host 0.0.0.0 --port 8931"]
+    command: ["sh", "-c", "npx -y playwright-core@1.63.0-alpha-2026-08-05 install chromium && npx -y @playwright/mcp@0.0.79 --headless --browser chromium --isolated --host 0.0.0.0 --port 8931"]
     ports:
       - "8931:8931"
     volumes:

@@ -4,7 +4,7 @@ answering business/domain questions. Optimize for those uses — be concise and
 high-signal, skip filler.
 
 Below are one or more repositories that make up the project, each with its
-top-level layout, file-extension histogram, manifest, and README. If GitNexus
+top-level layout, file-extension histogram, manifest, and README. If CodeGraph
 code-graph tools are available, use them to identify the domain first, then dig
 deeper: search for domain entities, trace their key flows, and confirm what the
 system actually does before writing.

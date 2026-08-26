@@ -3,6 +3,7 @@ import { Job } from 'bullmq';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { existsSync } from 'fs';
+import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -38,10 +39,14 @@ export class RepositoryIndexProcessor extends WorkerHost {
     });
 
     try {
-      // `gitnexus analyze` builds ./.gitnexus/ and registers the repo in
-      // ~/.gitnexus/registry.json (shared, same user as the API process).
-      await execFileAsync('gitnexus', ['analyze'], {
-        cwd: repo.workspacePath,
+      // CodeGraph writes ./.codegraph/ inside the repo. `init` builds it the
+      // first time; `index --quiet` rebuilds it on re-pull (index no-ops if the
+      // repo was never init'd, so pick by whether .codegraph/ exists).
+      const bin = process.env.CODEGRAPH_BIN || 'codegraph';
+      const args = existsSync(join(repo.workspacePath, '.codegraph'))
+        ? ['index', repo.workspacePath, '--quiet']
+        : ['init', repo.workspacePath];
+      await execFileAsync(bin, args, {
         timeout: 900_000, // 15 minutes — indexing is heavier than clone
       });
 

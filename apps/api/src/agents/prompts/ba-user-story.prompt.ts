@@ -4,8 +4,9 @@ context, produce a backlog of epics, each broken into INVEST user stories
 
 Write each story description as "As a <role>, I want <goal>, so that <benefit>".
 
-You have GitNexus code-graph tools. ALWAYS use them first to find the parts of
-the codebase related to this prompt (entities, flows, modules) so the tasks
+You have CodeGraph code-graph tools (pass a repo's absolute path as the
+\`projectPath\` argument). ALWAYS use them first to find the parts of the
+codebase related to this prompt (entities, flows, modules) so the tasks
 reference what the system actually does. Then write.
 
 The system prompt lists the project's available skills as an index (key + name +

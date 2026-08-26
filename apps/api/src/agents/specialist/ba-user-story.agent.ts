@@ -4,7 +4,7 @@ import { createDeepAgent } from 'deepagents';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { Agent } from '../agent.interface';
 import { modelFor } from '../ai-client';
-import { gitnexusMcpTools } from '../mcp/gitnexus-mcp.client';
+import { codegraphMcpTools } from '../mcp/codegraph-mcp.client';
 import { buildSkillIndex, buildSkillTools } from '../tools/skill.tools';
 import { SYSTEM_PROMPT, buildUserPrompt } from '../prompts/ba-user-story.prompt';
 
@@ -104,30 +104,33 @@ export class BaUserStoryAgent implements Agent {
       ? `${SYSTEM_PROMPT}\n\nAvailable skills (call load_skill to read a body):\n${skillIndex}`
       : SYSTEM_PROMPT;
 
-    // Always ground with GitNexus when a repo is indexed; fall through on failure.
+    // Always ground with CodeGraph when a repo is indexed; fall through on failure.
     const repos = await this.prisma.repository.findMany({
       where: { projectId, cloneStatus: 'cloned', indexStatus: 'indexed' },
-      select: { name: true },
+      select: { workspacePath: true },
     });
-    let gitnexusTools: unknown[] = [];
-    let closeGitnexus: (() => Promise<void>) | null = null;
-    if (repos.length > 0) {
+    const indexedPaths = repos
+      .map((r) => r.workspacePath)
+      .filter((p): p is string => !!p);
+    let codegraphTools: unknown[] = [];
+    let closeCodegraph: (() => Promise<void>) | null = null;
+    if (indexedPaths.length > 0) {
       try {
-        const { tools, close } = await gitnexusMcpTools();
-        gitnexusTools = tools;
-        closeGitnexus = close;
+        const { tools, close } = await codegraphMcpTools();
+        codegraphTools = tools;
+        closeCodegraph = close;
         systemPrompt +=
-          `\n\nGitNexus code-graph tools cover indexed repos: ` +
-          `${repos.map((r) => r.name).join(', ')}. Pass the repo name as the \`repo\` argument.`;
+          `\n\nCodeGraph code-graph tools cover indexed repo paths: ` +
+          `${indexedPaths.join(', ')}. Pass the repo's absolute path as the \`projectPath\` argument.`;
       } catch {
-        // gitnexus unavailable — proceed without code-graph tools.
+        // codegraph unavailable — proceed without code-graph tools.
       }
     }
 
     try {
       const agent = createDeepAgent({
         model,
-        tools: [...skillTools, ...(gitnexusTools as any[])],
+        tools: [...skillTools, ...(codegraphTools as any[])],
         systemPrompt,
       });
       const input = {
@@ -188,7 +191,7 @@ export class BaUserStoryAgent implements Agent {
         throw err;
       }
     } finally {
-      if (closeGitnexus) await closeGitnexus();
+      if (closeCodegraph) await closeCodegraph();
     }
   }
 }

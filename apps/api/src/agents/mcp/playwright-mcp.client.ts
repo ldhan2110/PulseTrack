@@ -8,7 +8,10 @@ import { MultiServerMCPClient } from '@langchain/mcp-adapters';
 export async function playwrightMcpTools(url: string) {
   const client = new MultiServerMCPClient({
     mcpServers: {
-      playwright: { url, transport: 'http' },
+      // ponytail: image:'artifact' drops screenshot blocks from message content.
+      // Anthropic rejects the adapter's `image_url`-typed tool_result, and the
+      // text-snapshot workflow never needs images in-context anyway.
+      playwright: { url, transport: 'http', outputHandling: { image: 'artifact' } },
     },
   });
   // ponytail: drop file-write tools (e.g. `save`) — the agent returns script

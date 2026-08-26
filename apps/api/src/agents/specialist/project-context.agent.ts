@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { buildRepoFingerprint } from '../../ai-config/repo-fingerprint.util';
 import type { Agent } from '../agent.interface';
 import { modelFor } from '../ai-client';
-import { gitnexusMcpTools } from '../mcp/gitnexus-mcp.client';
+import { codegraphMcpTools } from '../mcp/codegraph-mcp.client';
 import { SYSTEM_PROMPT, buildUserPrompt } from '../prompts/project-context.prompt';
 
 const CONTEXT_MAX_LENGTH = 10000;
@@ -54,20 +54,22 @@ export class ProjectContextAgent implements Agent {
     const model = modelFor(cfg, this.config.getOrThrow<string>('ENCRYPTION_KEY'));
 
     // If any repo is indexed, let the model drill into the code graph via
-    // GitNexus MCP tools (pass repo name as the `repo` arg). Fall back to the
-    // plain fingerprint summary if nothing is indexed or the tools fail to load.
-    const indexedNames = repos.filter((r) => r.indexStatus === 'indexed').map((r) => r.name);
-    if (indexedNames.length > 0) {
+    // CodeGraph MCP tools (pass the repo's absolute path as `projectPath`). Fall
+    // back to the plain fingerprint summary if nothing is indexed or tools fail.
+    const indexedPaths = repos
+      .filter((r) => r.indexStatus === 'indexed' && r.workspacePath)
+      .map((r) => r.workspacePath as string);
+    if (indexedPaths.length > 0) {
       try {
-        const { tools, close } = await gitnexusMcpTools();
+        const { tools, close } = await codegraphMcpTools();
         try {
           const agent = createDeepAgent({
             model,
             tools,
             systemPrompt:
               SYSTEM_PROMPT +
-              `\n\nYou also have GitNexus code-graph tools. Indexed repos: ` +
-              `${indexedNames.join(', ')}. Pass the repo name as the \`repo\` argument ` +
+              `\n\nYou also have CodeGraph code-graph tools. Indexed repo paths: ` +
+              `${indexedPaths.join(', ')}. Pass the repo's absolute path as the \`projectPath\` argument ` +
               `to inspect structure, call graphs, and impact before writing the summary.`,
           });
           let text = '';
@@ -97,7 +99,7 @@ export class ProjectContextAgent implements Agent {
           await close();
         }
       } catch {
-        // Tools unavailable (e.g. gitnexus not installed) — fall through to plain path.
+        // Tools unavailable (e.g. codegraph not installed) — fall through to plain path.
       }
     }
 

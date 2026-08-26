@@ -107,10 +107,9 @@ export class RepositoryConfigService {
     await this.prisma.repository.delete({ where: { id: repositoryId } });
 
     if (repo.workspacePath && existsSync(repo.workspacePath)) {
-      // Deregister from ~/.gitnexus/registry.json before deleting the folder
-      // (clean operates on the cwd repo). Best-effort — never block removal.
-      await execFileAsync('gitnexus', ['clean'], {
-        cwd: repo.workspacePath,
+      // Remove the CodeGraph index before deleting the folder.
+      // Best-effort — never block removal.
+      await execFileAsync(process.env.CODEGRAPH_BIN || 'codegraph', ['uninit', repo.workspacePath], {
         timeout: 60_000,
       }).catch(() => undefined);
       await rm(repo.workspacePath, { recursive: true, force: true });
