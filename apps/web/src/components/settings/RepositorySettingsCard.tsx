@@ -53,7 +53,6 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
   const socket = useSocket();
 
   const [addOpen, setAddOpen] = useState(false);
-  const [name, setName] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [showToken, setShowToken] = useState(false);
@@ -70,7 +69,6 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
   }, [socket, refetch]);
 
   const resetForm = () => {
-    setName('');
     setRepoUrl('');
     setAccessToken('');
     setProvider('gitlab');
@@ -78,10 +76,9 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
   };
 
   const handleAdd = () => {
-    if (!name.trim() || !repoUrl.trim() || !accessToken.trim()) return;
+    if (!repoUrl.trim() || !accessToken.trim()) return;
     addRepo.mutate(
       {
-        name: name.trim(),
         repoUrl: repoUrl.trim(),
         accessToken: accessToken.trim(),
         provider,
@@ -116,15 +113,6 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
               </DialogHeader>
               <DialogBody>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="web (letters, digits, -, _)"
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="repoUrl">Repository URL</Label>
                     <Input
@@ -184,7 +172,7 @@ export function RepositorySettingsCard({ projectId, canManage }: Props) {
                 <Button
                   size="sm"
                   onClick={handleAdd}
-                  disabled={!name.trim() || !repoUrl.trim() || !accessToken.trim() || addRepo.isPending}
+                  disabled={!repoUrl.trim() || !accessToken.trim() || addRepo.isPending}
                 >
                   {addRepo.isPending ? 'Adding...' : 'Add & Clone'}
                 </Button>

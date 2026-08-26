@@ -15,6 +15,14 @@ import { CreateRepositoryDto } from './dto/create-repository.dto';
 
 const execFileAsync = promisify(execFile);
 
+/** Derive a safe repo name from the clone URL's last path segment (strip .git). */
+function repoNameFromUrl(repoUrl: string): string {
+  const last = repoUrl.replace(/\.git$/, '').replace(/\/+$/, '').split('/').pop() ?? '';
+  const name = last.replace(/[^A-Za-z0-9_-]/g, '-');
+  if (!name) throw new ConflictException('Could not derive a repository name from the URL');
+  return name;
+}
+
 @Injectable()
 export class RepositoryConfigService {
   constructor(
@@ -38,17 +46,19 @@ export class RepositoryConfigService {
   }
 
   async add(projectId: string, dto: CreateRepositoryDto) {
+    const name = repoNameFromUrl(dto.repoUrl);
+
     const existing = await this.prisma.repository.findUnique({
-      where: { projectId_name: { projectId, name: dto.name } },
+      where: { projectId_name: { projectId, name } },
     });
-    if (existing) throw new ConflictException(`Repository "${dto.name}" already exists in this project`);
+    if (existing) throw new ConflictException(`Repository "${name}" already exists in this project`);
 
     const encryptedToken = encrypt(dto.accessToken, this.encryptionKey);
 
     const repo = await this.prisma.repository.create({
       data: {
         projectId,
-        name: dto.name,
+        name,
         repoUrl: dto.repoUrl,
         accessToken: encryptedToken,
         provider: dto.provider ?? 'gitlab',

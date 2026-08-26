@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Agent } from './agent.interface';
 import { TestcaseScriptAgent } from './specialist/testcase-script.agent';
 import { ProjectContextAgent } from './specialist/project-context.agent';
+import { BaUserStoryAgent } from './specialist/ba-user-story.agent';
 
 @Injectable()
 export class AgentsService {
@@ -10,9 +11,11 @@ export class AgentsService {
   constructor(
     testcaseScript: TestcaseScriptAgent,
     projectContext: ProjectContextAgent,
+    baUserStory: BaUserStoryAgent,
   ) {
     this.register(testcaseScript);
     this.register(projectContext);
+    this.register(baUserStory);
   }
 
   private register(agent: Agent) {

@@ -602,7 +602,6 @@ export interface Repository {
 }
 
 export interface CreateRepositoryPayload {
-  name: string;
   repoUrl: string;
   accessToken: string;
   provider?: 'github' | 'gitlab';

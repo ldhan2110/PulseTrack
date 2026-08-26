@@ -39,6 +39,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { WbsModule } from './wbs/wbs.module';
 import { TestAutomationModule } from './test-automation/test-automation.module';
 import { AgentsModule } from './agents/agents.module';
+import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AgentsModule } from './agents/agents.module';
     RepositoryConfigModule,
     BranchesModule,
     AiConfigModule,
+    AiTaskGenerationModule,
 SkillsModule,
     TimeLogsModule,
     BugAttachmentsModule,
