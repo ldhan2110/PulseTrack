@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import type { Project } from '@/lib/types';
 
 // FieldGroup composition per shadcn skill rules
@@ -60,7 +60,7 @@ function ProjectCard({ project }: { project: Project }) {
       <CardFooter>
         {project.updatedAt && (
           <p className="text-xs text-muted-foreground">
-            Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
+            Updated {format(new Date(project.updatedAt), 'MMM d, yyyy h:mm a')}
           </p>
         )}
       </CardFooter>

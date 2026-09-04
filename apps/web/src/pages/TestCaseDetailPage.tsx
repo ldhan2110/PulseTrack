@@ -32,7 +32,7 @@ import { useTestModules } from '@/hooks/useTestModules';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProject } from '@/hooks/useProjects';
 import { StepsBuilder, type TestStep } from '@/components/test-cases/StepsBuilder';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import type { Priority, TestCaseStatus } from '@/lib/types';
 
 function SidebarLabel({ children }: { children: React.ReactNode }) {
@@ -54,7 +54,7 @@ function getInitials(name: string): string {
 
 function formatRelative(dateStr: string): string {
   try {
-    return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+    return format(new Date(dateStr), 'MMM d, yyyy h:mm a');
   } catch {
     return dateStr;
   }

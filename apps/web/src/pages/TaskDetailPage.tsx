@@ -42,7 +42,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useProject } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
-import { formatDistanceToNow, format, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { TimeTrackingCard } from '@/components/tasks/TimeTrackingCard';
 import { BranchCard } from '@/components/tasks/BranchCard';
 import { TaskProgressBar } from '@/components/tasks/TaskProgressBar';
@@ -79,7 +79,7 @@ function getInitials(name: string): string {
 
 function formatRelative(dateStr: string): string {
   try {
-    return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+    return format(new Date(dateStr), 'MMM d, yyyy h:mm a');
   } catch {
     return dateStr;
   }

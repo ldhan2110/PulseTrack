@@ -39,7 +39,7 @@ import { useRepositories } from '@/hooks/useRepositoryConfig';
 import { useProject } from '@/hooks/useProjects';
 import { useWorkflow, useValidTransitions } from '@/hooks/useWorkflow';
 import { useAuth } from '@/auth/useAuth';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import type { BugSeverity } from '@/lib/types';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ReproStepsList } from '@/components/bugs/ReproStepsList';
@@ -79,7 +79,7 @@ function getInitials(name: string): string {
 
 function formatRelative(dateStr: string): string {
   try {
-    return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+    return format(new Date(dateStr), 'MMM d, yyyy h:mm a');
   } catch {
     return dateStr;
   }
