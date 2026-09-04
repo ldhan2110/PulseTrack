@@ -17,7 +17,9 @@ interface WbsGanttChartProps {
 }
 
 function toDate(d: string | null, fallback: Date): Date {
-  return d ? new Date(d) : fallback;
+  if (!d) return fallback;
+  const parsed = new Date(d);
+  return isNaN(parsed.getTime()) ? fallback : parsed;
 }
 
 export function WbsGanttChart({ phases, dependencies, collapsedIds, projectId, treeScrollRef }: WbsGanttChartProps) {
