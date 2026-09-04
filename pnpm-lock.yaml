@@ -73,9 +73,6 @@ importers:
       '@openrouter/sdk':
         specifier: ^0.12.1
         version: 0.12.79
-      '@pm/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@prisma/adapter-pg':
         specifier: ^7.6.0
         version: 7.6.0
@@ -106,6 +103,9 @@ importers:
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
+      express:
+        specifier: ^5.0.0
+        version: 5.2.1
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -115,6 +115,9 @@ importers:
       langchain:
         specifier: ^1.5.5
         version: 1.5.5(@langchain/core@1.2.5(openai@6.45.0(ws@8.20.0)(zod@4.4.3))(ws@8.20.0))(openai@6.45.0(ws@8.20.0)(zod@4.4.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(ws@8.20.0)
+      multer:
+        specifier: ^2.0.0
+        version: 2.1.1
       nestjs-pino:
         specifier: ^4.4.0
         version: 4.6.1(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@10.5.0)(pino@9.14.0)(rxjs@7.8.2)
@@ -254,9 +257,6 @@ importers:
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@pm/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.96.2(react@19.2.4)
@@ -453,8 +453,6 @@ importers:
       vitest:
         specifier: ^3.1.1
         version: 3.2.4(@types/debug@4.1.13)(@types/node@24.12.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.32.0)(msw@2.12.14(@types/node@24.12.2)(typescript@5.9.3))(terser@5.46.1)(yaml@2.9.0)
-
-  packages/shared: {}
 
 packages:
 

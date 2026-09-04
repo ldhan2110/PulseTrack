@@ -4,10 +4,8 @@ FROM node:22-slim AS build
 RUN corepack enable
 WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY packages/shared/package.json packages/shared/
 COPY apps/web/package.json apps/web/
-RUN pnpm install --frozen-lockfile --filter @pm/web...
-COPY packages/shared packages/shared
+RUN pnpm install --frozen-lockfile --filter @pm/web
 COPY apps/web apps/web
 
 ARG VITE_API_URL

@@ -73,6 +73,8 @@ export class TasksService {
           priority: dto.priority,
           parentId: dto.parentId,
           estimatedMinutes: dto.estimatedMinutes,
+          requestedDate: dto.requestedDate ? new Date(dto.requestedDate) : new Date(),
+          receiptDate: dto.receiptDate ? new Date(dto.receiptDate) : undefined,
           plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : undefined,
           plannedEndDate: dto.plannedEndDate ? new Date(dto.plannedEndDate) : undefined,
           actualStartDate: dto.actualStartDate ? new Date(dto.actualStartDate) : undefined,
@@ -390,6 +392,12 @@ export class TasksService {
           ...(dto.priority !== undefined && { priority: dto.priority }),
           ...(dto.estimatedMinutes !== undefined && { estimatedMinutes: dto.estimatedMinutes }),
           ...autoDateUpdates,
+          ...(dto.requestedDate !== undefined && {
+            requestedDate: dto.requestedDate ? new Date(dto.requestedDate) : null,
+          }),
+          ...(dto.receiptDate !== undefined && {
+            receiptDate: dto.receiptDate ? new Date(dto.receiptDate) : null,
+          }),
           ...(dto.plannedStartDate !== undefined && {
             plannedStartDate: dto.plannedStartDate ? new Date(dto.plannedStartDate) : null,
           }),

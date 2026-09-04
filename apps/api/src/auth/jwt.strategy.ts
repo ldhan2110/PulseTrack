@@ -4,7 +4,23 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { JwtPayload } from '@pm/shared';
+
+interface KeycloakUserInfo {
+  usrNm?: string | null;
+  imgUrl?: string | null;
+  usrId?: string | null;
+  usrEml?: string | null;
+  orzNm?: string | null;
+  coCd?: string | null;
+}
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  preferred_username: string;
+  realm_access?: { roles: string[] };
+  'user-info'?: KeycloakUserInfo;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

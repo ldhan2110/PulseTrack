@@ -1,6 +1,14 @@
 import React, { createContext, useEffect, useState, useCallback } from 'react';
 import keycloak from './keycloak';
-import type { UserProfile } from '@pm/shared';
+
+interface UserProfile {
+  id: string;
+  keycloakId: string;
+  email: string;
+  username: string;
+  name: string | null;
+  imageUrl: string | null;
+}
 
 export type KeycloakUserInfo = {
   usrNm: string | null;

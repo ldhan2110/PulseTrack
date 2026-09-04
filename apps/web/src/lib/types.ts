@@ -221,6 +221,8 @@ export interface Task {
   timeLogs?: TimeLog[];
   acceptanceCriteria?: string | null;  // JSON string — parsed client-side into AcceptanceCriteria[]
   priority?: Priority | null;
+  requestedDate?: string | null;
+  receiptDate?: string | null;
   plannedStartDate?: string | null;
   plannedEndDate?: string | null;
   actualStartDate?: string | null;
@@ -243,6 +245,8 @@ export interface CreateTaskPayload {
   sprintId?: string;
   acceptanceCriteria?: string;
   priority?: Priority;
+  requestedDate?: string;
+  receiptDate?: string;
   plannedStartDate?: string;
   plannedEndDate?: string;
   actualStartDate?: string;
@@ -260,6 +264,8 @@ export interface UpdateTaskPayload {
   sprintId?: string | null;
   acceptanceCriteria?: string;  // JSON string of AcceptanceCriteria[]
   priority?: Priority | null;
+  requestedDate?: string | null;
+  receiptDate?: string | null;
   plannedStartDate?: string | null;
   plannedEndDate?: string | null;
   actualStartDate?: string | null;

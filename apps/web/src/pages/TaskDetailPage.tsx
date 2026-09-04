@@ -957,6 +957,23 @@ export function TaskDetailPage() {
 
               <Separator/>
 
+              {/* Request / Receipt dates */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Dates</SidebarLabel>
+                <DatePickerField
+                  label="Requested"
+                  value={task.requestedDate}
+                  onChange={(iso) => optimisticMutate({ requestedDate: iso }, { taskId, data: { requestedDate: iso } })}
+                  disabled={!canEdit}
+                />
+                <DatePickerField
+                  label="Receipt"
+                  value={task.receiptDate}
+                  onChange={(iso) => optimisticMutate({ receiptDate: iso }, { taskId, data: { receiptDate: iso } })}
+                  disabled={!canEdit}
+                />
+              </div>
+
               {/* Planned dates */}
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Planned</SidebarLabel>

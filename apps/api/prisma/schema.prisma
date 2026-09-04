@@ -297,6 +297,8 @@ model Task {
   storyPoints         Int?
   acceptanceCriteria  String?
   priority            Priority?
+  requestedDate       DateTime?
+  receiptDate         DateTime?
   plannedStartDate    DateTime?
   plannedEndDate      DateTime?
   actualStartDate     DateTime?

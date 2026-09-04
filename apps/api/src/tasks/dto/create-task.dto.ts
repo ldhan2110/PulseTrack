@@ -47,6 +47,14 @@ export class CreateTaskDto {
 
   @IsOptional()
   @IsDateString()
+  requestedDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  receiptDate?: string;
+
+  @IsOptional()
+  @IsDateString()
   plannedStartDate?: string;
 
   @IsOptional()

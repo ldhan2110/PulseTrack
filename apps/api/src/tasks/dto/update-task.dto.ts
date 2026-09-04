@@ -51,6 +51,16 @@ export class UpdateTaskDto {
   priority?: Priority | null;
 
   @IsOptional()
+  @ValidateIf(o => o.requestedDate !== null)
+  @IsDateString()
+  requestedDate?: string | null;
+
+  @IsOptional()
+  @ValidateIf(o => o.receiptDate !== null)
+  @IsDateString()
+  receiptDate?: string | null;
+
+  @IsOptional()
   @ValidateIf(o => o.plannedStartDate !== null)
   @IsDateString()
   plannedStartDate?: string | null;
