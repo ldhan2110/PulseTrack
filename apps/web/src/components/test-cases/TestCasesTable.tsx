@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { TestCase, Priority, TestCaseStatus } from '@/lib/types';
 
@@ -240,18 +241,19 @@ export function TestCasesTable({
         cell: ({ row }) => {
           const tags = row.original.tags;
           if (!tags || tags.length === 0) return null;
+          const shown = tags.slice(0, 2);
+          const rest = tags.slice(2);
           return (
-            <div className="flex gap-1 flex-wrap">
-              {tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-                >
-                  {tag}
-                </span>
+            <div className="flex items-center gap-1 flex-nowrap overflow-hidden">
+              {shown.map((tag) => (
+                <Badge key={tag} variant="secondary" title={tag} className="max-w-[90px]">
+                  <span className="truncate">{tag}</span>
+                </Badge>
               ))}
-              {tags.length > 3 && (
-                <span className="text-[10px] text-muted-foreground">+{tags.length - 3}</span>
+              {rest.length > 0 && (
+                <Badge variant="outline" title={rest.join(', ')}>
+                  +{rest.length}
+                </Badge>
               )}
             </div>
           );
