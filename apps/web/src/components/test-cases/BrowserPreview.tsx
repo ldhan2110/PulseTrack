@@ -50,7 +50,7 @@ export function BrowserPreview({ frame, isRunning }: BrowserPreviewProps) {
       </div>
 
       <div className="flex items-center justify-between px-3 py-1 bg-muted/50 border-t text-[9px] text-muted-foreground">
-        <span>1280x720 viewport</span>
+        <span>1920x1080 viewport</span>
         <span>CDP Screencast</span>
       </div>
     </div>
