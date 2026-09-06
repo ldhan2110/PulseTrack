@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useUpdateExecutionCaseResult } from '@/hooks/useTestExecutions';
@@ -58,6 +59,15 @@ const RESULT_LABELS: Record<TestResultStatus, string> = {
 };
 
 const ALL_RESULTS: TestResultStatus[] = ['NOT_RUN', 'IN_PROGRESS', 'PASS', 'FAIL', 'BLOCKED', 'SKIP'];
+
+// Summary tiles / segmented-bar order (IN_PROGRESS folded into NOT_RUN for the summary).
+const STAT_TILES: { key: 'PASS' | 'FAIL' | 'BLOCKED' | 'SKIP' | 'NOT_RUN'; label: string }[] = [
+  { key: 'PASS', label: 'Pass' },
+  { key: 'FAIL', label: 'Fail' },
+  { key: 'BLOCKED', label: 'Blocked' },
+  { key: 'SKIP', label: 'Skip' },
+  { key: 'NOT_RUN', label: 'Not Run' },
+];
 
 interface ExecutionDetailProps {
   projectId: string;
@@ -102,7 +112,7 @@ export function ExecutionDetail({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -148,77 +158,66 @@ export function ExecutionDetail({
         </div>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress summary */}
       {stats && (
-        <>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-3 rounded-full overflow-hidden bg-muted flex">
-              {stats.PASS > 0 && (
-                <div
-                  className="h-full"
-                  style={{
-                    backgroundColor: RESULT_COLORS.PASS,
-                    width: `${(stats.PASS / stats.total) * 100}%`,
-                  }}
-                />
-              )}
-              {stats.FAIL > 0 && (
-                <div
-                  className="h-full"
-                  style={{
-                    backgroundColor: RESULT_COLORS.FAIL,
-                    width: `${(stats.FAIL / stats.total) * 100}%`,
-                  }}
-                />
-              )}
-              {stats.BLOCKED > 0 && (
-                <div
-                  className="h-full"
-                  style={{
-                    backgroundColor: RESULT_COLORS.BLOCKED,
-                    width: `${(stats.BLOCKED / stats.total) * 100}%`,
-                  }}
-                />
-              )}
-              {stats.SKIP > 0 && (
-                <div
-                  className="h-full"
-                  style={{
-                    backgroundColor: RESULT_COLORS.SKIP,
-                    width: `${(stats.SKIP / stats.total) * 100}%`,
-                  }}
-                />
-              )}
-              {stats.NOT_RUN > 0 && (
-                <div
-                  className="h-full"
-                  style={{
-                    backgroundColor: RESULT_COLORS.NOT_RUN,
-                    width: `${(stats.NOT_RUN / stats.total) * 100}%`,
-                  }}
-                />
-              )}
+        <Card className="p-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Progress
+              </p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums leading-none">
+                {stats.completionPercent}
+                <span className="ml-0.5 text-lg text-muted-foreground">%</span>
+              </p>
             </div>
-            <span className="text-sm font-medium shrink-0">
-              {stats.completionPercent}%
-            </span>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {stats.total - stats.NOT_RUN} / {stats.total} run
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 text-sm">
-            <span style={{ color: RESULT_COLORS.PASS }}>Pass {stats.PASS}</span>
-            <span style={{ color: RESULT_COLORS.FAIL }}>Fail {stats.FAIL}</span>
-            <span style={{ color: RESULT_COLORS.BLOCKED }}>Blocked {stats.BLOCKED}</span>
-            <span style={{ color: RESULT_COLORS.SKIP }}>Skip {stats.SKIP}</span>
-            <span style={{ color: RESULT_COLORS.NOT_RUN }}>Not Run {stats.NOT_RUN}</span>
+          <div className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-muted">
+            {STAT_TILES.map(({ key }) =>
+              stats[key] > 0 ? (
+                <div
+                  key={key}
+                  className="h-full transition-all"
+                  style={{
+                    backgroundColor: RESULT_COLORS[key],
+                    width: `${(stats[key] / stats.total) * 100}%`,
+                  }}
+                />
+              ) : null,
+            )}
           </div>
-        </>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            {STAT_TILES.map(({ key, label }) => (
+              <div
+                key={key}
+                className="flex flex-col gap-1 rounded-lg border bg-card/50 px-3 py-2"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: RESULT_COLORS[key] }}
+                  />
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                </div>
+                <span className="text-xl font-semibold tabular-nums leading-none">
+                  {stats[key]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       {/* Cases table */}
-      <div className="rounded-md border overflow-auto max-h-[calc(100vh-200px)]">
+      <div className="rounded-xl border shadow-sm overflow-auto max-h-[calc(100vh-200px)]">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-background">
-            <TableRow>
+          <TableHeader className="sticky top-0 z-10 bg-muted/50">
+            <TableRow className="[&>th]:h-10 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide">
               <TableHead className="w-[100px]">ID</TableHead>
               <TableHead className="max-w-[250px]">Test Case</TableHead>
               <TableHead className="w-[100px]">Priority</TableHead>
@@ -230,7 +229,7 @@ export function ExecutionDetail({
           </TableHeader>
           <TableBody>
             {cases.map((ec, idx) => (
-              <TableRow key={ec.id}>
+              <TableRow key={ec.id} className="[&>td]:py-3">
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {ec.testCase.testCaseKey}
                 </TableCell>

@@ -156,7 +156,7 @@ export function CreateExecutionDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[600px] max-w-full max-h-[85vh] flex flex-col">
+      <DialogContent className="w-[600px] sm:max-w-[850px] max-w-full max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Create Test Execution</DialogTitle>
         </DialogHeader>
@@ -322,7 +322,7 @@ export function CreateExecutionDialog({
                 </Button>
               </div>
 
-              <div className="border rounded-md max-h-[200px] overflow-y-auto">
+              <div className="border rounded-md max-h-[200px] sm:max-h-[360px] overflow-y-auto">
                 {filteredCases.length === 0 ? (
                   <div className="p-4 text-center text-xs text-muted-foreground">
                     No test cases found

@@ -34,6 +34,8 @@ interface RichTextEditorProps {
   onChange?: (html: string) => void;
   /** Tailwind max-height class for the edit-mode scroll area. Defaults to `max-h-50`. */
   contentMaxHeight?: string;
+  /** Min visible lines in edit mode. Defaults to 5. */
+  rows?: number;
 }
 
 function ToolbarButton({
@@ -134,6 +136,7 @@ export function RichTextEditor({
   placeholder: placeholderText = 'Add a description...',
   onChange,
   contentMaxHeight = 'max-h-50',
+  rows = 5,
 }: RichTextEditorProps) {
   const resolvedEntityId = entityId ?? taskId ?? '';
   const [isEditing, setIsEditing] = useState(alwaysEditing);
@@ -300,6 +303,7 @@ export function RichTextEditor({
       <div className={cn(contentMaxHeight, 'overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border')}>
       <EditorContent
         editor={editor}
+        style={{ minHeight: `${rows * 1.5}rem` }}
         className="prose prose-sm max-w-none p-3 text-sm leading-relaxed focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-2 [&_a]:text-blue-400 [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-blue-300 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted [&_th]:font-semibold"
         aria-label="Task description"
       />

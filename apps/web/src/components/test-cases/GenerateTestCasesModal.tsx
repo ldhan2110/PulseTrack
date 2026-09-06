@@ -175,7 +175,7 @@ export function GenerateTestCasesModal({
 
         {isIdle || isFailed ? (
           <>
-            <DialogBody>
+            <DialogBody className="space-y-5 py-2">
             {isFailed && (
               <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
                 <AlertTriangle className="size-4 shrink-0" />

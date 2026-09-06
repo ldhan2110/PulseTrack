@@ -24,7 +24,16 @@ export interface TestcaseScriptCtx {
 function stripFences(text: string): string {
   const t = text.trim();
   const fenced = t.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
-  return (fenced ? fenced[1] : t).trim();
+  const body = (fenced ? fenced[1] : t).trim();
+  // No fence: model may have prepended chain-of-thought prose. Keep only from
+  // the first runnable statement (await/page/expect) and drop any trailing prose
+  // after the last statement line.
+  const lines = body.split('\n');
+  const start = lines.findIndex((l) => /^\s*(await|page|expect)\b/.test(l));
+  if (start === -1) return body;
+  let end = lines.length - 1;
+  while (end > start && !/;\s*$/.test(lines[end])) end--;
+  return lines.slice(start, end + 1).join('\n').trim();
 }
 
 /**
