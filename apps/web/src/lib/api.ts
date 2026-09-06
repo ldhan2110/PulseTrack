@@ -609,6 +609,12 @@ export const api = {
     }),
   removeBugWatcher: (projectId: string, bugId: string, userId: string) =>
     request<void>(`/projects/${projectId}/bugs/${bugId}/watchers/${userId}`, { method: 'DELETE' }),
+  getDefaultWatchers: (projectId: string) =>
+    request<TicketWatcher[]>(`/projects/${projectId}/default-watchers`),
+  setDefaultWatchers: (projectId: string, userIds: string[]) =>
+    request<TicketWatcher[]>(`/projects/${projectId}/default-watchers`, {
+      method: 'PUT', body: JSON.stringify({ userIds }),
+    }),
 
   // ─── Bug Comments ──────────────────────────────────────────────────────────
   getBugComments: (projectId: string, bugId: string) =>

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Req,
   UploadedFile,
   UseGuards,
@@ -24,6 +25,7 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import { SetDefaultWatchersDto } from './dto/set-default-watchers.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -80,6 +82,23 @@ export class ProjectsController {
     @Body() dto: UpdateSettingsDto,
   ) {
     return this.projectsService.updateSettings(projectId, dto);
+  }
+
+  @Get(':projectId/default-watchers')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'view')
+  getDefaultWatchers(@Param('projectId') projectId: string) {
+    return this.projectsService.getDefaultWatchers(projectId);
+  }
+
+  @Put(':projectId/default-watchers')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'update')
+  setDefaultWatchers(
+    @Param('projectId') projectId: string,
+    @Body() dto: SetDefaultWatchersDto,
+  ) {
+    return this.projectsService.setDefaultWatchers(projectId, dto.userIds);
   }
 
   @Post(':projectId/avatar')

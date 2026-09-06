@@ -58,7 +58,7 @@ export class TasksService {
         where: { projectId, kind: 'TASK', isDefault: true },
       });
 
-      return tx.task.create({
+      const created = await tx.task.create({
         data: {
           projectId,
           creatorId,
@@ -86,6 +86,21 @@ export class TasksService {
           workflowStatus: true,
         },
       });
+
+      // Silently add project default watchers (no notification, no history)
+      const defaults = await tx.projectDefaultWatcher.findMany({
+        where: { projectId },
+        select: { userId: true },
+      });
+      const watcherIds = [...new Set(defaults.map((d) => d.userId))];
+      if (watcherIds.length) {
+        await tx.ticketWatcher.createMany({
+          data: watcherIds.map((userId) => ({ entityType: 'TASK' as EntityType, entityId: created.id, userId })),
+          skipDuplicates: true,
+        });
+      }
+
+      return created;
     });
 
     this.notifications.notifyProject(projectId, 'task:created', { projectId, task });

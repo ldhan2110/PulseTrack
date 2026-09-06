@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkflowService } from '../workflow/workflow.service';
 import { SYSTEM_ROLE_PERMISSIONS, DEFAULT_MEMBER_PERMISSIONS } from '../auth/permissions';
@@ -197,5 +197,36 @@ export class ProjectsService {
       where: { id: projectId },
       data: { avatarUrl },
     });
+  }
+
+  async getDefaultWatchers(projectId: string) {
+    return this.prisma.projectDefaultWatcher.findMany({
+      where: { projectId },
+      include: {
+        user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+      },
+    });
+  }
+
+  async setDefaultWatchers(projectId: string, userIds: string[]) {
+    const ids = [...new Set(userIds)];
+    if (ids.length) {
+      const members = await this.prisma.projectMember.findMany({
+        where: { projectId, userId: { in: ids } },
+        select: { userId: true },
+      });
+      const memberIds = new Set(members.map((m) => m.userId));
+      const invalid = ids.filter((id) => !memberIds.has(id));
+      if (invalid.length) {
+        throw new BadRequestException(`Not project members: ${invalid.join(', ')}`);
+      }
+    }
+    await this.prisma.$transaction([
+      this.prisma.projectDefaultWatcher.deleteMany({ where: { projectId } }),
+      ...(ids.length
+        ? [this.prisma.projectDefaultWatcher.createMany({ data: ids.map((userId) => ({ projectId, userId })) })]
+        : []),
+    ]);
+    return this.getDefaultWatchers(projectId);
   }
 }

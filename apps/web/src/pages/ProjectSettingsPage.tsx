@@ -18,6 +18,7 @@ import { SkillsSection } from '@/components/settings/SkillsSection';
 import { ReportSettingsCard } from '@/components/settings/ReportSettingsCard';
 import { RolesPermissionsTab } from '@/components/settings/RolesPermissionsTab';
 import { WikiConfigCard } from '@/components/settings/WikiConfigCard';
+import { DefaultWatchersCard } from '@/components/settings/DefaultWatchersCard';
 
 export function ProjectSettingsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
@@ -232,6 +233,9 @@ export function ProjectSettingsPage() {
 
           {/* Report Settings Card */}
           <ReportSettingsCard projectId={projectId} canManage={canManage} />
+
+          {/* Default Watchers Card */}
+          <DefaultWatchersCard projectId={projectId} canManage={canManage} />
         </TabsContent>
 
         {canManage && (
