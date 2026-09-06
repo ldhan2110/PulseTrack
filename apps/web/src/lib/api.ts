@@ -30,7 +30,6 @@ import type {
   BugHistoryEntry,
   UpdateSettingsPayload,
   WorkflowData,
-  WorkflowStatus,
   SaveWorkflowPayload,
   WorkflowAllowedAssignee,
   Repository,
@@ -356,7 +355,7 @@ export const api = {
   getWorkflow: (projectId: string, kind: WorkflowKind = 'TASK') =>
     request<WorkflowData>(`/projects/${projectId}/workflow?kind=${kind}`),
   saveWorkflow: (projectId: string, data: SaveWorkflowPayload) =>
-    request<{ statuses: WorkflowStatus[] }>(`/projects/${projectId}/workflow`, {
+    request<WorkflowData>(`/projects/${projectId}/workflow`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),

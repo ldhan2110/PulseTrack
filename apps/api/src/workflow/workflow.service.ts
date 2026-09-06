@@ -157,7 +157,7 @@ export class WorkflowService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       // Build old key→id mapping so we can remap tasks after recreation
       const existingStatuses = await tx.workflowStatus.findMany({
         where: { projectId, kind },
@@ -285,17 +285,10 @@ export class WorkflowService {
         where: { id: projectId },
         data: { workflowLayout: dto.layout ? (dto.layout as any) : undefined },
       });
-
-      return this.getWorkflowFromTx(tx, projectId, kind);
     });
-  }
 
-  private async getWorkflowFromTx(tx: any, projectId: string, kind: 'TASK' | 'BUG' = 'TASK') {
-    const statuses = await tx.workflowStatus.findMany({
-      where: { projectId, kind },
-      orderBy: { position: 'asc' },
-    });
-    return { statuses };
+    // Return the full persisted workflow so the client can seed directly.
+    return this.getWorkflow(projectId, kind);
   }
 
   async seedDefaultWorkflow(projectId: string) {

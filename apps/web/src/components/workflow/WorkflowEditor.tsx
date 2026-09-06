@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -104,7 +104,6 @@ export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: Workflow
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [initialized, setInitialized] = useState(false);
 
   // Status editing
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -140,8 +139,12 @@ export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: Workflow
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
   }, [setNodes, setEdges]);
 
-  // Initialize from workflow data
-  if (workflow && !initialized) {
+  // Seed the canvas from workflow data. Keyed on the `workflow` object identity
+  // so every fetch — the initial load AND each post-save refetch — repaints with
+  // the persisted server state. (A one-shot boolean would burn against stale
+  // cache before the refetch lands, dropping the just-saved changes.)
+  useEffect(() => {
+    if (!workflow) return;
     const layout = (workflow.layout ?? {}) as Record<string, { x: number; y: number }>;
     const callbacks = { onEdit: handleEdit, onDelete: handleDelete };
 
@@ -158,7 +161,6 @@ export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: Workflow
       style: { strokeWidth: 2 },
     }));
 
-    // Initialize assignee rules
     const statusById = Object.fromEntries(workflow.statuses.map((s) => [s.id, s]));
     const rules: Record<string, string[]> = {};
     for (const [statusId, ruleMembers] of Object.entries(workflow.assigneeRules)) {
@@ -171,8 +173,8 @@ export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: Workflow
     setNodes(initialNodes);
     setEdges(initialEdges);
     setAssigneeRules(rules);
-    setInitialized(true);
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflow]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -292,11 +294,9 @@ export function WorkflowEditor({ projectId, canManage, kind = 'TASK' }: Workflow
       layout,
     };
 
-    saveWorkflow.mutate(payload, {
-      onSuccess: () => {
-        setInitialized(false);
-      },
-    });
+    // On success the mutation invalidates the workflow query; the refetch yields
+    // a new `workflow` object, and the seeding effect repaints the canvas.
+    saveWorkflow.mutate(payload);
   };
 
   const selectedNode = selectedNodeKey
