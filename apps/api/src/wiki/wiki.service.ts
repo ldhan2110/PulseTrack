@@ -1,9 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { readdir, readFile, stat, unlink } from 'fs/promises';
 import { join, relative, isAbsolute, resolve } from 'path';
 import { existsSync } from 'fs';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpsertWikiConfigDto } from './dto/upsert-wiki-config.dto';
+
+/** Canonical section keys — must match ai/skills/wiki-generation.md and the frontend ALL_SECTIONS. */
+export const WIKI_SECTIONS = [
+  'architecture', 'modules', 'features', 'business-logic',
+  'api-reference', 'data-models', 'glossary', 'user-guide',
+] as const;
 
 export interface WikiTreeNode {
   name: string;
@@ -17,15 +26,15 @@ export class WikiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    @InjectQueue('wiki-generation') private readonly queue: Queue,
   ) {}
 
-  private getWikiPath(projectId: string): string {
-    const configDir = this.config.get<string>('WIKI_DIR');
-    if (!configDir) {
-      return resolve(process.cwd(), '..', '..', 'wikis', projectId);
-    }
-    const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), configDir);
-    return join(baseDir, projectId);
+  getWikiPath(projectId: string): string {
+    // Co-locate wiki output with cloned repos under the workspace tree:
+    // <WORKSPACE_DIR>/<projectId>/wiki. Resolved the same way as the clone processor.
+    const configDir = this.config.get<string>('WORKSPACE_DIR', 'workspaces');
+    const baseDir = isAbsolute(configDir) ? configDir : resolve(process.cwd(), '..', '..', configDir);
+    return join(baseDir, projectId, 'wiki');
   }
 
   async getPageTree(projectId: string): Promise<WikiTreeNode[]> {
@@ -193,4 +202,115 @@ export class WikiService {
     if (!existsSync(filePath)) throw new NotFoundException('Q&A entry not found');
     await unlink(filePath);
   }
+
+  // ─── Config ────────────────────────────────────────────────────────────
+
+  async getConfig(projectId: string) {
+    return this.prisma.wikiConfig.findUnique({ where: { projectId } });
+  }
+
+  async upsertConfig(projectId: string, dto: UpsertWikiConfigDto) {
+    const data = {
+      autoUpdate: dto.autoUpdate ?? 'manual',
+      sections: dto.sections ?? [...WIKI_SECTIONS],
+    };
+    return this.prisma.wikiConfig.upsert({
+      where: { projectId },
+      create: { projectId, ...data },
+      update: {
+        ...(dto.autoUpdate !== undefined ? { autoUpdate: dto.autoUpdate } : {}),
+        ...(dto.sections !== undefined ? { sections: dto.sections } : {}),
+      },
+    });
+  }
+
+  // ─── Generation ────────────────────────────────────────────────────────
+
+  /** Sections to generate: explicit single section, else the project's enabled set (default: all). */
+  private async resolveSections(projectId: string, section?: string): Promise<string[]> {
+    if (section) {
+      if (!WIKI_SECTIONS.includes(section as (typeof WIKI_SECTIONS)[number])) {
+        throw new BadRequestException(`Unknown wiki section: ${section}`);
+      }
+      return [section];
+    }
+    const cfg = await this.prisma.wikiConfig.findUnique({ where: { projectId } });
+    const sections = cfg?.sections?.length ? cfg.sections : [...WIKI_SECTIONS];
+    return sections;
+  }
+
+  async startGeneration(projectId: string, section?: string): Promise<{ jobId: string }> {
+    // Single active job per project (frontend getActiveJob assumes this).
+    const existing = await this.prisma.wikiGenerationJob.findFirst({
+      where: { projectId, status: { in: ['queued', 'running'] } },
+    });
+    if (existing) throw new ConflictException('A wiki generation job is already running for this project.');
+
+    const sections = await this.resolveSections(projectId, section);
+    const job = await this.prisma.wikiGenerationJob.create({
+      data: {
+        projectId,
+        status: 'queued',
+        sections,
+        progress: { create: sections.map((s) => ({ section: s })) },
+      },
+    });
+    await this.queue.add('generate', { jobId: job.id, projectId, sections }, { jobId: job.id });
+    return { jobId: job.id };
+  }
+
+  async getGenerationStatus(jobId: string) {
+    const job = await this.prisma.wikiGenerationJob.findUnique({
+      where: { id: jobId },
+      include: { progress: true },
+    });
+    if (!job) throw new NotFoundException('Wiki generation job not found');
+
+    const sections: Record<string, number> = {};
+    const errors: string[] = [];
+    for (const p of job.progress) {
+      sections[p.section] = p.pages;
+      if (p.error) errors.push(`${p.section}: ${p.error}`);
+    }
+    const pagesGenerated = job.progress.reduce((sum, p) => sum + p.pages, 0);
+    return {
+      status: job.status,
+      step: job.step ?? undefined,
+      result: { pagesGenerated, sections, errors },
+      error: job.error ?? undefined,
+    };
+  }
+
+  async getActiveJob(projectId: string) {
+    const job = await this.prisma.wikiGenerationJob.findFirst({
+      where: { projectId, status: { in: ['queued', 'running'] } },
+      orderBy: { startedAt: 'desc' },
+    });
+    if (!job) return { active: false };
+    return {
+      active: true,
+      jobId: job.id,
+      status: job.status,
+      step: job.step ?? undefined,
+      sections: job.sections,
+    };
+  }
+
+  async abortGeneration(jobId: string): Promise<{ aborted: boolean }> {
+    const job = await this.prisma.wikiGenerationJob.findUnique({ where: { id: jobId } });
+    if (!job) throw new NotFoundException('Wiki generation job not found');
+    // Signal the processor (in-memory registry) and mark aborted; the running
+    // section stops at its next checkpoint.
+    this.abortControllers.get(jobId)?.abort();
+    await this.prisma.wikiGenerationJob.update({
+      where: { id: jobId },
+      data: { status: 'aborted', endedAt: new Date() },
+    });
+    const bullJob = await this.queue.getJob(jobId);
+    await bullJob?.remove().catch(() => undefined);
+    return { aborted: true };
+  }
+
+  /** In-memory abort registry shared with the processor (single-node). */
+  readonly abortControllers = new Map<string, AbortController>();
 }

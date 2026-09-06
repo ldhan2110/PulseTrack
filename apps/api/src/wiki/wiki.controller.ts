@@ -4,6 +4,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 import { WikiService } from './wiki.service';
+import { UpsertWikiConfigDto } from './dto/upsert-wiki-config.dto';
 
 @Controller('projects/:projectId/wiki')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -11,6 +12,43 @@ export class WikiController {
   constructor(
     private readonly service: WikiService,
   ) {}
+
+  // ─── Config ──────────────────────────────────────────────────────────
+  @Get('config')
+  getConfig(@Param('projectId') projectId: string) {
+    return this.service.getConfig(projectId);
+  }
+
+  @Put('config')
+  upsertConfig(@Param('projectId') projectId: string, @Body() body: UpsertWikiConfigDto) {
+    return this.service.upsertConfig(projectId, body);
+  }
+
+  // ─── Generation ──────────────────────────────────────────────────────
+  @Post('generate')
+  generate(@Param('projectId') projectId: string) {
+    return this.service.startGeneration(projectId);
+  }
+
+  @Post('generate/:section')
+  generateSection(@Param('projectId') projectId: string, @Param('section') section: string) {
+    return this.service.startGeneration(projectId, section);
+  }
+
+  @Get('generate/status/:jobId')
+  getGenerationStatus(@Param('jobId') jobId: string) {
+    return this.service.getGenerationStatus(jobId);
+  }
+
+  @Get('generate/active')
+  getActiveJob(@Param('projectId') projectId: string) {
+    return this.service.getActiveJob(projectId);
+  }
+
+  @Post('generate/abort/:jobId')
+  abortGeneration(@Param('jobId') jobId: string) {
+    return this.service.abortGeneration(jobId);
+  }
 
   @Get('pages')
   getPageTree(@Param('projectId') projectId: string) {

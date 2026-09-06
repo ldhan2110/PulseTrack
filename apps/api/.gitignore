@@ -3,3 +3,6 @@ node_modules
 .env
 
 /generated/prisma
+
+# Generated wiki output (legacy location; now under workspaces/<projectId>/wiki)
+wikis/

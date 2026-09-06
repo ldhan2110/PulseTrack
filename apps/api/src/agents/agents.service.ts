@@ -3,6 +3,7 @@ import type { Agent } from './agent.interface';
 import { TestcaseScriptAgent } from './specialist/testcase-script.agent';
 import { ProjectContextAgent } from './specialist/project-context.agent';
 import { BaUserStoryAgent } from './specialist/ba-user-story.agent';
+import { WikiAgent } from './specialist/wiki.agent';
 
 @Injectable()
 export class AgentsService {
@@ -12,10 +13,12 @@ export class AgentsService {
     testcaseScript: TestcaseScriptAgent,
     projectContext: ProjectContextAgent,
     baUserStory: BaUserStoryAgent,
+    wiki: WikiAgent,
   ) {
     this.register(testcaseScript);
     this.register(projectContext);
     this.register(baUserStory);
+    this.register(wiki);
   }
 
   private register(agent: Agent) {

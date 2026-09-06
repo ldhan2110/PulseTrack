@@ -6,7 +6,7 @@
     "deleteOutDir": true,
     "assets": [
       {
-        "include": "ai/skills/**/*.md",
+        "include": "agents/skills/**/*.md",
         "watchAssets": true
       }
     ]
