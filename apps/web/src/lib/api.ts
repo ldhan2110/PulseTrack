@@ -80,6 +80,7 @@ import type {
   CreatePlannerSessionPayload,
   UpdatePlannerSessionPayload,
   PlannerMessage,
+  PlannerScopeProposal,
   SendMessageResult,
   PlannerScope,
   CreateScopePayload,
@@ -870,6 +871,13 @@ export const api = {
     }
     return res.json() as Promise<SendMessageResult>;
   },
+
+  updatePlannerProposal: (messageId: string, data: PlannerScopeProposal) =>
+    request<PlannerMessage>(`/planner-sessions/proposals/${messageId}`, { method: 'POST', body: JSON.stringify(data) }),
+  acceptPlannerProposal: (messageId: string, data: PlannerScopeProposal) =>
+    request<PlannerScope>(`/planner-sessions/proposals/${messageId}/accept`, { method: 'POST', body: JSON.stringify(data) }),
+  dismissPlannerProposal: (messageId: string) =>
+    request<PlannerMessage>(`/planner-sessions/proposals/${messageId}/dismiss`, { method: 'POST' }),
 
   getPlannerScopes: (sessionId: string) =>
     request<PlannerScope[]>(`/planner-sessions/${sessionId}/scopes`),

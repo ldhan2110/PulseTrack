@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import type { PlannerMessage } from '@/lib/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import type { PlannerMessage, PlannerScopeProposal } from '@/lib/types';
 import { useSendPlannerMessage } from '@/hooks/usePlanner';
 import { usePlannerSSE } from '@/hooks/usePlannerSSE';
 import { ChatMessageList } from './ChatMessageList';
@@ -12,7 +14,8 @@ interface PlannerChatPanelProps {
 
 export function PlannerChatPanel({ sessionId, messages }: PlannerChatPanelProps) {
   const [streamingContent, setStreamingContent] = useState('');
-  const [suggestedAction, setSuggestedAction] = useState<{ type: string; reason: string } | null>(null);
+  const [suggestedAction, setSuggestedAction] = useState<{ messageId: string; type: string; reason: string; proposal: PlannerScopeProposal } | null>(null);
+  const queryClient = useQueryClient();
   const sendMessage = useSendPlannerMessage(sessionId);
   const { connect, isStreaming } = usePlannerSSE(sessionId);
 
@@ -54,8 +57,16 @@ export function PlannerChatPanel({ sessionId, messages }: PlannerChatPanelProps)
         streamingContent={streamingContent}
         isStreaming={isBusy}
         suggestedAction={suggestedAction}
-        onAcceptAction={() => setSuggestedAction(null)}
-        onDismissAction={() => setSuggestedAction(null)}
+        onAcceptAction={async (messageId, proposal) => {
+          await api.acceptPlannerProposal(messageId, proposal);
+          if (suggestedAction?.messageId === messageId) setSuggestedAction(null);
+          await Promise.all([queryClient.invalidateQueries({ queryKey: ['planner-messages', sessionId] }), queryClient.invalidateQueries({ queryKey: ['planner-scopes', sessionId] })]);
+        }}
+        onDismissAction={async (messageId) => {
+          await api.dismissPlannerProposal(messageId);
+          if (suggestedAction?.messageId === messageId) setSuggestedAction(null);
+          await queryClient.invalidateQueries({ queryKey: ['planner-messages', sessionId] });
+        }}
       />
       <ChatInput onSend={handleSend} disabled={isBusy} />
     </div>

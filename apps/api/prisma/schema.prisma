@@ -110,6 +110,12 @@ enum PlannerMessageRole {
   SYSTEM
 }
 
+enum PlannerProposalStatus {
+  PENDING
+  ACCEPTED
+  DISMISSED
+}
+
 model WorkflowStatus {
   id        String       @id @default(cuid())
   projectId String
@@ -871,6 +877,8 @@ model PlannerMessage {
   sessionId String
   role      PlannerMessageRole
   content   String
+  proposal  Json?
+  proposalStatus PlannerProposalStatus?
   createdAt DateTime           @default(now())
 
   session          PlannerSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)

@@ -1169,7 +1169,15 @@ export interface PlannerMessage {
   role: 'USER' | 'ASSISTANT' | 'SYSTEM';
   content: string;
   attachments: PlannerAttachment[];
+  proposal?: PlannerScopeProposal | null;
+  proposalStatus?: 'PENDING' | 'ACCEPTED' | 'DISMISSED' | null;
   createdAt: string;
+}
+
+export interface PlannerScopeProposal {
+  title: string;
+  description?: string;
+  features: Array<{ title: string; description?: string }>;
 }
 
 export interface PlannerSession {

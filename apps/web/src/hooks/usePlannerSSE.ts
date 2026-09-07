@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import keycloak from '../auth/keycloak';
-import type { PlannerScope, PlannerFeature } from '../lib/types';
+import type { PlannerScope, PlannerFeature, PlannerScopeProposal } from '../lib/types';
 
 const API_BASE = '/api';
 
@@ -12,7 +11,7 @@ interface SSECallbacks {
   onScopeUpdated: (scope: PlannerScope) => void;
   onFeatureAdded: (feature: PlannerFeature & { scopeId: string }) => void;
   onFeatureUpdated: (feature: PlannerFeature) => void;
-  onActionSuggested: (data: { type: string; reason: string }) => void;
+  onActionSuggested: (data: { messageId: string; type: string; reason: string; proposal: PlannerScopeProposal }) => void;
   onError: (message: string) => void;
   onDone: () => void;
 }
@@ -28,8 +27,7 @@ export function usePlannerSSE(sessionId: string) {
         eventSourceRef.current.close();
       }
 
-      const token = keycloak.token;
-      const url = `${API_BASE}/planner-sessions/${sessionId}/chat-stream?token=${encodeURIComponent(streamToken)}&access_token=${encodeURIComponent(token ?? '')}`;
+      const url = `${API_BASE}/planner-sessions/${sessionId}/chat-stream?token=${encodeURIComponent(streamToken)}`;
       const es = new EventSource(url);
       eventSourceRef.current = es;
       setIsStreaming(true);

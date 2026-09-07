@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { PlannerMessage } from '@/lib/types';
+import type { PlannerMessage, PlannerScopeProposal } from '@/lib/types';
 import { ChatMessage, StreamingMessage, ThinkingIndicator } from './ChatMessage';
 import { ChatActionSuggestion } from './ChatActionSuggestion';
 
@@ -7,9 +7,9 @@ interface ChatMessageListProps {
   messages: PlannerMessage[];
   streamingContent: string;
   isStreaming: boolean;
-  suggestedAction: { type: string; reason: string } | null;
-  onAcceptAction: (type: string) => void;
-  onDismissAction: () => void;
+  suggestedAction: { messageId: string; type: string; reason: string; proposal: PlannerScopeProposal } | null;
+  onAcceptAction: (messageId: string, proposal: PlannerScopeProposal) => void;
+  onDismissAction: (messageId: string) => void;
 }
 
 export function ChatMessageList({
@@ -29,7 +29,12 @@ export function ChatMessageList({
         </div>
       )}
       {messages.map((msg) => (
-        <ChatMessage key={msg.id} message={msg} />
+        <div key={msg.id} className="space-y-2">
+          <ChatMessage message={msg} />
+          {msg.proposalStatus === 'PENDING' && msg.proposal && (
+            <ChatActionSuggestion type="scope_proposal" reason={`Proposed scope: ${msg.proposal.title}`} proposal={msg.proposal} onAccept={(proposal) => onAcceptAction(msg.id, proposal)} onDismiss={() => onDismissAction(msg.id)} />
+          )}
+        </div>
       ))}
       {isStreaming && (
         streamingContent
@@ -40,8 +45,9 @@ export function ChatMessageList({
         <ChatActionSuggestion
           type={suggestedAction.type}
           reason={suggestedAction.reason}
-          onAccept={() => onAcceptAction(suggestedAction.type)}
-          onDismiss={onDismissAction}
+          proposal={suggestedAction.proposal}
+          onAccept={(proposal) => onAcceptAction(suggestedAction.messageId, proposal)}
+          onDismiss={() => onDismissAction(suggestedAction.messageId)}
         />
       )}
       <div ref={bottomRef} />

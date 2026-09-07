@@ -59,7 +59,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           type="file"
           multiple
           className="hidden"
-          accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx"
+          accept=".pdf,.txt,.md,.docx"
           onChange={handleFileSelect}
         />
         <Button
