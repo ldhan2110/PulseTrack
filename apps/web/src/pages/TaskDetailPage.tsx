@@ -132,44 +132,83 @@ interface DatePickerFieldProps {
   value: string | null | undefined;
   onChange: (iso: string | null) => void;
   disabled?: boolean;
+  showTime?: boolean;
 }
 
-function DatePickerField({ label, value, onChange, disabled }: DatePickerFieldProps) {
+function DatePickerField({ label, value, onChange, disabled, showTime }: DatePickerFieldProps) {
   const selected = value ? parseISO(value) : undefined;
-  const displayLabel = selected ? format(selected, 'MMM d, yyyy') : 'Pick a date';
+  const displayLabel = selected
+    ? format(selected, showTime ? 'MMM d yyyy, HH:mm' : 'MMM d, yyyy')
+    : 'Pick a date';
+
+  // Time input: show keystrokes instantly, debounce the save (500ms).
+  const [timeDraft, setTimeDraft] = useState<string | null>(null);
+  const timeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeValue = timeDraft ?? (selected ? format(selected, 'HH:mm') : '');
+  const handleTimeChange = (v: string) => {
+    setTimeDraft(v);
+    if (timeTimer.current) clearTimeout(timeTimer.current);
+    if (!v) return;
+    timeTimer.current = setTimeout(() => {
+      const [h, m] = v.split(':').map(Number);
+      const base = selected ? new Date(selected) : new Date();
+      base.setHours(h, m, 0, 0);
+      onChange(base.toISOString());
+      setTimeDraft(null);
+    }, 500);
+  };
 
   return (
-    <div className="flex items-center justify-between gap-2">
-      <Label className='text-sm font-normal text-muted-foreground'>{label}</Label>
+    <div className="flex items-center gap-2">
+      <Label className='w-20 shrink-0 text-xs font-normal text-muted-foreground'>{label}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             size="sm"
-            className={cn('h-7 gap-1.5 text-xs font-normal', !value && 'text-muted-foreground')}
+            className={cn('h-7 flex-1 min-w-0 justify-start gap-1.5 text-xs font-normal', !value && 'text-muted-foreground')}
             disabled={disabled}
           >
-            <CalendarIcon className="size-3" />
-            {displayLabel}
+            <CalendarIcon className="size-3 shrink-0" />
+            <span className="truncate">{displayLabel}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="end">
           <CalendarComponent
             mode="single"
             selected={selected}
-            onSelect={(day) => onChange(day ? day.toISOString() : null)}
+            onSelect={(day) => {
+              if (!day) return onChange(null);
+              if (showTime && selected) {
+                day.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+              }
+              onChange(day.toISOString());
+            }}
             initialFocus
           />
-          {value && (
-            <div className="border-t p-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs text-muted-foreground"
-                onClick={() => onChange(null)}
-              >
-                Clear date
-              </Button>
+          {(showTime || value) && (
+            <div className="flex items-center gap-3 border-t p-3">
+              {showTime && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-normal text-muted-foreground">Time</Label>
+                  <Input
+                    type="time"
+                    className="h-7 w-28 text-xs"
+                    value={timeValue}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                  />
+                </div>
+              )}
+              {value && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-7 text-xs text-muted-foreground"
+                  onClick={() => onChange(null)}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
           )}
         </PopoverContent>
@@ -679,7 +718,7 @@ export function TaskDetailPage() {
         </div>
 
         {/* RIGHT SIDEBAR — sticky */}
-        <div className="w-60 shrink-0">
+        <div className="w-72 shrink-0">
           <div className="sticky top-8 flex flex-col gap-4">
             <div className="rounded-lg border p-4 flex flex-col gap-4">
               {/* Watchers */}
@@ -965,12 +1004,14 @@ export function TaskDetailPage() {
                   value={task.requestedDate}
                   onChange={(iso) => optimisticMutate({ requestedDate: iso }, { taskId, data: { requestedDate: iso } })}
                   disabled={!canEdit}
+                  showTime
                 />
                 <DatePickerField
                   label="Receipt"
                   value={task.receiptDate}
                   onChange={(iso) => optimisticMutate({ receiptDate: iso }, { taskId, data: { receiptDate: iso } })}
                   disabled={!canEdit}
+                  showTime
                 />
               </div>
 
