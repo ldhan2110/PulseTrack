@@ -22,7 +22,7 @@ export function useTestSuites(projectId: string, moduleId?: string) {
 export function useCreateTestSuite(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; moduleId: string }) =>
+    mutationFn: (data: { name: string }) =>
       (api as any).createTestSuite?.(projectId, data) ?? Promise.resolve(),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-suites', projectId] });

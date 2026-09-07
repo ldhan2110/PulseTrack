@@ -125,7 +125,7 @@ export function ModuleTree({
 
   const handleCreateSuite = () => {
     if (!newName.trim()) return;
-    createSuite.mutate({ name: newName.trim(), moduleId: selectedModuleId ?? '' }, {
+    createSuite.mutate({ name: newName.trim() }, {
       onSuccess: () => {
         setNewName('');
         setCreateSuiteOpen(false);

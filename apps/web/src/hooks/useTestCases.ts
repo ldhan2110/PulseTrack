@@ -40,6 +40,7 @@ export function useUpdateTestCase(projectId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['test-case-key', projectId] });
     },
   });
 }
