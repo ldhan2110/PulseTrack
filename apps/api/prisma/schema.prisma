@@ -30,6 +30,20 @@ model CustomRole {
   @@unique([projectId, name])
 }
 
+model Group {
+  id          String          @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members     ProjectMember[]
+
+  @@unique([projectId, name])
+}
+
 enum Priority {
   LOW
   MEDIUM
@@ -263,6 +277,7 @@ model Project {
   skills           Skill[]
   defaultWatchers  ProjectDefaultWatcher[]
   taskTypes        ProjectTaskType[]
+  groups           Group[]
 }
 
 model ProjectMember {
@@ -276,6 +291,7 @@ model ProjectMember {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   customRole    CustomRole     @relation(fields: [roleId], references: [id])
   assigneeRules StatusAssigneeRule[]
+  groups        Group[]
 
   @@unique([projectId, userId])
 }

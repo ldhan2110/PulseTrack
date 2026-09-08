@@ -1453,3 +1453,12 @@ export interface TaskType {
   createdAt: string;
 }
 
+export interface Group {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  members: Member[];
+}
+

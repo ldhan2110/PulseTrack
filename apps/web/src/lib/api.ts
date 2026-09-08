@@ -47,6 +47,7 @@ import type {
   NotificationPage,
   TicketWatcher,
   TaskType,
+  Group,
   TestModule,
   TestCase,
   CreateTestCasePayload,
@@ -626,6 +627,25 @@ export const api = {
   setTaskTypes: (projectId: string, types: { id?: string; name: string; isActive: boolean }[]) =>
     request<TaskType[]>(`/projects/${projectId}/task-types`, {
       method: 'PUT', body: JSON.stringify({ types }),
+    }),
+
+  getGroups: (projectId: string) =>
+    request<Group[]>(`/projects/${projectId}/groups`),
+  createGroup: (projectId: string, data: { name: string; description?: string }) =>
+    request<Group>(`/projects/${projectId}/groups`, {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+  updateGroup: (projectId: string, groupId: string, data: { name?: string; description?: string }) =>
+    request<Group>(`/projects/${projectId}/groups/${groupId}`, {
+      method: 'PATCH', body: JSON.stringify(data),
+    }),
+  deleteGroup: (projectId: string, groupId: string) =>
+    request<{ id: string }>(`/projects/${projectId}/groups/${groupId}`, {
+      method: 'DELETE',
+    }),
+  setGroupMembers: (projectId: string, groupId: string, memberIds: string[]) =>
+    request<Group>(`/projects/${projectId}/groups/${groupId}/members`, {
+      method: 'PUT', body: JSON.stringify({ memberIds }),
     }),
 
   // ─── Bug Comments ──────────────────────────────────────────────────────────

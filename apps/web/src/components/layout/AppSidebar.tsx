@@ -63,7 +63,7 @@ const PROJECT_NAV_ITEMS: NavItem[] = [
   { label: 'Test Cases', icon: ClipboardList, path: 'test-cases' },
   { label: 'Test Executions', icon: Play, path: 'test-executions' },
   { label: 'Bugs', icon: Bug, path: 'bugs' },
-  { label: 'Members', icon: Users, path: 'members' },
+  { label: 'Members & Groups', icon: Users, path: 'members' },
   { label: 'Wiki', icon: BookOpen, path: 'wiki' },
   { label: 'Settings', icon: Settings, path: 'settings' },
 ];

@@ -3,8 +3,10 @@ import { useUiStore } from '@/store/uiStore';
 import { Users, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MembersTable } from '@/components/members/MembersTable';
 import { AddMemberDialog } from '@/components/members/AddMemberDialog';
+import { GroupsCard } from '@/components/settings/GroupsCard';
 import { useMembers } from '@/hooks/useMembers';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -32,12 +34,13 @@ export function MembersPage() {
   const { can } = usePermissions(projectId);
   const canManage = can('members', 'update');
   const canAdd = can('members', 'create');
+  const canManageGroups = can('projectSettings', 'update');
 
   return (
     <div className="flex flex-col gap-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Members</h1>
+        <h1 className="text-xl font-semibold">Members &amp; Groups</h1>
         {canAdd && (
           <Button onClick={() => setAddDialogOpen(true)}>
             <UserPlus data-icon="inline-start" />
@@ -46,33 +49,45 @@ export function MembersPage() {
         )}
       </div>
 
-      {/* Content */}
-      {isLoading ? (
-        <MembersTableSkeleton />
-      ) : members && members.length > 0 ? (
-        <MembersTable
-          members={members}
-          projectId={projectId ?? ''}
-          canManage={canManage}
-        />
-      ) : (
-        /* Empty state */
-        <div className="flex flex-col items-center justify-center gap-4 py-16">
-          <Users className="size-12 text-muted-foreground" />
-          <div className="flex flex-col items-center gap-1 text-center">
-            <h2 className="text-base font-semibold">Just you for now</h2>
-            <p className="max-w-[360px] text-sm text-muted-foreground">
-              Add team members to collaborate on this project.
-            </p>
-          </div>
-          {canAdd && (
-            <Button onClick={() => setAddDialogOpen(true)}>
-              <UserPlus data-icon="inline-start" />
-              Add Member
-            </Button>
+      <Tabs defaultValue="members">
+        <TabsList>
+          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="groups">Groups</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="members" className="mt-4">
+          {isLoading ? (
+            <MembersTableSkeleton />
+          ) : members && members.length > 0 ? (
+            <MembersTable
+              members={members}
+              projectId={projectId ?? ''}
+              canManage={canManage}
+            />
+          ) : (
+            /* Empty state */
+            <div className="flex flex-col items-center justify-center gap-4 py-16">
+              <Users className="size-12 text-muted-foreground" />
+              <div className="flex flex-col items-center gap-1 text-center">
+                <h2 className="text-base font-semibold">Just you for now</h2>
+                <p className="max-w-[360px] text-sm text-muted-foreground">
+                  Add team members to collaborate on this project.
+                </p>
+              </div>
+              {canAdd && (
+                <Button onClick={() => setAddDialogOpen(true)}>
+                  <UserPlus data-icon="inline-start" />
+                  Add Member
+                </Button>
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+
+        <TabsContent value="groups" className="mt-4">
+          <GroupsCard projectId={projectId} canManage={canManageGroups} />
+        </TabsContent>
+      </Tabs>
 
       {/* Add Member Dialog */}
       <AddMemberDialog

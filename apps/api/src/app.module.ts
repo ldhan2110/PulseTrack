@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { MembersModule } from './members/members.module';
+import { GroupsModule } from './groups/groups.module';
 import { TasksModule } from './tasks/tasks.module';
 import { MyTasksModule } from './my-tasks/my-tasks.module';
 import { SprintsModule } from './sprints/sprints.module';
@@ -51,6 +52,7 @@ import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.
     UsersModule,
     ProjectsModule,
     MembersModule,
+    GroupsModule,
     TasksModule,
     MyTasksModule,
     SprintsModule,
