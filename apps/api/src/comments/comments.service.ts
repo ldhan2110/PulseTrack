@@ -63,7 +63,7 @@ export class CommentsService {
           taskId,
           actorId: authorId,
           field: 'comment_added',
-          newValue: content.replace(/<[^>]*>/g, '').slice(0, 200),
+          newValue: content,
         },
       }),
     ]);
@@ -88,7 +88,7 @@ export class CommentsService {
           taskId,
           actorId: authorId,
           field: 'comment_added',
-          newValue: content.replace(/<[^>]*>/g, '').slice(0, 200),
+          newValue: content,
         },
       }),
     ]);
@@ -127,7 +127,7 @@ export class CommentsService {
             taskId: comment.taskId,
             actorId: userId,
             field: 'comment_deleted',
-            oldValue: comment.content.replace(/<[^>]*>/g, '').slice(0, 200),
+            oldValue: comment.content,
           },
         }),
       );
@@ -139,7 +139,7 @@ export class CommentsService {
             bugId: comment.bugId,
             actorId: userId,
             field: 'comment_deleted',
-            oldValue: comment.content.replace(/<[^>]*>/g, '').slice(0, 200),
+            oldValue: comment.content,
           },
         }),
       );
@@ -174,7 +174,7 @@ export class CommentsService {
           bugId,
           actorId: authorId,
           field: 'comment_added',
-          newValue: content.replace(/<[^>]*>/g, '').slice(0, 200),
+          newValue: content,
         },
       }),
     ]);
@@ -199,7 +199,7 @@ export class CommentsService {
           bugId,
           actorId: authorId,
           field: 'comment_added',
-          newValue: content.replace(/<[^>]*>/g, '').slice(0, 200),
+          newValue: content,
         },
       }),
     ]);
@@ -233,8 +233,8 @@ export class CommentsService {
             taskId: comment.taskId,
             actorId: userId,
             field: 'comment_edited',
-            oldValue: oldContent.replace(/<[^>]*>/g, '').slice(0, 500),
-            newValue: content.replace(/<[^>]*>/g, '').slice(0, 500),
+            oldValue: oldContent,
+            newValue: content,
           },
         }),
       );
@@ -246,8 +246,8 @@ export class CommentsService {
             bugId: comment.bugId,
             actorId: userId,
             field: 'comment_edited',
-            oldValue: oldContent.replace(/<[^>]*>/g, '').slice(0, 500),
-            newValue: content.replace(/<[^>]*>/g, '').slice(0, 500),
+            oldValue: oldContent,
+            newValue: content,
           },
         }),
       );

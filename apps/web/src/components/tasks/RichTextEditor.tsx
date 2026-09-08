@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 import { ResizableImage } from '@/components/editor/ResizableImage';
+import { buildMention } from '@/components/editor/mentionExtension';
 import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface RichTextEditorProps {
@@ -269,6 +270,7 @@ export function RichTextEditor({
         },
       }),
       ResizableImage,
+      buildMention(),
       TextStyle,
       Color,
       Table.configure({ resizable: false }),

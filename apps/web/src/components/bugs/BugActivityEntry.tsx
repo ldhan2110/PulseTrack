@@ -5,8 +5,11 @@ import {
   FileText, Paperclip, Shield, Monitor,
   Eye, EyeOff, AlertTriangle, CheckCircle,
 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 import type { BugHistoryEntry, Member } from '@/lib/types';
+
+const COMMENT_HTML_FIELDS = ['comment_added', 'comment_edited', 'comment_deleted'];
 
 const SEVERITY_LABELS: Record<string, string> = {
   LOW: 'Low',
@@ -90,18 +93,27 @@ function buildDescription(
   }
 }
 
-function DiffCard({ oldValue, newValue }: { oldValue?: string | null; newValue?: string | null }) {
+function DiffCard({ oldValue, newValue, isHtml = false }: { oldValue?: string | null; newValue?: string | null; isHtml?: boolean }) {
   if (!oldValue && !newValue) return null;
+  const htmlProse = 'break-words [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-1 [&_p]:my-0.5 [&_.mention]:bg-blue-100 [&_.mention]:text-blue-800 [&_.mention]:dark:bg-blue-900/30 [&_.mention]:dark:text-blue-300 [&_.mention]:rounded [&_.mention]:px-1 [&_.mention]:font-medium';
   return (
     <div className="mt-1.5 text-xs rounded-md border overflow-hidden">
       {oldValue && (
-        <div className="px-2.5 py-1.5 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 line-through break-words">
-          {oldValue.length > 200 ? oldValue.slice(0, 200) + '...' : oldValue}
+        <div className={cn('px-2.5 py-1.5 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 break-words', !isHtml && 'line-through')}>
+          {isHtml ? (
+            <div className={htmlProse} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(oldValue, { ADD_ATTR: ['data-mention-id'] }) }} />
+          ) : (
+            oldValue.length > 200 ? oldValue.slice(0, 200) + '...' : oldValue
+          )}
         </div>
       )}
       {newValue && (
         <div className="px-2.5 py-1.5 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 break-words">
-          {newValue.length > 200 ? newValue.slice(0, 200) + '...' : newValue}
+          {isHtml ? (
+            <div className={htmlProse} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(newValue, { ADD_ATTR: ['data-mention-id'] }) }} />
+          ) : (
+            newValue.length > 200 ? newValue.slice(0, 200) + '...' : newValue
+          )}
         </div>
       )}
     </div>
@@ -146,7 +158,7 @@ export function BugActivityEntry({ entry, members, isLast = false }: BugActivity
           <span className="text-sm text-muted-foreground">{description}</span>
           <span className="text-xs text-muted-foreground ml-auto shrink-0">{relativeTime}</span>
         </div>
-        {showDiff && <DiffCard oldValue={entry.oldValue} newValue={entry.newValue} />}
+        {showDiff && <DiffCard oldValue={entry.oldValue} newValue={entry.newValue} isHtml={COMMENT_HTML_FIELDS.includes(entry.field)} />}
       </div>
     </div>
   );
