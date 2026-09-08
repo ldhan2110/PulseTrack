@@ -12,10 +12,11 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import {
   Bold, Italic, List, ListOrdered, Code2, Table as TableIcon,
-  Link as LinkIcon, Image as ImageIcon, Baseline, Eraser,
+  Image as ImageIcon, Baseline, Eraser,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { LinkPopoverButton } from '@/components/tasks/LinkPopoverButton';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 import { ResizableImage } from '@/components/editor/ResizableImage';
@@ -86,14 +87,6 @@ function EditorToolbar({
 }) {
   const colorInputRef = useRef<HTMLInputElement>(null);
   if (!editor) return null;
-  const toggleLink = () => {
-    if (editor.isActive('link')) {
-      editor.chain().focus().unsetLink().run();
-      return;
-    }
-    const url = window.prompt('URL');
-    if (url) editor.chain().focus().setLink({ href: url }).run();
-  };
   return (
     <div className="flex items-center gap-1 border-b p-1">
       <ToolbarButton
@@ -142,13 +135,7 @@ function EditorToolbar({
         label="Insert Table"
       />
       <div className="mx-1 h-4 w-px bg-border" />
-      <ToolbarButton
-        editor={editor}
-        action={toggleLink}
-        isActiveKey="link"
-        icon={LinkIcon}
-        label="Insert Link"
-      />
+      <LinkPopoverButton editor={editor} />
       {supportsImages && (
         <ToolbarButton
           editor={editor}
@@ -330,8 +317,11 @@ export function RichTextEditor({
     if (!editor || alwaysEditing) return;
 
     const handleBlur = ({ event }: { event: FocusEvent }) => {
-      const relatedTarget = event.relatedTarget as Node | null;
+      const relatedTarget = event.relatedTarget as HTMLElement | null;
       if (containerRef.current?.contains(relatedTarget)) return;
+      // The link popover portals its input outside the container — don't
+      // save/exit while focus is inside it.
+      if (relatedTarget?.closest('[data-radix-popper-content-wrapper]')) return;
       void handleSaveAndExit(editor);
     };
 

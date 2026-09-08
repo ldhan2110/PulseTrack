@@ -13,10 +13,11 @@ import { Color } from '@tiptap/extension-color';
 import { buildMention } from '@/components/editor/mentionExtension';
 import {
   Bold, Italic, List, ListOrdered, Code2, Table as TableIcon,
-  Link as LinkIcon, Image as ImageIcon, Baseline, Eraser,
+  Image as ImageIcon, Baseline, Eraser,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { LinkPopoverButton } from '@/components/tasks/LinkPopoverButton';
 import { ResizableImage } from '@/components/editor/ResizableImage';
 import { useImageUpload } from '@/hooks/useImageUpload';
 
@@ -176,16 +177,6 @@ export function CommentComposer({
     reader.readAsDataURL(file);
   };
 
-  const toggleLink = () => {
-    if (!editor) return;
-    if (editor.isActive('link')) {
-      editor.chain().focus().unsetLink().run();
-      return;
-    }
-    const url = window.prompt('URL');
-    if (url) editor.chain().focus().setLink({ href: url }).run();
-  };
-
   if (!editor) return null;
 
   return (
@@ -238,13 +229,7 @@ export function CommentComposer({
             label="Insert Table"
           />
           <div className="mx-1 h-4 w-px bg-border" />
-          <ToolbarButton
-            editor={editor}
-            action={toggleLink}
-            isActiveKey="link"
-            icon={LinkIcon}
-            label="Insert Link"
-          />
+          <LinkPopoverButton editor={editor} />
           <ToolbarButton
             editor={editor}
             action={() => fileInputRef.current?.click()}
