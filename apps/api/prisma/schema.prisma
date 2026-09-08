@@ -179,7 +179,7 @@ enum AutomationRunStatus {
 
 model User {
   id                String    @id @default(cuid())
-  keycloakId        String    @unique // sub from JWT
+  keycloakId        String?   @unique // sub from JWT; null = pending invite, claimed on first login
   email             String    @unique
   username          String
   name              String?   // Display name from Keycloak user-info.usrNm

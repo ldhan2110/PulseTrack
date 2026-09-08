@@ -26,8 +26,8 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
-import { useSearchUsers, useAddMembers } from '@/hooks/useMembers';
+import { X, Mail } from 'lucide-react';
+import { useSearchUsers, useAddMembers, useInviteMember } from '@/hooks/useMembers';
 import { useRoles } from '@/hooks/useRoles';
 import type { UserSearchResult } from '@/lib/types';
 
@@ -58,10 +58,14 @@ function getInitials(name: string): string {
 }
 
 interface QueueEntry {
-  user: UserSearchResult;
+  // Existing user picked from search; null for an email-only invite.
+  user: UserSearchResult | null;
+  email: string;
   roleId: string;
   roleName: string;
 }
+
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 interface AddMemberDialogProps {
   projectId: string;
@@ -83,35 +87,65 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
 
   const { data: searchResults = [], isFetching } = useSearchUsers(projectId, debouncedQuery);
   const addMembers = useAddMembers(projectId);
+  const inviteMember = useInviteMember(projectId);
   const { data: roles = [] } = useRoles(projectId);
+
+  const isPending = addMembers.isPending || inviteMember.isPending;
 
   // Set default role to the project's default role
   const defaultRole = roles.find((r) => r.isDefault) ?? roles[0];
   const effectiveRoleId = selectedRoleId || defaultRole?.id || '';
 
   // Exclude users already in queue from search results
-  const queuedUserIds = new Set(queue.map((e) => e.user.id));
+  const queuedUserIds = new Set(queue.map((e) => e.user?.id).filter(Boolean));
   const filteredResults = searchResults.filter((u) => !queuedUserIds.has(u.id));
+
+  // Offer an invite row when the typed value is an email that matches no existing user.
+  const trimmedQuery = debouncedQuery.trim();
+  const queuedEmails = new Set(queue.map((e) => e.email.toLowerCase()));
+  const showInviteRow =
+    EMAIL_RE.test(trimmedQuery) &&
+    filteredResults.length === 0 &&
+    !queuedEmails.has(trimmedQuery.toLowerCase());
 
   const handleAddToQueue = () => {
     if (!selectedUser || !effectiveRoleId) return;
     const role = roles.find((r) => r.id === effectiveRoleId);
-    setQueue((prev) => [...prev, { user: selectedUser, roleId: effectiveRoleId, roleName: role?.name ?? 'Unknown' }]);
+    setQueue((prev) => [
+      ...prev,
+      { user: selectedUser, email: selectedUser.email, roleId: effectiveRoleId, roleName: role?.name ?? 'Unknown' },
+    ]);
     setSearchQuery('');
     setSelectedUser(null);
     setSelectedRoleId('');
   };
 
-  const handleRemoveFromQueue = (userId: string) => {
-    setQueue((prev) => prev.filter((e) => e.user.id !== userId));
+  const handleAddInviteToQueue = () => {
+    if (!showInviteRow || !effectiveRoleId) return;
+    const role = roles.find((r) => r.id === effectiveRoleId);
+    setQueue((prev) => [
+      ...prev,
+      { user: null, email: trimmedQuery, roleId: effectiveRoleId, roleName: role?.name ?? 'Unknown' },
+    ]);
+    setSearchQuery('');
+    setSelectedUser(null);
+    setSelectedRoleId('');
+  };
+
+  const handleRemoveFromQueue = (email: string) => {
+    setQueue((prev) => prev.filter((e) => e.email !== email));
   };
 
   const handleSubmit = () => {
     if (queue.length === 0) return;
-    addMembers.mutate(
-      { members: queue.map((e) => ({ userId: e.user.id, roleId: e.roleId })) },
-      { onSuccess: () => handleClose() },
-    );
+    const existing = queue.filter((e) => e.user);
+    const invites = queue.filter((e) => !e.user);
+    void Promise.all([
+      existing.length > 0
+        ? addMembers.mutateAsync({ members: existing.map((e) => ({ userId: e.user!.id, roleId: e.roleId })) })
+        : Promise.resolve(),
+      ...invites.map((e) => inviteMember.mutateAsync({ email: e.email, roleId: e.roleId })),
+    ]).then(() => handleClose());
   };
 
   const handleClose = useCallback(() => {
@@ -155,7 +189,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                   </div>
                 ) : (
                   <>
-                    <CommandEmpty>No users found</CommandEmpty>
+                    {!showInviteRow && <CommandEmpty>No users found</CommandEmpty>}
                     <CommandGroup>
                       {filteredResults.map((user) => (
                         <CommandItem
@@ -174,6 +208,19 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                           </div>
                         </CommandItem>
                       ))}
+                      {showInviteRow && (
+                        <CommandItem value={`invite-${trimmedQuery}`} onSelect={handleAddInviteToQueue}>
+                          <Avatar size="sm">
+                            <AvatarFallback>
+                              <Mail className="h-3.5 w-3.5" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">Invite {trimmedQuery}</p>
+                            <p className="truncate text-xs text-muted-foreground">Send an invite email</p>
+                          </div>
+                        </CommandItem>
+                      )}
                     </CommandGroup>
                   </>
                 )}
@@ -217,27 +264,34 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
             <Field>
               <FieldLabel>Members to add ({queue.length})</FieldLabel>
               <div className="flex flex-col gap-2 rounded-lg border border-input p-2">
-                {queue.map(({ user, roleName }) => (
+                {queue.map(({ user, email, roleName }) => (
                   <div
-                    key={user.id}
+                    key={email}
                     className="flex items-center gap-2 rounded-md px-2 py-1.5"
                   >
                     <Avatar size="sm">
-                      {user.imageUrl && <AvatarImage src={user.imageUrl} alt={user.name ?? user.username} />}
-                      <AvatarFallback>{getInitials(user.name ?? user.username)}</AvatarFallback>
+                      {user?.imageUrl && <AvatarImage src={user.imageUrl} alt={user.name ?? user.username} />}
+                      <AvatarFallback>
+                        {user ? getInitials(user.name ?? user.username) : <Mail className="h-3.5 w-3.5" />}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{user.name ?? user.username}</p>
-                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                      <p className="truncate text-sm font-medium">{user ? (user.name ?? user.username) : email}</p>
+                      <p className="truncate text-xs text-muted-foreground">{user ? user.email : 'Invite by email'}</p>
                     </div>
+                    {!user && (
+                      <Badge variant="outline" className="shrink-0 text-xs">
+                        Invite
+                      </Badge>
+                    )}
                     <Badge variant="secondary" className="shrink-0 text-xs">
                       {roleName}
                     </Badge>
                     <button
                       type="button"
-                      onClick={() => handleRemoveFromQueue(user.id)}
+                      onClick={() => handleRemoveFromQueue(email)}
                       className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
-                      aria-label={`Remove ${user.name ?? user.username} from list`}
+                      aria-label={`Remove ${user ? (user.name ?? user.username) : email} from list`}
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -254,16 +308,16 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
             type="button"
             variant="ghost"
             onClick={handleClose}
-            disabled={addMembers.isPending}
+            disabled={isPending}
           >
             Discard
           </Button>
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={queue.length === 0 || addMembers.isPending}
+            disabled={queue.length === 0 || isPending}
           >
-            {addMembers.isPending
+            {isPending
               ? 'Adding...'
               : queue.length === 0
                 ? 'Add Members'

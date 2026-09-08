@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { AddMemberPayload, AddMembersPayload, ChangeRolePayload } from '../lib/types';
+import type { AddMemberPayload, AddMembersPayload, InviteMemberPayload, ChangeRolePayload } from '../lib/types';
 
 export function useMembers(projectId: string) {
   return useQuery({
@@ -40,6 +40,19 @@ export function useAddMembers(projectId: string) {
     onSuccess: (members) => {
       void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
       toast.success(`${members.length} member${members.length === 1 ? '' : 's'} added to project`);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
+export function useInviteMember(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: InviteMemberPayload) => api.inviteMember(projectId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
     },
     onError: (err: Error) => {
       toast.error(err.message);
