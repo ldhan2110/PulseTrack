@@ -222,66 +222,69 @@ export function CreateTaskDialog({
               />
             </Field>
 
-            <Field>
-              <FieldLabel htmlFor="task-points">Story Points</FieldLabel>
-              <Input
-                id="task-points"
-                type="number"
-                min={1}
-                max={100}
-                placeholder="—"
-                value={storyPoints}
-                onChange={(e) => setStoryPoints(e.target.value)}
-                aria-invalid={!!errors.storyPoints}
-              />
-              {errors.storyPoints && (
-                <p className="text-xs text-destructive">{errors.storyPoints}</p>
-              )}
-            </Field>
+            <div className="grid grid-cols-3 gap-4">
+              <Field>
+                <FieldLabel htmlFor="task-points">Story Points</FieldLabel>
+                <Input
+                  id="task-points"
+                  type="number"
+                  min={1}
+                  max={100}
+                  placeholder="—"
+                  className="h-8"
+                  value={storyPoints}
+                  onChange={(e) => setStoryPoints(e.target.value)}
+                  aria-invalid={!!errors.storyPoints}
+                />
+                {errors.storyPoints && (
+                  <p className="text-xs text-destructive">{errors.storyPoints}</p>
+                )}
+              </Field>
 
-            <Field>
-              <FieldLabel>Task Type <span className="text-destructive">*</span></FieldLabel>
-              <Select value={taskTypeId} onValueChange={setTaskTypeId}>
-                <SelectTrigger className="h-8" aria-invalid={!!errors.taskTypeId}>
-                  <SelectValue placeholder="Select a type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeTaskTypes.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.taskTypeId && (
-                <p className="text-xs text-destructive">{errors.taskTypeId}</p>
-              )}
-            </Field>
+              <Field>
+                <FieldLabel>Task Type <span className="text-destructive">*</span></FieldLabel>
+                <Select value={taskTypeId} onValueChange={setTaskTypeId}>
+                  <SelectTrigger className="h-8 w-full" aria-invalid={!!errors.taskTypeId}>
+                    <SelectValue placeholder="Select a type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeTaskTypes.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.taskTypeId && (
+                  <p className="text-xs text-destructive">{errors.taskTypeId}</p>
+                )}
+              </Field>
 
-            <Field>
-              <FieldLabel>Priority</FieldLabel>
-              <Select value={priority || 'none'} onValueChange={(val) => setPriority(val === 'none' ? '' : val as Priority)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder="None (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    <span className="text-muted-foreground">None</span>
-                  </SelectItem>
-                  {PRIORITY_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="inline-block size-2 rounded-full"
-                          style={{ backgroundColor: opt.color }}
-                        />
-                        <span style={{ color: opt.color }}>{opt.label}</span>
-                      </div>
+              <Field>
+                <FieldLabel>Priority</FieldLabel>
+                <Select value={priority || 'none'} onValueChange={(val) => setPriority(val === 'none' ? '' : val as Priority)}>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="None (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-muted-foreground">None</span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+                    {PRIORITY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="inline-block size-2 rounded-full"
+                            style={{ backgroundColor: opt.color }}
+                          />
+                          <span style={{ color: opt.color }}>{opt.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <Field>
