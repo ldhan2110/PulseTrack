@@ -8,8 +8,11 @@ import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import Link from '@tiptap/extension-link';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
 import {
   Bold, Italic, List, ListOrdered, Code2, Table as TableIcon,
+  Link as LinkIcon, Image as ImageIcon, Baseline, Eraser,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -71,8 +74,25 @@ function ToolbarButton({
   );
 }
 
-function EditorToolbar({ editor }: { editor: Editor | null }) {
+function EditorToolbar({
+  editor,
+  supportsImages,
+  onPickImage,
+}: {
+  editor: Editor | null;
+  supportsImages: boolean;
+  onPickImage: () => void;
+}) {
+  const colorInputRef = useRef<HTMLInputElement>(null);
   if (!editor) return null;
+  const toggleLink = () => {
+    if (editor.isActive('link')) {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    const url = window.prompt('URL');
+    if (url) editor.chain().focus().setLink({ href: url }).run();
+  };
   return (
     <div className="flex items-center gap-1 border-b p-1">
       <ToolbarButton
@@ -120,6 +140,54 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
         icon={TableIcon}
         label="Insert Table"
       />
+      <div className="mx-1 h-4 w-px bg-border" />
+      <ToolbarButton
+        editor={editor}
+        action={toggleLink}
+        isActiveKey="link"
+        icon={LinkIcon}
+        label="Insert Link"
+      />
+      {supportsImages && (
+        <ToolbarButton
+          editor={editor}
+          action={onPickImage}
+          isActiveKey="__never__"
+          icon={ImageIcon}
+          label="Upload Image"
+        />
+      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={() => colorInputRef.current?.click()}
+            aria-label="Font Color"
+            type="button"
+          >
+            <Baseline className="size-3.5" style={{ color: editor.getAttributes('textStyle').color || undefined }} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Font Color</TooltipContent>
+      </Tooltip>
+      <input
+        ref={colorInputRef}
+        type="color"
+        className="sr-only"
+        value={editor.getAttributes('textStyle').color || '#000000'}
+        onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <ToolbarButton
+        editor={editor}
+        action={() => editor.chain().focus().unsetColor().run()}
+        isActiveKey="__never__"
+        icon={Eraser}
+        label="Clear Color"
+      />
     </div>
   );
 }
@@ -144,6 +212,7 @@ export function RichTextEditor({
   const initialContentRef = useRef(initialContent);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const supportsImages = Boolean(projectId && resolvedEntityId);
   const { handleImagePaste, awaitPendingUploads } = useImageUpload({ projectId: projectId ?? '', entityType, entityId: resolvedEntityId });
@@ -170,6 +239,21 @@ export function RichTextEditor({
     [onSave, alwaysEditing, awaitPendingUploads],
   );
 
+  const handleImageFile = useCallback(
+    (file: File) => {
+      const ed = editorRef.current;
+      if (!ed) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        ed.chain().focus().insertContent({ type: 'image', attrs: { src: base64 } }).run();
+        handleImagePaste(file, ed, base64);
+      };
+      reader.readAsDataURL(file);
+    },
+    [handleImagePaste],
+  );
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false }),
@@ -185,6 +269,8 @@ export function RichTextEditor({
         },
       }),
       ResizableImage,
+      TextStyle,
+      Color,
       Table.configure({ resizable: false }),
       TableRow,
       TableCell,
@@ -299,7 +385,22 @@ export function RichTextEditor({
   // ── Edit mode (or alwaysEditing) ──
   return (
     <div className="rounded-md border border-ring/50" ref={containerRef}>
-      <EditorToolbar editor={editor} />
+      <EditorToolbar
+        editor={editor}
+        supportsImages={supportsImages}
+        onPickImage={() => fileInputRef.current?.click()}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleImageFile(file);
+          e.target.value = '';
+        }}
+      />
       <div className={cn(contentMaxHeight, 'overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border')}>
       <EditorContent
         editor={editor}

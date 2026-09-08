@@ -61,7 +61,7 @@ function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps)
         draggable={false}
       />
       <div
-        className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-8 bg-primary/60 rounded-sm cursor-col-resize opacity-0 group-hover/img:opacity-100 transition-opacity"
+        className={`absolute -right-1 -bottom-1 w-4 h-4 bg-primary border-2 border-background rounded-full cursor-nwse-resize shadow transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover/img:opacity-100'}`}
         onMouseDown={handleMouseDown}
         aria-label="Resize image"
       />
