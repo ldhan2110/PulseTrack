@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -71,11 +71,17 @@ interface AddMemberDialogProps {
 
 export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [queue, setQueue] = useState<QueueEntry[]>([]);
 
-  const { data: searchResults = [], isFetching } = useSearchUsers(projectId, searchQuery);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const { data: searchResults = [], isFetching } = useSearchUsers(projectId, debouncedQuery);
   const addMembers = useAddMembers(projectId);
   const { data: roles = [] } = useRoles(projectId);
 
@@ -132,7 +138,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
         <FieldGroup>
           <Field>
             <FieldLabel>Search users</FieldLabel>
-            <Command className="rounded-lg border border-input">
+            <Command shouldFilter={false} className="rounded-lg border border-input">
               <CommandInput
                 placeholder="Search by name or email..."
                 value={searchQuery}
@@ -143,7 +149,7 @@ export function AddMemberDialog({ projectId, open, onOpenChange }: AddMemberDial
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     Type at least 2 characters to search
                   </div>
-                ) : isFetching ? (
+                ) : isFetching || searchQuery !== debouncedQuery ? (
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     Searching...
                   </div>
