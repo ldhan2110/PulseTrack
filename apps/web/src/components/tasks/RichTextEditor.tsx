@@ -371,7 +371,7 @@ export function RichTextEditor({
           <p className="text-sm text-muted-foreground p-3">{placeholderText}</p>
         ) : (
           <div
-            className="prose prose-sm max-w-none p-3 text-sm leading-relaxed [&_a]:text-blue-400 [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-blue-300 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted [&_th]:font-semibold"
+            className="prose prose-sm max-w-none p-3 text-sm leading-relaxed [&_p:empty]:min-h-[1em] [&_a]:text-blue-400 [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-blue-300 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted [&_th]:font-semibold"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(initialContent) }}
           />
         )}

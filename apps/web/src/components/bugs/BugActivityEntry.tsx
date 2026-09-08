@@ -95,7 +95,7 @@ function buildDescription(
 
 function DiffCard({ oldValue, newValue, isHtml = false }: { oldValue?: string | null; newValue?: string | null; isHtml?: boolean }) {
   if (!oldValue && !newValue) return null;
-  const htmlProse = 'break-words [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-1 [&_p]:my-0.5 [&_.mention]:bg-blue-100 [&_.mention]:text-blue-800 [&_.mention]:dark:bg-blue-900/30 [&_.mention]:dark:text-blue-300 [&_.mention]:rounded [&_.mention]:px-1 [&_.mention]:font-medium';
+  const htmlProse = 'break-words [&_p:empty]:min-h-[1em] [&_img]:max-w-full [&_img]:rounded-md [&_img]:my-1 [&_p]:my-0.5 [&_.mention]:bg-blue-100 [&_.mention]:text-blue-800 [&_.mention]:dark:bg-blue-900/30 [&_.mention]:dark:text-blue-300 [&_.mention]:rounded [&_.mention]:px-1 [&_.mention]:font-medium';
   return (
     <div className="mt-1.5 text-xs rounded-md border overflow-hidden">
       {oldValue && (
