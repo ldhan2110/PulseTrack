@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Trash2, Plus, X, Loader2, Calendar as CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,7 @@ import { useUiStore } from '@/store/uiStore';
 import { useTaskBugs } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
 import { useSprints } from '@/hooks/useSprints';
+import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProject } from '@/hooks/useProjects';
 import { useAuth } from '@/auth/useAuth';
@@ -230,6 +231,11 @@ export function TaskDetailPage() {
   const taskId = task?.id ?? '';
   const { data: members = [] } = useMembers(projectId);
   const { data: sprints = [] } = useSprints(projectId);
+  const { data: taskTypes = [] } = useQuery({
+    queryKey: ['task-types', projectId],
+    queryFn: () => api.getTaskTypes(projectId),
+    enabled: !!projectId,
+  });
   const { can } = usePermissions(projectId);
   const canEdit = can('tasks', 'update');
   const canManage = can('tasks', 'delete');
@@ -936,7 +942,7 @@ export function TaskDetailPage() {
                     }}
                     disabled={!canEdit}
                   >
-                    <SelectTrigger className="h-7 w-[110px] text-xs">
+                    <SelectTrigger className="h-7 w-[140px] text-xs">
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
@@ -952,6 +958,37 @@ export function TaskDetailPage() {
                             />
                             <span className="text-xs" style={{ color: opt.color }}>{opt.label}</span>
                           </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Task Type */}
+              <div className="flex items-center justify-between">
+                <SidebarLabel>Task Type</SidebarLabel>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={task.taskTypeId ?? ''}
+                    onValueChange={(taskTypeId) =>
+                      optimisticMutate({ taskTypeId }, { taskId, data: { taskTypeId } })
+                    }
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="h-7 w-[140px] text-xs">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Keep current type visible even if it was deactivated */}
+                      {task.taskType && !taskTypes.some((t) => t.id === task.taskTypeId && t.isActive) && (
+                        <SelectItem value={task.taskType.id}>
+                          <span className="text-xs">{task.taskType.name}</span>
+                        </SelectItem>
+                      )}
+                      {taskTypes.filter((t) => t.isActive).map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          <span className="text-xs">{t.name}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>

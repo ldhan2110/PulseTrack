@@ -77,4 +77,7 @@ export class CreateTaskDto {
   @IsInt()
   @Min(1)
   estimatedMinutes?: number;
+
+  @IsString()
+  taskTypeId: string;
 }

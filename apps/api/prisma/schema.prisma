@@ -262,6 +262,7 @@ model Project {
   variables        ProjectVariable[]
   skills           Skill[]
   defaultWatchers  ProjectDefaultWatcher[]
+  taskTypes        ProjectTaskType[]
 }
 
 model ProjectMember {
@@ -313,6 +314,7 @@ model Task {
   sprintId            String?
   assigneeId          String?
   workflowStatusId    String?
+  taskTypeId          String?
   creatorId           String
   parentId            String?
   estimatedMinutes    Int?
@@ -326,6 +328,7 @@ model Task {
   assignee       User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
   creator        User      @relation("TaskCreator", fields: [creatorId], references: [id])
   workflowStatus WorkflowStatus? @relation("TaskWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
+  taskType       ProjectTaskType? @relation(fields: [taskTypeId], references: [id], onDelete: SetNull)
   parent         Task?     @relation("TaskChildren", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   children       Task[]    @relation("TaskChildren")
   comments       Comment[]
@@ -598,6 +601,21 @@ model ProjectDefaultWatcher {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
+  @@index([projectId])
+}
+
+model ProjectTaskType {
+  id        String   @id @default(cuid())
+  projectId String
+  name      String
+  position  Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@unique([projectId, name])
   @@index([projectId])
 }
 

@@ -58,6 +58,16 @@ export class TasksService {
         where: { projectId, kind: 'TASK', isDefault: true },
       });
 
+      if (dto.taskTypeId) {
+        const taskType = await tx.projectTaskType.findFirst({
+          where: { id: dto.taskTypeId, projectId, isActive: true },
+          select: { id: true },
+        });
+        if (!taskType) {
+          throw new BadRequestException('Invalid task type for this project');
+        }
+      }
+
       const created = await tx.task.create({
         data: {
           projectId,
@@ -66,6 +76,7 @@ export class TasksService {
           taskKey,
           description: dto.description,
           workflowStatusId: defaultStatus?.id ?? null,
+          taskTypeId: dto.taskTypeId ?? null,
           assigneeId: dto.assigneeId,
           storyPoints: dto.storyPoints,
           sprintId: dto.sprintId,
@@ -167,6 +178,7 @@ export class TasksService {
         assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         sprint: { select: { id: true, name: true } },
         workflowStatus: true,
+        taskType: true,
         children: {
           include: {
             assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
@@ -190,6 +202,7 @@ export class TasksService {
         sprint: { select: { id: true, name: true } },
         creator: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         workflowStatus: true,
+        taskType: true,
         parent: { select: { id: true, taskKey: true, title: true } },
         children: {
           include: {
@@ -214,7 +227,7 @@ export class TasksService {
     // Fetch current task to detect changes for history recording
     const current = await this.prisma.task.findUniqueOrThrow({
       where: { id: taskId },
-      include: { workflowStatus: true },
+      include: { workflowStatus: true, taskType: true },
     });
 
     // Auto-clear orphaned workflowStatusId (ID set but status record missing)
@@ -293,6 +306,17 @@ export class TasksService {
       }
     }
 
+    // Validate taskTypeId — must belong to project and be active
+    if (dto.taskTypeId !== undefined && dto.taskTypeId !== null) {
+      const taskType = await this.prisma.projectTaskType.findFirst({
+        where: { id: dto.taskTypeId, projectId: current.projectId, isActive: true },
+        select: { id: true },
+      });
+      if (!taskType) {
+        throw new BadRequestException('Invalid task type for this project');
+      }
+    }
+
     // Validate estimatedMinutes — cannot set on parent tasks
     if (dto.estimatedMinutes !== undefined) {
       const childCount = await this.prisma.task.count({ where: { parentId: taskId } });
@@ -329,6 +353,25 @@ export class TasksService {
         field: 'status',
         oldValue: current.workflowStatus?.name ?? null,
         newValue: newStatusName,
+      });
+    }
+
+    // Track taskType changes by name for readability
+    if (dto.taskTypeId !== undefined && dto.taskTypeId !== current.taskTypeId) {
+      let newTypeName: string | null = null;
+      if (dto.taskTypeId) {
+        const newType = await this.prisma.projectTaskType.findUnique({
+          where: { id: dto.taskTypeId },
+          select: { name: true },
+        });
+        newTypeName = newType?.name ?? dto.taskTypeId;
+      }
+      historyEntries.push({
+        taskId,
+        actorId,
+        field: 'taskType',
+        oldValue: current.taskType?.name ?? null,
+        newValue: newTypeName,
       });
     }
 
@@ -398,6 +441,7 @@ export class TasksService {
           ...(dto.title !== undefined && { title: dto.title }),
           ...(dto.description !== undefined && { description: dto.description }),
           ...(dto.workflowStatusId !== undefined && { workflowStatusId: dto.workflowStatusId }),
+          ...(dto.taskTypeId !== undefined && { taskTypeId: dto.taskTypeId }),
           ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
           ...(dto.storyPoints !== undefined && { storyPoints: dto.storyPoints }),
           ...(dto.sprintId !== undefined && { sprintId: dto.sprintId }),
@@ -430,6 +474,7 @@ export class TasksService {
           assignee: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
           sprint: { select: { id: true, name: true } },
           workflowStatus: true,
+          taskType: true,
         },
       }),
       ...historyEntries.map(e => this.prisma.taskHistory.create({ data: e })),

@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -86,6 +88,7 @@ interface CreateTaskDialogProps {
 interface FormErrors {
   title?: string;
   storyPoints?: string;
+  taskTypeId?: string;
 }
 
 export function CreateTaskDialog({
@@ -104,8 +107,16 @@ export function CreateTaskDialog({
   const [storyPoints, setStoryPoints] = useState('');
   const [sprintId, setSprintId] = useState<string>('');
   const [priority, setPriority] = useState<Priority | ''>('');
+  const [taskTypeId, setTaskTypeId] = useState<string>('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [assigneeOpen, setAssigneeOpen] = useState(false);
+
+  const { data: taskTypes = [] } = useQuery({
+    queryKey: ['task-types', projectId],
+    queryFn: () => api.getTaskTypes(projectId),
+    enabled: !!projectId && open,
+  });
+  const activeTaskTypes = useMemo(() => taskTypes.filter((t) => t.isActive), [taskTypes]);
 
   const selectedMember = useMemo(() => {
     if (!assigneeId || assigneeId === 'unassigned') return null;
@@ -122,6 +133,7 @@ export function CreateTaskDialog({
     setStoryPoints('');
     setSprintId('');
     setPriority('');
+    setTaskTypeId('');
     setErrors({});
   };
 
@@ -143,6 +155,9 @@ export function CreateTaskDialog({
         newErrors.storyPoints = 'Story points must be between 1 and 100';
       }
     }
+    if (!taskTypeId) {
+      newErrors.taskTypeId = 'Task type is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -159,6 +174,7 @@ export function CreateTaskDialog({
         storyPoints: storyPoints !== '' ? Number(storyPoints) : undefined,
         sprintId: sprintId && sprintId !== 'none' ? sprintId : undefined,
         priority: priority || undefined,
+        taskTypeId,
       },
       {
         onSuccess: () => {
@@ -220,6 +236,25 @@ export function CreateTaskDialog({
               />
               {errors.storyPoints && (
                 <p className="text-xs text-destructive">{errors.storyPoints}</p>
+              )}
+            </Field>
+
+            <Field>
+              <FieldLabel>Task Type <span className="text-destructive">*</span></FieldLabel>
+              <Select value={taskTypeId} onValueChange={setTaskTypeId}>
+                <SelectTrigger className="h-8" aria-invalid={!!errors.taskTypeId}>
+                  <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeTaskTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.taskTypeId && (
+                <p className="text-xs text-destructive">{errors.taskTypeId}</p>
               )}
             </Field>
 

@@ -6,6 +6,20 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 
+const DEFAULT_TASK_TYPES = [
+  'Analysis & Consulting',
+  'Design',
+  'Development',
+  'UI/UX Design',
+  'Testing & QC',
+  'Bug Fix',
+  'Project Management',
+  'Meeting & Communication',
+  'Support & Maintenance',
+  'Documentation',
+  'Internal',
+];
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -50,6 +64,14 @@ export class ProjectsService {
           userId,
           roleId: pmRole.id,
         },
+      });
+
+      await tx.projectTaskType.createMany({
+        data: DEFAULT_TASK_TYPES.map((name, position) => ({
+          projectId: p.id,
+          name,
+          position,
+        })),
       });
 
       return p;
@@ -228,5 +250,60 @@ export class ProjectsService {
         : []),
     ]);
     return this.getDefaultWatchers(projectId);
+  }
+
+  async getTaskTypes(projectId: string) {
+    return this.prisma.projectTaskType.findMany({
+      where: { projectId },
+      orderBy: { position: 'asc' },
+    });
+  }
+
+  async setTaskTypes(
+    projectId: string,
+    types: { id?: string; name: string; isActive: boolean }[],
+  ) {
+    const cleaned = types.map((t) => ({ ...t, name: t.name?.trim() }));
+
+    if (cleaned.some((t) => !t.name)) {
+      throw new BadRequestException('Task type name cannot be empty');
+    }
+    const activeNames = cleaned.filter((t) => t.isActive).map((t) => t.name);
+    if (new Set(activeNames).size !== activeNames.length) {
+      throw new BadRequestException('Duplicate active task type name');
+    }
+    if (activeNames.length === 0) {
+      throw new BadRequestException('At least one active task type is required');
+    }
+
+    const existing = await this.prisma.projectTaskType.findMany({
+      where: { projectId },
+      select: { id: true },
+    });
+    const keptIds = new Set(cleaned.filter((t) => t.id).map((t) => t.id!));
+    const droppedIds = existing.filter((e) => !keptIds.has(e.id)).map((e) => e.id);
+
+    await this.prisma.$transaction([
+      // omitted existing types are deactivated, never deleted (existing tasks keep the FK)
+      ...(droppedIds.length
+        ? [
+            this.prisma.projectTaskType.updateMany({
+              where: { id: { in: droppedIds } },
+              data: { isActive: false },
+            }),
+          ]
+        : []),
+      ...cleaned.map((t, position) =>
+        t.id
+          ? this.prisma.projectTaskType.update({
+              where: { id: t.id },
+              data: { name: t.name, isActive: t.isActive, position },
+            })
+          : this.prisma.projectTaskType.create({
+              data: { projectId, name: t.name, isActive: t.isActive, position },
+            }),
+      ),
+    ]);
+    return this.getTaskTypes(projectId);
   }
 }

@@ -26,6 +26,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { SetDefaultWatchersDto } from './dto/set-default-watchers.dto';
+import { SetTaskTypesDto } from './dto/set-task-types.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -99,6 +100,23 @@ export class ProjectsController {
     @Body() dto: SetDefaultWatchersDto,
   ) {
     return this.projectsService.setDefaultWatchers(projectId, dto.userIds);
+  }
+
+  @Get(':projectId/task-types')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'view')
+  getTaskTypes(@Param('projectId') projectId: string) {
+    return this.projectsService.getTaskTypes(projectId);
+  }
+
+  @Put(':projectId/task-types')
+  @UseGuards(ProjectRolesGuard)
+  @RequirePermission('projectSettings', 'update')
+  setTaskTypes(
+    @Param('projectId') projectId: string,
+    @Body() dto: SetTaskTypesDto,
+  ) {
+    return this.projectsService.setTaskTypes(projectId, dto.types);
   }
 
   @Post(':projectId/avatar')

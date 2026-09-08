@@ -203,6 +203,8 @@ export interface Task {
   description: string | null;
   workflowStatusId: string | null;
   workflowStatus?: WorkflowStatus | null;
+  taskTypeId?: string | null;
+  taskType?: TaskType | null;
   storyPoints: number | null;
   assigneeId: string | null;
   sprintId: string | null;
@@ -253,12 +255,14 @@ export interface CreateTaskPayload {
   actualEndDate?: string;
   parentId?: string;
   estimatedMinutes?: number;
+  taskTypeId?: string;
 }
 
 export interface UpdateTaskPayload {
   title?: string;
   description?: string;
   workflowStatusId?: string;
+  taskTypeId?: string;
   storyPoints?: number;
   assigneeId?: string | null;
   sprintId?: string | null;
@@ -1433,5 +1437,14 @@ export interface ProjectVariable {
   key: string;
   value: string;
   isSecret: boolean;
+}
+
+export interface TaskType {
+  id: string;
+  projectId: string;
+  name: string;
+  position: number;
+  isActive: boolean;
+  createdAt: string;
 }
 

@@ -45,6 +45,7 @@ import type {
   WorkflowKind,
   NotificationPage,
   TicketWatcher,
+  TaskType,
   TestModule,
   TestCase,
   CreateTestCasePayload,
@@ -613,6 +614,12 @@ export const api = {
   setDefaultWatchers: (projectId: string, userIds: string[]) =>
     request<TicketWatcher[]>(`/projects/${projectId}/default-watchers`, {
       method: 'PUT', body: JSON.stringify({ userIds }),
+    }),
+  getTaskTypes: (projectId: string) =>
+    request<TaskType[]>(`/projects/${projectId}/task-types`),
+  setTaskTypes: (projectId: string, types: { id?: string; name: string; isActive: boolean }[]) =>
+    request<TaskType[]>(`/projects/${projectId}/task-types`, {
+      method: 'PUT', body: JSON.stringify({ types }),
     }),
 
   // ─── Bug Comments ──────────────────────────────────────────────────────────

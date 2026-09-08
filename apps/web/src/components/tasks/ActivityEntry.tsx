@@ -39,6 +39,7 @@ const FIELD_CONFIG: Record<string, FieldConfig> = {
   attachment_added: { icon: Paperclip, color: 'text-sky-600', bg: 'bg-sky-100 dark:bg-sky-900/40' },
   attachment_deleted: { icon: Paperclip, color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/40' },
   priority:         { icon: Tag,           color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/40' },
+  taskType:         { icon: Tag,           color: 'text-pink-600',   bg: 'bg-pink-100 dark:bg-pink-900/40' },
   plannedStartDate: { icon: CalendarDays,  color: 'text-cyan-600',   bg: 'bg-cyan-100 dark:bg-cyan-900/40' },
   plannedEndDate:   { icon: CalendarDays,  color: 'text-amber-600',  bg: 'bg-amber-100 dark:bg-amber-900/40' },
   actualStartDate:  { icon: CalendarDays,  color: 'text-green-600',  bg: 'bg-green-100 dark:bg-green-900/40' },
@@ -76,6 +77,8 @@ function buildDescription(
     }
     case 'storyPoints':
       return !newValue ? 'cleared story points' : `set story points to ${newValue}`;
+    case 'taskType':
+      return !newValue ? 'cleared task type' : `set task type to ${newValue}`;
     case 'title':
       return 'renamed task';
     case 'comment_added':
