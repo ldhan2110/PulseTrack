@@ -4,17 +4,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { AddMembersDto } from './dto/add-members.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
+import { InviteMemberDto } from './dto/invite-member.dto';
 
 @Injectable()
 export class MembersService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    @InjectQueue('notification-email') private emailQueue: Queue,
   ) {}
 
   async findAll(projectId: string) {
@@ -110,6 +114,44 @@ export class MembersService {
     }
 
     return members;
+  }
+
+  async invite(projectId: string, dto: InviteMemberDto) {
+    const email = dto.email.trim().toLowerCase();
+
+    // Existing user by email: same as a normal add.
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (existingUser) {
+      return this.addMember(projectId, { userId: existingUser.id, roleId: dto.roleId });
+    }
+
+    // No user yet: provision a pending row (claimed on first Keycloak login by email).
+    const user = await this.prisma.user.create({
+      data: { email, username: email.split('@')[0], keycloakId: null },
+    });
+
+    const member = await this.prisma.projectMember.create({
+      data: { projectId, userId: user.id, roleId: dto.roleId },
+      include: {
+        user: {
+          select: { id: true, email: true, username: true, name: true, imageUrl: true },
+        },
+      },
+    });
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { name: true },
+    });
+    await this.emailQueue.add('invite', {
+      email,
+      projectName: project?.name ?? '',
+    });
+
+    return member;
   }
 
   async changeMemberRole(

@@ -37,7 +37,33 @@ export class NotificationEmailProcessor extends WorkerHost {
     });
   }
 
-  async process(job: Job<{ notificationId: string; recipientEmail: string; recipientName: string }>) {
+  async process(job: Job) {
+    if (job.name === 'invite') {
+      return this.processInvite(job as Job<{ email: string; projectName: string }>);
+    }
+    return this.processNotification(
+      job as Job<{ notificationId: string; recipientEmail: string; recipientName: string }>,
+    );
+  }
+
+  private async processInvite(job: Job<{ email: string; projectName: string }>) {
+    const { email, projectName } = job.data;
+    const appUrl = this.config.get('APP_URL', 'http://localhost:5173');
+    const html = this.emailService.renderInviteHtml({ projectName, loginUrl: appUrl });
+    const subject = this.emailService.renderInviteSubject(projectName);
+    const from = this.config.get('SMTP_FROM', 'PulseTrack <noreply@pulsetrack.com>');
+
+    this.logger.log(`Sending invite | from=${from} | to=${email} | subject=${subject}`);
+    try {
+      const info = await this.transporter.sendMail({ from, to: email, subject, html });
+      this.logger.log(`Invite sent | messageId=${info.messageId}`);
+    } catch (err) {
+      this.logger.error(`Failed to send invite | to=${email} | error=${err.message}`, err.stack);
+      throw err;
+    }
+  }
+
+  private async processNotification(job: Job<{ notificationId: string; recipientEmail: string; recipientName: string }>) {
     const { notificationId, recipientEmail } = job.data;
     this.logger.log(`Processing job ${job.id} | notificationId=${notificationId} | to=${recipientEmail}`);
 

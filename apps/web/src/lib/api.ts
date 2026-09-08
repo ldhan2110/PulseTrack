@@ -5,6 +5,7 @@ import type {
   Member,
   AddMemberPayload,
   AddMembersPayload,
+  InviteMemberPayload,
   ChangeRolePayload,
   CustomRole,
   UserSearchResult,
@@ -203,6 +204,11 @@ export const api = {
     request<Member>(`/projects/${projectId}/members`, { method: 'POST', body: JSON.stringify(data) }),
   addMembers: (projectId: string, data: AddMembersPayload) =>
     request<Member[]>(`/projects/${projectId}/members/batch`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  inviteMember: (projectId: string, data: InviteMemberPayload) =>
+    request<Member>(`/projects/${projectId}/members/invite`, {
       method: 'POST',
       body: JSON.stringify(data),
     }),

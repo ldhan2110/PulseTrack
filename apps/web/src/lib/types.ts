@@ -179,6 +179,11 @@ export interface AddMembersPayload {
   members: AddMemberPayload[];
 }
 
+export interface InviteMemberPayload {
+  email: string;
+  roleId: string;
+}
+
 export interface ChangeRolePayload {
   roleId: string;
 }

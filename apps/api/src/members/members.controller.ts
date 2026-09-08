@@ -17,6 +17,7 @@ import { MembersService } from './members.service';
 import { AddMemberDto } from './dto/add-member.dto';
 import { AddMembersDto } from './dto/add-members.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
+import { InviteMemberDto } from './dto/invite-member.dto';
 
 @Controller('projects/:projectId/members')
 @UseGuards(JwtAuthGuard, ProjectRolesGuard)
@@ -52,6 +53,15 @@ export class MembersController {
     @Body() dto: AddMembersDto,
   ) {
     return this.membersService.addMembers(projectId, dto);
+  }
+
+  @Post('invite')
+  @RequirePermission('members', 'create')
+  invite(
+    @Param('projectId') projectId: string,
+    @Body() dto: InviteMemberDto,
+  ) {
+    return this.membersService.invite(projectId, dto);
   }
 
   @Patch(':memberId/role')

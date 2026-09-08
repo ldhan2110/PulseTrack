@@ -46,9 +46,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const user = await this.prisma.user.findUnique({
+    let user = await this.prisma.user.findUnique({
       where: { keycloakId: payload.preferred_username },
     });
+
+    // No keycloakId match: claim a pending invite by email on first login.
+    if (!user && payload.email) {
+      const pending = await this.prisma.user.findUnique({
+        where: { email: payload.email },
+      });
+      if (pending && pending.keycloakId === null) {
+        user = await this.prisma.user.update({
+          where: { id: pending.id },
+          data: { keycloakId: payload.preferred_username },
+        });
+      }
+    }
 
     if (!user) {
       throw new UnauthorizedException('You are not allowed to access the app');
