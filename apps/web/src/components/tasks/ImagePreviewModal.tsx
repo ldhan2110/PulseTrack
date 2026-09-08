@@ -48,7 +48,7 @@ export function ImagePreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-[90vw] w-fit flex flex-col items-center gap-4 p-6">
+      <DialogContent className="max-h-[90vh] w-[80vw] flex flex-col items-center gap-4 p-6" style={{ maxWidth: "none" }}>
         <DialogTitle className="text-sm font-medium truncate max-w-[80vw]">
           {attachment.filename}
         </DialogTitle>
@@ -56,7 +56,7 @@ export function ImagePreviewModal({
         <img
           src={staticUrl}
           alt={attachment.filename}
-          className="max-w-[85vw] max-h-[70vh] object-contain rounded-md"
+          className="max-w-[90vw] max-h-[82vh] object-contain rounded-md"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.display = 'none';
           }}
