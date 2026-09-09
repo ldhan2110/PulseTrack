@@ -37,11 +37,19 @@ export function useMembershipSync() {
       void queryClient.invalidateQueries({ queryKey: ['project', projectId] });
     }
 
+    // Project-wide broadcast: refresh the members list for other viewers.
+    // Does NOT redirect — that's only for the removed user's personal event.
+    function onMemberRemovedBroadcast({ projectId }: { projectId: string; memberId: string }) {
+      void queryClient.invalidateQueries({ queryKey: ['members', projectId] });
+    }
+
     socket.on('member:removed', onMemberRemoved);
+    socket.on('member:removed:broadcast', onMemberRemovedBroadcast);
     socket.on('member:added', onMemberAdded);
 
     return () => {
       socket.off('member:removed', onMemberRemoved);
+      socket.off('member:removed:broadcast', onMemberRemovedBroadcast);
       socket.off('member:added', onMemberAdded);
     };
   }, [socket, navigate, location.pathname, queryClient]);

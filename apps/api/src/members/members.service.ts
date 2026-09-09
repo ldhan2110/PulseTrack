@@ -286,7 +286,9 @@ export class MembersService {
       }
     }
 
-    this.notifications.notifyProject(projectId, 'member:removed', {
+    // Broadcast to other viewers to refresh — distinct event so it does NOT
+    // trigger the "you were removed" redirect (that's the personal event above).
+    this.notifications.notifyProject(projectId, 'member:removed:broadcast', {
       projectId,
       memberId,
     });
