@@ -5,6 +5,9 @@ import { format, subDays, startOfToday } from 'date-fns';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { api } from '@/lib/api';
 import { useProjectByPrefix } from '@/hooks/useProjects';
 import { useReportTimesheet } from '@/hooks/useReportTimesheet';
 import { CriteriaFilter } from '@/components/reports/CriteriaFilter';
@@ -73,9 +76,27 @@ export function ReportPage() {
     setSelectedTypes((prev) => (prev.includes(typeId) ? prev.filter((id) => id !== typeId) : [...prev, typeId]));
   const handleSetTypes = (ids: string[]) => setSelectedTypes(ids);
 
+  const canExport = !!project?.id && !!applied?.from && !!applied?.to;
+  const handleExport = () => {
+    if (!canExport) return;
+    api.exportReportTimesheet(
+      project!.id,
+      toParam(applied!.from)!,
+      toParam(applied!.to)!,
+      { user: appliedUser, ticket: appliedTicket, typeIds: selectedTypes },
+      groupBy,
+    );
+  };
+
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <h1 className="text-xl font-semibold">Reports</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Reports</h1>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={!canExport}>
+          <Download className="size-4" />
+          Export Excel
+        </Button>
+      </div>
 
       <ResizablePanelGroup direction="horizontal" className="min-h-150 w-full min-w-0 overflow-hidden rounded-lg border">
         {/* Left: Criteria */}

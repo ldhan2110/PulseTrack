@@ -3,11 +3,84 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTimeLogDto } from './dto/create-time-log.dto';
 import { hasPermission, type RolePermissions } from '../auth/permissions';
+import { format, getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek } from 'date-fns';
 
 export interface TimesheetFilters {
   user?: string;
   ticket?: string;
   typeIds?: string[];
+}
+
+export type GroupBy = 'day' | 'week' | 'month';
+
+interface ReportColumn {
+  key: string;
+  label: string;
+  sublabel?: string;
+  group: string;
+}
+
+interface BucketTicket {
+  key: string;
+  title: string;
+  values: number[];
+}
+interface BucketRow {
+  user: { id: string; name: string | null; imageUrl: string | null };
+  tickets: BucketTicket[];
+  values: number[];
+  total: number;
+}
+
+// Port of apps/web/src/components/reports/utils/bucketize.ts — groups index-aligned
+// daily columns into day/week/month buckets and sums each row's values per bucket.
+// `days` are yyyy-MM-dd strings; parse as local midnight to match the client.
+export function bucketizeTimesheet(
+  days: string[],
+  rows: BucketRow[],
+  groupBy: GroupBy,
+): { columns: ReportColumn[]; rows: BucketRow[] } {
+  const parse = (s: string) => new Date(`${s}T00:00:00`);
+
+  const keyOf = (d: Date): string => {
+    if (groupBy === 'week') return `${getISOWeekYear(d)}-W${getISOWeek(d)}`;
+    if (groupBy === 'month') return format(d, 'yyyy-MM');
+    return format(d, 'yyyy-MM-dd');
+  };
+
+  const order: string[] = [];
+  const members = new Map<string, number[]>();
+  days.forEach((s, i) => {
+    const k = keyOf(parse(s));
+    if (!members.has(k)) {
+      members.set(k, []);
+      order.push(k);
+    }
+    members.get(k)!.push(i);
+  });
+
+  const columns: ReportColumn[] = order.map((k) => {
+    const idxs = members.get(k)!;
+    const first = parse(days[idxs[0]]);
+    if (groupBy === 'week') {
+      return { key: k, label: `W${getISOWeek(first)}`, sublabel: `${format(startOfISOWeek(first), 'MMM d')}–${format(endOfISOWeek(first), 'd')}`, group: format(first, 'MMM yyyy') };
+    }
+    if (groupBy === 'month') {
+      return { key: k, label: format(first, 'MMM'), group: format(first, 'yyyy') };
+    }
+    return { key: k, label: format(first, 'd'), sublabel: format(first, 'EEE'), group: format(first, 'MMM yyyy') };
+  });
+
+  const sumBuckets = (values: number[]): number[] =>
+    order.map((k) => members.get(k)!.reduce((s, i) => s + (values[i] ?? 0), 0));
+
+  const outRows: BucketRow[] = rows.map((row) => ({
+    ...row,
+    values: sumBuckets(row.values),
+    tickets: row.tickets.map((t) => ({ ...t, values: sumBuckets(t.values) })),
+  }));
+
+  return { columns, rows: outRows };
 }
 
 @Injectable()
@@ -204,5 +277,129 @@ export class TimeLogsService {
     await this.prisma.timeLog.delete({ where: { id: timeLogId } });
 
     this.notifications.notifyProject(projectId, 'task:updated', { projectId, taskId, task: { id: taskId } });
+  }
+
+  async exportTimesheetExcel(
+    projectId: string,
+    from: Date,
+    to: Date,
+    filters: TimesheetFilters,
+    groupBy: GroupBy,
+  ): Promise<Buffer> {
+    const { rows: dailyRows, days } = await this.getTimesheet(projectId, from, to, filters);
+    const { columns, rows } = bucketizeTimesheet(days, dailyRows, groupBy);
+
+    const ExcelJS = await import('exceljs');
+    const Workbook = ExcelJS.default?.Workbook ?? ExcelJS.Workbook;
+    const workbook = new Workbook();
+    const sheet = workbook.addWorksheet('Timesheet');
+
+    const PIN = 3; // Item, Key, Total
+    const totalCols = PIN + columns.length;
+
+    // Freeze the three summary columns and both header rows (mirrors the sticky table).
+    sheet.views = [{ state: 'frozen', xSplit: PIN, ySplit: 2 }];
+    // Outline grouping: ticket rows nest one level under their user row, roll-up on top.
+    sheet.properties.outlineLevelRow = 1;
+    (sheet.properties as any).summaryBelow = false;
+
+    const thin = { style: 'thin' as const };
+    const allBorders = { top: thin, left: thin, bottom: thin, right: thin };
+    const HEADER_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFD9D9D9' } };
+    const HOUR_FMT = '0.0"h"';
+
+    // ── Header row 1: Item/Key/Total + merged period group super-headers ──
+    const row1 = sheet.getRow(1);
+    row1.getCell(1).value = 'Item';
+    row1.getCell(2).value = 'Key';
+    row1.getCell(3).value = 'Total';
+    // Coalesce consecutive equal `group` into merged runs.
+    let runStart = 0;
+    for (let i = 0; i <= columns.length; i++) {
+      const atEnd = i === columns.length;
+      if (atEnd || columns[i].group !== columns[runStart].group) {
+        const startCol = PIN + 1 + runStart;
+        const endCol = PIN + i;
+        row1.getCell(startCol).value = columns[runStart].group;
+        if (endCol > startCol) sheet.mergeCells(1, startCol, 1, endCol);
+        runStart = i;
+      }
+    }
+
+    // ── Header row 2: per-column label + sublabel ──
+    const row2 = sheet.getRow(2);
+    columns.forEach((c, i) => {
+      const cell = row2.getCell(PIN + 1 + i);
+      cell.value = c.sublabel ? `${c.label}\n${c.sublabel}` : c.label;
+    });
+    // Item/Key/Total span both header rows.
+    for (let col = 1; col <= PIN; col++) sheet.mergeCells(1, col, 2, col);
+
+    for (const rowIdx of [1, 2]) {
+      const r = sheet.getRow(rowIdx);
+      for (let col = 1; col <= totalCols; col++) {
+        const cell = r.getCell(col);
+        cell.font = { bold: true };
+        cell.fill = HEADER_FILL;
+        cell.border = allBorders;
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      }
+    }
+
+    // ── Body: user roll-up row (outline 0) then its ticket rows (outline 1) ──
+    for (const row of rows) {
+      const userRow = sheet.addRow([row.user.name ?? '', '', row.total, ...row.values]);
+      styleBodyRow(userRow, PIN, totalCols, allBorders, HOUR_FMT, true);
+
+      for (const tk of row.tickets) {
+        const tkTotal = tk.values.reduce((s, v) => s + v, 0);
+        const tkRow = sheet.addRow([tk.title, tk.key, tkTotal, ...tk.values]);
+        tkRow.outlineLevel = 1;
+        styleBodyRow(tkRow, PIN, totalCols, allBorders, HOUR_FMT, false, true);
+      }
+    }
+
+    // ── Footer: grand total + per-column totals ──
+    const columnTotals = columns.map((_, i) => rows.reduce((s, r) => s + (r.values[i] ?? 0), 0));
+    const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+    const footer = sheet.addRow(['Total', '', grandTotal, ...columnTotals]);
+    footer.eachCell((cell, col) => {
+      cell.font = { bold: true };
+      cell.fill = HEADER_FILL;
+      cell.border = allBorders;
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      if (col >= PIN) cell.numFmt = HOUR_FMT; // Total + day columns show "Nh"
+    });
+
+    sheet.getColumn(1).width = 28;
+    sheet.getColumn(2).width = 14;
+    sheet.getColumn(3).width = 10;
+    for (let col = PIN + 1; col <= totalCols; col++) sheet.getColumn(col).width = 8;
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+}
+
+function styleBodyRow(
+  row: any,
+  pin: number,
+  totalCols: number,
+  borders: any,
+  hourFmt: string,
+  bold: boolean,
+  indent = false, // ticket titles are nested under the user (FE pl-9)
+): void {
+  for (let col = 1; col <= totalCols; col++) {
+    const cell = row.getCell(col);
+    cell.border = borders;
+    if (col === 1) {
+      cell.font = { bold };
+      cell.alignment = { vertical: 'middle', indent: indent ? 2 : 0 };
+    } else {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      if (col >= pin) cell.numFmt = hourFmt; // Total + day columns show "Nh"
+      if (col > pin && cell.value === 0) cell.value = null; // blank zeros, like the table
+    }
   }
 }

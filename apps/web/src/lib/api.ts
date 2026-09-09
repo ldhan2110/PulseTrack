@@ -1111,4 +1111,20 @@ export const api = {
     if (filters.typeIds?.length) params.set('typeIds', filters.typeIds.join(','));
     return request<TimesheetData>(`/projects/${projectId}/reports/timesheet?${params.toString()}`);
   },
+
+  exportReportTimesheet: (
+    projectId: string,
+    from: string,
+    to: string,
+    filters: { user?: string; ticket?: string; typeIds?: string[] } = {},
+    groupBy: 'day' | 'week' | 'month' = 'day',
+  ) =>
+    downloadFile(`/projects/${projectId}/reports/timesheet/export`, {
+      from,
+      to,
+      groupBy,
+      user: filters.user ?? '',
+      ticket: filters.ticket ?? '',
+      typeIds: filters.typeIds?.join(',') ?? '',
+    }),
 };
