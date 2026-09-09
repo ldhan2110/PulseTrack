@@ -1,13 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import type { Member } from '@/lib/types';
 import { PRESETS } from './utils/presets';
 import { formatRange } from './utils/format';
 
@@ -16,14 +20,18 @@ interface CriteriaFilterProps {
   range?: DateRange;
   preset: string | null;
   selectedTypes: string[];
+  members: Member[];
+  userIds: string[];
   onRangeChange: (r: DateRange | undefined) => void;
   onPreset: (label: string, r: DateRange) => void;
   onToggleType: (typeId: string) => void;
   onSetTypes: (ids: string[]) => void;
+  onToggleUser: (userId: string) => void;
   onReset: () => void;
 }
 
-export function CriteriaFilter({ projectId, range, preset, selectedTypes, onRangeChange, onPreset, onToggleType, onSetTypes, onReset }: CriteriaFilterProps) {
+export function CriteriaFilter({ projectId, range, preset, selectedTypes, members, userIds, onRangeChange, onPreset, onToggleType, onSetTypes, onToggleUser, onReset }: CriteriaFilterProps) {
+  const [userOpen, setUserOpen] = useState(false);
   const { data: taskTypes = [] } = useQuery({
     queryKey: ['task-types', projectId],
     queryFn: () => api.getTaskTypes(projectId),
@@ -45,7 +53,14 @@ export function CriteriaFilter({ projectId, range, preset, selectedTypes, onRang
     <Card className="h-full rounded-none border-0 shadow-none">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Criteria</CardTitle>
-        <Button variant="outline" size="sm" onClick={onReset}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            onReset();
+            onSetTypes(activeTypes.map((t) => t.id));
+          }}
+        >
           Reset
         </Button>
       </CardHeader>
@@ -80,6 +95,49 @@ export function CriteriaFilter({ projectId, range, preset, selectedTypes, onRang
           </fieldset>
         </div>
 
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">Members</label>
+          <Popover open={userOpen} onOpenChange={setUserOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={userOpen}
+                className="w-full justify-between font-normal"
+              >
+                <span className="truncate text-sm">
+                  {userIds.length === 0 ? 'All users' : `${userIds.length} user${userIds.length === 1 ? '' : 's'}`}
+                </span>
+                <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-52 p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search members..." />
+                <CommandList className="max-h-60 overflow-y-auto">
+                  <CommandEmpty>No members found.</CommandEmpty>
+                  <CommandGroup>
+                    {members.map((m) => {
+                      const label = m.user.name ?? m.user.username;
+                      const initials = label.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+                      return (
+                        <CommandItem key={m.userId} value={label} onSelect={() => onToggleUser(m.userId)}>
+                          <Check className={cn('mr-2 size-4', userIds.includes(m.userId) ? 'opacity-100' : 'opacity-0')} />
+                          <Avatar className="size-5 mr-1.5">
+                            {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={label} />}
+                            <AvatarFallback className="text-[9px]">{initials}</AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{label}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
         {activeTypes.length > 0 && (
           <fieldset className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
@@ -92,7 +150,7 @@ export function CriteriaFilter({ projectId, range, preset, selectedTypes, onRang
                 All
               </label>
             </div>
-            <div className="flex flex-col gap-0.5 overflow-y-auto rounded-md border bg-muted/30 p-2">
+            <div className="flex max-h-79 flex-col gap-0.5 overflow-y-auto rounded-md border bg-muted/30 p-2">
               {activeTypes.map((tt) => (
                 <label
                   key={tt.id}

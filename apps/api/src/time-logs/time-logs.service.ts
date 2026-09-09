@@ -6,7 +6,7 @@ import { hasPermission, type RolePermissions } from '../auth/permissions';
 import { format, getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek } from 'date-fns';
 
 export interface TimesheetFilters {
-  user?: string;
+  userIds?: string[];
   ticket?: string;
   typeIds?: string[];
 }
@@ -177,7 +177,8 @@ export class TimeLogsService {
       toLocalYmd(new Date(start.getTime() + i * MS_PER_DAY)),
     );
 
-    const user = filters.user?.trim();
+    const userIds = filters.userIds ?? [];
+    const userFilter = userIds.length ? { user: { id: { in: userIds } } } : {};
     const ticket = filters.ticket?.trim();
     const typeIds = filters.typeIds ?? [];
     // A ticket filter narrows to specific tickets, so 0-hour members shouldn't appear.
@@ -191,14 +192,14 @@ export class TimeLogsService {
         : this.prisma.projectMember.findMany({
             where: {
               projectId,
-              ...(user ? { user: { name: { contains: user, mode: 'insensitive' } } } : {}),
+              ...userFilter,
             },
             select: { user: { select: { id: true, name: true, imageUrl: true } } },
           }),
       this.prisma.timeLog.findMany({
         where: {
           loggedAt: { gte: start, lt: new Date(end.getTime() + MS_PER_DAY) },
-          ...(user ? { user: { name: { contains: user, mode: 'insensitive' } } } : {}),
+          ...userFilter,
           task: {
             projectId,
             ...(typeIds.length ? { taskTypeId: { in: typeIds } } : {}),

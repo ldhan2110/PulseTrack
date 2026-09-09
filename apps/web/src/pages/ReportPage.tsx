@@ -10,6 +10,7 @@ import { Download } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useProjectByPrefix } from '@/hooks/useProjects';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useMembers } from '@/hooks/useMembers';
 import { useReportTimesheet } from '@/hooks/useReportTimesheet';
 import { CriteriaFilter } from '@/components/reports/CriteriaFilter';
 import { ReportTable } from '@/components/reports/ReportTable';
@@ -30,11 +31,12 @@ export function ReportPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [applied, setApplied] = useState<DateRange | undefined>(DEFAULT_RANGE);
 
-  // Search inputs debounced into applied* so filtering auto-triggers 300ms after typing.
-  const [userQuery, setUserQuery] = useState('');
+  // User is a discrete member multi-select (no debounce); ticket stays a debounced text input.
+  const [userIds, setUserIds] = useState<string[]>([]);
   const [ticketQuery, setTicketQuery] = useState('');
-  const [appliedUser, setAppliedUser] = useState('');
   const [appliedTicket, setAppliedTicket] = useState('');
+
+  const { data: members = [] } = useMembers(project?.id ?? '');
 
   // Debounce range → applied so the search auto-triggers 400ms after the last change (no Apply button).
   useEffect(() => {
@@ -43,16 +45,16 @@ export function ReportPage() {
   }, [range]);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setAppliedUser(userQuery);
-      setAppliedTicket(ticketQuery);
-    }, 300);
+    const t = setTimeout(() => setAppliedTicket(ticketQuery), 300);
     return () => clearTimeout(t);
-  }, [userQuery, ticketQuery]);
+  }, [ticketQuery]);
+
+  const toggleUser = (userId: string) =>
+    setUserIds((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
 
   // Filtering happens in the backend (reduces payload); the period toggle stays client-side.
   const { data, isLoading } = useReportTimesheet(project?.id ?? '', toParam(applied?.from), toParam(applied?.to), {
-    user: appliedUser,
+    userIds,
     ticket: appliedTicket,
     typeIds: selectedTypes,
   });
@@ -68,7 +70,8 @@ export function ReportPage() {
   const handleReset = () => {
     setRange(DEFAULT_RANGE);
     setPreset(null);
-    setSelectedTypes([]);
+    setUserIds([]);
+    // Task types are re-seeded to "all" by CriteriaFilter (it owns the active list).
   };
   const handlePreset = (label: string, r: DateRange) => {
     setRange(r);
@@ -85,7 +88,7 @@ export function ReportPage() {
       project!.id,
       toParam(applied!.from)!,
       toParam(applied!.to)!,
-      { user: appliedUser, ticket: appliedTicket, typeIds: selectedTypes },
+      { userIds, ticket: appliedTicket, typeIds: selectedTypes },
       groupBy,
     );
   };
@@ -108,10 +111,13 @@ export function ReportPage() {
             range={range}
             preset={preset}
             selectedTypes={selectedTypes}
+            members={members}
+            userIds={userIds}
             onRangeChange={handleRangeChange}
             onPreset={handlePreset}
             onToggleType={handleToggleType}
             onSetTypes={handleSetTypes}
+            onToggleUser={toggleUser}
             onReset={handleReset}
           />
         </ResizablePanel>
@@ -123,12 +129,6 @@ export function ReportPage() {
           <div className="flex h-full min-w-0 flex-col gap-4 p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Input
-                  value={userQuery}
-                  onChange={(e) => setUserQuery(e.target.value)}
-                  placeholder="Filter user"
-                  className="h-9 w-40"
-                />
                 <Input
                   value={ticketQuery}
                   onChange={(e) => setTicketQuery(e.target.value)}

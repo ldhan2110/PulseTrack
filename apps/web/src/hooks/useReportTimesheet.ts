@@ -6,10 +6,10 @@ export function useReportTimesheet(
   projectId: string,
   from?: string,
   to?: string,
-  filters: { user?: string; ticket?: string; typeIds?: string[] } = {},
+  filters: { userIds?: string[]; ticket?: string; typeIds?: string[] } = {},
 ) {
   return useQuery({
-    queryKey: ['report-timesheet', projectId, from, to, filters.user, filters.ticket, filters.typeIds],
+    queryKey: ['report-timesheet', projectId, from, to, filters.userIds, filters.ticket, filters.typeIds],
     queryFn: () => api.getReportTimesheet(projectId, from!, to!, filters),
     enabled: !!projectId && !!from && !!to,
   });

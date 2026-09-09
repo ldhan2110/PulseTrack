@@ -1103,10 +1103,10 @@ export const api = {
     projectId: string,
     from: string,
     to: string,
-    filters: { user?: string; ticket?: string; typeIds?: string[] } = {},
+    filters: { userIds?: string[]; ticket?: string; typeIds?: string[] } = {},
   ) => {
     const params = new URLSearchParams({ from, to });
-    if (filters.user) params.set('user', filters.user);
+    if (filters.userIds?.length) params.set('userIds', filters.userIds.join(','));
     if (filters.ticket) params.set('ticket', filters.ticket);
     if (filters.typeIds?.length) params.set('typeIds', filters.typeIds.join(','));
     return request<TimesheetData>(`/projects/${projectId}/reports/timesheet?${params.toString()}`);
@@ -1116,14 +1116,14 @@ export const api = {
     projectId: string,
     from: string,
     to: string,
-    filters: { user?: string; ticket?: string; typeIds?: string[] } = {},
+    filters: { userIds?: string[]; ticket?: string; typeIds?: string[] } = {},
     groupBy: 'day' | 'week' | 'month' = 'day',
   ) =>
     downloadFile(`/projects/${projectId}/reports/timesheet/export`, {
       from,
       to,
       groupBy,
-      user: filters.user ?? '',
+      userIds: filters.userIds?.join(',') ?? '',
       ticket: filters.ticket ?? '',
       typeIds: filters.typeIds?.join(',') ?? '',
     }),

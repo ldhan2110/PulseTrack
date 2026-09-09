@@ -14,7 +14,7 @@ export class ReportsController {
     @Param('projectId') projectId: string,
     @Query('from') from: string,
     @Query('to') to: string,
-    @Query('user') user?: string,
+    @Query('userIds') userIds?: string,
     @Query('ticket') ticket?: string,
     @Query('typeIds') typeIds?: string,
   ) {
@@ -26,7 +26,7 @@ export class ReportsController {
       throw new BadRequestException('from and to must be valid ISO dates');
     }
     return this.timeLogsService.getTimesheet(projectId, fromDate, toDate, {
-      user,
+      userIds: userIds ? userIds.split(',').filter(Boolean) : [],
       ticket,
       typeIds: typeIds ? typeIds.split(',').filter(Boolean) : [],
     });
@@ -39,7 +39,7 @@ export class ReportsController {
     @Query('from') from: string,
     @Query('to') to: string,
     @Res() res: Response,
-    @Query('user') user?: string,
+    @Query('userIds') userIds?: string,
     @Query('ticket') ticket?: string,
     @Query('typeIds') typeIds?: string,
     @Query('groupBy') groupBy?: string,
@@ -54,7 +54,7 @@ export class ReportsController {
       projectId,
       fromDate,
       toDate,
-      { user, ticket, typeIds: typeIds ? typeIds.split(',').filter(Boolean) : [] },
+      { userIds: userIds ? userIds.split(',').filter(Boolean) : [], ticket, typeIds: typeIds ? typeIds.split(',').filter(Boolean) : [] },
       period,
     );
     res.set({ 'Content-Disposition': `attachment; filename="report-${from}_${to}.xlsx"` });
