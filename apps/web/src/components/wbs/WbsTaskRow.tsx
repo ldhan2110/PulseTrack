@@ -17,6 +17,8 @@ interface WbsTaskRowProps {
   onDelete: () => void;
   onAdd?: () => void;
   backlogItemId?: string | null;
+  /** Hide add/edit/delete actions when the member lacks WBS write permission. */
+  canManage?: boolean;
 }
 
 const INDENT = { 0: 'pl-2', 1: 'pl-6', 2: 'pl-10' };
@@ -25,6 +27,7 @@ const BG = { 0: 'bg-muted/20', 1: '', 2: '' };
 export function WbsTaskRow({
   level, title, planStart, planEnd, actualStart, actualEnd, progress,
   isRollup, isCollapsed, onToggle, onEdit, onDelete, onAdd, backlogItemId,
+  canManage = true,
 }: WbsTaskRowProps) {
   return (
     <div
@@ -64,19 +67,21 @@ export function WbsTaskRow({
         )}
 
         {/* Hover actions */}
-        <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          {onAdd && (
-            <Button variant="ghost" size="icon" className="size-5" onClick={onAdd}>
-              <Plus className="size-3" />
+        {canManage && (
+          <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            {onAdd && (
+              <Button variant="ghost" size="icon" className="size-5" onClick={onAdd}>
+                <Plus className="size-3" />
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" className="size-5" onClick={onEdit}>
+              <Pencil className="size-3" />
             </Button>
-          )}
-          <Button variant="ghost" size="icon" className="size-5" onClick={onEdit}>
-            <Pencil className="size-3" />
-          </Button>
-          <Button variant="ghost" size="icon" className="size-5 text-destructive" onClick={onDelete}>
-            <Trash2 className="size-3" />
-          </Button>
-        </div>
+            <Button variant="ghost" size="icon" className="size-5 text-destructive" onClick={onDelete}>
+              <Trash2 className="size-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Date cells */}

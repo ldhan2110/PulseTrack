@@ -1,6 +1,7 @@
 import { WbsTaskRow } from './WbsTaskRow';
 import type { WbsPhase, WbsTask, WbsSubtask } from '@/lib/types';
 import { useDeleteWbsPhase, useDeleteWbsTask, useDeleteWbsSubtask } from '@/hooks/useWbs';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface WbsTaskTreeProps {
   phases: WbsPhase[];
@@ -35,6 +36,8 @@ export function WbsTaskTree({
   const deletePhase = useDeleteWbsPhase(projectId);
   const deleteTask = useDeleteWbsTask(projectId);
   const deleteSubtask = useDeleteWbsSubtask(projectId);
+  const { can } = usePermissions(projectId);
+  const canManage = can('wbs', 'update');
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -70,6 +73,7 @@ export function WbsTaskTree({
                 onEdit={() => onEditPhase(phase)}
                 onDelete={() => deletePhase.mutate(phase.id)}
                 onAdd={() => onAddTask(phase.id)}
+                canManage={canManage}
               />
 
               {/* Tasks */}
@@ -94,6 +98,7 @@ export function WbsTaskTree({
                         onDelete={() => deleteTask.mutate({ phaseId: task.phaseId, taskId: task.id })}
                         onAdd={() => onAddSubtask(task.id)}
                         backlogItemId={task.backlogItemId}
+                        canManage={canManage}
                       />
 
                       {/* Subtasks */}
@@ -114,6 +119,7 @@ export function WbsTaskTree({
                               deleteSubtask.mutate({ taskId: subtask.taskId, subtaskId: subtask.id })
                             }
                             backlogItemId={subtask.backlogItemId}
+                            canManage={canManage}
                           />
                         ))}
                     </div>

@@ -22,6 +22,8 @@ import { ExecutionList } from '@/components/test-executions/ExecutionList';
 import { ExecutionDetail } from '@/components/test-executions/ExecutionDetail';
 import { ExecutionRunner } from '@/components/test-executions/ExecutionRunner';
 import { CreateExecutionDialog } from '@/components/test-executions/CreateExecutionDialog';
+import { PermissionGate } from '@/components/auth/PermissionGate';
+import { PERM } from '@/lib/permissions';
 import type { TestExecution } from '@/lib/types';
 import {
   AlertDialog,
@@ -143,7 +145,9 @@ export function TestExecutionsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Executions</h1>
-        <Button onClick={() => setCreateOpen(true)}>+ New Execution</Button>
+        <PermissionGate projectId={projectId} {...PERM.testExecutions.create}>
+          <Button onClick={() => setCreateOpen(true)}>+ New Execution</Button>
+        </PermissionGate>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -348,15 +352,17 @@ export function TestExecutionsPage() {
             <span className="text-sm font-medium">
               {selectedIds.length} test execution{selectedIds.length !== 1 ? 's' : ''} selected
             </span>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setConfirmDeleteOpen(true)}
-              className="h-8 gap-1.5"
-            >
-              <Trash2 className="size-3.5" />
-              Delete
-            </Button>
+            <PermissionGate projectId={projectId} {...PERM.testExecutions.delete}>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setConfirmDeleteOpen(true)}
+                className="h-8 gap-1.5"
+              >
+                <Trash2 className="size-3.5" />
+                Delete
+              </Button>
+            </PermissionGate>
             <Button
               variant="ghost"
               size="sm"

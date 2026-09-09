@@ -10,6 +10,7 @@ import { mkdirSync } from 'fs';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { AttachmentsService } from './attachments.service';
 
 @Controller('projects/:projectId/tasks/:taskId/attachments')
@@ -23,6 +24,7 @@ export class AttachmentsController {
   }
 
   @Post()
+  @RequirePermission('attachments', 'create')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({

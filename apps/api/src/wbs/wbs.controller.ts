@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { WbsService } from './wbs.service';
 import { CreatePhaseDto } from './dto/create-phase.dto';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
@@ -27,6 +28,7 @@ export class WbsController {
   }
 
   @Post('projects/:projectId/wbs/phases')
+  @RequirePermission('wbs', 'create')
   createPhase(
     @Param('projectId') projectId: string,
     @Body() dto: CreatePhaseDto,
@@ -35,6 +37,7 @@ export class WbsController {
   }
 
   @Patch('projects/:projectId/wbs/phases/:phaseId')
+  @RequirePermission('wbs', 'update')
   updatePhase(
     @Param('phaseId') phaseId: string,
     @Body() dto: UpdatePhaseDto,
@@ -43,11 +46,13 @@ export class WbsController {
   }
 
   @Delete('projects/:projectId/wbs/phases/:phaseId')
+  @RequirePermission('wbs', 'delete')
   deletePhase(@Param('phaseId') phaseId: string) {
     return this.wbsService.deletePhase(phaseId);
   }
 
   @Patch('projects/:projectId/wbs/phases/reorder')
+  @RequirePermission('wbs', 'update')
   reorderPhases(
     @Param('projectId') projectId: string,
     @Body() dto: ReorderDto,
@@ -56,6 +61,7 @@ export class WbsController {
   }
 
   @Post('projects/:projectId/wbs/bulk-create')
+  @RequirePermission('wbs', 'create')
   bulkCreate(
     @Param('projectId') projectId: string,
     @Body() dto: BulkCreateWbsDto,
@@ -66,6 +72,7 @@ export class WbsController {
   // ─── Tasks ───────────────────────────────────────────────
 
   @Post('wbs/phases/:phaseId/tasks')
+  @RequirePermission('wbs', 'create')
   createTask(
     @Param('phaseId') phaseId: string,
     @Body() dto: CreateTaskDto,
@@ -74,6 +81,7 @@ export class WbsController {
   }
 
   @Patch('wbs/phases/:phaseId/tasks/:taskId')
+  @RequirePermission('wbs', 'update')
   updateTask(
     @Param('taskId') taskId: string,
     @Body() dto: UpdateTaskDto,
@@ -82,11 +90,13 @@ export class WbsController {
   }
 
   @Delete('wbs/phases/:phaseId/tasks/:taskId')
+  @RequirePermission('wbs', 'delete')
   deleteTask(@Param('taskId') taskId: string) {
     return this.wbsService.deleteTask(taskId);
   }
 
   @Patch('wbs/phases/:phaseId/tasks/reorder')
+  @RequirePermission('wbs', 'update')
   reorderTasks(
     @Param('phaseId') phaseId: string,
     @Body() dto: ReorderDto,
@@ -97,6 +107,7 @@ export class WbsController {
   // ─── Subtasks ────────────────────────────────────────────
 
   @Post('wbs/tasks/:taskId/subtasks')
+  @RequirePermission('wbs', 'create')
   createSubtask(
     @Param('taskId') taskId: string,
     @Body() dto: CreateSubtaskDto,
@@ -105,6 +116,7 @@ export class WbsController {
   }
 
   @Patch('wbs/tasks/:taskId/subtasks/:subtaskId')
+  @RequirePermission('wbs', 'update')
   updateSubtask(
     @Param('subtaskId') subtaskId: string,
     @Body() dto: UpdateSubtaskDto,
@@ -113,11 +125,13 @@ export class WbsController {
   }
 
   @Delete('wbs/tasks/:taskId/subtasks/:subtaskId')
+  @RequirePermission('wbs', 'delete')
   deleteSubtask(@Param('subtaskId') subtaskId: string) {
     return this.wbsService.deleteSubtask(subtaskId);
   }
 
   @Patch('wbs/tasks/:taskId/subtasks/reorder')
+  @RequirePermission('wbs', 'update')
   reorderSubtasks(
     @Param('taskId') taskId: string,
     @Body() dto: ReorderDto,

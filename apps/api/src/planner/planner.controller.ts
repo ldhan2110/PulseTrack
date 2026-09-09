@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { PlannerService } from './planner.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
@@ -27,6 +28,7 @@ export class PlannerController {
   }
 
   @Post('projects/:projectId/planner-sessions')
+  @RequirePermission('planner', 'create')
   createSession(
     @Param('projectId') projectId: string,
     @Body() dto: CreateSessionDto,
@@ -40,6 +42,7 @@ export class PlannerController {
   }
 
   @Patch('projects/:projectId/planner-sessions/:sessionId')
+  @RequirePermission('planner', 'update')
   updateSession(
     @Param('sessionId') sessionId: string,
     @Body() dto: UpdateSessionDto,
@@ -48,6 +51,7 @@ export class PlannerController {
   }
 
   @Delete('projects/:projectId/planner-sessions/:sessionId')
+  @RequirePermission('planner', 'delete')
   deleteSession(@Param('sessionId') sessionId: string) {
     return this.plannerService.deleteSession(sessionId);
   }
@@ -75,6 +79,7 @@ export class PlannerController {
   }
 
   @Post('planner-sessions/:sessionId/scopes')
+  @RequirePermission('planner', 'create')
   createScope(
     @Param('sessionId') sessionId: string,
     @Body() dto: CreateScopeDto,
@@ -83,6 +88,7 @@ export class PlannerController {
   }
 
   @Patch('planner-sessions/:sessionId/scopes/:scopeId')
+  @RequirePermission('planner', 'update')
   updateScope(
     @Param('scopeId') scopeId: string,
     @Body() dto: UpdateScopeDto,
@@ -91,11 +97,13 @@ export class PlannerController {
   }
 
   @Delete('planner-sessions/:sessionId/scopes/:scopeId')
+  @RequirePermission('planner', 'delete')
   deleteScope(@Param('scopeId') scopeId: string) {
     return this.plannerService.deleteScope(scopeId);
   }
 
   @Patch('planner-sessions/:sessionId/scopes/reorder')
+  @RequirePermission('planner', 'update')
   reorderScopes(
     @Param('sessionId') sessionId: string,
     @Body() dto: ReorderDto,
@@ -106,6 +114,7 @@ export class PlannerController {
   // ─── Features ──────────────────────────────────────────────
 
   @Post('planner-sessions/:sessionId/scopes/:scopeId/features')
+  @RequirePermission('planner', 'create')
   createFeature(
     @Param('scopeId') scopeId: string,
     @Body() dto: CreateFeatureDto,
@@ -114,6 +123,7 @@ export class PlannerController {
   }
 
   @Patch('planner-sessions/:sessionId/scopes/:scopeId/features/:featureId')
+  @RequirePermission('planner', 'update')
   updateFeature(
     @Param('featureId') featureId: string,
     @Body() dto: UpdateFeatureDto,
@@ -122,11 +132,13 @@ export class PlannerController {
   }
 
   @Delete('planner-sessions/:sessionId/scopes/:scopeId/features/:featureId')
+  @RequirePermission('planner', 'delete')
   deleteFeature(@Param('featureId') featureId: string) {
     return this.plannerService.deleteFeature(featureId);
   }
 
   @Patch('planner-sessions/:sessionId/scopes/:scopeId/features/reorder')
+  @RequirePermission('planner', 'update')
   reorderFeatures(
     @Param('scopeId') scopeId: string,
     @Body() dto: ReorderDto,

@@ -55,6 +55,7 @@ export function WbsPage() {
   return (
     <div className="flex h-[calc(100vh-5rem)] flex-col">
       <WbsToolbar
+        projectId={projectId}
         onAddPhase={() => setDialogMode({ type: 'phase' })}
         onImportExcel={() => setShowImportDialog(true)}
         onAiSuggest={() => setShowAiWizard(true)}

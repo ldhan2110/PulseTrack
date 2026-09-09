@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { WikiService } from './wiki.service';
 import { UpsertWikiConfigDto } from './dto/upsert-wiki-config.dto';
 
@@ -20,17 +21,20 @@ export class WikiController {
   }
 
   @Put('config')
+  @RequirePermission('projectSettings', 'update')
   upsertConfig(@Param('projectId') projectId: string, @Body() body: UpsertWikiConfigDto) {
     return this.service.upsertConfig(projectId, body);
   }
 
   // ─── Generation ──────────────────────────────────────────────────────
   @Post('generate')
+  @RequirePermission('projectSettings', 'update')
   generate(@Param('projectId') projectId: string) {
     return this.service.startGeneration(projectId);
   }
 
   @Post('generate/:section')
+  @RequirePermission('projectSettings', 'update')
   generateSection(@Param('projectId') projectId: string, @Param('section') section: string) {
     return this.service.startGeneration(projectId, section);
   }
@@ -46,6 +50,7 @@ export class WikiController {
   }
 
   @Post('generate/abort/:jobId')
+  @RequirePermission('projectSettings', 'update')
   abortGeneration(@Param('jobId') jobId: string) {
     return this.service.abortGeneration(jobId);
   }

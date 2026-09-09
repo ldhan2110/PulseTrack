@@ -22,6 +22,8 @@ import { SuiteManager } from '@/components/test-cases/SuiteManager';
 import { ImportTestCasesDialog } from '@/components/test-cases/ImportTestCasesDialog';
 import { ExportTestCasesDialog } from '@/components/test-cases/ExportTestCasesDialog';
 import type { TestCase } from '@/lib/types';
+import { PermissionGate } from '@/components/auth/PermissionGate';
+import { PERM } from '@/lib/permissions';
 import { GenerateTestCasesModal } from '@/components/test-cases/GenerateTestCasesModal';
 import { TestCaseGenerationWizard } from '@/components/test-cases/TestCaseGenerationWizard';
 import { useAiTestCaseGeneration } from '@/hooks/useAiTestCaseGeneration';
@@ -145,20 +147,26 @@ export function TestCasesPage() {
   const toolbarActions = (
     <div className="flex items-center gap-2">
       {canGenerate && (
-        <Button variant="outline" onClick={() => setGenerateOpen(true)}>
-          <Sparkles className="size-3.5 mr-1.5" />
-          AI Generate
-        </Button>
+        <PermissionGate projectId={projectId} {...PERM.testCases.create}>
+          <Button variant="outline" onClick={() => setGenerateOpen(true)}>
+            <Sparkles className="size-3.5 mr-1.5" />
+            AI Generate
+          </Button>
+        </PermissionGate>
       )}
-      <Button variant="outline" onClick={() => setImportOpen(true)}>
-        <FileSpreadsheet className="size-3.5 mr-1.5" />
-        Import Excel
-      </Button>
+      <PermissionGate projectId={projectId} {...PERM.testCases.create}>
+        <Button variant="outline" onClick={() => setImportOpen(true)}>
+          <FileSpreadsheet className="size-3.5 mr-1.5" />
+          Import Excel
+        </Button>
+      </PermissionGate>
       <Button variant="outline" onClick={() => setExportOpen(true)}>
         <Download className="size-3.5 mr-1.5" />
         Export Excel
       </Button>
-      <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+      <PermissionGate projectId={projectId} {...PERM.testCases.create}>
+        <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+      </PermissionGate>
     </div>
   );
 
@@ -189,7 +197,9 @@ export function TestCasesPage() {
                   Create modules and test cases to start managing your test coverage.
                 </p>
               </div>
-              <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+              <PermissionGate projectId={projectId} {...PERM.testCases.create}>
+                <Button onClick={() => setCreateOpen(true)}>+ New Test Case</Button>
+              </PermissionGate>
             </div>
           </div>
         </div>

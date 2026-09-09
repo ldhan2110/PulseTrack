@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateReplyDto } from './dto/create-reply.dto';
@@ -19,6 +20,7 @@ export class CommentsController {
   }
 
   @Post()
+  @RequirePermission('comments', 'create')
   create(
     @Param('taskId') taskId: string,
     @Req() req: any,
@@ -28,6 +30,7 @@ export class CommentsController {
   }
 
   @Post(':commentId/replies')
+  @RequirePermission('comments', 'create')
   createReply(
     @Param('taskId') taskId: string,
     @Param('commentId') commentId: string,

@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
+import { RequirePermission } from '../auth/require-permission.decorator';
 import { BugAttachmentsService } from './bug-attachments.service';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'bugs');
@@ -20,6 +21,7 @@ export class BugAttachmentsController {
   constructor(private service: BugAttachmentsService) {}
 
   @Post()
+  @RequirePermission('attachments', 'create')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({

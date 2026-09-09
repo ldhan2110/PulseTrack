@@ -16,6 +16,9 @@ export interface RolePermissions {
   dashboard: PermissionSet;
   comments: PermissionSet;
   attachments: PermissionSet;
+  report: PermissionSet;
+  wbs: PermissionSet;
+  planner: PermissionSet;
   [key: string]: PermissionSet;
 }
 
@@ -37,6 +40,9 @@ export const SYSTEM_ROLE_PERMISSIONS: RolePermissions = {
   dashboard: ALL_TRUE,
   comments: ALL_TRUE,
   attachments: ALL_TRUE,
+  report: ALL_TRUE,
+  wbs: ALL_TRUE,
+  planner: ALL_TRUE,
 };
 
 export const DEFAULT_MEMBER_PERMISSIONS: RolePermissions = {
@@ -50,6 +56,9 @@ export const DEFAULT_MEMBER_PERMISSIONS: RolePermissions = {
   dashboard: VIEW_ONLY,
   comments: { view: true, create: true, update: true, delete: false },
   attachments: { view: true, create: true, update: false, delete: false },
+  report: VIEW_ONLY,
+  wbs: { view: true, create: true, update: true, delete: false },
+  planner: VIEW_ONLY,
 };
 
 export const EMPTY_PERMISSIONS: RolePermissions = {
@@ -63,6 +72,9 @@ export const EMPTY_PERMISSIONS: RolePermissions = {
   dashboard: ALL_FALSE,
   comments: ALL_FALSE,
   attachments: ALL_FALSE,
+  report: ALL_FALSE,
+  wbs: ALL_FALSE,
+  planner: ALL_FALSE,
 };
 
 export function hasPermission(

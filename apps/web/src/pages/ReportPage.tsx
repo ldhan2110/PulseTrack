@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useProjectByPrefix } from '@/hooks/useProjects';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useReportTimesheet } from '@/hooks/useReportTimesheet';
 import { CriteriaFilter } from '@/components/reports/CriteriaFilter';
 import { ReportTable } from '@/components/reports/ReportTable';
@@ -21,6 +22,7 @@ const toParam = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : undefined);
 export function ReportPage() {
   const { projectPrefix } = useParams<{ projectPrefix: string }>();
   const { data: project } = useProjectByPrefix(projectPrefix ?? '');
+  const { can } = usePermissions(project?.id ?? '');
 
   const [range, setRange] = useState<DateRange | undefined>(DEFAULT_RANGE);
   const [groupBy, setGroupBy] = useState<GroupBy>('day');
@@ -76,7 +78,7 @@ export function ReportPage() {
     setSelectedTypes((prev) => (prev.includes(typeId) ? prev.filter((id) => id !== typeId) : [...prev, typeId]));
   const handleSetTypes = (ids: string[]) => setSelectedTypes(ids);
 
-  const canExport = !!project?.id && !!applied?.from && !!applied?.to;
+  const canExport = can('report', 'view') && !!project?.id && !!applied?.from && !!applied?.to;
   const handleExport = () => {
     if (!canExport) return;
     api.exportReportTimesheet(

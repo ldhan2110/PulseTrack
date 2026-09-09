@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { KanbanColumn } from './KanbanColumn';
 import { useUpdateTask } from '@/hooks/useTasks';
 import { useWorkflow } from '@/hooks/useWorkflow';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { Task } from '@/lib/types';
 
 interface KanbanBoardProps {
@@ -22,6 +23,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProps) {
   const updateTask = useUpdateTask(projectId);
   const { data: workflow } = useWorkflow(projectId);
+  const { can } = usePermissions(projectId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -57,6 +59,11 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
 
     const task = tasks.find((t) => t.id === taskId);
     if (!task || task.workflowStatusId === newStatusId) return;
+
+    if (!can('tasks', 'update')) {
+      toast.error('You do not have permission to move tasks');
+      return;
+    }
 
     if (task.workflowStatusId) {
       const transKey = `${task.workflowStatusId}→${newStatusId}`;
