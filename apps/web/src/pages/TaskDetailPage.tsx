@@ -656,7 +656,8 @@ export function TaskDetailPage() {
           <AddSubTaskModal
             open={addSubTaskOpen}
             onOpenChange={setAddSubTaskOpen}
-            onSave={(title) => createTask.mutate({ title, parentId: task.id })}
+            taskTypes={taskTypes}
+            onSave={(title, taskTypeId) => createTask.mutate({ title, taskTypeId, parentId: task.id })}
           />
 
           {/* Bugs Section */}

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkflowService } from '../workflow/workflow.service';
 import { SYSTEM_ROLE_PERMISSIONS, DEFAULT_MEMBER_PERMISSIONS } from '../auth/permissions';
@@ -28,12 +28,18 @@ export class ProjectsService {
   ) {}
 
   async create(userId: string, dto: CreateProjectDto) {
+    const prefix = dto.prefix?.trim() || 'US';
+    const existing = await this.prisma.project.findUnique({ where: { prefix } });
+    if (existing) {
+      throw new ConflictException(`Project prefix "${prefix}" already exists`);
+    }
+
     const project = await this.prisma.$transaction(async (tx) => {
       const p = await tx.project.create({
         data: {
           name: dto.name?.trim() || 'Untitled Project',
           description: dto.description,
-          prefix: dto.prefix?.trim() || 'US',
+          prefix,
           ownerId: userId,
         },
       });
