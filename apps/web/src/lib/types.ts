@@ -1482,3 +1482,12 @@ export interface TimesheetData {
   days: string[];
 }
 
+// A rendered report column after period bucketing (day/week/month).
+// `group` drives the spanning super-header: month for day/week views, year for month view.
+export interface ReportColumn {
+  key: string;
+  label: string;
+  sublabel?: string;
+  group: string;
+}
+

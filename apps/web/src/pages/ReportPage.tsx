@@ -9,6 +9,7 @@ import { useReportTimesheet } from '@/hooks/useReportTimesheet';
 import { CriteriaFilter } from '@/components/reports/CriteriaFilter';
 import { ReportTable } from '@/components/reports/ReportTable';
 import { formatRange } from '@/components/reports/utils/format';
+import { bucketize } from '@/components/reports/utils/bucketize';
 import type { GroupBy } from '@/components/reports/utils/presets';
 
 const DEFAULT_RANGE: DateRange = { from: subDays(startOfToday(), 7), to: startOfToday() };
@@ -32,7 +33,8 @@ export function ReportPage() {
   const { data, isLoading } = useReportTimesheet(project?.id ?? '', toParam(applied?.from), toParam(applied?.to));
   // days come back as ISO date strings; parse to local Date for column formatting.
   const days = (data?.days ?? []).map((s) => new Date(`${s}T00:00:00`));
-  const rows = data?.rows ?? [];
+  // Collapse daily data into day/week/month buckets client-side based on the toggle.
+  const { columns, rows } = bucketize(days, data?.rows ?? [], groupBy);
 
   // Manual calendar edits clear the active preset selection.
   const handleRangeChange = (r: DateRange | undefined) => {
@@ -85,7 +87,7 @@ export function ReportPage() {
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : (
-              <ReportTable rows={rows} days={days} projectPrefix={projectPrefix ?? ''} />
+              <ReportTable rows={rows} columns={columns} projectPrefix={projectPrefix ?? ''} />
             )}
           </div>
         </ResizablePanel>

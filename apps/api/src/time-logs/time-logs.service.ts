@@ -91,8 +91,11 @@ export class TimeLogsService {
     const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
     const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
     const dayCount = Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
+    // Format in LOCAL time — toISOString() is UTC and shifts the day at non-UTC offsets.
+    const toLocalYmd = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const days = Array.from({ length: dayCount }, (_, i) =>
-      new Date(start.getTime() + i * MS_PER_DAY).toISOString().slice(0, 10),
+      toLocalYmd(new Date(start.getTime() + i * MS_PER_DAY)),
     );
 
     const [members, logs] = await Promise.all([

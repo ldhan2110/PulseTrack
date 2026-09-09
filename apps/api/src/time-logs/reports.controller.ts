@@ -14,8 +14,10 @@ export class ReportsController {
     @Query('from') from: string,
     @Query('to') to: string,
   ) {
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
+    // Parse yyyy-MM-dd as local midnight (not UTC) so the day matches what the client sent
+    // regardless of server timezone. Bare `new Date('2026-09-07')` parses as UTC → off-by-one.
+    const fromDate = new Date(`${from}T00:00:00`);
+    const toDate = new Date(`${to}T00:00:00`);
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       throw new BadRequestException('from and to must be valid ISO dates');
     }

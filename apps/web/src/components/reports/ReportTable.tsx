@@ -1,6 +1,5 @@
 import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 import {
   Table,
@@ -11,17 +10,17 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
-import type { TimesheetRow } from '@/lib/types';
+import type { ReportColumn, TimesheetRow } from '@/lib/types';
 import { useColumnResize, ResizeGrip } from './utils/useColumnResize';
 import { UserCell } from './UserCell';
 
 interface ReportTableProps {
   rows: TimesheetRow[];
-  days: Date[];
+  columns: ReportColumn[];
   projectPrefix: string;
 }
 
-export function ReportTable({ rows, days, projectPrefix }: ReportTableProps) {
+export function ReportTable({ rows, columns, projectPrefix }: ReportTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const { colW, startResize } = useColumnResize();
 
@@ -32,16 +31,15 @@ export function ReportTable({ rows, days, projectPrefix }: ReportTableProps) {
       return next;
     });
 
-  // Month header groups over the day columns.
-  const monthGroups: { label: string; count: number }[] = [];
-  days.forEach((d) => {
-    const label = format(d, 'MMM yyyy');
-    const last = monthGroups[monthGroups.length - 1];
-    if (last && last.label === label) last.count += 1;
-    else monthGroups.push({ label, count: 1 });
+  // Spanning super-header: consecutive columns sharing a group (month, or year for month view).
+  const groups: { label: string; count: number }[] = [];
+  columns.forEach((c) => {
+    const last = groups[groups.length - 1];
+    if (last && last.label === c.group) last.count += 1;
+    else groups.push({ label: c.group, count: 1 });
   });
 
-  const columnTotals = days.map((_, i) => rows.reduce((s, r) => s + (r.values[i] ?? 0), 0));
+  const columnTotals = columns.map((_, i) => rows.reduce((s, r) => s + (r.values[i] ?? 0), 0));
   const grandTotal = rows.reduce((s, r) => s + r.total, 0);
 
   // Sticky left offsets derive from the (resizable) pinned column widths.
@@ -53,7 +51,7 @@ export function ReportTable({ rows, days, projectPrefix }: ReportTableProps) {
     <div className="min-h-0 flex-1 overflow-auto rounded-md border">
       <Table className="border-separate border-spacing-0 [&_td]:border-b [&_td]:border-r [&_td]:py-1 [&_th]:border-b [&_th]:border-r [&_th]:py-1">
         <TableHeader className="sticky top-0 z-10 bg-muted">
-          {/* Row 1: Item / Key / Total span both rows; each month spans its days */}
+          {/* Row 1: Item / Key / Total span both rows; each group (month, or year for month view) spans its columns */}
           <TableRow>
             <TableHead rowSpan={2} style={pin(0, colW.item)} className="sticky z-20 bg-muted text-center align-middle">
               Item
@@ -67,18 +65,20 @@ export function ReportTable({ rows, days, projectPrefix }: ReportTableProps) {
               Total
               <ResizeGrip onMouseDown={(e) => startResize('total', e)} />
             </TableHead>
-            {monthGroups.map((m) => (
-              <TableHead key={m.label} colSpan={m.count} className="text-center font-semibold">
-                {m.label}
+            {groups.map((g, i) => (
+              <TableHead key={`${g.label}-${i}`} colSpan={g.count} className="text-center font-semibold">
+                {g.label}
               </TableHead>
             ))}
           </TableRow>
-          {/* Row 2: day number + weekday */}
+          {/* Row 2: per-column label + optional sublabel */}
           <TableRow>
-            {days.map((d) => (
-              <TableHead key={d.toISOString()} className="min-w-[48px] text-center">
-                <div className="leading-tight">{format(d, 'd')}</div>
-                <div className="text-[10px] font-normal text-muted-foreground">{format(d, 'EEE')}</div>
+            {columns.map((c) => (
+              <TableHead key={c.key} className="min-w-[48px] text-center">
+                <div className="leading-tight">{c.label}</div>
+                {c.sublabel && (
+                  <div className="text-[10px] font-normal text-muted-foreground">{c.sublabel}</div>
+                )}
               </TableHead>
             ))}
           </TableRow>
@@ -86,7 +86,7 @@ export function ReportTable({ rows, days, projectPrefix }: ReportTableProps) {
         <TableBody>
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3 + days.length} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={3 + columns.length} className="h-24 text-center text-muted-foreground">
                 No members in this project.
               </TableCell>
             </TableRow>
