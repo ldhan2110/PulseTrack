@@ -84,6 +84,80 @@ export class TimeLogsService {
     });
   }
 
+  // Per-project timesheet: TimeLogs in [from, to] grouped by user → task, rolled into per-day hour buckets.
+  async getTimesheet(projectId: string, from: Date, to: Date) {
+    const MS_PER_DAY = 86_400_000;
+    // Normalize to day boundaries so the bucket count matches the frontend's eachDayOfInterval.
+    const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    const end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+    const dayCount = Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
+    const days = Array.from({ length: dayCount }, (_, i) =>
+      new Date(start.getTime() + i * MS_PER_DAY).toISOString().slice(0, 10),
+    );
+
+    const [members, logs] = await Promise.all([
+      this.prisma.projectMember.findMany({
+        where: { projectId },
+        select: { user: { select: { id: true, name: true, imageUrl: true } } },
+      }),
+      this.prisma.timeLog.findMany({
+        where: {
+          task: { projectId },
+          loggedAt: { gte: start, lt: new Date(end.getTime() + MS_PER_DAY) },
+        },
+        select: {
+          minutes: true,
+          loggedAt: true,
+          user: { select: { id: true, name: true, imageUrl: true } },
+          task: { select: { id: true, taskKey: true, title: true } },
+        },
+      }),
+    ]);
+
+    // user id → { user, tickets: Map<taskId, {key,title,values}> }
+    const byUser = new Map<
+      string,
+      { user: { id: string; name: string | null; imageUrl: string | null }; tickets: Map<string, { key: string; title: string; values: number[] }> }
+    >();
+
+    // Seed every project member so users with 0 logged hours still appear as a row.
+    for (const m of members) {
+      byUser.set(m.user.id, { user: m.user, tickets: new Map() });
+    }
+
+    for (const log of logs) {
+      const dayIndex = Math.floor(
+        (new Date(log.loggedAt.getFullYear(), log.loggedAt.getMonth(), log.loggedAt.getDate()).getTime() - start.getTime()) / MS_PER_DAY,
+      );
+      if (dayIndex < 0 || dayIndex >= dayCount) continue;
+
+      let u = byUser.get(log.user.id);
+      if (!u) {
+        u = { user: log.user, tickets: new Map() };
+        byUser.set(log.user.id, u);
+      }
+      let ticket = u.tickets.get(log.task.id);
+      if (!ticket) {
+        ticket = { key: log.task.taskKey ?? log.task.id, title: log.task.title, values: Array(dayCount).fill(0) };
+        u.tickets.set(log.task.id, ticket);
+      }
+      ticket.values[dayIndex] += log.minutes / 60;
+    }
+
+    const rows = Array.from(byUser.values()).map(({ user, tickets }) => {
+      const ticketList = Array.from(tickets.values());
+      const values = Array.from({ length: dayCount }, (_, i) => ticketList.reduce((s, t) => s + t.values[i], 0));
+      return {
+        user,
+        tickets: ticketList,
+        values,
+        total: values.reduce((s, v) => s + v, 0),
+      };
+    });
+
+    return { rows, days };
+  }
+
   async remove(projectId: string, taskId: string, timeLogId: string, userId: string, permissions: RolePermissions) {
     const timeLog = await this.prisma.timeLog.findUnique({
       where: { id: timeLogId },

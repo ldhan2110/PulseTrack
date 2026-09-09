@@ -1462,3 +1462,23 @@ export interface Group {
   members: Member[];
 }
 
+// ─── Reports ──────────────────────────────────────────────────────────────────
+
+export interface TimesheetTicket {
+  key: string;
+  title: string;
+  values: number[];
+}
+
+export interface TimesheetRow {
+  user: { id: string; name: string | null; imageUrl: string | null };
+  tickets: TimesheetTicket[];
+  values: number[];
+  total: number;
+}
+
+export interface TimesheetData {
+  rows: TimesheetRow[];
+  days: string[];
+}
+

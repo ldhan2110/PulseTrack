@@ -110,6 +110,7 @@ import type {
   TestCaseAutomation,
   AutomationRun,
   ProjectVariable,
+  TimesheetData,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -1096,4 +1097,10 @@ export const api = {
 
   deleteProjectVariable: (id: string, projectId: string) =>
     request<void>(`/projects/${projectId}/variables/${id}`, { method: 'DELETE' }),
+
+  // ─── Reports ───────────────────────────────────────────────────────────────
+  getReportTimesheet: (projectId: string, from: string, to: string) =>
+    request<TimesheetData>(
+      `/projects/${projectId}/reports/timesheet?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
 };
