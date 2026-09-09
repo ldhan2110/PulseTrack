@@ -57,11 +57,16 @@ export class MembersService {
 
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { name: true },
+      select: { name: true, prefix: true },
     });
     this.notifications.notifyUser(dto.userId, 'member:added', {
       projectId,
       projectName: project?.name ?? '',
+    });
+    await this.emailQueue.add('added', {
+      email: member.user.email,
+      projectName: project?.name ?? '',
+      prefix: project?.prefix ?? '',
     });
 
     return member;
@@ -104,12 +109,17 @@ export class MembersService {
 
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { name: true },
+      select: { name: true, prefix: true },
     });
     for (const m of members) {
       this.notifications.notifyUser(m.userId, 'member:added', {
         projectId,
         projectName: project?.name ?? '',
+      });
+      await this.emailQueue.add('added', {
+        email: m.user.email,
+        projectName: project?.name ?? '',
+        prefix: project?.prefix ?? '',
       });
     }
 
