@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useChangeMemberRole, useRemoveMember, useMemberActiveWork } from '@/hooks/useMembers';
 import { useRoles } from '@/hooks/useRoles';
+import { useAuth } from '@/auth/useAuth';
 import type { Member } from '@/lib/types';
 
 function getInitials(name: string | undefined | null): string {
@@ -57,6 +58,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
   const removeMember = useRemoveMember(projectId);
   const { data: roles = [] } = useRoles(projectId);
   const activeWork = useMemberActiveWork(projectId, removingMember?.id ?? null);
+  const { user } = useAuth();
 
   const getRemovalDescription = () => {
     if (!removingMember) return '';
@@ -151,6 +153,7 @@ export function MembersTable({ members, projectId, canManage }: MembersTableProp
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
+                        disabled={member.user.id === user?.id}
                         onSelect={() => setRemovingMember(member)}
                       >
                         Remove

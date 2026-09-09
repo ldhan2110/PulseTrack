@@ -201,6 +201,10 @@ export class MembersService {
       throw new NotFoundException('Member not found in this project');
     }
 
+    if (member.userId === actorId) {
+      throw new BadRequestException('You cannot remove yourself from a project');
+    }
+
     // Prevent removing the last system-role (PM) member
     if (member.customRole.isSystem) {
       const pmCount = await this.prisma.projectMember.count({
