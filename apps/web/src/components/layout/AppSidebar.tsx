@@ -19,6 +19,7 @@ import {
   BookOpen,
   Target,
   ScanSearch,
+  BarChart3,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -63,6 +64,7 @@ const PROJECT_NAV_ITEMS: NavItem[] = [
   { label: 'Test Cases', icon: ClipboardList, path: 'test-cases' },
   { label: 'Test Executions', icon: Play, path: 'test-executions' },
   { label: 'Bugs', icon: Bug, path: 'bugs' },
+  { label: 'Reports', icon: BarChart3, path: 'reports' },
   { label: 'Members & Groups', icon: Users, path: 'members' },
   { label: 'Wiki', icon: BookOpen, path: 'wiki' },
   { label: 'Settings', icon: Settings, path: 'settings' },

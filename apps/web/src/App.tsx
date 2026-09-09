@@ -21,6 +21,7 @@ import { MyTasksPage } from './pages/MyTasksPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { PlannerPage } from './pages/PlannerPage';
 import { WbsPage } from './pages/WbsPage';
+import { ReportPage } from './pages/ReportPage';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
         <Route path="/projects/:projectPrefix/sprints" element={<SprintsPage />} />
         <Route path="/projects/:projectPrefix/sprints/:sprintId" element={<SprintBoardPage />} />
         <Route path="/projects/:projectPrefix/bugs" element={<BugsPage />} />
+        <Route path="/projects/:projectPrefix/reports" element={<ReportPage />} />
         <Route path="/projects/:projectPrefix/test-cases" element={<TestCasesPage />} />
         <Route path="/projects/:projectPrefix/test-executions" element={<TestExecutionsPage />} />
         <Route path="/projects/:projectPrefix/members" element={<MembersPage />} />
