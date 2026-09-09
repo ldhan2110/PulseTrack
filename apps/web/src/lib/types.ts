@@ -1467,6 +1467,7 @@ export interface Group {
 export interface TimesheetTicket {
   key: string;
   title: string;
+  taskTypeId?: string | null;
   values: number[];
 }
 

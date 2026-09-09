@@ -13,6 +13,9 @@ export class ReportsController {
     @Param('projectId') projectId: string,
     @Query('from') from: string,
     @Query('to') to: string,
+    @Query('user') user?: string,
+    @Query('ticket') ticket?: string,
+    @Query('typeIds') typeIds?: string,
   ) {
     // Parse yyyy-MM-dd as local midnight (not UTC) so the day matches what the client sent
     // regardless of server timezone. Bare `new Date('2026-09-07')` parses as UTC → off-by-one.
@@ -21,6 +24,10 @@ export class ReportsController {
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       throw new BadRequestException('from and to must be valid ISO dates');
     }
-    return this.timeLogsService.getTimesheet(projectId, fromDate, toDate);
+    return this.timeLogsService.getTimesheet(projectId, fromDate, toDate, {
+      user,
+      ticket,
+      typeIds: typeIds ? typeIds.split(',').filter(Boolean) : [],
+    });
   }
 }

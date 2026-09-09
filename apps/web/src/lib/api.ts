@@ -1099,8 +1099,16 @@ export const api = {
     request<void>(`/projects/${projectId}/variables/${id}`, { method: 'DELETE' }),
 
   // ─── Reports ───────────────────────────────────────────────────────────────
-  getReportTimesheet: (projectId: string, from: string, to: string) =>
-    request<TimesheetData>(
-      `/projects/${projectId}/reports/timesheet?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-    ),
+  getReportTimesheet: (
+    projectId: string,
+    from: string,
+    to: string,
+    filters: { user?: string; ticket?: string; typeIds?: string[] } = {},
+  ) => {
+    const params = new URLSearchParams({ from, to });
+    if (filters.user) params.set('user', filters.user);
+    if (filters.ticket) params.set('ticket', filters.ticket);
+    if (filters.typeIds?.length) params.set('typeIds', filters.typeIds.join(','));
+    return request<TimesheetData>(`/projects/${projectId}/reports/timesheet?${params.toString()}`);
+  },
 };

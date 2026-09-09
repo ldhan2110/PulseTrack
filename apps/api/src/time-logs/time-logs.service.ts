@@ -4,6 +4,12 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTimeLogDto } from './dto/create-time-log.dto';
 import { hasPermission, type RolePermissions } from '../auth/permissions';
 
+export interface TimesheetFilters {
+  user?: string;
+  ticket?: string;
+  typeIds?: string[];
+}
+
 @Injectable()
 export class TimeLogsService {
   constructor(
@@ -85,7 +91,7 @@ export class TimeLogsService {
   }
 
   // Per-project timesheet: TimeLogs in [from, to] grouped by user → task, rolled into per-day hour buckets.
-  async getTimesheet(projectId: string, from: Date, to: Date) {
+  async getTimesheet(projectId: string, from: Date, to: Date, filters: TimesheetFilters = {}) {
     const MS_PER_DAY = 86_400_000;
     // Normalize to day boundaries so the bucket count matches the frontend's eachDayOfInterval.
     const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
@@ -98,21 +104,41 @@ export class TimeLogsService {
       toLocalYmd(new Date(start.getTime() + i * MS_PER_DAY)),
     );
 
+    const user = filters.user?.trim();
+    const ticket = filters.ticket?.trim();
+    const typeIds = filters.typeIds ?? [];
+    // A ticket filter narrows to specific tickets, so 0-hour members shouldn't appear.
+    // Type filter is a category, not a ticket narrow — 0-hour members still show.
+    const hasTicketFilter = !!ticket;
+
     const [members, logs] = await Promise.all([
-      this.prisma.projectMember.findMany({
-        where: { projectId },
-        select: { user: { select: { id: true, name: true, imageUrl: true } } },
-      }),
+      // Skip seeding empty member rows when a ticket/type filter is active — they'd never match.
+      hasTicketFilter
+        ? Promise.resolve([])
+        : this.prisma.projectMember.findMany({
+            where: {
+              projectId,
+              ...(user ? { user: { name: { contains: user, mode: 'insensitive' } } } : {}),
+            },
+            select: { user: { select: { id: true, name: true, imageUrl: true } } },
+          }),
       this.prisma.timeLog.findMany({
         where: {
-          task: { projectId },
           loggedAt: { gte: start, lt: new Date(end.getTime() + MS_PER_DAY) },
+          ...(user ? { user: { name: { contains: user, mode: 'insensitive' } } } : {}),
+          task: {
+            projectId,
+            ...(typeIds.length ? { taskTypeId: { in: typeIds } } : {}),
+            ...(ticket
+              ? { OR: [{ title: { contains: ticket, mode: 'insensitive' } }, { taskKey: { contains: ticket, mode: 'insensitive' } }] }
+              : {}),
+          },
         },
         select: {
           minutes: true,
           loggedAt: true,
           user: { select: { id: true, name: true, imageUrl: true } },
-          task: { select: { id: true, taskKey: true, title: true } },
+          task: { select: { id: true, taskKey: true, title: true, taskTypeId: true } },
         },
       }),
     ]);
@@ -120,7 +146,7 @@ export class TimeLogsService {
     // user id → { user, tickets: Map<taskId, {key,title,values}> }
     const byUser = new Map<
       string,
-      { user: { id: string; name: string | null; imageUrl: string | null }; tickets: Map<string, { key: string; title: string; values: number[] }> }
+      { user: { id: string; name: string | null; imageUrl: string | null }; tickets: Map<string, { key: string; title: string; taskTypeId: string | null; values: number[] }> }
     >();
 
     // Seed every project member so users with 0 logged hours still appear as a row.
@@ -141,7 +167,7 @@ export class TimeLogsService {
       }
       let ticket = u.tickets.get(log.task.id);
       if (!ticket) {
-        ticket = { key: log.task.taskKey ?? log.task.id, title: log.task.title, values: Array(dayCount).fill(0) };
+        ticket = { key: log.task.taskKey ?? log.task.id, title: log.task.title, taskTypeId: log.task.taskTypeId, values: Array(dayCount).fill(0) };
         u.tickets.set(log.task.id, ticket);
       }
       ticket.values[dayIndex] += log.minutes / 60;
