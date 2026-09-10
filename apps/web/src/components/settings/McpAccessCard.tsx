@@ -42,7 +42,10 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
   const createToken = useCreateMcpToken(projectId);
   const revokeToken = useRevokeMcpToken(projectId);
 
-  const connectUrl = `${window.location.origin}/mcp`;
+  // External agents hit the API directly. VITE_API_URL is the absolute API base
+  // (ends in /api); fall back to same-origin /api. The route is /api/mcp (global prefix).
+  const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? `${window.location.origin}/api`;
+  const connectUrl = `${apiBase.replace(/\/$/, '')}/mcp`;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [label, setLabel] = useState('');
@@ -187,13 +190,13 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           {createdSecret ? (
             <>
               <DialogHeader>
                 <DialogTitle>Token created</DialogTitle>
               </DialogHeader>
-              <div className="space-y-3">
+              <div className="space-y-3 px-4 pb-2">
                 <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   <span>Copy this now — it will never be shown again. Store it in your agent's MCP config.</span>
@@ -215,7 +218,7 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
               <DialogHeader>
                 <DialogTitle>Create MCP token</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 px-4 pb-2">
                 <div className="space-y-2">
                   <Label htmlFor="mcp-label">Label</Label>
                   <Input

@@ -55,7 +55,7 @@ beforeEach(() => {
 describe('McpAccessCard [req-7]', () => {
   it('shows the connect URL and a Create button for managers', () => {
     render(<McpAccessCard projectId="p1" canManage />);
-    expect(screen.getByDisplayValue(`${window.location.origin}/mcp`)).toBeTruthy();
+    expect(screen.getByDisplayValue(`${window.location.origin}/api/mcp`)).toBeTruthy();
     expect(screen.getByText('+ Create token')).toBeTruthy();
   });
 
@@ -64,7 +64,7 @@ describe('McpAccessCard [req-7]', () => {
     render(<McpAccessCard projectId="p1" canManage={false} />);
     expect(screen.queryByText('+ Create token')).toBeNull();
     expect(screen.queryByText('Revoke')).toBeNull();
-    expect(screen.getByDisplayValue(`${window.location.origin}/mcp`)).toBeTruthy();
+    expect(screen.getByDisplayValue(`${window.location.origin}/api/mcp`)).toBeTruthy();
     expect(screen.getByText('Cursor laptop')).toBeTruthy();
   });
 
