@@ -131,9 +131,9 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <img
-                  src="/favicon.svg"
-                  alt="Logo"
-                  className="size-6 shrink-0 cursor-pointer"
+                  src="/images/logo.png"
+                  alt="CareOne"
+                  className="size-10 shrink-0 cursor-pointer"
                   onClick={toggleSidebar}
                 />
               </TooltipTrigger>
@@ -143,16 +143,17 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
         ) : (
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <img
-              src="/favicon.svg"
-              alt="Logo"
-              className="size-6 shrink-0 cursor-pointer"
+              src="/images/logo.png"
+              alt="CareOne"
+              className="size-8 shrink-0 cursor-pointer"
               onClick={() => navigate('/')}
             />
             <span
-              className="font-semibold text-base tracking-tight truncate cursor-pointer flex-1"
+              className="font-extrabold text-lg tracking-tight truncate cursor-pointer flex-1"
+              style={{ color: '#161046' }}
               onClick={() => navigate('/')}
             >
-              PulseTrack
+              CareOne
             </span>
             <SidebarCollapseButton />
           </div>
