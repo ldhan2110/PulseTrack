@@ -1,0 +1,22 @@
+change: add-mobile-sidebar-trigger
+tasks:
+  - id: t1
+    title: add mobile SidebarTrigger to ProjectLayout top bar
+    spec: [req-1]
+    depends_on: []
+    skills: [frontend-design]
+    ui: [ProjectLayout top bar]
+    verify:
+      # structural: mock useIsMobile, assert trigger visibility + open behavior.
+      # first test file in repo — worker creates it (vitest + testing-library, jsdom is configured).
+      - "pnpm --filter @pm/web test --run ProjectLayout"
+      - "pnpm --filter @pm/web build"
+    status: done
+    notes: >
+      One-line UI wiring at ProjectLayout.tsx:53 — change top-bar div justify-end -> justify-between,
+      add <SidebarTrigger className="md:hidden" /> left of NotificationBell (import from @/components/ui/sidebar).
+      No new responsive logic: shadcn primitive already swaps to <Sheet> at 768px (hooks/use-mobile.ts) and
+      SidebarTrigger already calls toggleSidebar -> openMobile. Conventions: Tailwind md:hidden, @/ alias, React 19.
+      Test asserts: trigger present when useIsMobile mocked true, activating it calls toggleSidebar/opens drawer,
+      absent (md:hidden) semantics on desktop. If jsdom matchMedia mocking proves flaky, flag in notes rather
+      than dropping the check.

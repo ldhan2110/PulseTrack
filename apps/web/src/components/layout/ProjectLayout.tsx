@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { useUiStore } from '@/store/uiStore';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { CreateProjectDialog } from '../projects/CreateProjectDialog';
 import { useProjectByPrefix } from '@/hooks/useProjects';
 import { useMembershipSync } from '@/hooks/useMembershipSync';
@@ -50,7 +50,8 @@ export function ProjectLayout() {
     >
       <AppSidebar onCreateProject={() => setCreateProjectOpen(true)} />
       <SidebarInset className="min-w-0 overflow-hidden">
-        <div className="flex justify-end px-4 pt-2">
+        <div className="flex justify-between px-4 pt-2">
+          <SidebarTrigger className="md:hidden" aria-label="Open sidebar" />
           <NotificationBell />
         </div>
         <main className={fullWidth ? 'px-4 pt-2 pb-4 w-full overflow-auto' : 'px-8 pt-4 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
