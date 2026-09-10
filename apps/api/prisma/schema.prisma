@@ -227,6 +227,7 @@ model User {
   commentLikes            CommentLike[]     @relation("CommentLikeUser")
   automationRuns          AutomationRun[] @relation("AutomationRunner")
   projectDefaultWatchers  ProjectDefaultWatcher[]
+  mcpTokens               McpToken[]
 }
 
 model Project {
@@ -278,6 +279,7 @@ model Project {
   defaultWatchers  ProjectDefaultWatcher[]
   taskTypes        ProjectTaskType[]
   groups           Group[]
+  mcpTokens        McpToken[]
 }
 
 model ProjectMember {
@@ -1175,4 +1177,22 @@ model ProjectVariable {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, key])
+}
+
+model McpToken {
+  id         String    @id @default(cuid())
+  userId     String
+  projectId  String
+  label      String
+  tokenHash  String    @unique // sha256 hex of the PAT — verified, not replayed, so hashed not encrypted
+  scopes     String[]  @default([]) // e.g. ["tasks:read","bugs:read"]
+  lastUsedAt DateTime? // stamped on each successful MCP call; null = never used
+  expiresAt  DateTime? // null = no expiry
+  revokedAt  DateTime? // null = active; set = revoked (soft delete)
+  createdAt  DateTime  @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
 }
