@@ -41,6 +41,7 @@ import { WbsModule } from './wbs/wbs.module';
 import { TestAutomationModule } from './test-automation/test-automation.module';
 import { AgentsModule } from './agents/agents.module';
 import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
+import { McpModule } from './mcp/mcp.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.
     BranchesModule,
     AiConfigModule,
     AiTaskGenerationModule,
+    McpModule,
     SkillsModule,
     TimeLogsModule,
     BugAttachmentsModule,
