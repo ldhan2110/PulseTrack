@@ -52,7 +52,9 @@ export function ProjectLayout() {
       <SidebarInset className="min-w-0 overflow-hidden">
         <div className="flex justify-between px-4 pt-2">
           <SidebarTrigger className="md:hidden" aria-label="Open sidebar" />
-          <NotificationBell />
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         </div>
         <main className={fullWidth ? 'px-4 pt-2 pb-4 w-full overflow-auto' : 'px-8 pt-4 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
           <Outlet />
