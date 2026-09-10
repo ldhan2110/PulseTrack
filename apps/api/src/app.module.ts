@@ -66,7 +66,7 @@ import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.
     BranchesModule,
     AiConfigModule,
     AiTaskGenerationModule,
-SkillsModule,
+    SkillsModule,
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,

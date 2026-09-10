@@ -1,4 +1,10 @@
-# PulseTrack
+<p align="center">
+  <img src="apps/web/public/images/logo.png" alt="CareOne" width="96" />
+</p>
+
+<h1 align="center">CareOne</h1>
+
+<p align="center"><em>Powered by the CareOne platform</em></p>
 
 **A full-featured project management platform with AI-assisted planning, agile sprint management, bug tracking, test management, and real-time collaboration.**
 
@@ -11,7 +17,7 @@
 
 ## Overview
 
-PulseTrack is an internal project management platform designed for software development teams. It combines agile workflow tooling (sprints, backlogs, Kanban boards, WBS) with integrated bug tracking, test management, and AI-assisted content generation — all backed by real-time collaboration via WebSockets and a role-based access control system.
+CareOne is an internal project management platform designed for software development teams. It combines agile workflow tooling (sprints, backlogs, Kanban boards, WBS) with integrated bug tracking, test management, and AI-assisted content generation — all backed by real-time collaboration via WebSockets and a role-based access control system.
 
 ---
 
@@ -119,7 +125,7 @@ PulseTrack is an internal project management platform designed for software deve
 
 ## Architecture
 
-PulseTrack is organized as a pnpm workspace monorepo:
+CareOne is organized as a pnpm workspace monorepo:
 
 ```
 PulseTrack/
@@ -139,7 +145,7 @@ The backend exposes a REST API (documented via Swagger) and a Socket.io gateway.
 
 ## Prerequisites
 
-Before running PulseTrack locally, ensure the following are available on your machine:
+Before running CareOne locally, ensure the following are available on your machine:
 
 - **Node.js** 20 or later
 - **pnpm** 10 or later (`npm install -g pnpm`)
