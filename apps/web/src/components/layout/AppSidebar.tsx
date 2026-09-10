@@ -162,7 +162,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
 
       <Separator />
 
-      <SidebarContent className="overflow-hidden">
+      <SidebarContent>
         {/* My Tasks — top-level nav */}
         <SidebarGroup>
           <SidebarMenu>
