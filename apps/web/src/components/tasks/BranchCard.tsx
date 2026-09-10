@@ -264,7 +264,7 @@ export function BranchCard({ projectId, taskId }: Props) {
           </DialogHeader>
           <DialogBody>
             <p className="text-sm text-muted-foreground">
-              This will only remove the branch record from PulseTrack. The actual git branch and any PR/MR will remain untouched.
+              This will only remove the branch record from CareOne. The actual git branch and any PR/MR will remain untouched.
             </p>
           </DialogBody>
           <DialogFooter>

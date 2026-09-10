@@ -146,7 +146,7 @@ export class ReportConfigService implements OnModuleInit {
         } else {
           const html = this.reportGenerator.formatAsHtml(report);
           const subject = `[TEST] 📊 ${reportConfig.project.name} — ${report.date} Report`;
-          const from = this.config.get('SMTP_FROM', 'PulseTrack <noreply@pulsetrack.com>');
+          const from = this.config.get('SMTP_FROM', 'CareOne <noreply@pulsetrack.com>');
 
           for (const recipient of recipients) {
             await this.transporter.sendMail({ from, to: recipient.email, subject, html });

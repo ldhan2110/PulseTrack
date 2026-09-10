@@ -128,7 +128,7 @@ export class ReportGeneratorProcessor extends WorkerHost {
 
   private async sendEmail(to: string, subject: string, html: string) {
     try {
-      const from = this.config.get('SMTP_FROM', 'PulseTrack <noreply@pulsetrack.com>');
+      const from = this.config.get('SMTP_FROM', 'CareOne <noreply@pulsetrack.com>');
       await this.transporter.sendMail({ from, to, subject, html });
     } catch (err) {
       this.logger.error(`Failed to send report email to ${to}: ${err}`);

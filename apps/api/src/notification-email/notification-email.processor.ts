@@ -54,14 +54,15 @@ export class NotificationEmailProcessor extends WorkerHost {
     const appUrl = this.config.get('APP_URL', 'http://localhost:5173');
     const html = this.emailService.renderInviteHtml({ projectName, loginUrl: appUrl });
     const subject = this.emailService.renderInviteSubject(projectName);
-    const from = this.config.get('SMTP_FROM', 'PulseTrack <noreply@pulsetrack.com>');
+    const from = this.config.get('SMTP_FROM', 'CareOne <noreply-careone@cyberlogitec.com>');
 
     this.logger.log(`Sending invite | from=${from} | to=${email} | subject=${subject}`);
     try {
       const info = await this.transporter.sendMail({ from, to: email, subject, html });
       this.logger.log(`Invite sent | messageId=${info.messageId}`);
     } catch (err) {
-      this.logger.error(`Failed to send invite | to=${email} | error=${err.message}`, err.stack);
+      const error = err as Error;
+      this.logger.error(`Failed to send invite | to=${email} | error=${error.message}`, error.stack);
       throw err;
     }
   }
@@ -72,14 +73,15 @@ export class NotificationEmailProcessor extends WorkerHost {
     const projectUrl = prefix ? `${appUrl}/projects/${prefix}/dashboard` : appUrl;
     const html = this.emailService.renderAddedHtml({ projectName, projectUrl });
     const subject = this.emailService.renderAddedSubject(projectName);
-    const from = this.config.get('SMTP_FROM', 'PulseTrack <noreply@pulsetrack.com>');
+    const from = this.config.get('SMTP_FROM', 'CareOne <noreply-careone@cyberlogitec.com>');
 
     this.logger.log(`Sending added | from=${from} | to=${email} | subject=${subject}`);
     try {
       const info = await this.transporter.sendMail({ from, to: email, subject, html });
       this.logger.log(`Added email sent | messageId=${info.messageId}`);
     } catch (err) {
-      this.logger.error(`Failed to send added email | to=${email} | error=${err.message}`, err.stack);
+      const error = err as Error;
+      this.logger.error(`Failed to send added email | to=${email} | error=${error.message}`, error.stack);
       throw err;
     }
   }
@@ -125,18 +127,19 @@ export class NotificationEmailProcessor extends WorkerHost {
     });
 
     const subject = this.emailService.renderSubject(notification.entityTitle);
-    const from = this.config.get('SMTP_FROM', 'PulseTrack <noreply@pulsetrack.com>');
+    const from = this.config.get('SMTP_FROM', 'CareOne <noreply-careone@cyberlogitec.com>');
 
     this.logger.log(`Sending | from=${from} | to=${recipientEmail} | subject=${subject}`);
     try {
       const info = await this.transporter.sendMail({ from, to: recipientEmail, subject, html });
       this.logger.log(`Sent successfully | messageId=${info.messageId}`);
     } catch (err) {
+      const error = err as Error;
       this.logger.error(
         `Failed to send email | to=${recipientEmail} | subject=${subject} | ` +
         `smtpHost=${this.config.get('SMTP_HOST')} | smtpPort=${this.config.get('SMTP_PORT')} | ` +
-        `error=${err.message}`,
-        err.stack,
+        `error=${error.message}`,
+        error.stack,
       );
       throw err;
     }
