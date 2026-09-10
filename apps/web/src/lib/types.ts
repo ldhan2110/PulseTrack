@@ -1492,3 +1492,24 @@ export interface ReportColumn {
   group: string;
 }
 
+
+export interface McpToken {
+  id: string;
+  label: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateMcpTokenPayload {
+  label: string;
+  scopes: string[];
+  expiresAt?: string;
+}
+
+// Create response includes the raw token exactly once.
+export interface McpTokenCreated extends McpToken {
+  token: string;
+}

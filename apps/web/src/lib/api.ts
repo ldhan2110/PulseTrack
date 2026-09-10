@@ -1,4 +1,7 @@
 import type {
+  McpToken,
+  McpTokenCreated,
+  CreateMcpTokenPayload,
   Project,
   CreateProjectPayload,
   UpdateProjectPayload,
@@ -866,6 +869,21 @@ export const api = {
     request<{ deleted: boolean }>(`/projects/${projectId}/tasks/${taskId}/branches/${branchId}`, {
       method: 'DELETE',
     }),
+
+  // ─── MCP Tokens ─────────────────────────────────────────────────────────
+  mcpTokens: {
+    list: (projectId: string) =>
+      request<McpToken[]>(`/projects/${projectId}/mcp-tokens`),
+    create: (projectId: string, data: CreateMcpTokenPayload) =>
+      request<McpTokenCreated>(`/projects/${projectId}/mcp-tokens`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    revoke: (projectId: string, id: string) =>
+      request<McpToken>(`/projects/${projectId}/mcp-tokens/${id}`, {
+        method: 'DELETE',
+      }),
+  },
 
   // ─── Planner ─────────────────────────────────────────────
 
