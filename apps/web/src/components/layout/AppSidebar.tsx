@@ -133,7 +133,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                 <img
                   src="/images/logo.png"
                   alt="CareOne"
-                  className="size-10 shrink-0 cursor-pointer"
+                  className="size-8 shrink-0 cursor-pointer"
                   onClick={toggleSidebar}
                 />
               </TooltipTrigger>
