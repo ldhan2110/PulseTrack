@@ -150,7 +150,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
             />
             <span
               className="font-extrabold text-lg tracking-tight truncate cursor-pointer flex-1"
-              style={{ color: '#161046' }}
+              style={{ color: '#170F49' }}
               onClick={() => navigate('/')}
             >
               CareOne
