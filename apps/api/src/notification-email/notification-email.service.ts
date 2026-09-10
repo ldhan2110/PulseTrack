@@ -15,7 +15,12 @@ export class NotificationEmailService {
 
   private logoImg(): string {
     const appUrl = this.config.get('APP_URL', 'http://localhost:5173');
-    return `<img src="${appUrl}/images/logo.png" alt="CareOne" width="24" height="24" style="vertical-align:middle;margin-right:8px">`;
+    return `<span style="display:inline-block;background:#ffffff;border-radius:6px;padding:4px;margin-right:8px;vertical-align:middle;line-height:0"><img src="${appUrl}/images/logo.png" alt="CareOne" width="22" height="22" style="display:block"></span>`;
+  }
+
+  private footerLogo(): string {
+    const appUrl = this.config.get('APP_URL', 'http://localhost:5173');
+    return `<img src="${appUrl}/images/logo.png" alt="" width="16" height="16" style="vertical-align:middle;margin-right:6px">`;
   }
 
   renderSubject(entityTitle: string): string {
@@ -42,7 +47,7 @@ export class NotificationEmailService {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
   <tr><td style="background:#863bff;padding:16px 24px">
-    ${this.logoImg()}<span style="color:#ffffff;font-size:18px;font-weight:700;vertical-align:middle">CareOne</span>
+    ${this.logoImg()}<span style="color:#ffffff;font-size:18px;font-weight:800;letter-spacing:-0.02em;vertical-align:middle">CareOne</span>
   </td></tr>
   <tr><td style="padding:24px">
     <p style="margin:0 0 24px;font-size:15px;color:#18181b;line-height:1.6">${heading}</p>
@@ -54,7 +59,7 @@ export class NotificationEmailService {
     <p style="margin:0;font-size:12px;color:#a1a1aa">Sign in with your account to accept the invitation.</p>
   </td></tr>
   <tr><td style="background:#fafafa;padding:12px 24px;text-align:center;border-top:1px solid #e4e4e7">
-    <span style="font-size:14px;font-weight:700;color:#863bff">&#9679; CareOne</span>
+    <span style="font-size:15px;font-weight:800;letter-spacing:-0.02em;color:#170F49">${this.footerLogo()}CareOne</span>
   </td></tr>
 </table>
 </td></tr>
@@ -75,7 +80,7 @@ export class NotificationEmailService {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
   <tr><td style="background:#863bff;padding:16px 24px">
-    ${this.logoImg()}<span style="color:#ffffff;font-size:18px;font-weight:700;vertical-align:middle">CareOne</span>
+    ${this.logoImg()}<span style="color:#ffffff;font-size:18px;font-weight:800;letter-spacing:-0.02em;vertical-align:middle">CareOne</span>
   </td></tr>
   <tr><td style="padding:24px">
     <p style="margin:0 0 24px;font-size:15px;color:#18181b;line-height:1.6">${heading}</p>
@@ -84,7 +89,7 @@ export class NotificationEmailService {
     </td></tr></table>
   </td></tr>
   <tr><td style="background:#fafafa;padding:12px 24px;text-align:center;border-top:1px solid #e4e4e7">
-    <span style="font-size:14px;font-weight:700;color:#863bff">&#9679; CareOne</span>
+    <span style="font-size:15px;font-weight:800;letter-spacing:-0.02em;color:#170F49">${this.footerLogo()}CareOne</span>
   </td></tr>
 </table>
 </td></tr>
@@ -102,7 +107,7 @@ export class NotificationEmailService {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
   <tr><td style="background:#863bff;padding:16px 24px">
-    ${this.logoImg()}<span style="color:#ffffff;font-size:18px;font-weight:700;vertical-align:middle">${data.entityTitle}</span>
+    ${this.logoImg()}<span style="color:#ffffff;font-size:18px;font-weight:800;letter-spacing:-0.02em;vertical-align:middle">${data.entityTitle}</span>
   </td></tr>
   <tr><td style="padding:24px">
     <p style="margin:0 0 16px;font-size:15px;color:#18181b;line-height:1.6">
@@ -117,7 +122,7 @@ export class NotificationEmailService {
     <p style="margin:0 0 8px;font-size:12px;color:#a1a1aa">${data.reason}</p>
   </td></tr>
   <tr><td style="background:#fafafa;padding:12px 24px;text-align:center;border-top:1px solid #e4e4e7">
-    <span style="font-size:14px;font-weight:700;color:#863bff">&#9679; CareOne</span>
+    <span style="font-size:15px;font-weight:800;letter-spacing:-0.02em;color:#170F49">${this.footerLogo()}CareOne</span>
   </td></tr>
 </table>
 </td></tr>
