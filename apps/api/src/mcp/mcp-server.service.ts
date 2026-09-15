@@ -6,6 +6,7 @@ import { BugsService } from '../bugs/bugs.service';
 import { TestCasesService } from '../test-cases/test-cases.service';
 import { TimeLogsService } from '../time-logs/time-logs.service';
 import { TestModulesService } from '../test-modules/test-modules.service';
+import { ProjectsService } from '../projects/projects.service';
 import type { McpSession } from './mcp-pat.guard';
 
 const TASKS_READ = 'tasks:read';
@@ -49,6 +50,7 @@ export class McpServerService {
     private readonly testCases: TestCasesService,
     private readonly timeLogs: TimeLogsService,
     private readonly testModules: TestModulesService,
+    private readonly projects: ProjectsService,
   ) {}
 
   build(session: McpSession): McpServer {
@@ -112,6 +114,15 @@ export class McpServerService {
             throw new Error('Task not found');
           }
           return json(task);
+        },
+      },
+      {
+        name: 'list_task_types',
+        description: "List this project's task types. Use a type's id as taskTypeId when creating a task.",
+        inputSchema: {},
+        handler: async () => {
+          requireScope(session, TASKS_READ);
+          return json(await this.projects.getTaskTypes(session.projectId));
         },
       },
       // ---- bugs: read ----
