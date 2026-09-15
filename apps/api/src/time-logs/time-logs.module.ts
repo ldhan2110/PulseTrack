@@ -8,5 +8,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
   imports: [NotificationsModule],
   controllers: [TimeLogsController, ReportsController],
   providers: [TimeLogsService],
+  exports: [TimeLogsService],
 })
 export class TimeLogsModule {}

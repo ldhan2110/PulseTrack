@@ -6,6 +6,13 @@
         "serve"
       ],
       "type": "stdio"
+    },
+    "pulsetrack": {
+      "type": "http",
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${PULSETRACK_MCP_TOKEN}"
+      }
     }
   }
 }

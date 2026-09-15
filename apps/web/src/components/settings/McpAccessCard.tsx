@@ -18,7 +18,14 @@ import {
 import { useMcpTokens, useCreateMcpToken, useRevokeMcpToken } from '@/hooks/useMcpTokens';
 import type { McpToken } from '@/lib/types';
 
-const SCOPES = ['tasks:read', 'bugs:read'] as const;
+const SCOPES = [
+  'tasks:read',
+  'bugs:read',
+  'tasks:write',
+  'tasks:logtime',
+  'testcases:read',
+  'testcases:write',
+] as const;
 
 interface McpAccessCardProps {
   projectId: string;
@@ -38,7 +45,8 @@ function tokenSubtitle(t: McpToken): string {
 }
 
 export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
-  const { data: tokens, isLoading, isError, refetch } = useMcpTokens(projectId);
+  const { data: allTokens, isLoading, isError, refetch } = useMcpTokens(projectId);
+  const tokens = allTokens?.filter((t) => !t.revokedAt);
   const createToken = useCreateMcpToken(projectId);
   const revokeToken = useRevokeMcpToken(projectId);
 
@@ -201,7 +209,7 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   <span>Copy this now — it will never be shown again. Store it in your agent's MCP config.</span>
                 </div>
-                <div className="flex items-center justify-between gap-3 break-all rounded-md bg-emerald-950 px-3 py-3 font-mono text-xs text-emerald-100">
+                <div className="flex items-center justify-between gap-3 break-all rounded-md border bg-muted px-3 py-3 font-mono text-xs text-foreground">
                   <span>{createdSecret}</span>
                   <Button variant="outline" size="sm" onClick={() => copy(createdSecret)}>
                     <Copy className="size-4" />
@@ -230,7 +238,7 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
                 </div>
                 <div className="space-y-2">
                   <Label>Scopes</Label>
-                  <div className="flex gap-4">
+                  <div className="grid grid-cols-2 gap-2">
                     {SCOPES.map((scope) => (
                       <label key={scope} className="flex items-center gap-2 text-sm">
                         <Checkbox

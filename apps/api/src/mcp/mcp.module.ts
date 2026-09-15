@@ -6,9 +6,12 @@ import { McpPatGuard } from './mcp-pat.guard';
 import { McpServerService } from './mcp-server.service';
 import { TasksModule } from '../tasks/tasks.module';
 import { BugsModule } from '../bugs/bugs.module';
+import { TestCasesModule } from '../test-cases/test-cases.module';
+import { TimeLogsModule } from '../time-logs/time-logs.module';
+import { TestModulesModule } from '../test-modules/test-modules.module';
 
 @Module({
-  imports: [TasksModule, BugsModule],
+  imports: [TasksModule, BugsModule, TestCasesModule, TimeLogsModule, TestModulesModule],
   controllers: [McpTokenController, McpController],
   providers: [McpTokenService, McpPatGuard, McpServerService],
   exports: [McpTokenService],

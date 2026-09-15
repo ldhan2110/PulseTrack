@@ -1,6 +1,13 @@
 import { IsArray, IsIn, IsOptional, IsString, IsNotEmpty, ArrayNotEmpty, IsDateString } from 'class-validator';
 
-export const MCP_SCOPES = ['tasks:read', 'bugs:read'] as const;
+export const MCP_SCOPES = [
+  'tasks:read',
+  'bugs:read',
+  'tasks:write',
+  'tasks:logtime',
+  'testcases:read',
+  'testcases:write',
+] as const;
 
 export class CreateMcpTokenDto {
   @IsString()
