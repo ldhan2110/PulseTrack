@@ -25,6 +25,8 @@ const SCOPES = [
   'tasks:logtime',
   'testcases:read',
   'testcases:write',
+  'testexec:read',
+  'testexec:write',
 ] as const;
 
 interface McpAccessCardProps {

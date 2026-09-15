@@ -33,13 +33,53 @@ function makeServices() {
   const testModules = {
     findAll: async (projectId: string) => [{ id: 'm1', projectId }],
   };
+  // Execution 'ex1' lives in p1 with case 'ec1' (testCaseKey TC-1); 'other' → p2.
+  const testExecutions = {
+    findAll: async (projectId: string) => [{ id: 'ex1', projectId }],
+    findOne: async (id: string) => ({
+      id,
+      projectId: proj(id),
+      executionKey: null,
+      name: 'E',
+      status: 'PENDING',
+      cases: [{ id: 'ec1', result: 'NOT_RUN', testCase: { testCaseKey: 'TC-1' } }],
+    }),
+    findByKey: async (executionKey: string) => ({
+      id: 'ex1',
+      projectId: proj(executionKey),
+      executionKey,
+      name: 'E',
+      status: 'PENDING',
+      cases: [{ id: 'ec1', result: 'NOT_RUN', testCase: { testCaseKey: 'TC-1' } }],
+    }),
+    create: async (projectId: string, dto: any, userId: string) => ({ id: 'exnew', projectId, userId, ...dto }),
+    updateResult: async (executionCaseId: string, userId: string, dto: any) => ({ id: executionCaseId, executedById: userId, ...dto }),
+    createAttachment: async (executionCaseId: string, uploaderId: string, file: any) => ({ id: 'att1', executionCaseId, uploaderId, filename: file.originalname, size: file.size }),
+  };
+  const prisma = {
+    testCase: {
+      findMany: async ({ where }: any) => {
+        const keys: string[] = where.testCaseKey.in;
+        // 'TC-1' resolves; anything else is unknown.
+        return keys.filter((k) => k === 'TC-1').map((k) => ({ id: 'tc1', testCaseKey: k }));
+      },
+    },
+    testExecutionCase: {
+      findUnique: async ({ where }: any) => (where.id === 'ec1'
+        ? { id: 'ec1', execution: { projectId: 'p1' } }
+        : where.id === 'ecother'
+          ? { id: 'ecother', execution: { projectId: 'p2' } }
+          : null),
+    },
+  };
   const svc = new McpServerService(
     tasks as any, bugs as any, testCases as any, timeLogs as any, testModules as any,
+    {} as any, testExecutions as any, prisma as any,
   );
-  return { svc, tasks, timeLogs };
+  return { svc, tasks, timeLogs, testExecutions };
 }
 
-const ALL_SCOPES = ['tasks:read', 'bugs:read', 'tasks:write', 'tasks:logtime', 'testcases:read', 'testcases:write'];
+const ALL_SCOPES = ['tasks:read', 'bugs:read', 'tasks:write', 'tasks:logtime', 'testcases:read', 'testcases:write', 'testexec:read', 'testexec:write'];
 
 function tool(svc: McpServerService, s: McpSession, name: string) {
   return svc.tools(s).find((t) => t.name === name)!;
@@ -75,9 +115,10 @@ describe('MCP write tools', () => {
     const { svc } = makeServices();
     const names = svc.tools(session(ALL_SCOPES)).map((t) => t.name).sort();
     expect(names).toEqual([
-      'create_task', 'create_test_case', 'get_bug', 'get_task', 'get_test_case',
-      'list_bugs', 'list_tasks', 'list_test_cases', 'list_test_modules',
-      'log_time', 'update_task', 'update_test_case',
+      'attach_result_file', 'create_task', 'create_test_case', 'create_test_execution',
+      'get_bug', 'get_task', 'get_test_case', 'get_test_execution',
+      'list_bugs', 'list_task_types', 'list_tasks', 'list_test_cases', 'list_test_executions', 'list_test_modules',
+      'log_time', 'update_execution_result', 'update_task', 'update_test_case',
     ]);
   });
 
@@ -136,5 +177,72 @@ describe('MCP write tools', () => {
     const { svc } = makeServices();
     const res = await tool(svc, session(['testcases:read']), 'list_test_modules').handler({});
     expect(JSON.parse(res.content[0].text)).toEqual([{ id: 'm1', projectId: 'p1' }]);
+  });
+});
+
+describe('MCP test-execution tools', () => {
+  it('list_test_executions returns project executions; denied without scope', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['testexec:read']), 'list_test_executions').handler({});
+    expect(JSON.parse(res.content[0].text)).toEqual([{ id: 'ex1', projectId: 'p1' }]);
+    await expect(
+      tool(svc, session(['tasks:read']), 'list_test_executions').handler({}),
+    ).rejects.toThrow(/scope: testexec:read/);
+  });
+
+  it('get_test_execution returns cases with executionCaseId + testCaseKey; cross-project rejected', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['testexec:read']), 'get_test_execution').handler({ executionKey: 'AXC-TX-1' });
+    const out = JSON.parse(res.content[0].text);
+    expect(out.cases).toEqual([{ executionCaseId: 'ec1', testCaseKey: 'TC-1', result: 'NOT_RUN' }]);
+    await expect(
+      tool(svc, session(['testexec:read']), 'get_test_execution').handler({ executionKey: 'other' }),
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it('create_test_execution resolves keys, assignee = token user; unknown key fails; denied without scope', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['testexec:write']), 'create_test_execution').handler({ name: 'Run', testCaseKeys: ['TC-1'] });
+    const out = JSON.parse(res.content[0].text);
+    expect(out.projectId).toBe('p1');
+    expect(out.assigneeId).toBe('u1');
+    expect(out.testCaseIds).toEqual(['tc1']);
+    await expect(
+      tool(svc, session(['testexec:write']), 'create_test_execution').handler({ name: 'Run', testCaseKeys: ['TC-1', 'NOPE'] }),
+    ).rejects.toThrow(/NOPE/);
+    await expect(
+      tool(svc, session(['testexec:read']), 'create_test_execution').handler({ name: 'Run', testCaseKeys: ['TC-1'] }),
+    ).rejects.toThrow(/scope: testexec:write/);
+  });
+
+  it('update_execution_result sets result by keys; invalid status rejected; denied without scope', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['testexec:write']), 'update_execution_result').handler({ executionKey: 'AXC-TX-1', testCaseKey: 'TC-1', result: 'FAIL', notes: 'boom' });
+    const out = JSON.parse(res.content[0].text);
+    expect(out.id).toBe('ec1');
+    expect(out.result).toBe('FAIL');
+    expect(out.executedById).toBe('u1');
+    // invalid enum value rejected by zod parse at registration/validation layer
+    const t = tool(svc, session(['testexec:write']), 'update_execution_result');
+    expect(t.inputSchema.result.safeParse('PASSED').success).toBe(false);
+    await expect(
+      tool(svc, session(['testexec:read']), 'update_execution_result').handler({ executionCaseId: 'ec1', result: 'PASS' }),
+    ).rejects.toThrow(/scope: testexec:write/);
+  });
+
+  it('attach_result_file writes ≤2MB with uploader = token user; >2MB rejected; denied without scope', async () => {
+    const { svc } = makeServices();
+    const small = Buffer.from('hello').toString('base64');
+    const res = await tool(svc, session(['testexec:write']), 'attach_result_file').handler({ executionCaseId: 'ec1', filename: 'shot.png', mimeType: 'image/png', dataBase64: small });
+    const out = JSON.parse(res.content[0].text);
+    expect(out.uploaderId).toBe('u1');
+    expect(out.executionCaseId).toBe('ec1');
+    const big = Buffer.alloc(2 * 1024 * 1024 + 1).toString('base64');
+    await expect(
+      tool(svc, session(['testexec:write']), 'attach_result_file').handler({ executionCaseId: 'ec1', filename: 'big.png', mimeType: 'image/png', dataBase64: big }),
+    ).rejects.toThrow(/2MB/);
+    await expect(
+      tool(svc, session(['testexec:read']), 'attach_result_file').handler({ executionCaseId: 'ec1', filename: 'x.png', mimeType: 'image/png', dataBase64: small }),
+    ).rejects.toThrow(/scope: testexec:write/);
   });
 });

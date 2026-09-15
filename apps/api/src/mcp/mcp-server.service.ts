@@ -7,6 +7,11 @@ import { TestCasesService } from '../test-cases/test-cases.service';
 import { TimeLogsService } from '../time-logs/time-logs.service';
 import { TestModulesService } from '../test-modules/test-modules.service';
 import { ProjectsService } from '../projects/projects.service';
+import { TestExecutionsService } from '../test-executions/test-executions.service';
+import { PrismaService } from '../prisma/prisma.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 import type { McpSession } from './mcp-pat.guard';
 
 const TASKS_READ = 'tasks:read';
@@ -15,9 +20,15 @@ const TASKS_LOGTIME = 'tasks:logtime';
 const BUGS_READ = 'bugs:read';
 const TESTCASES_READ = 'testcases:read';
 const TESTCASES_WRITE = 'testcases:write';
+const EXEC_READ = 'testexec:read';
+const EXEC_WRITE = 'testexec:write';
 
 const PRIORITY = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'BLOCKER']);
 const TESTCASE_STATUS = z.enum(['DRAFT', 'ACTIVE', 'DEPRECATED']);
+const RESULT_STATUS = z.enum(['NOT_RUN', 'IN_PROGRESS', 'PASS', 'FAIL', 'BLOCKED', 'SKIP']);
+
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'test-executions');
+const MAX_ATTACH_BYTES = 2 * 1024 * 1024;
 
 export interface McpToolDef {
   name: string;
@@ -51,6 +62,8 @@ export class McpServerService {
     private readonly timeLogs: TimeLogsService,
     private readonly testModules: TestModulesService,
     private readonly projects: ProjectsService,
+    private readonly testExecutions: TestExecutionsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   build(session: McpSession): McpServer {
@@ -88,6 +101,45 @@ export class McpServerService {
       throw new Error('Test case not found');
     }
     return tc;
+  }
+
+  // Resolve an execution by key or id and enforce project isolation.
+  private async resolveExecution(session: McpSession, executionId?: string, executionKey?: string) {
+    const exec = executionKey
+      ? await this.testExecutions.findByKey(executionKey)
+      : await this.testExecutions.findOne(executionId as string);
+    if (!exec || exec.projectId !== session.projectId) {
+      throw new Error('Execution not found');
+    }
+    return exec;
+  }
+
+  // Resolve to an executionCaseId from either a direct id, or (executionKey, testCaseKey).
+  private async resolveExecCase(
+    session: McpSession,
+    args: { executionCaseId?: string; executionKey?: string; testCaseKey?: string },
+  ): Promise<string> {
+    if (args.executionCaseId) {
+      const row = await this.prisma.testExecutionCase.findUnique({
+        where: { id: args.executionCaseId },
+        include: { execution: { select: { projectId: true } } },
+      });
+      if (!row || row.execution.projectId !== session.projectId) {
+        throw new Error('Execution case not found');
+      }
+      return row.id;
+    }
+    if (!args.executionKey || !args.testCaseKey) {
+      throw new Error('Provide executionCaseId, or both executionKey and testCaseKey');
+    }
+    const exec = await this.resolveExecution(session, undefined, args.executionKey);
+    const match = (exec as any).cases?.find(
+      (c: any) => c.testCase?.testCaseKey === args.testCaseKey,
+    );
+    if (!match) {
+      throw new Error(`Test case ${args.testCaseKey} not in execution ${args.executionKey}`);
+    }
+    return match.id;
   }
 
   tools(session: McpSession): McpToolDef[] {
@@ -308,6 +360,129 @@ export class McpServerService {
           requireScope(session, TESTCASES_WRITE);
           const tc = await this.resolveTestCase(session, id, testCaseKey);
           return json(await this.testCases.update(tc.id, dto));
+        },
+      },
+      // ---- test executions: read ----
+      {
+        name: 'list_test_executions',
+        description: "List this project's test executions.",
+        inputSchema: {},
+        handler: async () => {
+          requireScope(session, EXEC_READ);
+          return json(await this.testExecutions.findAll(session.projectId));
+        },
+      },
+      {
+        name: 'get_test_execution',
+        description:
+          'Get one test execution by executionKey (e.g. AXC-TX-1) or executionId, including its cases. Each case has executionCaseId, testCaseKey and current result.',
+        inputSchema: { executionId: z.string().optional(), executionKey: z.string().optional() },
+        handler: async ({ executionId, executionKey }) => {
+          requireScope(session, EXEC_READ);
+          const exec: any = await this.resolveExecution(session, executionId, executionKey);
+          const cases = (exec.cases ?? []).map((c: any) => ({
+            executionCaseId: c.id,
+            testCaseKey: c.testCase?.testCaseKey ?? null,
+            result: c.result,
+          }));
+          return json({
+            id: exec.id,
+            executionKey: exec.executionKey,
+            name: exec.name,
+            status: exec.status,
+            cases,
+          });
+        },
+      },
+      // ---- test executions: write ----
+      {
+        name: 'create_test_execution',
+        description:
+          'Create a test execution from test-case keys. Resolves each key to a case; unknown keys fail loud. Assignee defaults to the token user.',
+        inputSchema: {
+          name: z.string().min(1).max(200),
+          testCaseKeys: z.array(z.string()).min(1),
+          sprintId: z.string().optional(),
+        },
+        handler: async ({ name, testCaseKeys, sprintId }) => {
+          requireScope(session, EXEC_WRITE);
+          const found = await this.prisma.testCase.findMany({
+            where: { testCaseKey: { in: testCaseKeys }, projectId: session.projectId },
+            select: { id: true, testCaseKey: true },
+          });
+          const byKey = new Map(found.map((tc) => [tc.testCaseKey, tc.id]));
+          const missing = testCaseKeys.filter((k) => !byKey.has(k));
+          if (missing.length > 0) {
+            throw new Error(`Unknown test case key(s): ${missing.join(', ')}`);
+          }
+          const testCaseIds = testCaseKeys.map((k) => byKey.get(k) as string);
+          return json(
+            await this.testExecutions.create(
+              session.projectId,
+              { name, assigneeId: session.userId, sprintId, testCaseIds },
+              session.userId,
+            ),
+          );
+        },
+      },
+      {
+        name: 'update_execution_result',
+        description:
+          "Set one execution case's result. Identify it by executionCaseId, or by (executionKey, testCaseKey). Execution status rolls up automatically.",
+        inputSchema: {
+          executionCaseId: z.string().optional(),
+          executionKey: z.string().optional(),
+          testCaseKey: z.string().optional(),
+          result: RESULT_STATUS,
+          notes: z.string().max(5000).optional(),
+        },
+        handler: async ({ executionCaseId, executionKey, testCaseKey, result, notes }) => {
+          requireScope(session, EXEC_WRITE);
+          const caseId = await this.resolveExecCase(session, {
+            executionCaseId,
+            executionKey,
+            testCaseKey,
+          });
+          return json(
+            await this.testExecutions.updateResult(caseId, session.userId, { result, notes }),
+          );
+        },
+      },
+      {
+        name: 'attach_result_file',
+        description:
+          'Attach a base64-encoded file (e.g. failure screenshot, ≤2MB) to an execution case. Identify the case by executionCaseId, or by (executionKey, testCaseKey).',
+        inputSchema: {
+          executionCaseId: z.string().optional(),
+          executionKey: z.string().optional(),
+          testCaseKey: z.string().optional(),
+          filename: z.string().min(1).max(255),
+          mimeType: z.string().min(1).max(255),
+          dataBase64: z.string().min(1),
+        },
+        handler: async ({ executionCaseId, executionKey, testCaseKey, filename, mimeType, dataBase64 }) => {
+          requireScope(session, EXEC_WRITE);
+          const buf = Buffer.from(dataBase64, 'base64');
+          if (buf.length > MAX_ATTACH_BYTES) {
+            throw new Error(`File exceeds 2MB limit (${buf.length} bytes)`);
+          }
+          const caseId = await this.resolveExecCase(session, {
+            executionCaseId,
+            executionKey,
+            testCaseKey,
+          });
+          const dir = path.join(UPLOAD_DIR, caseId);
+          fs.mkdirSync(dir, { recursive: true });
+          const storedName = `${randomUUID()}${path.extname(filename)}`;
+          fs.writeFileSync(path.join(dir, storedName), buf);
+          return json(
+            await this.testExecutions.createAttachment(caseId, session.userId, {
+              originalname: filename,
+              filename: storedName,
+              mimetype: mimeType,
+              size: buf.length,
+            } as Express.Multer.File),
+          );
         },
       },
     ];
