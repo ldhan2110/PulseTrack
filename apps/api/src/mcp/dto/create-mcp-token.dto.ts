@@ -5,6 +5,7 @@ export const MCP_SCOPES = [
   'bugs:read',
   'tasks:write',
   'tasks:logtime',
+  'tasks:attach',
   'testcases:read',
   'testcases:write',
   'testexec:read',

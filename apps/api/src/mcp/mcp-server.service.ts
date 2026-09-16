@@ -8,6 +8,7 @@ import { TimeLogsService } from '../time-logs/time-logs.service';
 import { TestModulesService } from '../test-modules/test-modules.service';
 import { ProjectsService } from '../projects/projects.service';
 import { TestExecutionsService } from '../test-executions/test-executions.service';
+import { AttachmentsService } from '../attachments/attachments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -17,6 +18,7 @@ import type { McpSession } from './mcp-pat.guard';
 const TASKS_READ = 'tasks:read';
 const TASKS_WRITE = 'tasks:write';
 const TASKS_LOGTIME = 'tasks:logtime';
+const TASKS_ATTACH = 'tasks:attach';
 const BUGS_READ = 'bugs:read';
 const TESTCASES_READ = 'testcases:read';
 const TESTCASES_WRITE = 'testcases:write';
@@ -28,6 +30,7 @@ const TESTCASE_STATUS = z.enum(['DRAFT', 'ACTIVE', 'DEPRECATED']);
 const RESULT_STATUS = z.enum(['NOT_RUN', 'IN_PROGRESS', 'PASS', 'FAIL', 'BLOCKED', 'SKIP']);
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'test-executions');
+const TASK_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'tasks');
 const MAX_ATTACH_BYTES = 2 * 1024 * 1024;
 
 export interface McpToolDef {
@@ -63,6 +66,7 @@ export class McpServerService {
     private readonly testModules: TestModulesService,
     private readonly projects: ProjectsService,
     private readonly testExecutions: TestExecutionsService,
+    private readonly attachments: AttachmentsService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -477,6 +481,38 @@ export class McpServerService {
           fs.writeFileSync(path.join(dir, storedName), buf);
           return json(
             await this.testExecutions.createAttachment(caseId, session.userId, {
+              originalname: filename,
+              filename: storedName,
+              mimetype: mimeType,
+              size: buf.length,
+            } as Express.Multer.File),
+          );
+        },
+      },
+      {
+        name: 'attach_task_file',
+        description:
+          'Attach a base64-encoded file (e.g. a spec .md or an HTML UI mockup, ≤2MB) to a task. Identify the task by id or taskKey (e.g. AXC-1). Provide exactly one.',
+        inputSchema: {
+          id: z.string().optional(),
+          taskKey: z.string().optional(),
+          filename: z.string().min(1).max(255),
+          mimeType: z.string().min(1).max(255),
+          dataBase64: z.string().min(1),
+        },
+        handler: async ({ id, taskKey, filename, mimeType, dataBase64 }) => {
+          requireScope(session, TASKS_ATTACH);
+          const buf = Buffer.from(dataBase64, 'base64');
+          if (buf.length > MAX_ATTACH_BYTES) {
+            throw new Error(`File exceeds 2MB limit (${buf.length} bytes)`);
+          }
+          const task = await this.resolveTask(session, id, taskKey);
+          const dir = path.join(TASK_UPLOAD_DIR, task.id);
+          fs.mkdirSync(dir, { recursive: true });
+          const storedName = `${randomUUID()}${path.extname(filename)}`;
+          fs.writeFileSync(path.join(dir, storedName), buf);
+          return json(
+            await this.attachments.create(task.id, session.userId, {
               originalname: filename,
               filename: storedName,
               mimetype: mimeType,
