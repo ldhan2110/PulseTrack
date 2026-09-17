@@ -15,31 +15,31 @@ datasource db {
 // =====================
 
 model CustomRole {
-  id          String          @id @default(cuid())
+  id          String   @id @default(cuid())
   projectId   String
   name        String
   permissions Json
-  isDefault   Boolean         @default(false)
-  isSystem    Boolean         @default(false)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  isDefault   Boolean  @default(false)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  members     ProjectMember[]
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members ProjectMember[]
 
   @@unique([projectId, name])
 }
 
 model Group {
-  id          String          @id @default(cuid())
+  id          String   @id @default(cuid())
   projectId   String
   name        String
   description String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  members     ProjectMember[]
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members ProjectMember[]
 
   @@unique([projectId, name])
 }
@@ -125,18 +125,18 @@ enum PlannerMessageRole {
 }
 
 model WorkflowStatus {
-  id        String       @id @default(cuid())
-  projectId String
-  name      String
-  key       String
-  color     String
-  position  Int
-  kind      WorkflowKind @default(TASK)
-  isDefault      Boolean  @default(false)
-  isClosed       Boolean  @default(false)
+  id             String       @id @default(cuid())
+  projectId      String
+  name           String
+  key            String
+  color          String
+  position       Int
+  kind           WorkflowKind @default(TASK)
+  isDefault      Boolean      @default(false)
+  isClosed       Boolean      @default(false)
   autoDateField  String?
   autoDateAction String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime     @default(now())
 
   project         Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
   transitionsFrom WorkflowTransition[] @relation("TransitionFrom")
@@ -172,7 +172,6 @@ model StatusAssigneeRule {
   @@unique([statusId, memberId])
 }
 
-
 enum SyncStatus {
   PENDING
   SYNCED
@@ -187,111 +186,119 @@ enum AutomationRunStatus {
   TIMEOUT
 }
 
+enum ConversationType {
+  PROJECT
+  DIRECT
+}
+
 // =====================
 // CORE MODELS
 // =====================
 
 model User {
-  id                String    @id @default(cuid())
-  keycloakId        String?   @unique // sub from JWT; null = pending invite, claimed on first login
-  email             String    @unique
-  username          String
-  name              String?   // Display name from Keycloak user-info.usrNm
-  imageUrl          String?   // Avatar URL from Keycloak user-info.imgUrl
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  keycloakId String?  @unique // sub from JWT; null = pending invite, claimed on first login
+  email      String   @unique
+  username   String
+  name       String? // Display name from Keycloak user-info.usrNm
+  imageUrl   String? // Avatar URL from Keycloak user-info.imgUrl
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  ownedProjects     Project[] @relation("ProjectOwner")
-  projectMembers    ProjectMember[]
-  assignedTasks     Task[]    @relation("TaskAssignee")
-  createdTasks      Task[]    @relation("TaskCreator")
-  comments          Comment[]
-  timeLogs          TimeLog[]
-  reportedBugs      Bug[]     @relation("BugReporter")
-  assignedBugs      Bug[]     @relation("BugAssignee")
-  ownedBugs         Bug[]     @relation("BugOwner")
-  uploadedAttachments     Attachment[]      @relation("AttachmentUploader")
-  bugAttachments          BugAttachment[]   @relation("BugAttachmentUploader")
-  taskHistories           TaskHistory[]     @relation("TaskHistoryActor")
-  bugHistories            BugHistory[]      @relation("BugHistoryActor")
-  notifications           Notification[]    @relation("NotificationRecipient")
-  actedNotifications      Notification[]    @relation("NotificationActor")
-  ticketWatches           TicketWatcher[]
-  createdTestCases        TestCase[]               @relation("TestCaseCreator")
-  assignedTestExecutions  TestExecution[]           @relation("TestExecutionAssignee")
-  executedTestCases       TestExecutionCase[]       @relation("TestExecutionCaseExecutor")
-  uploadedTestEvidence    TestExecutionAttachment[] @relation("TestExecutionAttachmentUploader")
-  wikiAnnotations         WikiAnnotation[]          @relation("WikiAnnotationAuthor")
-  savedFilters            SavedFilter[]
-  commentLikes            CommentLike[]     @relation("CommentLikeUser")
-  automationRuns          AutomationRun[] @relation("AutomationRunner")
-  projectDefaultWatchers  ProjectDefaultWatcher[]
-  mcpTokens               McpToken[]
+  ownedProjects          Project[]                 @relation("ProjectOwner")
+  projectMembers         ProjectMember[]
+  assignedTasks          Task[]                    @relation("TaskAssignee")
+  createdTasks           Task[]                    @relation("TaskCreator")
+  comments               Comment[]
+  timeLogs               TimeLog[]
+  reportedBugs           Bug[]                     @relation("BugReporter")
+  assignedBugs           Bug[]                     @relation("BugAssignee")
+  ownedBugs              Bug[]                     @relation("BugOwner")
+  uploadedAttachments    Attachment[]              @relation("AttachmentUploader")
+  bugAttachments         BugAttachment[]           @relation("BugAttachmentUploader")
+  taskHistories          TaskHistory[]             @relation("TaskHistoryActor")
+  bugHistories           BugHistory[]              @relation("BugHistoryActor")
+  notifications          Notification[]            @relation("NotificationRecipient")
+  actedNotifications     Notification[]            @relation("NotificationActor")
+  ticketWatches          TicketWatcher[]
+  createdTestCases       TestCase[]                @relation("TestCaseCreator")
+  assignedTestExecutions TestExecution[]           @relation("TestExecutionAssignee")
+  executedTestCases      TestExecutionCase[]       @relation("TestExecutionCaseExecutor")
+  uploadedTestEvidence   TestExecutionAttachment[] @relation("TestExecutionAttachmentUploader")
+  wikiAnnotations        WikiAnnotation[]          @relation("WikiAnnotationAuthor")
+  savedFilters           SavedFilter[]
+  commentLikes           CommentLike[]             @relation("CommentLikeUser")
+  automationRuns         AutomationRun[]           @relation("AutomationRunner")
+  projectDefaultWatchers ProjectDefaultWatcher[]
+  mcpTokens              McpToken[]
+  conversationMembers    ConversationMember[]
+  sentMessages           Message[]                 @relation("MessageSender")
 }
 
 model Project {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  archived    Boolean   @default(false)
-  ownerId     String
-  owner       User      @relation("ProjectOwner", fields: [ownerId], references: [id])
-  prefix      String?   @unique   // 2-10 uppercase letters, URL slug + task key prefix
-  taskSeq     Int       @default(0) // Auto-incrementing counter for task keys
-  bugSeq      Int       @default(0)
-  testCaseSeq      Int       @default(0)
-  testExecutionSeq Int       @default(0)
-  avatarUrl          String?   // Path to uploaded avatar image
-  bugReporterRoles   String[]  @default(["pm", "ba", "qc"])
-  emailNotificationsEnabled Boolean @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                        String   @id @default(cuid())
+  name                      String
+  description               String?
+  archived                  Boolean  @default(false)
+  ownerId                   String
+  owner                     User     @relation("ProjectOwner", fields: [ownerId], references: [id])
+  prefix                    String?  @unique // 2-10 uppercase letters, URL slug + task key prefix
+  taskSeq                   Int      @default(0) // Auto-incrementing counter for task keys
+  bugSeq                    Int      @default(0)
+  testCaseSeq               Int      @default(0)
+  testExecutionSeq          Int      @default(0)
+  avatarUrl                 String? // Path to uploaded avatar image
+  bugReporterRoles          String[] @default(["pm", "ba", "qc"])
+  emailNotificationsEnabled Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
-  members        ProjectMember[]
-  sprints        Sprint[]
-  tasks          Task[]
-  bugs           Bug[]
-  reports        Report[]
-  blueprintSyncs BlueprintSync[]
+  members             ProjectMember[]
+  sprints             Sprint[]
+  tasks               Task[]
+  bugs                Bug[]
+  reports             Report[]
+  blueprintSyncs      BlueprintSync[]
   workflowLayout      Json?
   workflowStatuses    WorkflowStatus[]
   workflowTransitions WorkflowTransition[]
   repositories        Repository[]
   aiConfig            AiConfig?
   notifications       Notification[]
-  testModules    TestModule[]
-  testCases      TestCase[]
-  testSuites     TestSuite[]
-  testExecutions TestExecution[]
-  customRoles    CustomRole[]
-  wikiAnnotations  WikiAnnotation[]
-  wikiConfig       WikiConfig?
-  wikiJobs         WikiGenerationJob[]
-  reportConfig     ReportConfig?
-  branches         TaskBranch[]
-  plannerSessions  PlannerSession[]
-  wbsPhases       WbsPhase[]
-  wbsDependencies WbsDependency[]
-  savedFilters    SavedFilter[]
-  variables        ProjectVariable[]
-  skills           Skill[]
-  defaultWatchers  ProjectDefaultWatcher[]
-  taskTypes        ProjectTaskType[]
-  groups           Group[]
-  mcpTokens        McpToken[]
+  testModules         TestModule[]
+  testCases           TestCase[]
+  testSuites          TestSuite[]
+  testExecutions      TestExecution[]
+  customRoles         CustomRole[]
+  wikiAnnotations     WikiAnnotation[]
+  wikiConfig          WikiConfig?
+  wikiJobs            WikiGenerationJob[]
+  reportConfig        ReportConfig?
+  branches            TaskBranch[]
+  plannerSessions     PlannerSession[]
+  wbsPhases           WbsPhase[]
+  wbsDependencies     WbsDependency[]
+  savedFilters        SavedFilter[]
+  variables           ProjectVariable[]
+  skills              Skill[]
+  defaultWatchers     ProjectDefaultWatcher[]
+  taskTypes           ProjectTaskType[]
+  groups              Group[]
+  mcpTokens           McpToken[]
+  conversations       Conversation[]
 }
 
 model ProjectMember {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   projectId String
   userId    String
   roleId    String
-  joinedAt  DateTime    @default(now())
+  joinedAt  DateTime @default(now())
 
-  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customRole    CustomRole     @relation(fields: [roleId], references: [id])
+  project       Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customRole    CustomRole           @relation(fields: [roleId], references: [id])
   assigneeRules StatusAssigneeRule[]
   groups        Group[]
 
@@ -299,84 +306,84 @@ model ProjectMember {
 }
 
 model Sprint {
-  id          String       @id @default(cuid())
-  name        String
-  projectId   String
-  startDate   DateTime
-  endDate     DateTime
-  status      SprintStatus @default(PLANNED)
-  createdAt   DateTime     @default(now())
+  id        String       @id @default(cuid())
+  name      String
+  projectId String
+  startDate DateTime
+  endDate   DateTime
+  status    SprintStatus @default(PLANNED)
+  createdAt DateTime     @default(now())
 
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks       Task[]
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks          Task[]
   testExecutions TestExecution[]
 }
 
 model Task {
-  id                  String      @id @default(cuid())
-  title               String
-  taskKey             String?   @unique   // e.g. "PM-1", "ACME-42"
-  description         String?
-  storyPoints         Int?
-  acceptanceCriteria  String?
-  priority            Priority?
-  requestedDate       DateTime?
-  receiptDate         DateTime?
-  plannedStartDate    DateTime?
-  plannedEndDate      DateTime?
-  actualStartDate     DateTime?
-  actualEndDate       DateTime?
-  isDraft             Boolean     @default(false) // AI-generated pending approval
-  blueprintId         String?     // External Blueprint task ID
-  projectId           String
-  sprintId            String?
-  assigneeId          String?
-  workflowStatusId    String?
-  taskTypeId          String?
-  creatorId           String
-  parentId            String?
-  estimatedMinutes    Int?
-  subTaskSequence     Int         @default(0)
-  progress          Int         @default(0)   // 0-100 percentage
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  id                 String    @id @default(cuid())
+  title              String
+  taskKey            String?   @unique // e.g. "PM-1", "ACME-42"
+  description        String?
+  storyPoints        Int?
+  acceptanceCriteria String?
+  priority           Priority?
+  requestedDate      DateTime?
+  receiptDate        DateTime?
+  plannedStartDate   DateTime?
+  plannedEndDate     DateTime?
+  actualStartDate    DateTime?
+  actualEndDate      DateTime?
+  isDraft            Boolean   @default(false) // AI-generated pending approval
+  blueprintId        String? // External Blueprint task ID
+  projectId          String
+  sprintId           String?
+  assigneeId         String?
+  workflowStatusId   String?
+  taskTypeId         String?
+  creatorId          String
+  parentId           String?
+  estimatedMinutes   Int?
+  subTaskSequence    Int       @default(0)
+  progress           Int       @default(0) // 0-100 percentage
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  sprint         Sprint?   @relation(fields: [sprintId], references: [id])
-  assignee       User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  creator        User      @relation("TaskCreator", fields: [creatorId], references: [id])
-  workflowStatus WorkflowStatus? @relation("TaskWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
-  taskType       ProjectTaskType? @relation(fields: [taskTypeId], references: [id], onDelete: SetNull)
-  parent         Task?     @relation("TaskChildren", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  children       Task[]    @relation("TaskChildren")
-  comments       Comment[]
-  timeLogs       TimeLog[]
-  blueprintSyncs BlueprintSync[]
-  attachments    Attachment[]
-  history        TaskHistory[]
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint          Sprint?          @relation(fields: [sprintId], references: [id])
+  assignee        User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator         User             @relation("TaskCreator", fields: [creatorId], references: [id])
+  workflowStatus  WorkflowStatus?  @relation("TaskWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
+  taskType        ProjectTaskType? @relation(fields: [taskTypeId], references: [id], onDelete: SetNull)
+  parent          Task?            @relation("TaskChildren", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  children        Task[]           @relation("TaskChildren")
+  comments        Comment[]
+  timeLogs        TimeLog[]
+  blueprintSyncs  BlueprintSync[]
+  attachments     Attachment[]
+  history         TaskHistory[]
   bugTasks        BugTask[]
-  branches       TaskBranch[]
-  wbsTaskLinks    WbsTask[]    @relation("WbsTaskBacklog")
-  wbsSubtaskLinks WbsSubtask[] @relation("WbsSubtaskBacklog")
+  branches        TaskBranch[]
+  wbsTaskLinks    WbsTask[]        @relation("WbsTaskBacklog")
+  wbsSubtaskLinks WbsSubtask[]     @relation("WbsSubtaskBacklog")
 }
 
 model Comment {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   content   String
   taskId    String?
   bugId     String?
   authorId  String
-  parentId  String?   // Threaded comments
-  isEdited  Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  parentId  String? // Threaded comments
+  isEdited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  task      Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  bug       Bug?      @relation(fields: [bugId], references: [id], onDelete: Cascade)
-  author    User      @relation(fields: [authorId], references: [id])
-  parent    Comment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies   Comment[] @relation("CommentThread")
-  likes     CommentLike[]
+  task    Task?         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  bug     Bug?          @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  author  User          @relation(fields: [authorId], references: [id])
+  parent  Comment?      @relation("CommentThread", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies Comment[]     @relation("CommentThread")
+  likes   CommentLike[]
 }
 
 model CommentLike {
@@ -385,24 +392,24 @@ model CommentLike {
   userId    String
   createdAt DateTime @default(now())
 
-  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user      User     @relation("CommentLikeUser", fields: [userId], references: [id])
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation("CommentLikeUser", fields: [userId], references: [id])
 
   @@unique([commentId, userId])
 }
 
 model TimeLog {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   minutes     Int
-  loggedAt    DateTime  @default(now())
+  loggedAt    DateTime @default(now())
   comment     String?
-  progress    Int?      // snapshot of progress at time of logging
+  progress    Int? // snapshot of progress at time of logging
   taskId      String
   userId      String
   blueprintId String?
 
-  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id])
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 }
 
 // =====================
@@ -414,14 +421,14 @@ model TimeLog {
 // =====================
 
 model Report {
-  id          String    @id @default(cuid())
-  type        String    // 'daily' | 'weekly'
-  content     String    // AI-generated markdown
+  id          String   @id @default(cuid())
+  type        String // 'daily' | 'weekly'
+  content     String // AI-generated markdown
   projectId   String
-  generatedAt DateTime  @default(now())
+  generatedAt DateTime @default(now())
   blueprintId String?
 
-  project     Project   @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 }
 
 // =====================
@@ -429,20 +436,20 @@ model Report {
 // =====================
 
 model BlueprintSync {
-  id          String      @id @default(cuid())
-  entityType  String      // 'task' | 'time_log' | 'report'
-  entityId    String
-  status      SyncStatus  @default(PENDING)
-  attempts    Int         @default(0)
-  lastError   String?
-  projectId   String
-  taskId      String?
-  syncedAt    DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id         String     @id @default(cuid())
+  entityType String // 'task' | 'time_log' | 'report'
+  entityId   String
+  status     SyncStatus @default(PENDING)
+  attempts   Int        @default(0)
+  lastError  String?
+  projectId  String
+  taskId     String?
+  syncedAt   DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  project     Project     @relation(fields: [projectId], references: [id])
-  task        Task?       @relation(fields: [taskId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  task    Task?   @relation(fields: [taskId], references: [id])
 }
 
 // =====================
@@ -467,11 +474,11 @@ model Bug {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
-  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  reporter       User             @relation("BugReporter", fields: [reporterId], references: [id])
-  assignee       User?            @relation("BugAssignee", fields: [assigneeId], references: [id])
-  owner          User?            @relation("BugOwner", fields: [ownerId], references: [id])
-  workflowStatus WorkflowStatus?  @relation("BugWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter       User            @relation("BugReporter", fields: [reporterId], references: [id])
+  assignee       User?           @relation("BugAssignee", fields: [assigneeId], references: [id])
+  owner          User?           @relation("BugOwner", fields: [ownerId], references: [id])
+  workflowStatus WorkflowStatus? @relation("BugWorkflowStatus", fields: [workflowStatusId], references: [id], onDelete: SetNull)
   bugTasks       BugTask[]
   reproSteps     BugReproStep[]
   attachments    BugAttachment[]
@@ -525,15 +532,15 @@ model BugAttachment {
 // =====================
 
 model Attachment {
-  id          String   @id @default(cuid())
-  filename    String
-  storedName  String
-  mimeType    String
-  size        Int
-  taskId      String
-  uploaderId  String
-  isInline    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  filename   String
+  storedName String
+  mimeType   String
+  size       Int
+  taskId     String
+  uploaderId String
+  isInline   Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
   task     Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   uploader User @relation("AttachmentUploader", fields: [uploaderId], references: [id])
@@ -615,8 +622,8 @@ model ProjectDefaultWatcher {
   userId    String
   createdAt DateTime @default(now())
 
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@index([projectId])
@@ -630,8 +637,8 @@ model ProjectTaskType {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks     Task[]
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
 
   @@unique([projectId, name])
   @@index([projectId])
@@ -647,7 +654,7 @@ model Repository {
   name          String
   repoUrl       String
   provider      String   @default("gitlab") // "github" | "gitlab"
-  accessToken   String   // AES-256-GCM encrypted
+  accessToken   String // AES-256-GCM encrypted
   cloneStatus   String   @default("pending") // pending | cloning | cloned | failed
   cloneError    String?
   indexStatus   String   @default("pending") // pending | indexing | indexed | failed
@@ -664,18 +671,18 @@ model Repository {
 }
 
 model TaskBranch {
-  id            String   @id @default(cuid())
-  taskId        String
-  projectId     String
-  repositoryId  String
-  branchName    String
-  branchType    String              // feat | fix | chore | hotfix | refactor
-  sequence      Int      @default(1)
-  prUrl         String?
-  prNumber      Int?
-  prTitle       String?
-  prStatus      String?             // open | merged | closed
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  taskId       String
+  projectId    String
+  repositoryId String
+  branchName   String
+  branchType   String // feat | fix | chore | hotfix | refactor
+  sequence     Int      @default(1)
+  prUrl        String?
+  prNumber     Int?
+  prTitle      String?
+  prStatus     String? // open | merged | closed
+  createdAt    DateTime @default(now())
 
   task       Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
   project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -688,11 +695,11 @@ model TaskBranch {
 model AiConfig {
   id             String   @id @default(cuid())
   projectId      String   @unique
-  provider       String   // claude | gemini | codex | custom
+  provider       String // claude | gemini | codex | custom
   model          String
-  apiKey         String   // AES-256-GCM encrypted
+  apiKey         String // AES-256-GCM encrypted
   baseUrl        String?
-  adapterType    String?  // openai | anthropic | gemini — wire protocol for custom provider
+  adapterType    String? // openai | anthropic | gemini — wire protocol for custom provider
   projectContext String?  @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -703,7 +710,7 @@ model AiConfig {
 model Skill {
   id          String   @id @default(cuid())
   projectId   String
-  key         String   // stable slug, e.g. "wiki-generation"
+  key         String // stable slug, e.g. "wiki-generation"
   name        String
   description String?  @db.VarChar(500)
   content     String   @db.Text
@@ -773,29 +780,29 @@ model WikiSectionProgress {
 }
 
 model ReportConfig {
-  id                   String   @id @default(cuid())
-  projectId            String   @unique
+  id        String @id @default(cuid())
+  projectId String @unique
 
-  emailEnabled         Boolean  @default(false)
-  googleChatEnabled    Boolean  @default(false)
+  emailEnabled         Boolean @default(false)
+  googleChatEnabled    Boolean @default(false)
   googleChatWebhookUrl String?
 
-  recipientMode        String   @default("all")
-  recipientRoles       String[] @default([])
-  recipientMembers     String[] @default([])
+  recipientMode    String   @default("all")
+  recipientRoles   String[] @default([])
+  recipientMembers String[] @default([])
 
-  frequency            String   @default("daily")
-  scheduleDays         Int[]    @default([])
-  scheduleTime         String   @default("09:00")
-  timezone             String   @default("Asia/Ho_Chi_Minh")
+  frequency    String @default("daily")
+  scheduleDays Int[]  @default([])
+  scheduleTime String @default("09:00")
+  timezone     String @default("Asia/Ho_Chi_Minh")
 
-  isActive             Boolean  @default(false)
-  bullmqJobId          String?
+  isActive    Boolean @default(false)
+  bullmqJobId String?
 
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // =====================
@@ -803,7 +810,7 @@ model ReportConfig {
 // =====================
 
 model TestModule {
-  id        String       @id @default(cuid())
+  id        String  @id @default(cuid())
   name      String
   position  Int
   projectId String
@@ -833,18 +840,18 @@ model TestCase {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  module          TestModule          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  creator         User                @relation("TestCaseCreator", fields: [creatorId], references: [id])
-  steps           TestCaseStep[]
-  links           TestCaseLink[]
+  module           TestModule          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  project          Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator          User                @relation("TestCaseCreator", fields: [creatorId], references: [id])
+  steps            TestCaseStep[]
+  links            TestCaseLink[]
   suiteMemberships TestSuiteMember[]
-  executionCases  TestExecutionCase[]
-  automation      TestCaseAutomation?
+  executionCases   TestExecutionCase[]
+  automation       TestCaseAutomation?
 }
 
 model TestCaseStep {
-  id             String   @id @default(cuid())
+  id             String @id @default(cuid())
   testCaseId     String
   position       Int
   action         String
@@ -874,7 +881,7 @@ model TestSuite {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   members TestSuiteMember[]
 }
 
@@ -895,11 +902,11 @@ model TestExecution {
   executionKey String?             @unique
   name         String
   status       TestExecutionStatus @default(PENDING)
-  assigneeId String
-  projectId  String
-  sprintId   String?
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
+  assigneeId   String
+  projectId    String
+  sprintId     String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   assignee User                @relation("TestExecutionAssignee", fields: [assigneeId], references: [id])
   project  Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -916,9 +923,9 @@ model TestExecutionCase {
   executedById String?
   executedAt   DateTime?
 
-  execution   TestExecution            @relation(fields: [executionId], references: [id], onDelete: Cascade)
-  testCase    TestCase                 @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
-  executedBy  User?                    @relation("TestExecutionCaseExecutor", fields: [executedById], references: [id])
+  execution   TestExecution             @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  testCase    TestCase                  @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  executedBy  User?                     @relation("TestExecutionCaseExecutor", fields: [executedById], references: [id])
   attachments TestExecutionAttachment[]
 
   @@unique([executionId, testCaseId])
@@ -965,9 +972,9 @@ model PlannerMessage {
   content   String
   createdAt DateTime           @default(now())
 
-  session          PlannerSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  attachments      PlannerAttachment[]
-  sourcedFeatures  PlannerFeature[]   @relation("FeatureSourceMessage")
+  session         PlannerSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  attachments     PlannerAttachment[]
+  sourcedFeatures PlannerFeature[]    @relation("FeatureSourceMessage")
 
   @@index([sessionId])
 }
@@ -1047,52 +1054,52 @@ model WbsPhase {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks   WbsTask[]
 
   @@index([projectId])
 }
 
 model WbsTask {
-  id             String    @id @default(cuid())
-  phaseId        String
-  title          String
-  description    String?
-  position       Int
-  planStart      DateTime?
-  planEnd        DateTime?
-  actualStart    DateTime?
-  actualEnd      DateTime?
-  progress       Float     @default(0)
-  backlogItemId  String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  phaseId       String
+  title         String
+  description   String?
+  position      Int
+  planStart     DateTime?
+  planEnd       DateTime?
+  actualStart   DateTime?
+  actualEnd     DateTime?
+  progress      Float     @default(0)
+  backlogItemId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  phase       WbsPhase      @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  phase       WbsPhase     @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   subtasks    WbsSubtask[]
-  backlogItem Task?         @relation("WbsTaskBacklog", fields: [backlogItemId], references: [id], onDelete: SetNull)
+  backlogItem Task?        @relation("WbsTaskBacklog", fields: [backlogItemId], references: [id], onDelete: SetNull)
 
   @@index([phaseId])
   @@index([backlogItemId])
 }
 
 model WbsSubtask {
-  id             String    @id @default(cuid())
-  taskId         String
-  title          String
-  description    String?
-  position       Int
-  planStart      DateTime?
-  planEnd        DateTime?
-  actualStart    DateTime?
-  actualEnd      DateTime?
-  progress       Float     @default(0)
-  backlogItemId  String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  taskId        String
+  title         String
+  description   String?
+  position      Int
+  planStart     DateTime?
+  planEnd       DateTime?
+  actualStart   DateTime?
+  actualEnd     DateTime?
+  progress      Float     @default(0)
+  backlogItemId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  task        WbsTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  backlogItem Task?    @relation("WbsSubtaskBacklog", fields: [backlogItemId], references: [id], onDelete: SetNull)
+  task        WbsTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  backlogItem Task?   @relation("WbsSubtaskBacklog", fields: [backlogItemId], references: [id], onDelete: SetNull)
 
   @@index([taskId])
   @@index([backlogItemId])
@@ -1123,9 +1130,9 @@ model SavedFilter {
   id         String   @id @default(cuid())
   userId     String
   projectId  String
-  entityType String   // "task" | "bug"
+  entityType String // "task" | "bug"
   name       String
-  filters    Json     // { statuses?: string[], assignees?: string[], sprint?: string, progress?: string[], search?: string }
+  filters    Json // { statuses?: string[], assignees?: string[], sprint?: string, progress?: string[], search?: string }
   isDefault  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -1195,4 +1202,46 @@ model McpToken {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+model Conversation {
+  id        String           @id @default(cuid())
+  projectId String
+  type      ConversationType
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  project  Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  members  ConversationMember[]
+  messages Message[]
+
+  @@index([projectId])
+}
+
+model ConversationMember {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String   @db.Text
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
