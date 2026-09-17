@@ -9,6 +9,9 @@ import { useMembershipSync } from '@/hooks/useMembershipSync';
 import { useTaskSync } from '@/hooks/useTaskSync';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useNotificationSync } from '@/hooks/useNotifications';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
+import { ChatDrawer } from '@/components/chat/ChatDrawer';
 
 // 256px expanded, 48px collapsed — per UI-SPEC
 const SIDEBAR_WIDTH = '256px';
@@ -21,6 +24,7 @@ export function ProjectLayout() {
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
   const fullWidth = useUiStore((s) => s.fullWidth);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useMembershipSync();
   useNotificationSync();
@@ -52,7 +56,17 @@ export function ProjectLayout() {
       <SidebarInset className="min-w-0 overflow-hidden">
         <div className="flex justify-between px-4 pt-2">
           <SidebarTrigger className="md:hidden" aria-label="Open sidebar" />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            {project?.id && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open chat"
+                onClick={() => setChatOpen(true)}
+              >
+                <MessageSquare className="size-5" />
+              </Button>
+            )}
             <NotificationBell />
           </div>
         </div>
@@ -64,6 +78,9 @@ export function ProjectLayout() {
         open={createProjectOpen}
         onOpenChange={setCreateProjectOpen}
       />
+      {project?.id && (
+        <ChatDrawer projectId={project.id} open={chatOpen} onOpenChange={setChatOpen} />
+      )}
     </SidebarProvider>
   );
 }

@@ -30,17 +30,17 @@ Verify: `pnpm --filter @pm/api test chat`
 Verify: `pnpm --filter @pm/api test chat` (gateway emit called with correct rooms — mock server)
 
 ## 5. Web API client + hooks [req-4][req-5][req-6][req-7]
-- [ ] 5.1 [frontend] Add `Conversation`, `ConversationMember`, `Message`, `ConversationType` types to `apps/web/src/lib/types.ts`
-- [ ] 5.2 [frontend] Add `chat` block to the `api` object in `apps/web/src/lib/api.ts` via `request<T>`: `listConversations`, `openDirect`, `getMessages`, `sendMessage`, `markRead` (paths under `/projects/:projectId/chat`)
-- [ ] 5.3 [frontend] New `apps/web/src/hooks/useChat.ts` — react-query: `useConversations(projectId)`, `useMessages(conversationId)` (infinite, cursor), `useSendMessage` (invalidate/append), `useMarkRead`. `onError` → `toast.error` per convention
-- [ ] 5.4 [frontend] socket.io-client: subscribe `chat:new` in `useChat`, push into the messages cache + bump unread; emit `chat:join-project` on mount
+- [x] 5.1 [frontend] Add `Conversation`, `ConversationMember`, `Message`, `ConversationType` types to `apps/web/src/lib/types.ts`
+- [x] 5.2 [frontend] Add `chat` block to the `api` object in `apps/web/src/lib/api.ts` via `request<T>`: `listConversations`, `openDirect`, `getMessages`, `sendMessage`, `markRead` (paths under `/projects/:projectId/chat`)
+- [x] 5.3 [frontend] New `apps/web/src/hooks/useChat.ts` — react-query: `useConversations(projectId)`, `useMessages(conversationId)` (infinite, cursor), `useSendMessage` (invalidate/append), `useMarkRead`. `onError` → `toast.error` per convention
+- [x] 5.4 [frontend] socket.io-client: subscribe `chat:new` in `useChat`, push into the messages cache + bump unread; emit `chat:join-project` on mount
 Verify: `pnpm --filter @pm/web test` (hooks compile; cache update on chat:new)
 
 ## 6. Chat drawer UI [req-7]
-- [ ] 6.1 [frontend] New `apps/web/src/components/chat/ChatDrawer.tsx` — reuse `<Sheet><SheetContent side="right">` (`src/components/ui/sheet.tsx`); NOT a new drawer
-- [ ] 6.2 [frontend] `ConversationList.tsx` — rail with Channel + Direct sections; reuse `<Avatar>` (`ui/avatar.tsx`), `<Badge>` (`ui/badge.tsx`) for unread, `<ScrollArea>` (`ui/scroll-area.tsx`)
-- [ ] 6.3 [frontend] `MessageThread.tsx` — reuse `<ScrollArea>`; own vs other bubble alignment; "Load earlier" pager via `useMessages` cursor; mark-read on view
-- [ ] 6.4 [frontend] `Composer.tsx` — reuse `<Textarea>` (`ui/textarea.tsx`) + `<Button>` (`ui/button.tsx`); Enter sends, Shift+Enter newline, Send disabled when empty
-- [ ] 6.5 [frontend] `NewDmPicker.tsx` — reuse `<Input>` (`ui/input.tsx`) or `<Command>` (`ui/command.tsx`); list project members, select → `openDirect`
-- [ ] 6.6 [frontend] Mount drawer + trigger button in the project layout/header (project routes in `apps/web/src/App.tsx`)
+- [x] 6.1 [frontend] New `apps/web/src/components/chat/ChatDrawer.tsx` — reuse `<Sheet><SheetContent side="right">` (`src/components/ui/sheet.tsx`); NOT a new drawer
+- [x] 6.2 [frontend] `ConversationList.tsx` — rail with Channel + Direct sections; reuse `<Avatar>` (`ui/avatar.tsx`), `<Badge>` (`ui/badge.tsx`) for unread, `<ScrollArea>` (`ui/scroll-area.tsx`)
+- [x] 6.3 [frontend] `MessageThread.tsx` — reuse `<ScrollArea>`; own vs other bubble alignment; "Load earlier" pager via `useMessages` cursor; mark-read on view
+- [x] 6.4 [frontend] `Composer.tsx` — reuse `<Textarea>` (`ui/textarea.tsx`) + `<Button>` (`ui/button.tsx`); Enter sends, Shift+Enter newline, Send disabled when empty
+- [x] 6.5 [frontend] `NewDmPicker.tsx` — reuse `<Input>` (`ui/input.tsx`) or `<Command>` (`ui/command.tsx`); list project members, select → `openDirect`
+- [x] 6.6 [frontend] Mount drawer + trigger button in the project layout/header (project routes in `apps/web/src/App.tsx`)
 Verify: `/devspec-verify add-project-chat` (agent-browser: drawer opens, rail + thread + composer regions present, non-plain shadcn styling, unread badge renders, scroll-back pages past first load, live message appears)

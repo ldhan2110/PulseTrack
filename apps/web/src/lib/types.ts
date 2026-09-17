@@ -114,6 +114,35 @@ export interface User {
   updatedAt: string;
 }
 
+export type ConversationType = 'PROJECT' | 'DIRECT';
+
+export interface ConversationMember {
+  id: string;
+  conversationId: string;
+  userId: string;
+  lastReadAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  projectId: string;
+  type: ConversationType;
+  createdAt: string;
+  updatedAt: string;
+  members: ConversationMember[];
+  unreadCount: number;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+}
+
 export interface UserSearchResult {
   id: string;
   email: string;

@@ -114,6 +114,9 @@ import type {
   AutomationRun,
   ProjectVariable,
   TimesheetData,
+  Conversation,
+  ConversationMember,
+  Message,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -1145,4 +1148,30 @@ export const api = {
       ticket: filters.ticket ?? '',
       typeIds: filters.typeIds?.join(',') ?? '',
     }),
+
+  chat: {
+    listConversations: (projectId: string) =>
+      request<Conversation[]>(`/projects/${projectId}/chat/conversations`),
+    openDirect: (projectId: string, userId: string) =>
+      request<Conversation>(`/projects/${projectId}/chat/conversations/direct`, {
+        method: 'POST',
+        body: JSON.stringify({ userId }),
+      }),
+    getMessages: (projectId: string, conversationId: string, cursor?: string) =>
+      request<{ messages: Message[]; nextCursor: string | null }>(
+        `/projects/${projectId}/chat/conversations/${conversationId}/messages${
+          cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
+        }`,
+      ),
+    sendMessage: (projectId: string, conversationId: string, body: string) =>
+      request<Message>(
+        `/projects/${projectId}/chat/conversations/${conversationId}/messages`,
+        { method: 'POST', body: JSON.stringify({ body }) },
+      ),
+    markRead: (projectId: string, conversationId: string) =>
+      request<ConversationMember>(
+        `/projects/${projectId}/chat/conversations/${conversationId}/read`,
+        { method: 'POST' },
+      ),
+  },
 };

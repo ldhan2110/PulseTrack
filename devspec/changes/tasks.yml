@@ -4,6 +4,6 @@ changes:
     tasks_md: changes/add-project-chat/tasks.md
     depends_on: []
     skills: [frontend-design]
-    status: doing
+    status: blocked
     owner: worker-1
-    notes: ""
+    notes: "sections 1-5 done; section 6 UI built + typechecks + web build passes, but Verify (/devspec-verify) blocked — app not running + no Keycloak test account. See devspec/report/blockers.md"
