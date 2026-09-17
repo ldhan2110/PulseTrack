@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevSpec Report — PulseTrack</title>
+<style>
+  :root{--bg:#0f1115;--card:#1a1d24;--edge:#2a2e38;--fg:#e6e8ec;--mut:#9aa1ad;
+    --done:#3fb950;--prog:#d29922;--block:#f85149;--acc:#58a6ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 64px}
+  h1{font-size:22px;margin:0 0 4px}
+  .ts{color:var(--mut);font-size:13px;margin-bottom:20px}
+  .counts{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 28px}
+  .pill{background:var(--card);border:1px solid var(--edge);border-radius:20px;
+    padding:6px 14px;font-size:13px;font-weight:600}
+  .pill b{font-size:15px}
+  .done b{color:var(--done)} .prog b{color:var(--prog)} .block b{color:var(--block)}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);
+    border-bottom:1px solid var(--edge);padding-bottom:8px;margin:36px 0 16px}
+  .card{background:var(--card);border:1px solid var(--edge);border-radius:10px;
+    padding:16px 18px;margin-bottom:12px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .title{font-weight:600}
+  .frac{color:var(--mut);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
+  .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 9px;border-radius:6px}
+  .t-done{background:rgba(63,185,80,.15);color:var(--done)}
+  .t-prog{background:rgba(210,153,34,.15);color:var(--prog)}
+  .t-block{background:rgba(248,81,73,.15);color:var(--block)}
+  .reason{color:var(--mut);font-size:13px;margin-top:10px;padding-top:10px;
+    border-top:1px solid var(--edge)}
+  .blk .bh{font-weight:600;font-size:13px;color:var(--acc);margin-bottom:8px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .blk .line{font-size:13px;margin:4px 0}
+  .blk .line b{color:var(--fg)}
+  .empty{color:var(--mut);font-style:italic}
+  .hist .bh{display:flex;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .hist .when{color:var(--mut);font-size:12px;font-variant-numeric:tabular-nums}
+  .sum{color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DevSpec Report — PulseTrack</h1>
+  <div class="ts">Generated 2026-09-17 (UTC) · whole-board snapshot</div>
+
+  <div class="counts">
+    <span class="pill done">Done <b>0</b></span>
+    <span class="pill prog">In progress <b>0</b></span>
+    <span class="pill block">Blocked <b>1</b></span>
+    <span class="pill">Total <b>1</b></span>
+  </div>
+
+  <h2>Open Blockers</h2>
+  <div class="card blk">
+    <div class="bh">add-project-chat · section 1 (1.4 apply migration) · 2026-09-17</div>
+    <div class="line"><b>what:</b> Migration file written &amp; correct (enum + 3 tables + FKs + partial unique index); <code>prisma generate</code> ok. Applying it (<code>migrate deploy</code>) fails P3018.</div>
+    <div class="line"><b>tried:</b> <code>migrate dev</code> (wants destructive reset — history diverged); <code>migrate deploy</code> (collides: <code>ConversationType</code> enum + <code>Message</code> table already exist from an abandoned attempt); offline <code>migrate diff</code> to author the SQL cleanly.</div>
+    <div class="line"><b>needs:</b> Human to drop the stale <code>Message</code> table (2 rows) + <code>ConversationType</code> enum on the shared dev DB (or reconcile via <code>migrate resolve</code>), then reset board <code>blocked → pending</code> and re-run. Also resolve the pre-existing <code>planner_message_proposal</code> history divergence.</div>
+  </div>
+
+  <h2>Implemented</h2>
+  <div class="empty">No changes are done yet.</div>
+
+  <h2>In progress / Left</h2>
+  <div class="card">
+    <div class="row">
+      <span class="title">per-project chat — project channel + 1:1 DMs</span>
+      <span style="display:flex;gap:10px;align-items:center">
+        <span class="frac">0 / 6 sections</span>
+        <span class="tag t-block">blocked</span>
+      </span>
+    </div>
+    <div class="reason"><b>Block reason:</b> 1.4 blocked — stale <code>Message</code> table +2 rows &amp; <code>ConversationType</code> enum from an abandoned attempt on shared dev DB; applying migration needs a destructive drop (human). See report/blockers.md. <span style="color:var(--mut)">(1.1–1.3 file work done; migration written + client generated.)</span></div>
+  </div>
+
+  <h2>History</h2>
+  <div class="card hist">
+    <div class="bh">
+      <span class="title">per-project chat — project channel + 1:1 DMs</span>
+      <span style="display:flex;gap:10px;align-items:center">
+        <span class="when">2026-09-17 UTC</span>
+        <span class="frac">0 / 6</span>
+        <span class="tag t-block">blocked</span>
+      </span>
+    </div>
+    <div class="sum">Wrote the chat migration (enum + 3 tables + FKs + partial unique index) and generated the Prisma client; schema models already present. Could not apply: pre-existing stale chat objects on the shared dev DB collide and clearing them is destructive, so section 1 is blocked pending a human.</div>
+  </div>
+
+</div>
+</body>
+</html>

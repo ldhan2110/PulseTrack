@@ -1,6 +1,8 @@
 
 ## add-project-chat — section 1 (1.4 apply migration) — 2026-09-17
 
+**status:** open
+
 **Type:** hard-block case 1 (destructive/irreversible on shared dev DB)
 
 **What:** Migration file `apps/api/prisma/migrations/20260917000000_add_project_chat/migration.sql` is written and correct (enum + Conversation/ConversationMember/Message + FKs + partial unique index). `prisma generate` succeeded. Applying it (`migrate deploy`) fails P3018.
