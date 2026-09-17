@@ -11,6 +11,7 @@ import { MembersModule } from './members/members.module';
 import { GroupsModule } from './groups/groups.module';
 import { TasksModule } from './tasks/tasks.module';
 import { MyTasksModule } from './my-tasks/my-tasks.module';
+import { ChatModule } from './chat/chat.module';
 import { SprintsModule } from './sprints/sprints.module';
 import { BugsModule } from './bugs/bugs.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -56,6 +57,7 @@ import { McpModule } from './mcp/mcp.module';
     GroupsModule,
     TasksModule,
     MyTasksModule,
+    ChatModule,
     SprintsModule,
     BugsModule,
     DashboardModule,

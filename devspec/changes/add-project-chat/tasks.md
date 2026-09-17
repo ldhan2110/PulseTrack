@@ -4,29 +4,29 @@
 - [x] 1.1 [db] Delete the untracked dead dir `apps/api/prisma/migrations/20260911000001_add_chat_tables/` (never committed; wrong enum names, out-of-scope cols — see `db.md`)
 - [x] 1.2 [db] Add to `apps/api/prisma/schema.prisma`: enum `ConversationType { PROJECT DIRECT }`; models `Conversation` (id cuid, projectId, type, createdAt, updatedAt @updatedAt), `ConversationMember` (id, conversationId, userId, lastReadAt?, createdAt, updatedAt @updatedAt, `@@unique([conversationId,userId])`, `@@index([userId])`), `Message` (id, conversationId, senderId, body, createdAt, `@@index([conversationId,createdAt])`). FKs onDelete Cascade to Project/User/Conversation. Add back-relations on `User` + `Project`.
 - [x] 1.3 [db] Partial unique index — one PROJECT per project — via migration raw SQL `CREATE UNIQUE INDEX "Conversation_projectId_project_key" ON "Conversation"("projectId") WHERE "type" = 'PROJECT';` (Prisma `@@unique` can't express the WHERE)
-- [ ] 1.4 [db] Generate migration: `pnpm --filter @pm/api exec prisma migrate dev --name add_project_chat` then `pnpm generate`
+- [x] 1.4 [db] Generate migration: `pnpm --filter @pm/api exec prisma migrate dev --name add_project_chat` then `pnpm generate`
 Verify: `pnpm --filter @pm/api exec prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-migrations prisma/migrations --exit-code` (schema ⇄ migrations agree); assert enum + 3 tables + partial index exist.
 
 ## 2. Authz resource [req-2][req-3][req-4][req-5]
-- [ ] 2.1 [backend] Add `chat: PermissionSet` to `RolePermissions` and `SYSTEM_ROLE_PERMISSIONS` (`apps/api/src/auth/permissions.ts`) — `ALL_TRUE` for system roles; any project member gets view+create by default (baseline collaboration, like `comments`)
+- [x] 2.1 [backend] Add `chat: PermissionSet` to `RolePermissions` and `SYSTEM_ROLE_PERMISSIONS` (`apps/api/src/auth/permissions.ts`) — `ALL_TRUE` for system roles; any project member gets view+create by default (baseline collaboration, like `comments`)
 Verify: `pnpm --filter @pm/api test` (permissions map compiles + member default resolves view/create true)
 
 ## 3. Chat service + REST [req-2][req-3][req-4][req-5][req-6]
-- [ ] 3.1 [service] New `apps/api/src/chat/chat.service.ts` (`ChatService`, inject `PrismaService`): `listConversations(projectId, userId)` — lazy-create PROJECT channel in a `$transaction` if absent, return channel + user's DMs each with `unreadCount` (count Message where createdAt > member.lastReadAt)
-- [ ] 3.2 [service] `openDirect(projectId, userId, otherUserId)` — assert both are project members (`ProjectMember`), sorted-pair lookup for existing DIRECT (exactly-two-member match), reuse or create with 2 `ConversationMember` rows
-- [ ] 3.3 [service] `getMessages(conversationId, userId, cursor?)` — assert membership, return ≤30 `createdAt desc` + next cursor
-- [ ] 3.4 [service] `sendMessage(conversationId, userId, body)` — assert membership, `$transaction`: insert Message + bump conversation `updatedAt`; return message + audience (projectId for PROJECT, member userIds for DIRECT)
-- [ ] 3.5 [service] `markRead(conversationId, userId)` — set member `lastReadAt = now()`
-- [ ] 3.6 [backend] New `apps/api/src/chat/dto/`: `SendMessageDto` (`body` `@IsString @IsNotEmpty @MaxLength(4000)`, trimmed), `OpenDirectDto` (`userId @IsString`)
-- [ ] 3.7 [backend] New `apps/api/src/chat/chat.controller.ts` — `@Controller('projects/:projectId/chat')`, class `@UseGuards(JwtAuthGuard, ProjectRolesGuard)`. Routes: `GET conversations` `@RequirePermission('chat','view')`; `POST conversations/direct` (`view`); `GET conversations/:id/messages` (`view`); `POST conversations/:id/messages` (`create`); `POST conversations/:id/read` (`view`). Actor from `req.user.id`
-- [ ] 3.8 [backend] New `apps/api/src/chat/chat.module.ts`; register in `apps/api/src/app.module.ts` imports
-- [ ] 3.9 [test] `apps/api/src/chat/chat.service.spec.ts` (vitest): lazy channel idempotent, DM reuse (both orders), unread count, non-member send/read → throws, empty body rejected
+- [x] 3.1 [service] New `apps/api/src/chat/chat.service.ts` (`ChatService`, inject `PrismaService`): `listConversations(projectId, userId)` — lazy-create PROJECT channel in a `$transaction` if absent, return channel + user's DMs each with `unreadCount` (count Message where createdAt > member.lastReadAt)
+- [x] 3.2 [service] `openDirect(projectId, userId, otherUserId)` — assert both are project members (`ProjectMember`), sorted-pair lookup for existing DIRECT (exactly-two-member match), reuse or create with 2 `ConversationMember` rows
+- [x] 3.3 [service] `getMessages(conversationId, userId, cursor?)` — assert membership, return ≤30 `createdAt desc` + next cursor
+- [x] 3.4 [service] `sendMessage(conversationId, userId, body)` — assert membership, `$transaction`: insert Message + bump conversation `updatedAt`; return message + audience (projectId for PROJECT, member userIds for DIRECT)
+- [x] 3.5 [service] `markRead(conversationId, userId)` — set member `lastReadAt = now()`
+- [x] 3.6 [backend] New `apps/api/src/chat/dto/`: `SendMessageDto` (`body` `@IsString @IsNotEmpty @MaxLength(4000)`, trimmed), `OpenDirectDto` (`userId @IsString`)
+- [x] 3.7 [backend] New `apps/api/src/chat/chat.controller.ts` — `@Controller('projects/:projectId/chat')`, class `@UseGuards(JwtAuthGuard, ProjectRolesGuard)`. Routes: `GET conversations` `@RequirePermission('chat','view')`; `POST conversations/direct` (`view`); `GET conversations/:id/messages` (`view`); `POST conversations/:id/messages` (`create`); `POST conversations/:id/read` (`view`). Actor from `req.user.id`
+- [x] 3.8 [backend] New `apps/api/src/chat/chat.module.ts`; register in `apps/api/src/app.module.ts` imports
+- [x] 3.9 [test] `apps/api/src/chat/chat.service.spec.ts` (vitest): lazy channel idempotent, DM reuse (both orders), unread count, non-member send/read → throws, empty body rejected
 Verify: `pnpm --filter @pm/api test chat`
 
 ## 4. Live delivery [req-5][req-7]
-- [ ] 4.1 [backend] Export/share `SocketAuthService` from notifications module (`apps/api/src/notifications/`) so chat can inject it (already `@Injectable`)
-- [ ] 4.2 [backend] New `apps/api/src/chat/chat.gateway.ts` (`@WebSocketGateway({ cors:{origin:'*'} })`) — on connect auth via `SocketAuthService`, join `user:${userId}`; `@SubscribeMessage('chat:join-project')` joins `project:${id}`. Expose `emitMessage(audience, message)` the service calls after send: emit `chat:new` to `project:${projectId}` (PROJECT) or each `user:${userId}` (DIRECT)
-- [ ] 4.3 [service] Wire `ChatService.sendMessage` → gateway `emitMessage` (inject gateway or via `setServer` pattern like `NotificationsGateway.afterInit`)
+- [x] 4.1 [backend] Export/share `SocketAuthService` from notifications module (`apps/api/src/notifications/`) so chat can inject it (already `@Injectable`)
+- [x] 4.2 [backend] New `apps/api/src/chat/chat.gateway.ts` (`@WebSocketGateway({ cors:{origin:'*'} })`) — on connect auth via `SocketAuthService`, join `user:${userId}`; `@SubscribeMessage('chat:join-project')` joins `project:${id}`. Expose `emitMessage(audience, message)` the service calls after send: emit `chat:new` to `project:${projectId}` (PROJECT) or each `user:${userId}` (DIRECT)
+- [x] 4.3 [service] Wire `ChatService.sendMessage` → gateway `emitMessage` (inject gateway or via `setServer` pattern like `NotificationsGateway.afterInit`)
 Verify: `pnpm --filter @pm/api test chat` (gateway emit called with correct rooms — mock server)
 
 ## 5. Web API client + hooks [req-4][req-5][req-6][req-7]

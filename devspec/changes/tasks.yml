@@ -4,6 +4,6 @@ changes:
     tasks_md: changes/add-project-chat/tasks.md
     depends_on: []
     skills: [frontend-design]
-    status: blocked
+    status: doing
     owner: worker-1
-    notes: "1.4 blocked — stale Message table+2 rows & ConversationType enum from abandoned attempt on shared dev DB; applying migration needs destructive drop (human). See report/blockers.md."
+    notes: ""
