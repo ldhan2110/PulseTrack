@@ -38,11 +38,6 @@
   .b-pending { background:rgba(154,163,178,.15); color:var(--muted); }
   .reason { color:var(--block); font-size:13px; margin-top:8px; }
   .empty { color:var(--muted); font-style:italic; }
-  .blocker { background:var(--panel); border:1px solid var(--block);
-    border-left:3px solid var(--block); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
-  .blocker .bhead { font-weight:700; font-size:13px; margin-bottom:6px; }
-  .blocker .line { font-size:13px; color:var(--muted); margin:2px 0; }
-  .blocker .line b { color:var(--text); }
   .hist { background:var(--panel); border:1px solid var(--border);
     border-radius:8px; padding:12px 14px; margin-bottom:10px; }
   .hist .hrow { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
@@ -56,22 +51,22 @@
   <div class="gen">Generated 2026-09-18 · project PulseTrack</div>
 
   <div class="counts">
-    <span class="pill done"><b>1</b> done</span>
+    <span class="pill done"><b>2</b> done</span>
     <span class="pill prog"><b>1</b> in-progress</span>
-    <span class="pill block"><b>1</b> blocked</span>
+    <span class="pill block"><b>0</b> blocked</span>
     <span class="pill total"><b>3</b> total</span>
   </div>
 
   <h2>Open Blockers</h2>
-  <div class="blocker">
-    <div class="bhead">add-agent-write-consent · section 3 (Gate write scopes) · 2026-09-18</div>
-    <div class="line"><b>what:</b> Section 3 verify <code>pnpm --filter @pm/api test mcp-tools</code> is red on 3 failures. Consent code + 4 new consent tests are green in a scoped run (4 passed, 17 skipped); the file-level verify fails.</div>
-    <div class="line"><b>tried:</b> Stashed all edits and ran on clean HEAD → same 3 failures (14 passed | 3 failed). With the change: 18 passed | 3 failed. The 3 failures are pre-existing and unrelated (<code>attach_task_file</code> surface list, <code>create_test_execution</code> mock <code>testCase</code> shape).</div>
-    <div class="line"><b>needs:</b> Human to either fix the 3 pre-existing mcp-tools.spec expectations/mocks (out of this change's scope), or narrow section 3's verify to the consent tests; then reset board status blocked → pending and re-run.</div>
-    <div class="line"><b>status:</b> open</div>
-  </div>
+  <p class="empty">No open blockers.</p>
 
   <h2>Implemented</h2>
+  <div class="card">
+    <div class="row">
+      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
+      <span class="frac"><span class="badge b-done">done</span> &nbsp;5/5</span>
+    </div>
+  </div>
   <div class="card">
     <div class="row">
       <span class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</span>
@@ -86,15 +81,15 @@
       <span class="frac"><span class="badge b-prog">doing</span> &nbsp;—</span>
     </div>
   </div>
-  <div class="card">
-    <div class="row">
-      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
-      <span class="frac"><span class="badge b-block">blocked</span> &nbsp;3/5</span>
-    </div>
-    <div class="reason">section 3 verify red on 3 pre-existing mcp-tools.spec failures unrelated to this change — see report/blockers.md</div>
-  </div>
 
   <h2>History</h2>
+  <div class="hist">
+    <div class="hrow">
+      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
+      <span class="ts">2026-09-18 07:35 · <span class="badge b-done">done</span> · 5/5</span>
+    </div>
+    <div class="sum">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div>
+  </div>
   <div class="hist">
     <div class="hrow">
       <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
