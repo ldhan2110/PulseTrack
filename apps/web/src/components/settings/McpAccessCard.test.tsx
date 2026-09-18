@@ -36,6 +36,7 @@ const TOKEN: McpToken = {
   id: 't1',
   label: 'Cursor laptop',
   scopes: ['tasks:read', 'bugs:read'],
+  allowWrite: false,
   lastUsedAt: null,
   expiresAt: null,
   revokedAt: null,
@@ -86,5 +87,29 @@ describe('McpAccessCard [req-7]', () => {
     expect(await screen.findByText(state.createResult.token)).toBeTruthy();
     expect(screen.getByText(/never be shown again/i)).toBeTruthy();
     expect(createMutate).toHaveBeenCalledOnce();
+  });
+
+  it('checking consent sends allowWrite:true [req-4]', async () => {
+    render(<McpAccessCard projectId="p1" canManage />);
+    fireEvent.click(screen.getByText('+ Create token'));
+
+    fireEvent.change(screen.getByLabelText('Label'), { target: { value: 'Agent' } });
+    fireEvent.click(screen.getByLabelText(/allow this agent to write data as me/i));
+    fireEvent.click(screen.getByText('Create'));
+
+    await screen.findByText(state.createResult.token);
+    expect(createMutate).toHaveBeenCalledWith(expect.objectContaining({ allowWrite: true }));
+  });
+
+  it('write scope selected with consent off renders the advisory warning [req-4]', () => {
+    render(<McpAccessCard projectId="p1" canManage />);
+    fireEvent.click(screen.getByText('+ Create token'));
+
+    // no warning by default (default scopes are read-only)
+    expect(screen.queryByText(/write calls will be rejected/i)).toBeNull();
+
+    // tick a write scope while consent stays off
+    fireEvent.click(screen.getByLabelText('tasks:write'));
+    expect(screen.getByText(/write calls will be rejected/i)).toBeTruthy();
   });
 });

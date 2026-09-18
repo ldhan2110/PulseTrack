@@ -30,6 +30,9 @@ const SCOPES = [
   'testexec:write',
 ] as const;
 
+// Scopes gated behind write consent — mirrors WRITE_SCOPES in the API's mcp-server.service.ts.
+const WRITE_SCOPES = ['tasks:write', 'tasks:logtime', 'tasks:attach', 'testcases:write', 'testexec:write'];
+
 interface McpAccessCardProps {
   projectId: string;
   canManage: boolean;
@@ -61,14 +64,17 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [label, setLabel] = useState('');
   const [scopes, setScopes] = useState<string[]>(['tasks:read', 'bugs:read']);
+  const [allowWrite, setAllowWrite] = useState(false);
   const [expiresAt, setExpiresAt] = useState('');
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
 
   const canSubmit = label.trim().length > 0 && scopes.length > 0 && !createToken.isPending;
+  const writeScopeWithoutConsent = scopes.some((s) => WRITE_SCOPES.includes(s)) && !allowWrite;
 
   function resetForm() {
     setLabel('');
     setScopes(['tasks:read', 'bugs:read']);
+    setAllowWrite(false);
     setExpiresAt('');
     setCreatedSecret(null);
   }
@@ -86,6 +92,7 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
     const result = await createToken.mutateAsync({
       label: label.trim(),
       scopes,
+      allowWrite,
       expiresAt: expiresAt || undefined,
     });
     setCreatedSecret(result.token);
@@ -253,6 +260,27 @@ export function McpAccessCard({ projectId, canManage }: McpAccessCardProps) {
                     ))}
                   </div>
                 </div>
+                <div className="rounded-md border border-border bg-muted/40 px-3 py-3">
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      checked={allowWrite}
+                      onCheckedChange={(checked) => setAllowWrite(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      Allow this agent to write data as me
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        Lets it create, update, and log on your behalf. Write scopes stay inactive until this is on.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+                {writeScopeWithoutConsent && (
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    <span>A write scope is selected but consent is off — write calls will be rejected until you allow it.</span>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="mcp-expires">Expires (optional)</Label>
                   <Input

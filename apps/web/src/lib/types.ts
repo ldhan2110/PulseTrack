@@ -1528,6 +1528,7 @@ export interface McpToken {
   id: string;
   label: string;
   scopes: string[];
+  allowWrite: boolean;
   lastUsedAt: string | null;
   expiresAt: string | null;
   revokedAt: string | null;
@@ -1537,6 +1538,7 @@ export interface McpToken {
 export interface CreateMcpTokenPayload {
   label: string;
   scopes: string[];
+  allowWrite?: boolean;
   expiresAt?: string;
 }
 

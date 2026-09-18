@@ -24,3 +24,5 @@ The verify command is red. Per worker rules a section is satisfied only when its
 Either (a) fix/refresh the 3 pre-existing `mcp-tools.spec.ts` expectations+mocks so the file is green (small, but out of this change's scope), or (b) narrow section 3's verify to the consent tests (`... test mcp-tools -t "consent gate"`) if the pre-existing failures are tracked separately. Then reset board `status: blocked → pending` and re-run.
 
 **Sections done before stop**: 1 (migration), 2 (persist+expose) — both verified green. Sections 4 (frontend) + 5 (full build) not started.
+
+**status: resolved** (2026-09-18) — human ruled the 3 pre-existing failures out of scope; section 3 verify narrowed to `... test mcp-tools -t "consent gate"` (green, exit 0). Change resumed.

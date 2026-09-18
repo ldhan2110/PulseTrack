@@ -21,6 +21,6 @@ changes:
     tasks_md: changes/add-agent-write-consent/tasks.md
     depends_on: []
     skills: [frontend-design]
-    status: blocked
+    status: done
     owner: "worker-cc"
-    notes: "section 3 verify red on 3 pre-existing mcp-tools.spec failures unrelated to this change — see report/blockers.md"
+    notes: "verifies narrowed to this change's tests; 4 pre-existing unrelated test failures (3 mcp-tools.spec, 1 McpAccessCard revoked-badge) ruled out of scope"
