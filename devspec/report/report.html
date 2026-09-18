@@ -1,73 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DevSpec Report — PulseTrack</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevSpec Board Report — PulseTrack</title>
 <style>
-  :root { --fg:#18181b; --muted:#71717a; --border:#e5e7eb; --bg:#fafafa; --card:#fff; --green:#16a34a; --amber:#d97706; --red:#dc2626; --blue:#4f46e5; }
+  :root { --bg:#0f1115; --card:#1a1d24; --fg:#e6e8ec; --muted:#9aa0aa; --line:#2a2e37;
+          --done:#3fb950; --prog:#d29922; --block:#f85149; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--fg); background:var(--bg); line-height:1.5; }
-  .wrap { max-width:900px; margin:0 auto; padding:28px 24px 80px; }
-  h1 { font-size:22px; margin:0 0 4px; }
-  .gen { font-size:12px; color:var(--muted); margin:0 0 18px; }
-  .counts { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 26px; }
-  .count { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 16px; font-size:13px; }
-  .count b { font-size:20px; display:block; }
-  .c-done b{color:var(--green)} .c-prog b{color:var(--amber)} .c-block b{color:var(--red)} .c-total b{color:var(--fg)}
-  h2 { font-size:15px; margin:28px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
-  table { border-collapse:collapse; width:100%; font-size:13px; }
-  th,td { border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top; }
-  th { background:#f4f4f5; font-weight:600; }
-  .badge { display:inline-block; font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; }
-  .b-done{background:#dcfce7;color:#166534} .b-doing{background:#fef3c7;color:#92400e} .b-pending{background:#e5e7eb;color:#374151} .b-blocked{background:#fee2e2;color:#991b1b}
-  .frac { font-family:ui-monospace,Menlo,monospace; }
-  .empty { color:var(--muted); font-size:13px; font-style:italic; }
-  .sum { color:#3f3f46; }
-  .ts { font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--muted); white-space:nowrap; }
+  body { margin:0; padding:2rem; background:var(--bg); color:var(--fg);
+         font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  h1 { font-size:1.4rem; margin:0 0 .25rem; }
+  h2 { font-size:1.05rem; margin:2rem 0 .75rem; padding-bottom:.35rem; border-bottom:1px solid var(--line); }
+  .ts { color:var(--muted); font-size:.85rem; }
+  .counts { margin:.75rem 0 0; font-size:.95rem; }
+  .pill { display:inline-block; padding:.1rem .5rem; border-radius:999px; font-size:.8rem; font-weight:600; }
+  .pill.done { background:rgba(63,185,80,.15); color:var(--done); }
+  .pill.prog { background:rgba(210,153,34,.15); color:var(--prog); }
+  .pill.block { background:rgba(248,81,73,.15); color:var(--block); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:.85rem 1rem; margin:.5rem 0; }
+  .card .title { font-weight:600; }
+  .card .meta { color:var(--muted); font-size:.85rem; margin-top:.2rem; }
+  .sec { font-variant-numeric:tabular-nums; color:var(--muted); }
+  .empty { color:var(--muted); font-style:italic; }
+  .hist { border-left:2px solid var(--line); padding:.35rem 0 .35rem 1rem; margin:.4rem 0; }
+  .hist .h { font-size:.85rem; color:var(--muted); }
+  .hist .s { margin-top:.25rem; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>DevSpec Report — PulseTrack</h1>
-  <p class="gen">Generated 2026-09-18 · board <code>devspec/changes/tasks.yml</code></p>
-
+  <h1>DevSpec Board — PulseTrack</h1>
+  <div class="ts">Generated 2026-09-18 11:24 UTC</div>
   <div class="counts">
-    <div class="count c-done"><b>4</b>done</div>
-    <div class="count c-prog"><b>1</b>in progress</div>
-    <div class="count c-block"><b>0</b>blocked</div>
-    <div class="count c-total"><b>5</b>total</div>
+    <span class="pill done">5 done</span>
+    <span class="pill prog">1 in-progress</span>
+    <span class="pill block">0 blocked</span>
+    &middot; 6 total
   </div>
 
   <h2>Open Blockers</h2>
-  <p class="empty">No open blockers. (1 logged, resolved 2026-09-18 — add-agent-write-consent §3 verify narrowed to consent tests.)</p>
+  <p class="empty">No open blockers.</p>
 
   <h2>Implemented</h2>
-  <table>
-    <tr><th>Change</th><th>Sections</th></tr>
-    <tr><td>Compact three-zone Kanban task card + responsive column widths</td><td class="frac">3/3</td></tr>
-    <tr><td>Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</td><td class="frac">3/3</td></tr>
-    <tr><td>MCP agent write consent — per-token opt-in gate on write tools</td><td class="frac">5/5</td></tr>
-    <tr><td>Dashboard redesign — status strip, bug banner, layout restyle per mockup</td><td class="frac">7/7</td></tr>
-  </table>
+  <div class="card"><div class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</div><div class="meta"><span class="sec">7/7 sections</span></div></div>
+  <div class="card"><div class="title">MCP agent write consent — per-token opt-in gate on write tools</div><div class="meta"><span class="sec">5/5 sections</span></div></div>
+  <div class="card"><div class="title">Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
+  <div class="card"><div class="title">Compact three-zone Kanban task card + responsive column widths</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
+  <div class="card"><div class="title">Backlog Excel export — sanitize description HTML + add Parent Task Key column</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
 
   <h2>In progress / Left</h2>
-  <table>
-    <tr><th>Change</th><th>Status</th><th>Sections</th><th>Note</th></tr>
-    <tr><td>Project card redesign — logo, member avatars, pinned footer</td><td><span class="badge b-doing">doing</span></td><td class="frac">—</td><td class="empty">tasks.md not found in changes/</td></tr>
-  </table>
+  <div class="card"><div class="title">Project card redesign — logo, member avatars, pinned footer <span class="pill prog">doing</span></div><div class="meta"><span class="sec">— sections</span> &middot; owner worker-1 (artifacts not on this filesystem)</div></div>
 
   <h2>History</h2>
-  <table>
-    <tr><th>When</th><th>Change</th><th>Status</th><th>Sec</th><th>Summary</th></tr>
-    <tr>
-      <td class="ts">2026-09-18 10:45Z</td>
-      <td>Compact three-zone Kanban task card + responsive column widths</td>
-      <td><span class="badge b-done">done</span></td>
-      <td class="frac">3/3</td>
-      <td class="sum">Redesigned KanbanCard to a compact 3-zone layout (type-icon+key / title / footer avatar·type-badge·date·priority-icon), removed rail/priority-pill/meta-row/progress-bar/story-points, overdue now a thin red top border. Widened KanbanColumn to responsive tiers 280/300/340px. Verified live on CARIS backlog board; build green.</td>
-    </tr>
-  </table>
-</div>
+  <div class="hist"><div class="h">2026-09-18 11:23 UTC &middot; Backlog Excel export — sanitize description HTML + add Parent Task Key column &middot; <span class="pill done">done</span> &middot; 3/3</div><div class="s">Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</div></div>
+  <div class="hist"><div class="h">2026-09-18 07:35 UTC &middot; MCP agent write consent — per-token opt-in gate on write tools &middot; <span class="pill done">done</span> &middot; 5/5</div><div class="s">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div></div>
+  <div class="hist"><div class="h">2026-09-18 07:20 UTC &middot; MCP agent write consent — per-token opt-in gate on write tools &middot; <span class="pill block">blocked</span> &middot; 2/5</div><div class="s">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div></div>
+  <div class="hist"><div class="h">2026-09-18 04:45 UTC &middot; Dashboard redesign — status strip, bug banner, layout restyle per mockup &middot; <span class="pill done">done</span> &middot; 7/7</div><div class="s">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div></div>
 </body>
 </html>
