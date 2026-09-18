@@ -25,6 +25,9 @@ const TESTCASES_WRITE = 'testcases:write';
 const EXEC_READ = 'testexec:read';
 const EXEC_WRITE = 'testexec:write';
 
+// Scopes that mutate data as the token owner — gated behind per-token write consent.
+const WRITE_SCOPES = new Set([TASKS_WRITE, TASKS_LOGTIME, TASKS_ATTACH, TESTCASES_WRITE, EXEC_WRITE]);
+
 const PRIORITY = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'BLOCKER']);
 const TESTCASE_STATUS = z.enum(['DRAFT', 'ACTIVE', 'DEPRECATED']);
 const RESULT_STATUS = z.enum(['NOT_RUN', 'IN_PROGRESS', 'PASS', 'FAIL', 'BLOCKED', 'SKIP']);
@@ -44,6 +47,10 @@ function requireScope(session: McpSession, scope: string): void {
   if (!session.scopes.includes(scope)) {
     // Surfaced to the agent as an MCP tool error; no data is returned.
     throw new Error(`Missing required scope: ${scope}`);
+  }
+  // Missing-scope check first so it takes precedence over the consent gate.
+  if (WRITE_SCOPES.has(scope) && !session.allowWrite) {
+    throw new Error('Agent writes not permitted: token has no write consent');
   }
 }
 

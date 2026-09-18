@@ -1186,6 +1186,7 @@ model McpToken {
   label      String
   tokenHash  String    @unique // sha256 hex of the PAT — verified, not replayed, so hashed not encrypted
   scopes     String[]  @default([]) // e.g. ["tasks:read","bugs:read"]
+  allowWrite Boolean   @default(false) // per-token write consent gate; write scopes inactive until true
   lastUsedAt DateTime? // stamped on each successful MCP call; null = never used
   expiresAt  DateTime? // null = no expiry
   revokedAt  DateTime? // null = active; set = revoked (soft delete)

@@ -1,8 +1,8 @@
 import { McpServerService } from './mcp-server.service';
 import type { McpSession } from './mcp-pat.guard';
 
-function session(scopes: string[]): McpSession {
-  return { userId: 'u1', projectId: 'p1', scopes, tokenId: 't1' };
+function session(scopes: string[], allowWrite = true): McpSession {
+  return { userId: 'u1', projectId: 'p1', scopes, allowWrite, tokenId: 't1' };
 }
 
 // projectId 'p1' = same project, 'p2' = other project. Keys resolve to whatever
@@ -244,5 +244,40 @@ describe('MCP test-execution tools', () => {
     await expect(
       tool(svc, session(['testexec:read']), 'attach_result_file').handler({ executionCaseId: 'ec1', filename: 'x.png', mimeType: 'image/png', dataBase64: small }),
     ).rejects.toThrow(/scope: testexec:write/);
+  });
+});
+
+describe('MCP write consent gate', () => {
+  it('write tool with allowWrite:false → hard error, no mutation', async () => {
+    const { svc, tasks } = makeServices();
+    let created = false;
+    tasks.create = async (...args: any[]) => {
+      created = true;
+      return { id: 'new', projectId: args[0], userId: args[1] };
+    };
+    await expect(
+      tool(svc, session(['tasks:write'], false), 'create_task').handler({ title: 'Hello', taskTypeId: 'tt1' }),
+    ).rejects.toThrow('Agent writes not permitted: token has no write consent');
+    expect(created).toBe(false);
+  });
+
+  it('write tool with allowWrite:true → succeeds', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['tasks:write'], true), 'create_task').handler({ title: 'Hello', taskTypeId: 'tt1' });
+    expect(JSON.parse(res.content[0].text).projectId).toBe('p1');
+  });
+
+  it('read tool with allowWrite:false → succeeds', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['tasks:read'], false), 'list_tasks').handler({});
+    expect(JSON.parse(res.content[0].text)).toEqual([{ id: 'task1', projectId: 'p1' }]);
+  });
+
+  it('missing scope error precedes consent error', async () => {
+    const { svc } = makeServices();
+    // has no tasks:write scope AND no consent → the scope error wins.
+    await expect(
+      tool(svc, session(['tasks:read'], false), 'create_task').handler({ title: 'Hello', taskTypeId: 'tt1' }),
+    ).rejects.toThrow(/scope: tasks:write/);
   });
 });

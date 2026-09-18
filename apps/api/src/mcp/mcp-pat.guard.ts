@@ -6,6 +6,7 @@ export interface McpSession {
   userId: string;
   projectId: string;
   scopes: string[];
+  allowWrite: boolean;
   tokenId: string;
 }
 
@@ -47,6 +48,7 @@ export class McpPatGuard implements CanActivate {
       userId: token.userId,
       projectId: token.projectId,
       scopes: token.scopes,
+      allowWrite: token.allowWrite,
       tokenId: token.id,
     };
     req.mcpSession = session;

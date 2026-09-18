@@ -23,6 +23,7 @@ export class McpTokenService {
         userId,
         label: dto.label,
         scopes: dto.scopes,
+        allowWrite: dto.allowWrite ?? false,
         tokenHash: hashToken(raw),
         expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
       },
@@ -54,6 +55,7 @@ export class McpTokenService {
     id: string;
     label: string;
     scopes: string[];
+    allowWrite: boolean;
     lastUsedAt: Date | null;
     expiresAt: Date | null;
     revokedAt: Date | null;
@@ -63,6 +65,7 @@ export class McpTokenService {
       id: t.id,
       label: t.label,
       scopes: t.scopes,
+      allowWrite: t.allowWrite,
       lastUsedAt: t.lastUsedAt,
       expiresAt: t.expiresAt,
       revokedAt: t.revokedAt,

@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsOptional, IsString, IsNotEmpty, ArrayNotEmpty, IsDateString } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsOptional, IsString, IsNotEmpty, ArrayNotEmpty, IsDateString } from 'class-validator';
 
 export const MCP_SCOPES = [
   'tasks:read',
@@ -21,6 +21,10 @@ export class CreateMcpTokenDto {
   @ArrayNotEmpty()
   @IsIn(MCP_SCOPES, { each: true })
   scopes!: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  allowWrite?: boolean;
 
   @IsOptional()
   @IsDateString()

@@ -41,6 +41,26 @@ describe('McpTokenService', () => {
     expect(stored.tokenHash).toBe(hashToken(result.token));
   });
 
+  it('createToken with allowWrite:true persists true and DTO reports it', async () => {
+    const prisma = makePrisma();
+    const svc = new McpTokenService(prisma as any);
+
+    const result = await svc.createToken('p1', 'u1', { label: 'agent', scopes: ['tasks:write'], allowWrite: true });
+
+    expect(prisma.rows[0].allowWrite).toBe(true);
+    expect(result.allowWrite).toBe(true);
+  });
+
+  it('createToken with allowWrite omitted defaults to false', async () => {
+    const prisma = makePrisma();
+    const svc = new McpTokenService(prisma as any);
+
+    const result = await svc.createToken('p1', 'u1', { label: 'agent', scopes: ['tasks:read'] });
+
+    expect(prisma.rows[0].allowWrite).toBe(false);
+    expect(result.allowWrite).toBe(false);
+  });
+
   it('list never exposes the tokenHash', async () => {
     const prisma = makePrisma();
     const svc = new McpTokenService(prisma as any);

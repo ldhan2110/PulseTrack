@@ -1,0 +1,26 @@
+changes:
+  enhance-project-card:
+    title: Project card redesign — logo, member avatars, pinned footer
+    tasks_md: changes/enhance-project-card/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: doing
+    owner: "worker-1"
+    notes: ""
+  redesign-dashboard:
+    title: Dashboard redesign — status strip, bug banner, layout restyle per mockup
+    tasks_md: archive/redesign-dashboard/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: done
+    owner: "worker-2"
+    archived: archive/redesign-dashboard
+    notes: ""
+  add-agent-write-consent:
+    title: MCP agent write consent — per-token opt-in gate on write tools
+    tasks_md: changes/add-agent-write-consent/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "section 3 verify red on 3 pre-existing mcp-tools.spec failures unrelated to this change — see report/blockers.md"
