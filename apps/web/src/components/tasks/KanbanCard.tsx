@@ -114,13 +114,13 @@ export function KanbanCard({ task, projectId: _projectId, projectPrefix }: Kanba
     >
       <Card
         className={cn(
-          'relative transition-all duration-150 overflow-hidden',
+          'relative py-2 overflow-visible transition-all duration-150',
           'hover:shadow-md hover:border-border',
           isDragging && '-translate-y-1 scale-105 shadow-lg',
           overdue && 'border-t-2 border-t-red-500',
         )}
       >
-        <CardContent className="p-3 flex flex-col gap-2">
+        <CardContent className="px-3 py-2 flex flex-col gap-1.5">
           {/* Zone 1: type icon + key */}
           <div className="flex items-center gap-1.5 min-w-0">
             <span
@@ -136,7 +136,7 @@ export function KanbanCard({ task, projectId: _projectId, projectPrefix }: Kanba
           </div>
 
           {/* Zone 2: title */}
-          <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+          <p className="text-sm font-medium leading-snug line-clamp-2 break-words min-w-0 group-hover:text-primary transition-colors">
             {task.title}
           </p>
 
