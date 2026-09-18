@@ -27,9 +27,10 @@ changes:
     notes: "verifies narrowed to this change's tests; 4 pre-existing unrelated test failures (3 mcp-tools.spec, 1 McpAccessCard revoked-badge) ruled out of scope"
   add-sprint-edit:
     title: Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default
-    tasks_md: changes/add-sprint-edit/tasks.md
+    tasks_md: archive/add-sprint-edit/tasks.md
     depends_on: []
     skills: [frontend-design]
     status: done
     owner: "worker-cc"
+    archived: archive/add-sprint-edit
     notes: "verified live (anle@CARIS): all 4 reqs pass; no HTML mockup so style-diff rung skipped, reused shadcn Button/Dialog"
