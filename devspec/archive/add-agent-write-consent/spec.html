@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spec review — add-agent-write-consent</title>
+<style>
+  :root{--fg:#1a1a1a;--mut:#6b7280;--bd:#e5e7eb;--bg:#f8f9fb;--card:#fff;
+    --pri:#111827;--ok:#047857;--okbg:#ecfdf5;--warn:#b45309;--warnbg:#fffbeb;--r:10px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 24px 80px}
+  header h1{margin:0 0 4px;font-size:24px}
+  .sub{color:var(--mut);font-size:14px}
+  nav{position:sticky;top:0;background:var(--bg);padding:12px 0;border-bottom:1px solid var(--bd);
+    margin-bottom:24px;font-size:13px;z-index:5}
+  nav a{color:var(--mut);text-decoration:none;margin-right:14px}
+  nav a:hover{color:var(--fg)}
+  section{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);
+    padding:20px 24px;margin-bottom:18px}
+  h2{margin:0 0 14px;font-size:18px;border-bottom:1px solid var(--bd);padding-bottom:8px}
+  h3{font-size:15px;margin:16px 0 6px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{border:1px solid var(--bd);padding:6px 10px;text-align:left;vertical-align:top}
+  th{background:#f3f4f6}
+  code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:13px}
+  pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow:auto;font-size:12.5px;line-height:1.5}
+  .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--bd);margin-right:6px}
+  .pill.status{background:#eef2ff;border-color:#c7d2fe;color:#4338ca}
+  .banner{border-radius:8px;padding:10px 14px;font-size:14px;margin:6px 0}
+  .banner.ok{background:var(--okbg);color:var(--ok);border:1px solid #a7f3d0}
+  .banner.warn{background:var(--warnbg);color:var(--warn);border:1px solid #fde68a}
+  ul{margin:6px 0;padding-left:22px}
+  li{margin:3px 0}
+  .task{list-style:none;padding-left:0}
+  .task li{margin:5px 0}
+  .layer{display:inline-block;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.03em}
+  .l-db{background:#fef3c7;color:#92400e}.l-backend{background:#dbeafe;color:#1e40af}
+  .l-service{background:#e0e7ff;color:#3730a3}.l-frontend{background:#dcfce7;color:#166534}
+  .l-test{background:#f3e8ff;color:#6b21a8}
+  .verify{color:var(--mut);font-size:13px;margin:4px 0 12px;font-style:italic}
+  .req{color:var(--mut);font-size:12px;font-weight:600}
+  iframe{width:100%;height:560px;border:1px solid var(--bd);border-radius:8px;background:#fff}
+  .scn{border-left:3px solid var(--bd);padding-left:12px;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>add-agent-write-consent</h1>
+    <div class="sub">MCP agent write consent — per-token opt-in gate</div>
+  </header>
+
+  <nav>
+    <a href="#ctx">Context</a><a href="#prop">Proposal</a><a href="#arch">Architecture</a>
+    <a href="#impact">Impact</a><a href="#be">Backend</a><a href="#fe">Frontend</a>
+    <a href="#tasks">Tasks</a><a href="#cov">Coverage</a>
+  </nav>
+
+  <section id="ctx">
+    <h2>Context</h2>
+    <p><span class="pill">add-agent-write-consent</span>
+       <span class="pill status">status: pending (not yet on board)</span>
+       <span class="pill">depends_on: []</span>
+       <span class="pill">skills: frontend-design</span></p>
+    <p class="sub">Agent MCP write tools stay blocked unless the token owner explicitly consents at create time.</p>
+  </section>
+
+  <section id="prop">
+    <h2>Proposal</h2>
+    <p>External AI agents connect over MCP with a PAT that already carries write scopes. Ticking a write scope is the only gate today — no explicit human-readable consent to act on the owner's behalf. This adds an explicit per-token opt-in checkbox and enforces it: write tools rejected (hard error) unless <code>allowWrite = true</code>.</p>
+    <h3>Delivers</h3>
+    <ul>
+      <li>Per-token <code>McpToken.allowWrite</code> (default <code>false</code>).</li>
+      <li>Checkbox in Create MCP token modal: "Allow this agent to write data as me".</li>
+      <li>Write-scoped MCP tools rejected with hard error unless consent on. Read tools unaffected.</li>
+    </ul>
+    <h3>Out of scope</h3>
+    <ul>
+      <li>Impersonating other members (actor is always the token owner = self).</li>
+      <li>Per-member / project-wide switch (rejected — see design).</li>
+      <li>Editing consent after creation (revoke + recreate).</li>
+    </ul>
+    <div class="banner warn"><b>Behavior change:</b> existing tokens migrate to <code>allowWrite=false</code> (fail-closed). Write-scoped agents stop writing until re-minted with consent. Accepted by owner.</div>
+  </section>
+
+  <section id="arch">
+    <h2>Architecture</h2>
+    <p class="sub">ASCII fallback (archify not invoked).</p>
+    <pre>Create modal (McpAccessCard)
+  └─ POST /api/projects/:projectId/mcp-tokens { label, scopes, allowWrite, expiresAt }
+        └─ McpTokenController.create → McpTokenService.createToken
+              └─ McpToken row { userId=self, scopes, allowWrite }
+
+Agent request
+  Bearer PAT → /api/mcp
+    └─ McpPatGuard → McpSession { userId, projectId, scopes, allowWrite }
+          └─ tool handler → requireScope(session, 'tasks:write')
+                ├─ scope not in token.scopes       → "Missing required scope"
+                ├─ write scope AND !allowWrite      → "Agent writes not permitted…" (HARD ERROR)
+                └─ else → TasksService.create(projectId, session.userId, dto)  [actor = self]</pre>
+  </section>
+
+  <section id="impact">
+    <h2>Impact Area</h2>
+    <h3>Decision Defaults</h3>
+    <table>
+      <tr><th>Gray area</th><th>Default</th></tr>
+      <tr><td>Write scope ticked but consent off at create</td><td>Allow creation; agent writes fail at call time. Modal shows advisory warning; Create not blocked.</td></tr>
+      <tr><td>Consent-off agent calls write tool</td><td>Hard error <code>"Agent writes not permitted: token has no write consent"</code>, no data. Tool still listed.</td></tr>
+      <tr><td>Existing tokens after migration</td><td><code>allowWrite=false</code> (fail-closed).</td></tr>
+      <tr><td>Edit consent on existing token</td><td>Not supported — revoke + recreate.</td></tr>
+      <tr><td><code>allowWrite</code> omitted from payload</td><td>Defaults to <code>false</code>.</td></tr>
+    </table>
+    <h3>Blast Radius</h3>
+    <ul>
+      <li><code>apps/api/prisma/schema.prisma:1182</code> — McpToken + new migration</li>
+      <li><code>mcp/dto/create-mcp-token.dto.ts:15</code> — optional <code>allowWrite</code></li>
+      <li><code>mcp/mcp-token.service.ts:18,53</code> — persist + expose</li>
+      <li><code>mcp/mcp-pat.guard.ts:5,46</code> — session carries <code>allowWrite</code></li>
+      <li><code>mcp/mcp-server.service.ts:43</code> — <code>requireScope</code> gate</li>
+      <li><code>web/src/lib/types.ts</code>, <code>lib/api.ts</code>, <code>hooks/useMcpTokens.ts</code>, <code>components/settings/McpAccessCard.tsx:242</code></li>
+    </ul>
+    <h3>Risk</h3>
+    <p><span class="pill">security / privilege — fail-closed, self-only actor</span>
+       <span class="pill">reversibility: high (additive + single gate)</span>
+       <span class="pill">behavior change: existing tokens re-consent</span></p>
+  </section>
+
+  <section id="be">
+    <h2>Backend</h2>
+    <p><b>DB:</b> add <code>allowWrite Boolean @default(false)</code> to <code>McpToken</code>; forward Prisma migration, additive, no backfill.</p>
+    <p><b>DTO:</b> <code>CreateMcpTokenDto</code> gains <code>allowWrite?: boolean</code> (@IsOptional @IsBoolean) — required or global <code>forbidNonWhitelisted</code> 400s it.</p>
+    <p><b>Gate:</b> single choke point <code>requireScope</code>:</p>
+    <pre>WRITE_SCOPES = { tasks:write, tasks:logtime, tasks:attach, testcases:write, testexec:write }
+requireScope(session, scope):
+  if scope ∉ session.scopes: throw "Missing required scope: " + scope
+  if scope ∈ WRITE_SCOPES and not session.allowWrite:
+      throw "Agent writes not permitted: token has no write consent"</pre>
+    <p class="sub">Read scopes never in WRITE_SCOPES → read tools untouched. Missing-scope error precedes consent error.</p>
+  </section>
+
+  <section id="fe">
+    <h2>Frontend</h2>
+    <p>Consent block below the Scopes grid in the Create MCP token modal. Reuses <code>&lt;Checkbox&gt;</code>, <code>&lt;Label&gt;</code>, and the existing destructive banner style. Advisory warning when a write scope is ticked but consent off; does not disable Create.</p>
+    <iframe src="mockups/create-token-modal.html" title="create-token modal mockup"></iframe>
+    <p><a href="mockups/create-token-modal.html" target="_blank">Open mockup standalone →</a></p>
+  </section>
+
+  <section id="tasks">
+    <h2>Tasks</h2>
+
+    <h3>1. Consent column <span class="req">[req-1]</span></h3>
+    <ul class="task">
+      <li>☐ 1.1 <span class="layer l-db">db</span> Add <code>allowWrite Boolean @default(false)</code> to McpToken (<code>schema.prisma:1182</code>)</li>
+      <li>☐ 1.2 <span class="layer l-db">db</span> <code>pnpm migrate</code> → new migration dir (additive, no backfill)</li>
+    </ul>
+    <div class="verify">Verify: prisma migrate diff --exit-code (schema ⋈ migrations clean)</div>
+
+    <h3>2. Persist + expose consent <span class="req">[req-1]</span></h3>
+    <ul class="task">
+      <li>☐ 2.1 <span class="layer l-backend">backend</span> <code>allowWrite?: boolean</code> on CreateMcpTokenDto (<code>:15</code>)</li>
+      <li>☐ 2.2 <span class="layer l-service">service</span> createToken persists <code>allowWrite ?? false</code> (<code>:18</code>)</li>
+      <li>☐ 2.3 <span class="layer l-service">service</span> toDto exposes <code>allowWrite</code> (<code>:53</code>)</li>
+      <li>☐ 2.4 <span class="layer l-test">test</span> mcp-token.spec: true persists, omitted → false</li>
+    </ul>
+    <div class="verify">Verify: pnpm --filter @pm/api test mcp-token</div>
+
+    <h3>3. Gate write scopes <span class="req">[req-2, req-3]</span></h3>
+    <ul class="task">
+      <li>☐ 3.1 <span class="layer l-backend">backend</span> <code>allowWrite</code> on McpSession + session build (<code>mcp-pat.guard.ts:5,46</code>)</li>
+      <li>☐ 3.2 <span class="layer l-backend">backend</span> <code>WRITE_SCOPES</code> set in mcp-server.service.ts</li>
+      <li>☐ 3.3 <span class="layer l-backend">backend</span> requireScope throws consent error for write scopes when off (<code>:43</code>)</li>
+      <li>☐ 3.4 <span class="layer l-test">test</span> mcp-tools.spec: off→error/no mutation; on→ok; read→ok; missing-scope precedes</li>
+    </ul>
+    <div class="verify">Verify: pnpm --filter @pm/api test mcp-tools</div>
+
+    <h3>4. Frontend consent checkbox <span class="req">[req-4]</span></h3>
+    <ul class="task">
+      <li>☐ 4.1 <span class="layer l-frontend">frontend</span> <code>allowWrite</code> on McpToken type + create payload (<code>lib/types.ts</code>)</li>
+      <li>☐ 4.2 <span class="layer l-frontend">frontend</span> thread through api.ts + useMcpTokens mutation</li>
+      <li>☐ 4.3 <span class="layer l-frontend">frontend</span> allowWrite state, resetForm, handleCreate (<code>McpAccessCard.tsx:69,85</code>)</li>
+      <li>☐ 4.4 <span class="layer l-frontend">frontend</span> consent block below Scopes — reuse Checkbox + Label (<code>:255</code>)</li>
+      <li>☐ 4.5 <span class="layer l-frontend">frontend</span> advisory warning (reuse destructive banner <code>:267</code>), Create stays enabled</li>
+      <li>☐ 4.6 <span class="layer l-test">test</span> McpAccessCard.test: consent→allowWrite:true; write scope+no consent→warning</li>
+    </ul>
+    <div class="verify">Verify: pnpm --filter @pm/web test McpAccessCard</div>
+
+    <h3>5. Full build <span class="req">[req-1..req-4]</span></h3>
+    <ul class="task"><li>☐ 5.1 <span class="layer l-test">test</span> both apps build + test clean</li></ul>
+    <div class="verify">Verify: pnpm build &amp;&amp; pnpm test</div>
+  </section>
+
+  <section id="cov">
+    <h2>Coverage</h2>
+    <div class="banner ok">✓ Every requirement is covered. req-1 → §1,§2 · req-2 → §3 · req-3 → §3 · req-4 → §4. No orphan tasks.</div>
+  </section>
+</div>
+</body>
+</html>

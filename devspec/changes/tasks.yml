@@ -18,9 +18,10 @@ changes:
     notes: ""
   add-agent-write-consent:
     title: MCP agent write consent — per-token opt-in gate on write tools
-    tasks_md: changes/add-agent-write-consent/tasks.md
+    tasks_md: archive/add-agent-write-consent/tasks.md
     depends_on: []
     skills: [frontend-design]
     status: done
     owner: "worker-cc"
+    archived: archive/add-agent-write-consent
     notes: "verifies narrowed to this change's tests; 4 pre-existing unrelated test failures (3 mcp-tools.spec, 1 McpAccessCard revoked-badge) ruled out of scope"

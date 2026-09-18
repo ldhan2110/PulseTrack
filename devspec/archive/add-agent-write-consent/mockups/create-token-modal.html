@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — Create MCP token (agent write consent)</title>
+<style>
+  /* tokens copied from apps/web/src/index.css (:root light) */
+  :root{
+    --background:oklch(1 0 0);--foreground:oklch(0.145 0 0);
+    --card:oklch(1 0 0);--card-foreground:oklch(0.145 0 0);
+    --primary:oklch(0.205 0 0);--primary-foreground:oklch(0.985 0 0);
+    --muted:oklch(0.97 0 0);--muted-foreground:oklch(0.556 0 0);
+    --destructive:oklch(0.577 0.245 27.325);
+    --border:oklch(0.922 0 0);--input:oklch(0.922 0 0);--ring:oklch(0.708 0 0);
+    --radius:0.625rem;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--muted);color:var(--foreground);
+    font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:32px}
+  h1{font-size:15px;color:var(--muted-foreground);font-weight:500;margin:0 0 8px}
+  .state-label{font-size:12px;font-weight:600;color:var(--muted-foreground);
+    text-transform:uppercase;letter-spacing:.04em;margin:28px 0 10px}
+  /* dialog shell (shadcn Dialog look) */
+  .dialog{max-width:480px;background:var(--card);color:var(--card-foreground);
+    border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:0 10px 30px -12px rgb(0 0 0 / .25);padding:24px}
+  .dtitle{font-size:18px;font-weight:600;margin:0 0 20px}
+  .field{margin-bottom:18px}
+  .field > label.lbl{display:block;font-weight:500;margin-bottom:8px}
+  .input{width:100%;height:36px;padding:0 12px;border:1px solid var(--input);
+    border-radius:calc(var(--radius) - 2px);background:transparent;font:inherit;color:inherit}
+  .input.date{width:13rem}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:14px}
+  .box{width:16px;height:16px;border:1px solid var(--ring);border-radius:4px;flex:0 0 auto;
+    display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--primary-foreground)}
+  .box.on{background:var(--primary);border-color:var(--primary)}
+  .box.on::after{content:"✓"}
+  .muted{color:var(--muted-foreground);font-size:12.5px}
+  /* the new consent block */
+  .consent{border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);
+    padding:12px 14px;background:var(--muted)}
+  .consent .chk{align-items:flex-start;font-weight:500}
+  .consent .hint{margin:6px 0 0 24px}
+  .sep{height:1px;background:var(--border);margin:18px 0}
+  .warn{border:1px solid color-mix(in oklab,var(--destructive) 50%,transparent);
+    background:color-mix(in oklab,var(--destructive) 10%,transparent);
+    color:var(--destructive);border-radius:calc(var(--radius) - 2px);padding:8px 12px;font-size:13px;margin-top:12px}
+  .footer{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
+  .btn{height:34px;padding:0 14px;border-radius:calc(var(--radius) - 2px);font:inherit;font-weight:500;cursor:pointer;border:1px solid transparent}
+  .btn.outline{background:transparent;border-color:var(--border);color:var(--foreground)}
+  .btn.primary{background:var(--primary);color:var(--primary-foreground)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .spinner{width:14px;height:14px;border:2px solid var(--primary-foreground);border-right-color:transparent;
+    border-radius:50%;display:inline-block;vertical-align:-2px;margin-right:6px}
+</style>
+</head>
+<body>
+  <h1>Mockup — Create MCP token · new "agent write consent" gate (McpAccessCard modal)</h1>
+
+  <!-- STATE 1: default / consent OFF -->
+  <div class="state-label">Default — consent OFF (write scopes ticked but blocked)</div>
+  <div class="dialog">
+    <p class="dtitle">Create MCP token</p>
+    <div class="field">
+      <label class="lbl" for="l1">Label</label>
+      <input class="input" id="l1" placeholder="Cursor — laptop" value="Claude Desktop — laptop" />
+    </div>
+    <div class="field">
+      <label class="lbl">Scopes</label>
+      <div class="grid2">
+        <span class="chk"><span class="box on"></span>tasks:read</span>
+        <span class="chk"><span class="box on"></span>bugs:read</span>
+        <span class="chk"><span class="box on"></span>tasks:write</span>
+        <span class="chk"><span class="box"></span>tasks:logtime</span>
+        <span class="chk"><span class="box"></span>tasks:attach</span>
+        <span class="chk"><span class="box"></span>testcases:read</span>
+        <span class="chk"><span class="box"></span>testcases:write</span>
+        <span class="chk"><span class="box"></span>testexec:read</span>
+      </div>
+    </div>
+
+    <!-- NEW consent block, sits below Scopes -->
+    <div class="field">
+      <div class="consent">
+        <label class="chk"><span class="box"></span>Allow this agent to write data as me</label>
+        <p class="hint muted">The agent can create, update, and log work on your behalf. Write scopes stay inactive until this is on.</p>
+      </div>
+      <div class="warn">tasks:write is selected but consent is off — write tools will be rejected until you allow it.</div>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="e1">Expires (optional)</label>
+      <input class="input date" id="e1" type="date" />
+    </div>
+    <div class="footer">
+      <button class="btn outline">Cancel</button>
+      <button class="btn primary">Create</button>
+    </div>
+  </div>
+
+  <!-- STATE 2: consent ON -->
+  <div class="state-label">Consent ON (write scopes active, no warning)</div>
+  <div class="dialog">
+    <p class="dtitle">Create MCP token</p>
+    <div class="field">
+      <label class="lbl">Label</label>
+      <input class="input" value="Claude Desktop — laptop" />
+    </div>
+    <div class="field">
+      <label class="lbl">Scopes</label>
+      <div class="grid2">
+        <span class="chk"><span class="box on"></span>tasks:read</span>
+        <span class="chk"><span class="box on"></span>bugs:read</span>
+        <span class="chk"><span class="box on"></span>tasks:write</span>
+        <span class="chk"><span class="box on"></span>tasks:logtime</span>
+        <span class="chk"><span class="box"></span>tasks:attach</span>
+        <span class="chk"><span class="box"></span>testcases:read</span>
+        <span class="chk"><span class="box"></span>testcases:write</span>
+        <span class="chk"><span class="box"></span>testexec:read</span>
+      </div>
+    </div>
+    <div class="field">
+      <div class="consent">
+        <label class="chk"><span class="box on"></span>Allow this agent to write data as me</label>
+        <p class="hint muted">The agent can create, update, and log work on your behalf. Write scopes stay inactive until this is on.</p>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl">Expires (optional)</label>
+      <input class="input date" type="date" />
+    </div>
+    <div class="footer">
+      <button class="btn outline">Cancel</button>
+      <button class="btn primary">Create</button>
+    </div>
+  </div>
+
+  <!-- STATE 3: submitting -->
+  <div class="state-label">Submitting</div>
+  <div class="dialog">
+    <p class="dtitle">Create MCP token</p>
+    <div class="field"><label class="lbl">Label</label><input class="input" value="Claude Desktop — laptop" disabled /></div>
+    <div class="field">
+      <div class="consent"><label class="chk"><span class="box on"></span>Allow this agent to write data as me</label></div>
+    </div>
+    <div class="footer">
+      <button class="btn outline" disabled>Cancel</button>
+      <button class="btn primary" disabled><span class="spinner"></span>Create</button>
+    </div>
+  </div>
+
+  <!-- STATE 4: error -->
+  <div class="state-label">Error (create failed)</div>
+  <div class="dialog">
+    <p class="dtitle">Create MCP token</p>
+    <div class="field"><label class="lbl">Label</label><input class="input" value="Claude Desktop — laptop" /></div>
+    <div class="field">
+      <div class="consent"><label class="chk"><span class="box on"></span>Allow this agent to write data as me</label></div>
+    </div>
+    <div class="warn">Failed to create token.</div>
+    <div class="footer">
+      <button class="btn outline">Cancel</button>
+      <button class="btn primary">Create</button>
+    </div>
+  </div>
+
+</body>
+</html>
