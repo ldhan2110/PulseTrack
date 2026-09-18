@@ -688,10 +688,10 @@ export class TasksService {
     // Flatten: parent tasks + their children
     const rows: any[] = [];
     for (const task of tasks) {
-      rows.push(task);
+      rows.push({ ...task, parentKey: '' });
       if (task.children) {
         for (const child of task.children) {
-          rows.push(child);
+          rows.push({ ...child, parentKey: task.taskKey ?? '' });
         }
       }
     }
@@ -703,6 +703,7 @@ export class TasksService {
 
     sheet.columns = [
       { header: 'Task Key', key: 'taskKey', width: 14 },
+      { header: 'Parent Task Key', key: 'parentKey', width: 16 },
       { header: 'Title', key: 'title', width: 40 },
       { header: 'Description', key: 'description', width: 50 },
       { header: 'Status', key: 'status', width: 18 },
@@ -741,8 +742,9 @@ export class TasksService {
       const totalMinutes = (t.timeLogs ?? []).reduce((sum: number, tl: any) => sum + tl.minutes, 0);
       const row = sheet.addRow({
         taskKey: t.taskKey ?? '',
+        parentKey: t.parentKey ?? '',
         title: t.title,
-        description: t.description ?? '',
+        description: this.sanitizeDescription(t.description ?? ''),
         status: t.workflowStatus?.name ?? '',
         priority: t.priority ?? '',
         assignee: t.assignee?.name ?? t.assignee?.username ?? '',
@@ -769,6 +771,19 @@ export class TasksService {
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
+  }
+
+  private sanitizeDescription(html: string): string {
+    return html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, '&') // ponytail: &amp; last so &amp;lt; doesn't double-decode
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private async triggerWatcherNotifications(opts: {

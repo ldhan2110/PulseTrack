@@ -1,4 +1,12 @@
 changes:
+  export-excel-sanitize-parent:
+    title: Backlog Excel export — sanitize description HTML + add Parent Task Key column
+    tasks_md: changes/export-excel-sanitize-parent/tasks.md
+    depends_on: []
+    skills: []
+    status: done
+    owner: "worker-cc"
+    notes: "vitest export-excel.spec.ts passes (3 scenarios); pnpm build clean"
   enhance-project-card:
     title: Project card redesign — logo, member avatars, pinned footer
     tasks_md: changes/enhance-project-card/tasks.md
