@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevSpec Board Report</title>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
+    --text:#e6e9ef; --muted:#9aa3b2; --accent:#6ea8fe;
+    --done:#3fb950; --prog:#d29922; --block:#f85149;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:32px 24px 64px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .gen { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  .counts { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
+  .pill { padding:6px 12px; border-radius:999px; background:var(--panel2);
+    border:1px solid var(--border); font-size:13px; font-weight:600; }
+  .pill b { font-weight:800; }
+  .pill.done b { color:var(--done); } .pill.prog b { color:var(--prog); }
+  .pill.block b { color:var(--block); } .pill.total b { color:var(--accent); }
+  h2 { font-size:15px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); border-bottom:1px solid var(--border);
+    padding-bottom:8px; margin:32px 0 14px; }
+  .card { background:var(--panel); border:1px solid var(--border);
+    border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+  .card .row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+  .title { font-weight:650; }
+  .frac { font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; white-space:nowrap; }
+  .badge { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 8px; border-radius:6px; }
+  .b-done { background:rgba(63,185,80,.15); color:var(--done); }
+  .b-prog { background:rgba(210,153,34,.15); color:var(--prog); }
+  .b-block { background:rgba(248,81,73,.15); color:var(--block); }
+  .b-pending { background:rgba(154,163,178,.15); color:var(--muted); }
+  .reason { color:var(--block); font-size:13px; margin-top:8px; }
+  .empty { color:var(--muted); font-style:italic; }
+  .blocker { background:var(--panel); border:1px solid var(--block);
+    border-left:3px solid var(--block); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+  .blocker .bhead { font-weight:700; font-size:13px; margin-bottom:6px; }
+  .blocker .line { font-size:13px; color:var(--muted); margin:2px 0; }
+  .blocker .line b { color:var(--text); }
+  .hist { background:var(--panel); border:1px solid var(--border);
+    border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+  .hist .hrow { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
+  .hist .ts { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+  .hist .sum { font-size:13.5px; margin-top:6px; color:#cfd5e0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DevSpec Board Report</h1>
+  <div class="gen">Generated 2026-09-18 · project PulseTrack</div>
+
+  <div class="counts">
+    <span class="pill done"><b>1</b> done</span>
+    <span class="pill prog"><b>1</b> in-progress</span>
+    <span class="pill block"><b>1</b> blocked</span>
+    <span class="pill total"><b>3</b> total</span>
+  </div>
+
+  <h2>Open Blockers</h2>
+  <div class="blocker">
+    <div class="bhead">add-agent-write-consent · section 3 (Gate write scopes) · 2026-09-18</div>
+    <div class="line"><b>what:</b> Section 3 verify <code>pnpm --filter @pm/api test mcp-tools</code> is red on 3 failures. Consent code + 4 new consent tests are green in a scoped run (4 passed, 17 skipped); the file-level verify fails.</div>
+    <div class="line"><b>tried:</b> Stashed all edits and ran on clean HEAD → same 3 failures (14 passed | 3 failed). With the change: 18 passed | 3 failed. The 3 failures are pre-existing and unrelated (<code>attach_task_file</code> surface list, <code>create_test_execution</code> mock <code>testCase</code> shape).</div>
+    <div class="line"><b>needs:</b> Human to either fix the 3 pre-existing mcp-tools.spec expectations/mocks (out of this change's scope), or narrow section 3's verify to the consent tests; then reset board status blocked → pending and re-run.</div>
+    <div class="line"><b>status:</b> open</div>
+  </div>
+
+  <h2>Implemented</h2>
+  <div class="card">
+    <div class="row">
+      <span class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</span>
+      <span class="frac"><span class="badge b-done">done</span> &nbsp;7/7</span>
+    </div>
+  </div>
+
+  <h2>In progress / Left</h2>
+  <div class="card">
+    <div class="row">
+      <span class="title">Project card redesign — logo, member avatars, pinned footer</span>
+      <span class="frac"><span class="badge b-prog">doing</span> &nbsp;—</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row">
+      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
+      <span class="frac"><span class="badge b-block">blocked</span> &nbsp;3/5</span>
+    </div>
+    <div class="reason">section 3 verify red on 3 pre-existing mcp-tools.spec failures unrelated to this change — see report/blockers.md</div>
+  </div>
+
+  <h2>History</h2>
+  <div class="hist">
+    <div class="hrow">
+      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
+      <span class="ts">2026-09-18 07:20 · <span class="badge b-block">blocked</span> · 2/5</span>
+    </div>
+    <div class="sum">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div>
+  </div>
+  <div class="hist">
+    <div class="hrow">
+      <span class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</span>
+      <span class="ts">2026-09-18 04:45 · <span class="badge b-done">done</span> · 7/7</span>
+    </div>
+    <div class="sum">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div>
+  </div>
+</div>
+</body>
+</html>
