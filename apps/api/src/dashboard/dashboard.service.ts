@@ -11,7 +11,7 @@ export interface BurndownPoint {
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async getProjectDashboard(projectId: string, timeFilter?: 'sprint' | '7d' | '30d') {
+  async getProjectDashboard(projectId: string, userId: string, timeFilter?: 'sprint' | '7d' | '30d') {
     const [workflowStatuses, tasksByStatus, activeSprint, bugCounts] =
       await Promise.all([
         this.prisma.workflowStatus.findMany({
@@ -170,6 +170,9 @@ export class DashboardService {
 
     const memberPerformance = await this.getMemberPerformance(projectId, timeFilter);
 
+    const myWork = await this.getMyWork(projectId, userId, workflowStatuses);
+    const activity = await this.getActivity(projectId);
+
     return {
       taskCounts,
       activeSprint: activeSprintData,
@@ -177,7 +180,104 @@ export class DashboardService {
       bugCounts: bugCountData,
       memberPerformance: memberPerformance.members,
       teamAvgHoursPerTask: memberPerformance.teamAvgHoursPerTask,
+      myWork,
+      activity,
     };
+  }
+
+  private async getMyWork(
+    projectId: string,
+    userId: string,
+    taskStatuses: { id: string; isClosed: boolean }[],
+  ) {
+    const openTaskStatusIds = taskStatuses.filter((s) => !s.isClosed).map((s) => s.id);
+    const now = new Date();
+    const soon = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+    const bugStatuses = await this.prisma.workflowStatus.findMany({
+      where: { projectId, kind: 'BUG' },
+      select: { id: true, isClosed: true },
+    });
+    const openBugStatusIds = bugStatuses.filter((s) => !s.isClosed).map((s) => s.id);
+
+    const [openTasks, dueSoon, overdue, myBugs] = await Promise.all([
+      this.prisma.task.count({
+        where: { projectId, assigneeId: userId, workflowStatusId: { in: openTaskStatusIds } },
+      }),
+      this.prisma.task.count({
+        where: {
+          projectId,
+          assigneeId: userId,
+          workflowStatusId: { in: openTaskStatusIds },
+          plannedEndDate: { gte: now, lte: soon },
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          projectId,
+          assigneeId: userId,
+          workflowStatusId: { in: openTaskStatusIds },
+          plannedEndDate: { lt: now },
+        },
+      }),
+      this.prisma.bug.count({
+        where: { projectId, assigneeId: userId, workflowStatusId: { in: openBugStatusIds } },
+      }),
+    ]);
+
+    return { openTasks, dueSoon, overdue, myBugs };
+  }
+
+  private async getActivity(projectId: string) {
+    const [tasks, bugs, comments] = await Promise.all([
+      this.prisma.task.findMany({
+        where: { projectId },
+        orderBy: { updatedAt: 'desc' },
+        take: 15,
+        select: { taskKey: true, updatedAt: true, assignee: { select: { name: true } } },
+      }),
+      this.prisma.bug.findMany({
+        where: { projectId },
+        orderBy: { updatedAt: 'desc' },
+        take: 15,
+        select: { bugKey: true, updatedAt: true, assignee: { select: { name: true } } },
+      }),
+      this.prisma.comment.findMany({
+        where: { OR: [{ task: { projectId } }, { bug: { projectId } }] },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        select: {
+          createdAt: true,
+          author: { select: { name: true } },
+          task: { select: { taskKey: true } },
+          bug: { select: { bugKey: true } },
+        },
+      }),
+    ]);
+
+    const items = [
+      ...tasks.map((t) => ({
+        actor: t.assignee?.name ?? 'Someone',
+        verb: 'updated',
+        targetKey: t.taskKey ?? 'a task',
+        at: t.updatedAt.toISOString(),
+      })),
+      ...bugs.map((b) => ({
+        actor: b.assignee?.name ?? 'Someone',
+        verb: 'updated',
+        targetKey: b.bugKey ?? 'a bug',
+        at: b.updatedAt.toISOString(),
+      })),
+      ...comments.map((c) => ({
+        actor: c.author.name ?? 'Someone',
+        verb: 'commented on',
+        targetKey: c.task?.taskKey ?? c.bug?.bugKey ?? 'an item',
+        at: c.createdAt.toISOString(),
+      })),
+    ];
+
+    items.sort((a, b) => (a.at < b.at ? 1 : -1));
+    return items.slice(0, 15);
   }
 
   async getMemberPerformance(projectId: string, timeFilter?: 'sprint' | '7d' | '30d') {

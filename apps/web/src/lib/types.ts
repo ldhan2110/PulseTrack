@@ -493,6 +493,20 @@ export interface MemberPerformanceRow {
   qualityRatio: number;
 }
 
+export interface MyWork {
+  openTasks: number;
+  dueSoon: number;
+  overdue: number;
+  myBugs: number;
+}
+
+export interface ActivityItem {
+  actor: string;
+  verb: string;
+  targetKey: string;
+  at: string;
+}
+
 export interface DashboardData {
   taskCounts: TaskCounts;
   activeSprint: ActiveSprintData | null;
@@ -500,6 +514,8 @@ export interface DashboardData {
   bugCounts: BugCounts;
   memberPerformance: MemberPerformanceRow[];
   teamAvgHoursPerTask: number;
+  myWork: MyWork;
+  activity: ActivityItem[];
 }
 
 // ─── Comment ─────────────────────────────────────────────────────────────────
