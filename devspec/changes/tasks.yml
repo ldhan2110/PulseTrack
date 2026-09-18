@@ -34,3 +34,12 @@ changes:
     owner: "worker-cc"
     archived: archive/add-sprint-edit
     notes: "verified live (anle@CARIS): all 4 reqs pass; no HTML mockup so style-diff rung skipped, reused shadcn Button/Dialog"
+  compact-kanban-card:
+    title: Compact three-zone Kanban task card + responsive column widths
+    tasks_md: archive/compact-kanban-card/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: done
+    owner: "worker-cc"
+    archived: archive/compact-kanban-card
+    notes: "verified live (anle@CARIS backlog board): 3-zone compact card + responsive columns pass; req-2 overdue border code+build verified (no overdue task on board to render live)"
