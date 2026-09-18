@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert } from '@/components/ui/alert';
-import { useCreateSprint } from '@/hooks/useSprints';
+import { useCreateSprint, useUpdateSprint } from '@/hooks/useSprints';
 import type { Sprint } from '@/lib/types';
+
+function addDays(iso: string, days: number): string {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
 
 // FieldGroup + Field composition per shadcn skill rules
 function FieldGroup({ children }: { children: React.ReactNode }) {
@@ -44,6 +50,7 @@ interface CreateSprintDialogProps {
   onOpenChange: (open: boolean) => void;
   projectId: string;
   existingSprints: Sprint[];
+  sprint?: Sprint;
 }
 
 interface FormErrors {
@@ -58,18 +65,49 @@ export function CreateSprintDialog({
   onOpenChange,
   projectId,
   existingSprints,
+  sprint,
 }: CreateSprintDialogProps) {
+  const isEdit = !!sprint;
   const createSprint = useCreateSprint(projectId);
+  const updateSprint = useUpdateSprint(projectId);
+  const mutation = isEdit ? updateSprint : createSprint;
 
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
+  const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [endDateTouched, setEndDateTouched] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Seed fields when opening: edit → from sprint, create → today + (today+14d) default
+  useEffect(() => {
+    if (!open) return;
+    if (sprint) {
+      setName(sprint.name);
+      setStartDate(sprint.startDate ? sprint.startDate.split('T')[0] : '');
+      setEndDate(sprint.endDate ? sprint.endDate.split('T')[0] : '');
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      setName('');
+      setStartDate(today);
+      setEndDate(addDays(today, 14));
+    }
+    setEndDateTouched(false);
+    setErrors({});
+  }, [open, sprint]);
+
+  const handleStartDateChange = (value: string) => {
+    setStartDate(value);
+    // Create mode: keep endDate at start + 14d until the user edits it manually
+    if (!isEdit && !endDateTouched && value) {
+      setEndDate(addDays(value, 14));
+    }
+  };
 
   const resetForm = () => {
     setName('');
     setStartDate('');
     setEndDate('');
+    setEndDateTouched(false);
     setErrors({});
   };
 
@@ -96,6 +134,7 @@ export function CreateSprintDialog({
         const end = new Date(endDate);
 
         const overlapping = existingSprints.find((s) => {
+          if (s.id === sprint?.id) return false;
           if (s.status === 'COMPLETED' || !s.startDate || !s.endDate) return false;
           const sStart = new Date(s.startDate);
           const sEnd = new Date(s.endDate);
@@ -116,26 +155,28 @@ export function CreateSprintDialog({
     e.preventDefault();
     if (!validate()) return;
 
-    createSprint.mutate(
-      {
-        name: name.trim(),
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-      },
-      {
-        onSuccess: () => {
-          resetForm();
-          onOpenChange(false);
-        },
-      },
-    );
+    const data = {
+      name: name.trim(),
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    };
+    const onSuccess = () => {
+      resetForm();
+      onOpenChange(false);
+    };
+
+    if (isEdit && sprint) {
+      updateSprint.mutate({ sprintId: sprint.id, data }, { onSuccess });
+    } else {
+      createSprint.mutate(data, { onSuccess });
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-110">
         <DialogHeader>
-          <DialogTitle>Create Sprint</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Sprint' : 'Create Sprint'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <DialogBody>
@@ -170,7 +211,7 @@ export function CreateSprintDialog({
                     id="sprint-start"
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => handleStartDateChange(e.target.value)}
                     aria-invalid={!!errors.startDate}
                   />
                   {errors.startDate && (
@@ -184,7 +225,10 @@ export function CreateSprintDialog({
                     id="sprint-end"
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setEndDateTouched(true);
+                    }}
                     aria-invalid={!!errors.endDate}
                   />
                   {errors.endDate && (
@@ -200,12 +244,18 @@ export function CreateSprintDialog({
               type="button"
               variant="ghost"
               onClick={() => handleOpenChange(false)}
-              disabled={createSprint.isPending}
+              disabled={mutation.isPending}
             >
               Discard
             </Button>
-            <Button type="submit" disabled={createSprint.isPending}>
-              {createSprint.isPending ? 'Creating...' : 'Create Sprint'}
+            <Button type="submit" disabled={mutation.isPending}>
+              {isEdit
+                ? mutation.isPending
+                  ? 'Saving...'
+                  : 'Save Changes'
+                : mutation.isPending
+                  ? 'Creating...'
+                  : 'Create Sprint'}
             </Button>
           </DialogFooter>
         </form>

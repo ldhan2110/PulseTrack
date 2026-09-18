@@ -22,6 +22,7 @@ export function SprintsPage() {
   const activateSprint = useActivateSprint(projectId);
   const closeSprint = useCloseSprint(projectId);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editSprint, setEditSprint] = useState<Sprint | null>(null);
 
   // Sort: ACTIVE first, then PLANNED (most recent first), then COMPLETED (most recent first)
   const sortedSprints = useMemo(() => {
@@ -135,6 +136,7 @@ export function SprintsPage() {
             totalCount={sprintStats[sprint.id]?.total ?? 0}
             onActivate={() => handleActivate(sprint)}
             onClose={() => handleClose(sprint)}
+            onEdit={() => setEditSprint(sprint)}
           />
         ))}
       </div>
@@ -144,6 +146,14 @@ export function SprintsPage() {
         onOpenChange={setCreateOpen}
         projectId={projectId}
         existingSprints={sprints ?? []}
+      />
+
+      <CreateSprintDialog
+        open={!!editSprint}
+        onOpenChange={(o) => !o && setEditSprint(null)}
+        projectId={projectId}
+        existingSprints={sprints ?? []}
+        sprint={editSprint ?? undefined}
       />
     </div>
   );

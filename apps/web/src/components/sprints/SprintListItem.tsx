@@ -55,6 +55,7 @@ interface SprintListItemProps {
   canManage: boolean;
   onActivate: () => void;
   onClose: () => void;
+  onEdit: () => void;
   projectId: string;
   projectPrefix: string;
   sprintTasks: Task[];
@@ -68,6 +69,7 @@ export function SprintListItem({
   canManage,
   onActivate,
   onClose,
+  onEdit,
   projectId: _projectId,
   projectPrefix,
   sprintTasks,
@@ -141,14 +143,24 @@ export function SprintListItem({
         {canManage && !isCompleted && (
           <div className="shrink-0 flex gap-2" onClick={(e) => e.stopPropagation()}>
             {sprint.status === 'PLANNED' && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={onActivate}
-              >
-                Activate
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={onEdit}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={onActivate}
+                >
+                  Activate
+                </Button>
+              </>
             )}
             {sprint.status === 'ACTIVE' && (
               <>
