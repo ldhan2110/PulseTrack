@@ -140,6 +140,20 @@ export interface Project {
   };
 }
 
+// Shape actually returned by GET /projects (ProjectsService.findAllForUser)
+export interface ProjectListItem {
+  id: string;
+  name: string;
+  description: string | null;
+  prefix: string | null;
+  avatarUrl: string | null;
+  archived: boolean;
+  createdAt: string;
+  userRole: string;
+  taskSummary: { total: number; active: number };
+  members: { user: Pick<User, 'id' | 'name' | 'imageUrl'> }[];
+}
+
 export interface CreateProjectPayload {
   name: string;
   description?: string;

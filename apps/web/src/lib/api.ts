@@ -3,6 +3,7 @@ import type {
   McpTokenCreated,
   CreateMcpTokenPayload,
   Project,
+  ProjectListItem,
   CreateProjectPayload,
   UpdateProjectPayload,
   Member,
@@ -170,7 +171,7 @@ async function downloadFile(path: string, params?: Record<string, string>): Prom
 
 export const api = {
   // ─── Projects ──────────────────────────────────────────────────────────────
-  getProjects: () => request<Project[]>('/projects'),
+  getProjects: () => request<ProjectListItem[]>('/projects'),
   createProject: (data: CreateProjectPayload) =>
     request<Project>('/projects', { method: 'POST', body: JSON.stringify(data) }),
   getProject: (id: string) => request<Project>(`/projects/${id}`),

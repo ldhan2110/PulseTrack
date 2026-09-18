@@ -11,26 +11,43 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProjects } from '@/hooks/useProjects';
-import { useAuth } from '@/auth/useAuth';
 import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog';
-import { format } from 'date-fns';
-import type { Project } from '@/lib/types';
+import type { ProjectListItem } from '@/lib/types';
 
 // FieldGroup composition per shadcn skill rules
 function FieldGroup({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-col gap-4">{children}</div>;
 }
 
-function ProjectCard({ project }: { project: Project }) {
+function initials(name: string | null): string {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join('');
+}
+
+const MAX_AVATARS = 4;
+
+function ProjectCard({ project }: { project: ProjectListItem }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
-  const member = project.members?.find((m) => m.userId === user?.id);
-  const role = member?.customRole?.name;
-
-  const taskCount = project._count?.tasks ?? 0;
+  const role = project.userRole;
+  const taskCount = project.taskSummary?.total ?? 0;
+  const members = project.members ?? [];
+  const shown = members.slice(0, MAX_AVATARS);
+  const overflow = members.length - shown.length;
 
   return (
     <Card
@@ -38,31 +55,45 @@ function ProjectCard({ project }: { project: Project }) {
       onClick={() => navigate(`/projects/${project.prefix}/dashboard`)}
     >
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-[20px] font-semibold leading-tight">
-            {project.name}
-          </CardTitle>
-          {role && (
-            <Badge variant="secondary" className="shrink-0 text-[13px]">
-              {role}
-            </Badge>
-          )}
+        <div className="flex items-center gap-3">
+          <Avatar size="lg" className="shrink-0 rounded-lg after:hidden">
+            {project.avatarUrl && <AvatarImage src={project.avatarUrl} alt={project.name} />}
+            <AvatarFallback className="rounded-lg">
+              <FolderKanban className="size-5" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex items-start justify-between gap-2">
+              <CardTitle className="text-[20px] font-semibold leading-tight">
+                {project.name}
+              </CardTitle>
+              {role && (
+                <Badge variant="secondary" className="shrink-0 text-[13px]">
+                  {role}
+                </Badge>
+              )}
+            </div>
+            {project.description && (
+              <CardDescription className="line-clamp-2">{project.description}</CardDescription>
+            )}
+          </div>
         </div>
-        {project.description && (
-          <CardDescription className="line-clamp-2">{project.description}</CardDescription>
-        )}
       </CardHeader>
       <CardContent className="pb-2">
         <div className="text-sm text-muted-foreground">
           {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
         </div>
       </CardContent>
-      <CardFooter>
-        {project.updatedAt && (
-          <p className="text-xs text-muted-foreground">
-            Updated {format(new Date(project.updatedAt), 'MMM d, yyyy h:mm a')}
-          </p>
-        )}
+      <CardFooter className="mt-auto justify-end">
+        <AvatarGroup>
+          {shown.map((m) => (
+            <Avatar key={m.user.id} size="sm">
+              {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? ''} />}
+              <AvatarFallback>{initials(m.user.name)}</AvatarFallback>
+            </Avatar>
+          ))}
+          {overflow > 0 && <AvatarGroupCount>+{overflow}</AvatarGroupCount>}
+        </AvatarGroup>
       </CardFooter>
     </Card>
   );
@@ -86,12 +117,23 @@ export function ProjectsPage() {
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardHeader>
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-full" />
+                <div className="flex items-center gap-3">
+                  <Skeleton className="size-10 rounded-lg shrink-0" />
+                  <div className="flex-1 flex flex-col gap-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <Skeleton className="h-4 w-1/4" />
               </CardContent>
+              <CardFooter className="mt-auto justify-end">
+                <div className="flex -space-x-2">
+                  <Skeleton className="size-6 rounded-full" />
+                  <Skeleton className="size-6 rounded-full" />
+                </div>
+              </CardFooter>
             </Card>
           ))}
         </div>

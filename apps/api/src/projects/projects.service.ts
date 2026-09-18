@@ -106,6 +106,11 @@ export class ProjectsService {
               select: { workflowStatusId: true },
               where: { workflowStatusId: { not: null } },
             },
+            members: {
+              include: {
+                user: { select: { id: true, name: true, imageUrl: true } },
+              },
+            },
           },
         },
       },
@@ -135,6 +140,7 @@ export class ProjectsService {
             total: m.project._count.tasks,
             active: activeCount,
           },
+          members: m.project.members.map((pm) => ({ user: pm.user })),
         };
       });
   }
