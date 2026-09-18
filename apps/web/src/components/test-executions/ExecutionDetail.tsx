@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useUpdateExecutionCaseResult } from '@/hooks/useTestExecutions';
@@ -113,17 +114,21 @@ export function ExecutionDetail({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Top bar */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Button variant="ghost" size="sm" className="h-7 gap-1 -ml-2" onClick={onBack}>
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
+        <span>/</span>
+        <span>Test Executions</span>
+        <span>/</span>
+        <span className="text-foreground font-medium">{execution.name}</span>
+      </div>
+
+      {/* Title + status + actions */}
+      <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            Back
-          </button>
           <h1 className="text-xl font-semibold tracking-tight">{execution.name}</h1>
           <Badge variant="secondary" className={cn('text-xs', statusInfo.className)}>
             {statusInfo.label}
@@ -157,6 +162,8 @@ export function ExecutionDetail({
           {deleteButton}
         </div>
       </div>
+
+      <Separator />
 
       {/* Progress summary */}
       {stats && (
@@ -214,10 +221,10 @@ export function ExecutionDetail({
       )}
 
       {/* Cases table */}
-      <div className="rounded-xl border shadow-sm overflow-auto max-h-[calc(100vh-200px)]">
+      <div className="rounded-lg border overflow-auto max-h-[calc(100vh-200px)]">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-muted/50">
-            <TableRow className="[&>th]:h-10 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide">
+            <TableRow className="[&>th]:h-10 [&>th]:text-[13px] [&>th]:font-semibold">
               <TableHead className="w-[100px]">ID</TableHead>
               <TableHead className="max-w-[250px]">Test Case</TableHead>
               <TableHead className="w-[100px]">Priority</TableHead>
@@ -229,7 +236,7 @@ export function ExecutionDetail({
           </TableHeader>
           <TableBody>
             {cases.map((ec, idx) => (
-              <TableRow key={ec.id} className="[&>td]:py-3">
+              <TableRow key={ec.id} className="h-10 [&>td]:py-0">
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {ec.testCase.testCaseKey}
                 </TableCell>
