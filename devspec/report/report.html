@@ -3,106 +3,89 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DevSpec Board Report</title>
+<title>DevSpec Report — PulseTrack</title>
 <style>
-  :root {
-    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
-    --text:#e6e9ef; --muted:#9aa3b2; --accent:#6ea8fe;
-    --done:#3fb950; --prog:#d29922; --block:#f85149;
-  }
+  :root { --fg:#1a1a1a; --muted:#6b7280; --bg:#fafafa; --card:#fff; --line:#e5e7eb;
+          --done:#065f46; --done-bg:#ecfdf5; --doing:#92400e; --doing-bg:#fffbeb;
+          --blocked:#991b1b; --blocked-bg:#fef2f2; --accent:#2563eb; --code:#f3f4f6; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text);
-    font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-  .wrap { max-width:960px; margin:0 auto; padding:32px 24px 64px; }
-  h1 { font-size:22px; margin:0 0 4px; }
+  body { margin:0; font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         color:var(--fg); background:var(--bg); padding:32px 20px; }
+  .wrap { max-width:900px; margin:0 auto; }
+  h1 { font-size:24px; margin:0 0 4px; }
   .gen { color:var(--muted); font-size:13px; margin-bottom:20px; }
   .counts { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
-  .pill { padding:6px 12px; border-radius:999px; background:var(--panel2);
-    border:1px solid var(--border); font-size:13px; font-weight:600; }
-  .pill b { font-weight:800; }
-  .pill.done b { color:var(--done); } .pill.prog b { color:var(--prog); }
-  .pill.block b { color:var(--block); } .pill.total b { color:var(--accent); }
-  h2 { font-size:15px; text-transform:uppercase; letter-spacing:.06em;
-    color:var(--muted); border-bottom:1px solid var(--border);
-    padding-bottom:8px; margin:32px 0 14px; }
-  .card { background:var(--panel); border:1px solid var(--border);
-    border-radius:10px; padding:14px 16px; margin-bottom:10px; }
-  .card .row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
-  .title { font-weight:650; }
-  .frac { font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; white-space:nowrap; }
-  .badge { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
-    padding:2px 8px; border-radius:6px; }
-  .b-done { background:rgba(63,185,80,.15); color:var(--done); }
-  .b-prog { background:rgba(210,153,34,.15); color:var(--prog); }
-  .b-block { background:rgba(248,81,73,.15); color:var(--block); }
-  .b-pending { background:rgba(154,163,178,.15); color:var(--muted); }
-  .reason { color:var(--block); font-size:13px; margin-top:8px; }
-  .empty { color:var(--muted); font-style:italic; }
-  .hist { background:var(--panel); border:1px solid var(--border);
-    border-radius:8px; padding:12px 14px; margin-bottom:10px; }
-  .hist .hrow { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
-  .hist .ts { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
-  .hist .sum { font-size:13.5px; margin-top:6px; color:#cfd5e0; }
+  .count { padding:8px 14px; border-radius:8px; font-size:14px; font-weight:600; border:1px solid var(--line); background:var(--card); }
+  .count .n { font-size:18px; }
+  h2 { font-size:17px; margin:28px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  .row { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin:8px 0; }
+  .row .t { font-weight:600; }
+  .row .meta { color:var(--muted); font-size:13px; margin-top:2px; }
+  .pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; margin-left:8px; vertical-align:middle; }
+  .p-done { background:var(--done-bg); color:var(--done); }
+  .p-doing { background:var(--doing-bg); color:var(--doing); }
+  .p-blocked { background:var(--blocked-bg); color:var(--blocked); }
+  .p-pending { background:var(--code); color:var(--muted); }
+  .frac { font-variant-numeric:tabular-nums; color:var(--muted); font-size:13px; }
+  .empty { color:var(--muted); font-style:italic; padding:8px 0; }
+  .hist { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin:8px 0; }
+  .hist .h { font-size:13px; color:var(--muted); }
+  .hist .s { margin-top:4px; font-size:14px; }
+  .notes { color:var(--blocked); font-size:13px; margin-top:4px; }
+  code { background:var(--code); padding:1px 5px; border-radius:4px; font-size:13px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>DevSpec Board Report</h1>
-  <div class="gen">Generated 2026-09-18 · project PulseTrack</div>
+  <h1>DevSpec Report — PulseTrack</h1>
+  <div class="gen">Generated 2026-09-18 (worker run) · board <code>devspec/changes/tasks.yml</code></div>
 
   <div class="counts">
-    <span class="pill done"><b>2</b> done</span>
-    <span class="pill prog"><b>1</b> in-progress</span>
-    <span class="pill block"><b>0</b> blocked</span>
-    <span class="pill total"><b>3</b> total</span>
+    <div class="count" style="color:var(--done)"><span class="n">3</span> done</div>
+    <div class="count" style="color:var(--doing)"><span class="n">1</span> in-progress</div>
+    <div class="count" style="color:var(--blocked)"><span class="n">0</span> blocked</div>
+    <div class="count"><span class="n">4</span> total</div>
   </div>
 
   <h2>Open Blockers</h2>
-  <p class="empty">No open blockers.</p>
+  <div class="empty">No open blockers.</div>
 
   <h2>Implemented</h2>
-  <div class="card">
-    <div class="row">
-      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
-      <span class="frac"><span class="badge b-done">done</span> &nbsp;5/5</span>
-    </div>
+  <div class="row">
+    <div class="t">Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default<span class="pill p-done">done</span></div>
+    <div class="meta"><span class="frac">3/3 sections</span> — add-sprint-edit · verified live (anle@CARIS), all 4 reqs pass</div>
   </div>
-  <div class="card">
-    <div class="row">
-      <span class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</span>
-      <span class="frac"><span class="badge b-done">done</span> &nbsp;7/7</span>
-    </div>
+  <div class="row">
+    <div class="t">MCP agent write consent — per-token opt-in gate on write tools<span class="pill p-done">done</span></div>
+    <div class="meta"><span class="frac">5/5 sections</span> — add-agent-write-consent</div>
+  </div>
+  <div class="row">
+    <div class="t">Dashboard redesign — status strip, bug banner, layout restyle per mockup<span class="pill p-done">done</span></div>
+    <div class="meta"><span class="frac">7/7 sections</span> — redesign-dashboard</div>
   </div>
 
   <h2>In progress / Left</h2>
-  <div class="card">
-    <div class="row">
-      <span class="title">Project card redesign — logo, member avatars, pinned footer</span>
-      <span class="frac"><span class="badge b-prog">doing</span> &nbsp;—</span>
-    </div>
+  <div class="row">
+    <div class="t">Project card redesign — logo, member avatars, pinned footer<span class="pill p-doing">doing</span></div>
+    <div class="meta"><span class="frac">— sections</span> — enhance-project-card · owner worker-1 (artifacts not on this filesystem)</div>
   </div>
 
   <h2>History</h2>
   <div class="hist">
-    <div class="hrow">
-      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
-      <span class="ts">2026-09-18 07:35 · <span class="badge b-done">done</span> · 5/5</span>
-    </div>
-    <div class="sum">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div>
+    <div class="h">2026-09-18T04:59Z · add-sprint-edit · <span class="pill p-done">done</span> · 3/3</div>
+    <div class="s">Wired unused useUpdateSprint into UI: dual-mode CreateSprintDialog (create/edit), Edit button on PLANNED sprints, create prefills endDate=start+14d. Verified live with anle@CARIS — all 4 reqs pass.</div>
   </div>
   <div class="hist">
-    <div class="hrow">
-      <span class="title">MCP agent write consent — per-token opt-in gate on write tools</span>
-      <span class="ts">2026-09-18 07:20 · <span class="badge b-block">blocked</span> · 2/5</span>
-    </div>
-    <div class="sum">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div>
+    <div class="h">2026-09-18T07:35Z · add-agent-write-consent · <span class="pill p-done">done</span> · 5/5</div>
+    <div class="s">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div>
   </div>
   <div class="hist">
-    <div class="hrow">
-      <span class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</span>
-      <span class="ts">2026-09-18 04:45 · <span class="badge b-done">done</span> · 7/7</span>
-    </div>
-    <div class="sum">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div>
+    <div class="h">2026-09-18T07:20Z · add-agent-write-consent · <span class="pill p-blocked">blocked</span> · 2/5</div>
+    <div class="s">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div>
+  </div>
+  <div class="hist">
+    <div class="h">2026-09-18T04:45Z · redesign-dashboard · <span class="pill p-done">done</span> · 7/7</div>
+    <div class="s">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div>
   </div>
 </div>
 </body>
