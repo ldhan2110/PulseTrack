@@ -465,7 +465,7 @@ export function TaskDetailPage() {
       <div className='flex gap-3'>
         {/* Task key badge */}
         {task.taskKey && (
-          <div className="text-sm text-center font-mono align-middle text-muted-foreground bg-muted px-2 py-0.5 rounded w-fit">
+          <div className="inline-flex items-center text-sm font-mono leading-none text-muted-foreground bg-muted px-2 py-1 rounded w-fit">
             {task.taskKey}
           </div>
         )}
