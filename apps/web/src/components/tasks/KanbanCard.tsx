@@ -114,7 +114,7 @@ export function KanbanCard({ task, projectId: _projectId, projectPrefix }: Kanba
     >
       <Card
         className={cn(
-          'relative py-2 overflow-visible transition-all duration-150',
+          'relative py-2 rounded-md overflow-visible transition-all duration-150',
           'hover:shadow-md hover:border-border',
           isDragging && '-translate-y-1 scale-105 shadow-lg',
           overdue && 'border-t-2 border-t-red-500',
