@@ -32,7 +32,7 @@ export function KanbanColumn({ status, tasks, projectId, projectPrefix }: Kanban
         )}
       >
         <ScrollArea className="flex-1 min-h-0">
-          <div className="flex flex-col gap-2 px-0.5 pr-2">
+          <div className="flex flex-col gap-2 py-0.5 px-0.5 pr-2">
             {tasks.map((task) => (
               <KanbanCard key={task.id} task={task} projectId={projectId} projectPrefix={projectPrefix} />
             ))}
