@@ -188,6 +188,19 @@ export class McpServerService {
           return json(await this.projects.getTaskTypes(session.projectId));
         },
       },
+      {
+        name: 'list_project_members',
+        description: "List this project's members. Use a member's userId as assigneeId when creating or updating a task.",
+        inputSchema: {},
+        handler: async () => {
+          requireScope(session, TASKS_READ);
+          const members = await this.prisma.projectMember.findMany({
+            where: { projectId: session.projectId },
+            select: { user: { select: { id: true, name: true, username: true, email: true } } },
+          });
+          return json(members.map((m) => m.user));
+        },
+      },
       // ---- bugs: read ----
       {
         name: 'list_bugs',

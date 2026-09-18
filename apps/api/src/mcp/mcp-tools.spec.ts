@@ -71,10 +71,16 @@ function makeServices() {
           ? { id: 'ecother', execution: { projectId: 'p2' } }
           : null),
     },
+    projectMember: {
+      findMany: async ({ where }: any) =>
+        where.projectId === 'p1'
+          ? [{ user: { id: 'u1', name: 'Ann', username: 'ann', email: 'ann@x.io' } }]
+          : [],
+    },
   };
   const svc = new McpServerService(
     tasks as any, bugs as any, testCases as any, timeLogs as any, testModules as any,
-    {} as any, testExecutions as any, prisma as any,
+    {} as any, testExecutions as any, {} as any, prisma as any,
   );
   return { svc, tasks, timeLogs, testExecutions };
 }
@@ -108,6 +114,15 @@ describe('MCP read-only tools', () => {
     const { svc } = makeServices();
     await expect(tool(svc, session(['bugs:read']), 'get_bug').handler({ id: 'other' })).rejects.toThrow(/not found/i);
   });
+
+  it('list_project_members returns the token project members (unwrapped users); denied without scope', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['tasks:read']), 'list_project_members').handler({});
+    expect(JSON.parse(res.content[0].text)).toEqual([{ id: 'u1', name: 'Ann', username: 'ann', email: 'ann@x.io' }]);
+    await expect(
+      tool(svc, session(['bugs:read']), 'list_project_members').handler({}),
+    ).rejects.toThrow(/scope: tasks:read/);
+  });
 });
 
 describe('MCP write tools', () => {
@@ -115,9 +130,9 @@ describe('MCP write tools', () => {
     const { svc } = makeServices();
     const names = svc.tools(session(ALL_SCOPES)).map((t) => t.name).sort();
     expect(names).toEqual([
-      'attach_result_file', 'create_task', 'create_test_case', 'create_test_execution',
+      'attach_result_file', 'attach_task_file', 'create_task', 'create_test_case', 'create_test_execution',
       'get_bug', 'get_task', 'get_test_case', 'get_test_execution',
-      'list_bugs', 'list_task_types', 'list_tasks', 'list_test_cases', 'list_test_executions', 'list_test_modules',
+      'list_bugs', 'list_project_members', 'list_task_types', 'list_tasks', 'list_test_cases', 'list_test_executions', 'list_test_modules',
       'log_time', 'update_execution_result', 'update_task', 'update_test_case',
     ]);
   });
