@@ -502,6 +502,7 @@ export interface MyWork {
 
 export interface ActivityItem {
   actor: string;
+  actorImageUrl: string | null;
   verb: string;
   targetKey: string;
   at: string;

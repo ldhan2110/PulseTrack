@@ -15,6 +15,10 @@ function daysLeft(endDate: string): number {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function fmt(date: string): string {
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export function DashboardHero({ name, activeSprint, projectPrefix }: DashboardHeroProps) {
   const navigate = useNavigate();
 
@@ -24,31 +28,34 @@ export function DashboardHero({ name, activeSprint, projectPrefix }: DashboardHe
       : 0;
 
   return (
-    <Card className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">👋</span>
-        <span className="text-base font-semibold">Welcome back, {name}</span>
+    <Card className="flex flex-col gap-3 rounded-lg bg-primary px-6 py-5 text-primary-foreground sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="text-base font-semibold">👋 Welcome back, {name}</div>
+        <div className="mt-1 text-[13px] text-primary-foreground/75">
+          {activeSprint
+            ? `${activeSprint.name} · ${fmt(activeSprint.startDate)} – ${fmt(activeSprint.endDate)} · ${daysLeft(activeSprint.endDate)} days left`
+            : "No active sprint · let's set things up"}
+        </div>
       </div>
 
       {activeSprint ? (
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{activeSprint.name}</span>
-            {' · '}
-            {daysLeft(activeSprint.endDate)} days left
-          </div>
-          <div className="flex items-center gap-2">
-            <Progress value={progress} className="h-2 w-28" />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              {activeSprint.completedPoints}/{activeSprint.totalPoints}
+        <div className="min-w-[220px]">
+          <div className="flex justify-between text-xs text-primary-foreground/85">
+            <span>Sprint progress</span>
+            <span>
+              {activeSprint.completedPoints} / {activeSprint.totalPoints} pts
             </span>
           </div>
+          <Progress
+            value={progress}
+            className="mt-1.5 h-2 bg-primary-foreground/20 [&_[data-slot=progress-indicator]]:bg-[var(--status-done)]"
+          />
         </div>
       ) : (
         <button
           type="button"
           onClick={() => navigate(`/projects/${projectPrefix}/sprints`)}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary-foreground px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:opacity-90"
         >
           <Plus className="size-4" />
           Start a sprint

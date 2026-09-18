@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
+import { TrendingDown } from 'lucide-react';
 
 interface BurndownDataPoint {
   date: string;
@@ -23,8 +24,14 @@ interface BurndownChartProps {
 export function BurndownChart({ data }: BurndownChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-        No burndown data available
+      <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-2 text-center">
+        <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+          <TrendingDown className="size-5 text-muted-foreground" />
+        </div>
+        <p className="text-sm font-medium">No burndown data yet</p>
+        <p className="text-xs text-muted-foreground">
+          Sprint progress will chart here once tasks with story points are underway.
+        </p>
       </div>
     );
   }
@@ -35,7 +42,7 @@ export function BurndownChart({ data }: BurndownChartProps) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
       <LineChart data={formatted} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis

@@ -83,13 +83,13 @@ export function DashboardStatusStrip({ total, byStatus, projectPrefix }: Dashboa
                 key={c.key}
                 type="button"
                 onClick={() => navigate(c.to)}
-                className="flex min-w-[130px] shrink-0 flex-col items-start gap-1 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                className="flex min-w-[150px] flex-1 flex-col items-start gap-1 px-6 py-4 text-left transition-colors hover:bg-muted/50"
               >
-                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                <span className="flex w-full items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
                   {c.color && (
-                    <span className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
+                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
                   )}
-                  {c.name}
+                  <span className="truncate">{c.name}</span>
                 </span>
                 <span className="text-[28px] font-bold leading-none tracking-[-0.03em]">
                   {c.value}

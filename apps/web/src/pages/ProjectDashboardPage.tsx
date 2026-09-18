@@ -25,8 +25,8 @@ function DashboardSkeleton() {
       <Skeleton className="h-[88px] rounded-xl" />
       {/* Burndown + Activity */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <Skeleton className="h-[340px] rounded-xl lg:col-span-3" />
-        <Skeleton className="h-[340px] rounded-xl lg:col-span-2" />
+        <Skeleton className="h-[460px] rounded-xl lg:col-span-3" />
+        <Skeleton className="h-[460px] rounded-xl lg:col-span-2" />
       </div>
       {/* Bug banner */}
       <Skeleton className="h-[60px] rounded-xl" />
@@ -80,11 +80,11 @@ export function ProjectDashboardPage() {
       {/* Burndown (gate tasks.update) + Activity (always) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {canTasks && (
-          <Card className="lg:col-span-3">
+          <Card className="h-[460px] lg:col-span-3">
             <CardHeader>
               <CardTitle>Burndown Chart</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-[calc(100%-4rem)] min-h-0">
               <BurndownChart data={burndownData} />
             </CardContent>
           </Card>

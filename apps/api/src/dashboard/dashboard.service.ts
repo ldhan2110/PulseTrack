@@ -234,13 +234,13 @@ export class DashboardService {
         where: { projectId },
         orderBy: { updatedAt: 'desc' },
         take: 15,
-        select: { taskKey: true, updatedAt: true, assignee: { select: { name: true } } },
+        select: { taskKey: true, updatedAt: true, assignee: { select: { name: true, imageUrl: true } } },
       }),
       this.prisma.bug.findMany({
         where: { projectId },
         orderBy: { updatedAt: 'desc' },
         take: 15,
-        select: { bugKey: true, updatedAt: true, assignee: { select: { name: true } } },
+        select: { bugKey: true, updatedAt: true, assignee: { select: { name: true, imageUrl: true } } },
       }),
       this.prisma.comment.findMany({
         where: { OR: [{ task: { projectId } }, { bug: { projectId } }] },
@@ -248,7 +248,7 @@ export class DashboardService {
         take: 15,
         select: {
           createdAt: true,
-          author: { select: { name: true } },
+          author: { select: { name: true, imageUrl: true } },
           task: { select: { taskKey: true } },
           bug: { select: { bugKey: true } },
         },
@@ -258,18 +258,21 @@ export class DashboardService {
     const items = [
       ...tasks.map((t) => ({
         actor: t.assignee?.name ?? 'Someone',
+        actorImageUrl: t.assignee?.imageUrl ?? null,
         verb: 'updated',
         targetKey: t.taskKey ?? 'a task',
         at: t.updatedAt.toISOString(),
       })),
       ...bugs.map((b) => ({
         actor: b.assignee?.name ?? 'Someone',
+        actorImageUrl: b.assignee?.imageUrl ?? null,
         verb: 'updated',
         targetKey: b.bugKey ?? 'a bug',
         at: b.updatedAt.toISOString(),
       })),
       ...comments.map((c) => ({
         actor: c.author.name ?? 'Someone',
+        actorImageUrl: c.author.imageUrl ?? null,
         verb: 'commented on',
         targetKey: c.task?.taskKey ?? c.bug?.bugKey ?? 'an item',
         at: c.createdAt.toISOString(),

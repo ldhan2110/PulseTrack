@@ -40,14 +40,14 @@ export function MyWorkStrip({ myWork, userId, projectPrefix }: MyWorkStripProps)
             key={c.label}
             type="button"
             onClick={() => navigate(c.to)}
-            className="flex flex-col items-start gap-1 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+            className="flex flex-col items-start gap-1 px-4 py-4 text-left transition-colors hover:bg-muted/50"
           >
             <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
               {c.label}
             </span>
             <span
               className={cn(
-                'text-[30px] font-bold leading-none tracking-[-0.03em]',
+                'text-[28px] font-bold leading-none tracking-[-0.03em]',
                 c.tone === 'danger' && c.value > 0 && 'text-[var(--status-blocked)]',
                 c.tone === 'warning' && c.value > 0 && 'text-[var(--status-in-review)]',
               )}
