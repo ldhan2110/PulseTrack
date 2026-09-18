@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec — export-excel-sanitize-parent</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --ink:#e6e9ef; --muted:#9aa4b2; --line:#2a2f3a; --accent:#6ea8fe; --good:#3fb950; --bad:#f85149; --code:#1e222b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { display:grid; grid-template-columns:220px 1fr; max-width:1100px; margin:0 auto; }
+  nav { position:sticky; top:0; align-self:start; height:100vh; padding:24px 16px; border-right:1px solid var(--line); font-size:13px; }
+  nav a { display:block; color:var(--muted); text-decoration:none; padding:4px 0; }
+  nav a:hover { color:var(--accent); }
+  main { padding:32px 40px; min-width:0; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:17px; margin:32px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  h3 { font-size:15px; margin:18px 0 6px; }
+  h4 { font-size:13px; margin:12px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; border:1px solid var(--line); color:var(--muted); margin-left:6px; }
+  .pill { display:inline-block; font-size:11px; padding:1px 8px; border-radius:10px; margin-right:6px; }
+  .pill.layer { background:#1d2b1f; color:#8fd694; border:1px solid #2f5233; }
+  .pill.be { background:#1d2536; color:#8fb6f0; border:1px solid #2f456b; }
+  .pill.test { background:#2b1f36; color:#c79bef; border:1px solid #4a2f6b; }
+  pre { background:var(--code); border:1px solid var(--line); border-radius:8px; padding:14px; overflow:auto; font:13px/1.5 "SF Mono",Menlo,Consolas,monospace; }
+  code { background:var(--code); padding:1px 5px; border-radius:4px; font:13px "SF Mono",Menlo,Consolas,monospace; }
+  pre code { background:none; padding:0; }
+  table { border-collapse:collapse; width:100%; margin:10px 0; font-size:14px; }
+  th,td { border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--panel); color:var(--muted); font-weight:600; }
+  .meta { color:var(--muted); font-size:13px; }
+  .banner { border-radius:8px; padding:12px 16px; margin:14px 0; }
+  .banner.good { background:#132417; border:1px solid #2f5233; color:#8fd694; }
+  .scenario { border-left:2px solid var(--line); padding:2px 0 2px 14px; margin:8px 0; }
+  ul { margin:6px 0; padding-left:22px; }
+  .verify { color:var(--good); font-size:13px; margin:6px 0 0; }
+  .req { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <strong>export-excel-<br>sanitize-parent</strong>
+  <a href="#context">Context</a>
+  <a href="#proposal">Proposal</a>
+  <a href="#arch">Architecture</a>
+  <a href="#impact">Impact Area</a>
+  <a href="#backend">Backend</a>
+  <a href="#tasks">Tasks</a>
+  <a href="#coverage">Coverage</a>
+  <a href="#board">Board</a>
+</nav>
+<main>
+  <h1>export-excel-sanitize-parent</h1>
+  <p class="meta">Backend-only · sanitize export description + add Parent Task Key column</p>
+
+  <h2 id="context">Context</h2>
+  <table>
+    <tr><th>Change id</th><td>export-excel-sanitize-parent</td></tr>
+    <tr><th>Status</th><td>not yet on board (pending capture → plan)</td></tr>
+    <tr><th>depends_on</th><td>[] — none</td></tr>
+    <tr><th>Scope</th><td>1 method: <code>TasksService.exportExcel</code> (<code>apps/api/src/tasks/tasks.service.ts:618</code>)</td></tr>
+  </table>
+
+  <h2 id="proposal">Proposal</h2>
+  <p>The Backlog "Export Excel" feature writes the task <strong>Description</strong> cell as raw HTML — a task exports as <code>&lt;p&gt;Fix &amp;amp; ship&lt;/p&gt;</code> instead of the readable <code>Fix &amp; ship</code>. The sheet is for humans reading in Excel, so the cell must be plain text.</p>
+  <p>Separately, the export flattens parents and sub-tasks into one sheet with no column showing which parent a sub-task belongs to.</p>
+  <h4>Delivers</h4>
+  <ul>
+    <li><strong>Readable Description</strong> — HTML tags stripped, common entities decoded.</li>
+    <li><strong>New "Parent Task Key" column</strong> — after "Task Key"; blank for parents, parent's key for sub-tasks.</li>
+  </ul>
+  <h4>Out of scope</h4>
+  <ul>
+    <li>No change to export dialog, <code>api.ts</code>, DTOs, DB schema, or other exports (test cases, bugs, WBS).</li>
+    <li>Sanitization is display-only at export time — stored descriptions unchanged.</li>
+    <li>No new HTML-parsing dependency.</li>
+  </ul>
+
+  <h2 id="arch">Architecture</h2>
+  <p class="meta">ASCII (archify not used).</p>
+  <pre>Client → GET export → TasksController.exportExcel → TasksService.exportExcel
+                                                        ├─ prisma.task.findMany (parents + children include)
+                                                        ├─ flatten rows  → attach parentKey per row
+                                                        ├─ sanitizeDescription(html) → plain text
+                                                        └─ ExcelJS Workbook → buffer</pre>
+
+  <h2 id="impact">Impact Area</h2>
+  <h4>Decision Defaults</h4>
+  <table>
+    <tr><th>Gray area</th><th>Default</th></tr>
+    <tr><td>Which HTML entities to decode</td><td>Editor's set: <code>&amp;amp; &amp;lt; &amp;gt; &amp;quot; &amp;#39; &amp;nbsp;</code>. Leave others as-is.</td></tr>
+    <tr><td>Whitespace after strip</td><td>Collapse runs to one space, trim ends.</td></tr>
+    <tr><td>Parent Task Key column position</td><td>Second column, right after Task Key.</td></tr>
+    <tr><td>Parent Task Key for parent rows</td><td>Empty string.</td></tr>
+    <tr><td>Sub-task whose parent has no taskKey</td><td>Empty string.</td></tr>
+  </table>
+  <h4>Blast Radius</h4>
+  <ul>
+    <li><strong>Direct:</strong> <code>TasksService.exportExcel</code> — only method edited.</li>
+    <li><strong>Callers:</strong> controller → <code>api.exportTasks</code> → <code>ExportTasksDialog</code>. Unchanged; still an xlsx buffer, only cell content + column count differ.</li>
+    <li><strong>Other exports</strong> (test cases, bugs, WBS) — separate paths, untouched.</li>
+  </ul>
+  <h4>Risk</h4>
+  <p><span class="pill" style="background:#132417;color:#8fd694;border:1px solid #2f5233">low</span><span class="pill" style="background:#132417;color:#8fd694;border:1px solid #2f5233">reversible</span> Output-only; no schema, contract, or stored data touched.</p>
+
+  <h2 id="backend">Backend</h2>
+  <h3>req-1 <span class="tag">readable description</span></h3>
+  <p>New private helper on <code>TasksService</code>:</p>
+  <pre><code>sanitizeDescription(html: string): string
+  1. strip tags   → html.replace(/&lt;[^&gt;]*&gt;/g, '')
+  2. decode        &amp;amp; &amp;lt; &amp;gt; &amp;quot; &amp;#39; &amp;nbsp;
+  3. collapse ws   → replace(/\s+/g, ' ').trim()</code></pre>
+  <p>Applied at row build (<code>tasks.service.ts:745</code>): <code>description: this.sanitizeDescription(t.description ?? '')</code>. Matches repo convention — bare-regex strip already at <code>tasks.service.ts:384</code> and <code>comments.service.ts:301</code>; no HTML-parsing dep.</p>
+  <h3>req-2 <span class="tag">parent task key column</span></h3>
+  <p>Flatten loop already holds the parent in scope → no extra Prisma include. Attach <code>parentKey</code> (parent → <code>''</code>, child → <code>task.taskKey ?? ''</code>), add column def as 2nd column, set it in <code>addRow</code>. Existing header/border styling covers the new column automatically.</p>
+  <p>New column layout:</p>
+  <pre>Task Key | Parent Task Key | Title | Description | Status | …
+PROJ-1   |                 | Login | Fix &amp; ship  | …
+PROJ-1-1 | PROJ-1          | …     | …           | …</pre>
+
+  <h2 id="tasks">Tasks</h2>
+  <h3>1. Readable description <span class="req">[req-1]</span></h3>
+  <ul style="list-style:none;padding-left:0">
+    <li>☐ <span class="pill layer">service</span> 1.1 Add <code>sanitizeDescription(html)</code> to <code>TasksService</code> — strip <code>/&lt;[^&gt;]*&gt;/g</code>, decode <code>&amp;amp; &amp;lt; &amp;gt; &amp;quot; &amp;#39; &amp;nbsp;</code>, collapse whitespace, trim</li>
+    <li>☐ <span class="pill layer">service</span> 1.2 Apply at row build (<code>:745</code>): <code>description: this.sanitizeDescription(t.description ?? '')</code></li>
+  </ul>
+  <p class="verify">Verify: <code>cd apps/api &amp;&amp; pnpm vitest run src/tasks/export-excel.spec.ts</code></p>
+  <h3>2. Parent Task Key column <span class="req">[req-2]</span></h3>
+  <ul style="list-style:none;padding-left:0">
+    <li>☐ <span class="pill layer">service</span> 2.1 In flatten loop (<code>:688-697</code>) attach <code>parentKey</code>: parent → <code>''</code>, child → <code>task.taskKey ?? ''</code></li>
+    <li>☐ <span class="pill layer">service</span> 2.2 Add column def as 2nd column (<code>:704</code>): <code>{ header: 'Parent Task Key', key: 'parentKey', width: 16 }</code></li>
+    <li>☐ <span class="pill layer">service</span> 2.3 Set <code>parentKey</code> in the <code>addRow</code> object (<code>:742</code>)</li>
+  </ul>
+  <p class="verify">Verify: <code>cd apps/api &amp;&amp; pnpm vitest run src/tasks/export-excel.spec.ts</code></p>
+  <h3>3. Test <span class="req">[req-1, req-2]</span></h3>
+  <ul style="list-style:none;padding-left:0">
+    <li>☐ <span class="pill test">test</span> 3.1 New <code>apps/api/src/tasks/export-excel.spec.ts</code> — mock <code>prisma.task.findMany</code> (parent <code>PROJ-1</code> desc <code>&lt;p&gt;Ship A &amp;amp; B when x &amp;lt; y&lt;/p&gt;</code> + child <code>PROJ-1-1</code>), call <code>exportExcel</code>, load buffer with ExcelJS, assert: parent Description === <code>Ship A &amp; B when x &lt; y</code>; header order <code>Task Key, Parent Task Key, Title, Description, …</code>; child Parent Task Key === <code>PROJ-1</code>, parent Parent Task Key empty</li>
+  </ul>
+  <p class="verify">Verify: <code>cd apps/api &amp;&amp; pnpm vitest run src/tasks/export-excel.spec.ts</code></p>
+
+  <h2 id="coverage">Coverage</h2>
+  <div class="banner good">✓ Every requirement is covered. req-1 → §1, §3 · req-2 → §2, §3. No orphan tasks.</div>
+
+  <h2 id="board">Board</h2>
+  <p class="meta">Not yet registered. <code>depends_on: []</code> — no overlap with existing changes (enhance-project-card, redesign-dashboard, add-agent-write-consent, add-sprint-edit, compact-kanban-card). Runs standalone.</p>
+</main>
+</div>
+</body>
+</html>
