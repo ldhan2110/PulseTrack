@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   Bug,
-  Bookmark,
-  CheckSquare,
-  Zap,
+  BookOpen,
+  Square,
+  Flag,
   GitBranch,
-  ArrowUp,
-  Sparkles,
-  ListTree,
+  TrendingUp,
+  Box,
+  FlaskConical,
   ChevronUp,
   ChevronDown,
   Minus,
@@ -40,15 +40,15 @@ const PRIORITY_CONFIG: Record<Priority, { color: string; glow: string; label: st
 // ponytail: type icon/color derived from the type NAME client-side — no schema column.
 // Add a real ProjectTaskType.color column only when per-type custom colors are requested.
 const TYPE_ICONS: Array<{ match: RegExp; icon: LucideIcon; color: string }> = [
-  { match: /bug|defect/i,          icon: Bug,         color: '#ef4444' },
-  { match: /story/i,               icon: Bookmark,    color: '#22c55e' },
-  { match: /epic/i,                icon: Zap,         color: '#8b5cf6' },
-  { match: /sub.?task/i,           icon: ListTree,    color: '#0ea5e9' },
-  { match: /improv|enhanc/i,       icon: ArrowUp,     color: '#14b8a6' },
-  { match: /feature/i,             icon: Sparkles,    color: '#f59e0b' },
-  { match: /spike|research/i,      icon: GitBranch,   color: '#a855f7' },
+  { match: /bug|defect/i,          icon: Bug,          color: '#ef4444' },
+  { match: /story/i,               icon: BookOpen,     color: '#22c55e' },
+  { match: /epic/i,                icon: Flag,         color: '#8b5cf6' },
+  { match: /sub.?task/i,           icon: GitBranch,    color: '#0ea5e9' },
+  { match: /improv|enhanc/i,       icon: TrendingUp,   color: '#14b8a6' },
+  { match: /feature/i,             icon: Box,          color: '#f59e0b' },
+  { match: /spike|research/i,      icon: FlaskConical, color: '#a855f7' },
 ];
-const DEFAULT_TYPE = { icon: CheckSquare, color: '#3b82f6' };
+const DEFAULT_TYPE = { icon: Square, color: '#3b82f6' };
 
 function getTypeVisual(name: string | null | undefined) {
   if (!name) return DEFAULT_TYPE;
