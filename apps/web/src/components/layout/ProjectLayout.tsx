@@ -56,7 +56,7 @@ export function ProjectLayout() {
             <NotificationBell />
           </div>
         </div>
-        <main className={fullWidth ? 'px-4 pt-2 pb-4 w-full overflow-auto' : 'px-8 pt-4 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
+        <main className={fullWidth ? 'px-4 pt-0 pb-4 w-full overflow-auto' : 'px-8 pt-1 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
           <Outlet />
         </main>
       </SidebarInset>
