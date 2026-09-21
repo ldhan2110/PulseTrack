@@ -20,6 +20,12 @@ function makePrisma() {
       update: vi.fn(),
     },
     messageAttachment: { create: vi.fn(), findUnique: vi.fn() },
+    messageReaction: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+    },
     $transaction: vi.fn(),
   } as any;
 }
@@ -329,5 +335,47 @@ describe('ChatService attachments', () => {
     await expect(
       service.getAttachmentForDownload('a1', 'stranger'),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
+describe('ChatService.toggleReaction', () => {
+  let prisma: any;
+  let service: ChatService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    service = new ChatService(prisma);
+    prisma.message.findUnique.mockResolvedValue({ id: 'm1', conversationId: 'c1' });
+    prisma.conversationMember.findUnique.mockResolvedValue({ id: 'member-1' });
+  });
+
+  it('creates a reaction when none exists, then removes it on repeat', async () => {
+    prisma.messageReaction.findUnique.mockResolvedValueOnce(null);
+    prisma.messageReaction.findMany.mockResolvedValueOnce([{ id: 'r1', emoji: '👍' }]);
+
+    const created = await service.toggleReaction('m1', 'u1', '👍');
+    expect(prisma.messageReaction.create).toHaveBeenCalledWith({
+      data: { messageId: 'm1', userId: 'u1', emoji: '👍' },
+    });
+    expect(prisma.messageReaction.delete).not.toHaveBeenCalled();
+    expect(created).toEqual([{ id: 'r1', emoji: '👍' }]);
+
+    prisma.messageReaction.findUnique.mockResolvedValueOnce({ id: 'r1' });
+    prisma.messageReaction.findMany.mockResolvedValueOnce([]);
+
+    const removed = await service.toggleReaction('m1', 'u1', '👍');
+    expect(prisma.messageReaction.delete).toHaveBeenCalledWith({
+      where: { id: 'r1' },
+    });
+    expect(removed).toEqual([]);
+  });
+
+  it('throws BadRequestException for empty or oversized emoji', async () => {
+    await expect(service.toggleReaction('m1', 'u1', '')).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(
+      service.toggleReaction('m1', 'u1', 'x'.repeat(17)),
+    ).rejects.toThrow(BadRequestException);
   });
 });

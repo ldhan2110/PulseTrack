@@ -158,7 +158,7 @@ export class ChatService {
     }
     const created = await this.prisma.message.create({
       data: { conversationId, authorId, body, createdBy: authorId },
-      include: { author: memberUserSelect },
+      include: { author: memberUserSelect, reactions: { include: { user: memberUserSelect } } },
     });
     // Transient echo (not persisted) so the sender can match its optimistic message.
     const message = { ...created, clientTempId };
@@ -172,7 +172,11 @@ export class ChatService {
       orderBy: { createdAt: 'desc' },
       take: HISTORY_PAGE,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      include: { author: memberUserSelect, attachments: true },
+      include: {
+        author: memberUserSelect,
+        attachments: true,
+        reactions: { include: { user: memberUserSelect } },
+      },
     });
     const items = rows.map((m) => (m.deletedAt ? { ...m, body: '' } : m));
     const nextCursor =
@@ -195,10 +199,41 @@ export class ChatService {
     const updated = await this.prisma.message.update({
       where: { id: messageId },
       data: { body, editedAt: new Date(), updatedBy: userId },
-      include: { author: memberUserSelect },
+      include: { author: memberUserSelect, reactions: { include: { user: memberUserSelect } } },
     });
     this.emitToConvo(updated.conversationId, 'chat:message:updated', updated);
     return updated;
+  }
+
+  async toggleReaction(messageId: string, userId: string, emoji: string) {
+    if (!emoji || emoji.length > 16) {
+      throw new BadRequestException('Invalid emoji');
+    }
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, conversationId: true },
+    });
+    if (!message) throw new NotFoundException('Message not found');
+    await this.assertMember(message.conversationId, userId);
+
+    const existing = await this.prisma.messageReaction.findUnique({
+      where: { messageId_userId_emoji: { messageId, userId, emoji } },
+    });
+    if (existing) {
+      await this.prisma.messageReaction.delete({ where: { id: existing.id } });
+    } else {
+      await this.prisma.messageReaction.create({ data: { messageId, userId, emoji } });
+    }
+
+    const reactions = await this.prisma.messageReaction.findMany({
+      where: { messageId },
+      include: { user: memberUserSelect },
+    });
+    this.emitToConvo(message.conversationId, 'chat:message:reaction', {
+      messageId,
+      reactions,
+    });
+    return reactions;
   }
 
   async deleteMessage(messageId: string, userId: string) {
