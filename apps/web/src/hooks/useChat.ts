@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
+import { upsertReactions, toggleReactionLocal } from './reactions.util';
 import type {
   Conversation,
   Message,
@@ -220,6 +221,32 @@ export function useDeleteMessage(conversationId: string) {
     },
     onError: (err) =>
       toast.error(err instanceof Error ? err.message : 'Failed to delete message'),
+  });
+}
+
+export function useReactMessage(conversationId: string) {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const key = chatKeys.messages(conversationId);
+  return useMutation({
+    mutationFn: ({ id, emoji }: { id: string; emoji: string }) =>
+      api.reactToChatMessage(id, emoji),
+    onMutate: async ({ id, emoji }) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<Infinite>(key);
+      if (prev && user) {
+        qc.setQueryData<Infinite>(key, toggleReactionLocal(prev, id, emoji, user as any));
+      }
+      return { prev };
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+      toast.error(err instanceof Error ? err.message : 'Failed to react');
+    },
+    onSuccess: (reactions, { id }) => {
+      const cur = qc.getQueryData<Infinite>(key);
+      if (cur) qc.setQueryData<Infinite>(key, upsertReactions(cur, id, reactions));
+    },
   });
 }
 

@@ -9,7 +9,8 @@ import {
   applyUpdated,
   applyDeleted,
 } from './useChat';
-import type { Conversation, Message, MessagePage } from '../lib/types';
+import { upsertReactions } from './reactions.util';
+import type { Conversation, Message, MessagePage, MessageReaction } from '../lib/types';
 
 type Infinite = InfiniteData<MessagePage> | undefined;
 
@@ -57,6 +58,14 @@ export function useChatSync() {
     function onUpdated(msg: Message) {
       qc.setQueryData<Infinite>(chatKeys.messages(msg.conversationId), (d) =>
         applyUpdated(d, msg),
+      );
+    }
+
+    function onReaction(payload: { messageId: string; reactions: MessageReaction[] }) {
+      // no conversationId on this payload, unlike onUpdated/onDeleted — apply across
+      // all messages caches; upsertReactions is a no-op for pages that don't contain it.
+      qc.setQueriesData<Infinite>({ queryKey: ['chat', 'messages'] }, (d) =>
+        d ? upsertReactions(d, payload.messageId, payload.reactions) : d,
       );
     }
 
@@ -114,6 +123,7 @@ export function useChatSync() {
     socket.on('chat:message:new', onNew);
     socket.on('chat:message:updated', onUpdated);
     socket.on('chat:message:deleted', onDeleted);
+    socket.on('chat:message:reaction', onReaction);
     socket.on('chat:typing', onTyping);
     socket.on('chat:presence', onPresence);
     socket.on('chat:read', onRead);
@@ -123,6 +133,7 @@ export function useChatSync() {
       socket.off('chat:message:new', onNew);
       socket.off('chat:message:updated', onUpdated);
       socket.off('chat:message:deleted', onDeleted);
+      socket.off('chat:message:reaction', onReaction);
       socket.off('chat:typing', onTyping);
       socket.off('chat:presence', onPresence);
       socket.off('chat:read', onRead);
