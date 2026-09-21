@@ -18,49 +18,23 @@ h2{font-size:15px;margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid 
 .hist .meta{font-size:11.5px;color:var(--mut);font-variant-numeric:tabular-nums}.hist .sm{margin-top:4px;font-size:12.5px}
 code{background:rgba(127,127,127,.15);padding:1px 4px;border-radius:4px;font-size:12px}
 </style><div class=wrap>
-<h1>DevSpec Report — PulseTrack</h1><div class=gen>generated 2026-09-21 03:29 UTC</div>
-<div class=pills><span style="border-color:#16a34a">6 done</span><span style="border-color:#d97706">1 in-progress</span><span style="border-color:#dc2626">1 blocked</span><span>8 total</span></div>
+<h1>DevSpec Report — PulseTrack</h1><div class=gen>generated 2026-09-21 04:13 UTC</div>
+<div class=pills><span style="border-color:#16a34a">7 done</span><span style="border-color:#d97706">1 in-progress</span><span style="border-color:#dc2626">0 blocked</span><span>8 total</span></div>
 <h2>Open Blockers</h2>
-<div class=blk><h3>add-realtime-chat-web — §1.2/§6 missing dependency endpoint + §8.2 MANUAL gate</h3><div class=body>add-realtime-chat-web — §1.2/§6 missing dependency endpoint + §8.2 MANUAL gate
-_worker-cc · 2026-09-21_
-
-**status: open** — two independent human-gated blockers
-
-### 1. Missing chat-target search/discovery endpoint (hard-block: impossible as written)
-req-3 + design.md architecture require `api.searchChatTargets(q)` returning **all people AND channels, including never-messaged, cross-project** (§1.2, §1.3 `useSearchChatTargets`, §4.1 search box, §6 whole overlay, §8.1 wiring).
-
-The `depends_on` backend `add-realtime-chat` shipped **no such endpoint**:
-- `chat.controller.ts` — 9 routes, none search/discover.
-- Backend spec req-1..req-12 — no search/discovery requirement.
-- Only user search that a normal user can call: `GET /projects/:projectId/members/search` — **project-scoped**, needs a projectId; the `/chat` page is global/cross-project (design default: &quot;chat crosses projects&quot;).
-- `GET /users` is **admin-only** (`SystemRolesGuard @SystemRoles(&#x27;admin&#x27;)`); `GET /users/me` is self.
-- **No channel-discovery endpoint at all** (search channels not joined).
-
-Can&#x27;t resolve in-scope: this change&#x27;s Blast Radius is web-only (&quot;NotificationBell/notification code untouched; new files + one route + one sidebar item&quot;). Adding a NestJS route (+guard +DTO +test) is a redesign of the backend dependency — not a web-only edit and not covered by any Impact Area Decision Default. Narrowing req-3 to project-scoped people-only (drop cross-project + channel discovery) is a spec change only the author/BA may make.
-
-### 2. §8.2 terminal MANUAL gate
-`- [ ] MANUAL: BA approves screenshot of /chat against mockups/chat-page.html` is unticked. Per worker rules an unticked MANUAL gate blocks the change; it cannot reach `done` autonomously this run regardless of blocker 1.
-
-**To resume:** a human picks one of —
-- (a) add a chat-target search endpoint to the backend (e.g. `GET /chat/search?q=` returning people + channels, member-gated) and record its contract, then the FE can implement §1.2/§6; **or**
-- (b) amend FE req-3 to reuse `GET /projects/:projectId/members/search` (project-scoped, people-only, drop channel discovery) with a Decision Default in design.md.
-Then tick §8.2 after the BA screenshot review, and reset board `status: blocked → pending`.
-
-**No code written this run** — blocker 1 surfaces at §1.2 (top of the data layer, before any section can complete its Verify), so no section was completable; committing partial unverified UI would be a lying-green.</div></div>
+<div class=empty>no open blockers</div>
 <h2>Implemented</h2>
 <div class=card><div class=row><span class=t>MCP agent write consent — per-token opt-in gate on write tools</span><span class=sec>5/5 sections</span></div></div>
 <div class=card><div class=row><span class=t>Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history</span><span class=sec>9/9 sections</span></div></div>
+<div class=card><div class=row><span class=t>Real-time chat frontend — chat page (Channels/DMs split, thread, pill composer), /chat socket, inline-image attachments (copy + paste/drag), new-conversation overlay, AppSidebar Chat item + /chat route</span><span class=sec>8/8 sections</span></div></div>
 <div class=card><div class=row><span class=t>Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</span><span class=sec>3/3 sections</span></div></div>
 <div class=card><div class=row><span class=t>Compact three-zone Kanban task card + responsive column widths</span><span class=sec>3/3 sections</span></div></div>
 <div class=card><div class=row><span class=t>Backlog Excel export — sanitize description HTML + add Parent Task Key column</span><span class=sec>3/3 sections</span></div></div>
 <div class=card><div class=row><span class=t>Dashboard redesign — status strip, bug banner, layout restyle per mockup</span><span class=sec>7/7 sections</span></div></div>
 <h2>In progress / Left</h2>
-<div class=card><div class=row><span class=t>Real-time chat frontend — chat page (Channels/DMs split, thread, pill composer), /chat socket, inline-image attachments (copy + paste/drag), new-conversation overlay, AppSidebar Chat item + /chat route</span><span class=badge style="background:#dc2626">blocked</span></div><div class=sec>0/8 sections</div>
-<div class=note>BLOCKED (see report/blockers.md): (1) §1.2/§6 require api.searchChatTargets — no chat-target search/discovery endpoint shipped by add-realtime-chat (only project-scoped members/search; /users admin-only; no channel discovery); web-only scope forbids adding backend route. (2) §8.2 MANUAL BA gate unticked. Human: add endpoint OR narrow req-3, tick §8.2, reset blocked→pending. No code written. Consumes backend REST + /chat socket. Access via new AppSidebar item + /chat route; unread badge separate from NotificationBell. Reuse planner chat components (ChatMessage/ChatInput/ChatMessageList/ChatAttachment) + shadcn. Approved mockup at mockups/chat-page.html. §8.2 is a MANUAL BA screenshot gate.</div>
-</div>
 <div class=card><div class=row><span class=t>Project card redesign — logo, member avatars, pinned footer</span><span class=badge style="background:#d97706">doing</span></div><div class=sec>— sections</div>
 </div>
 <h2>History</h2>
+<div class=hist><div class=row><span class=t>Real-time chat frontend — chat page, /chat socket, attachments, new-conversation overlay, sidebar item + route</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-21T03:40:00Z · 8/8 sections</div><div class=sm>Human cleared both earlier blockers (search reuses project-scoped members/search per a design Decision Default; §8.2 BA-approved). Built all 8 sections: chat types/api/hooks, /chat socket sync, sidebar Chat item + route, ConversationList, MessageThread + Composer + attachments + overlay, ChatPage wiring. 11 chat unit tests + build green; §3-8 visual gate via devspec-verify PASS on the live app (empty/overlay/filled screenshots). Archived.</div></div>
 <div class=hist><div class=row><span class=t>Real-time chat frontend — chat page, /chat socket, attachments, new-conversation overlay, sidebar item + route</span><span class=badge style="background:#dc2626">blocked</span></div><div class=meta>2026-09-21T03:20:00Z · 0/8 sections</div><div class=sm>Claimed the only runnable change and read all artifacts + backend contracts. Found req-3/§6 (and the §1.2 searchChatTargets method the data layer starts with) depend on a chat-target search endpoint the backend dependency never shipped; blocking here rather than silently rewiring to project-scoped search or adding an out-of-scope backend route. Logged blocker; no code written.</div></div>
 <div class=hist><div class=row><span class=t>Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-21T03:14:50Z · 9/9 sections</div><div class=sm>Built self-contained ChatModule (4 Prisma models + enum via additive migration, ChatGateway on /chat reusing SocketAuthService, ConversationMemberGuard, full ChatService). All 9 sections verified: 65 API tests green, build clean. Migration generated via schema-to-schema diff to skip a pre-existing EntityType.MESSAGE drift; verified on a local scratch DB (shared team DB untouched).</div></div>
 <div class=hist><div class=row><span class=t>Backlog Excel export — sanitize description HTML + add Parent Task Key column</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-18T11:23:37Z · 3/3 sections</div><div class=sm>Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</div></div>

@@ -5,13 +5,14 @@ _captured: 2026-09-21_
 
 When designing any new DB table/model, ALWAYS include audit fields.
 
-For PulseTrack `@pm/api` (Prisma / postgresql):
+For PulseTrack `@pm/api` (Prisma / postgresql), the audit quad on every new table:
+- `createdBy String?` — user id, **plain string, no `Id` suffix, no FK relation** (pure audit; survives user deletion)
 - `createdAt DateTime @default(now())`
+- `updatedBy String?` — user id, plain string, no relation
 - `updatedAt DateTime @updatedAt`
-- an actor FK for "who created" — `creatorId` / `createdById` / `senderId` → `User` relation, following the existing `Task` / `User` pattern.
 
-**Not** the legacy `CRE_USR_ID` / `UPD_USR_ID` string-column pattern — that belongs to the `caris_upgrade` project, not `@pm/api`.
+Column names are exactly `createdBy` / `updatedBy` (NOT `createdById`/`updatedById`, NOT legacy `CRE_USR_ID`/`UPD_USR_ID`).
 
-Add `updatedBy`-style actor tracking only where an entity is meaningfully edited by someone other than its creator (most tables don't need it — the creator FK + `updatedAt` suffice).
+Keep these audit columns **separate** from domain display FKs (e.g. `authorId`, `creatorId`, `userId`) that the app navigates to a `User` relation for name/avatar — those stay real `@relation` FKs; the audit pair is relation-free.
 
 Standing rule for all future `db.md` / `schema.prisma` design in this repo.

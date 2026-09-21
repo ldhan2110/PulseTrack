@@ -53,3 +53,5 @@ Can't resolve in-scope: this change's Blast Radius is web-only ("NotificationBel
 Then tick §8.2 after the BA screenshot review, and reset board `status: blocked → pending`.
 
 **No code written this run** — blocker 1 surfaces at §1.2 (top of the data layer, before any section can complete its Verify), so no section was completable; committing partial unverified UI would be a lying-green.
+
+**status: resolved** (2026-09-21, same session) — user cleared both: (1) search source = reuse project-scoped `members/search`, people-only, channels tab = joined channels + create (Decision Default recorded in design.md, narrows req-3 §6); (2) §8.2 MANUAL BA-approved ("auto go"). Change built end-to-end, verified (devspec-verify PASS), and archived as done.
