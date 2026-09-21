@@ -228,6 +228,9 @@ model User {
   automationRuns          AutomationRun[] @relation("AutomationRunner")
   projectDefaultWatchers  ProjectDefaultWatcher[]
   mcpTokens               McpToken[]
+  createdConversations    Conversation[]      @relation("ConversationCreator")
+  conversationMemberships ConversationMember[] @relation("ConversationMemberUser")
+  authoredMessages        Message[]           @relation("MessageAuthor")
 }
 
 model Project {
@@ -1196,4 +1199,77 @@ model McpToken {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+enum ConversationType {
+  DM
+  CHANNEL
+}
+
+model Conversation {
+  id        String           @id @default(cuid())
+  type      ConversationType
+  name      String? // channel name; null for DM
+  creatorId String? // domain FK; nullable so channel survives creator deletion
+  createdBy String? // audit — user id, no relation
+  createdAt DateTime         @default(now())
+  updatedBy String? // audit — user id, no relation
+  updatedAt DateTime         @updatedAt
+
+  creator  User?                @relation("ConversationCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String // domain FK — the member (UI shows avatar)
+  role           String? // "owner"/"member" for channels; null for DM
+  lastReadAt     DateTime? // read-receipt + unread cursor; null = never opened
+  mutedAt        DateTime? // per-convo mute; null = unmuted
+  createdBy      String? // audit — who added this member
+  createdAt      DateTime  @default(now())
+  updatedBy      String? // audit
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation("ConversationMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  authorId       String // domain FK — the sender (UI shows name/avatar)
+  body           String
+  editedAt       DateTime? // null = never edited
+  deletedAt      DateTime? // soft-delete (intentional exception to hard-delete norm)
+  createdBy      String? // audit
+  createdAt      DateTime  @default(now())
+  updatedBy      String? // audit — who last edited
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User                @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  attachments  MessageAttachment[]
+
+  @@index([conversationId, createdAt])
+}
+
+model MessageAttachment {
+  id         String   @id @default(cuid())
+  messageId  String
+  filename   String // original name
+  storedName String // uuid.ext on disk
+  mimeType   String
+  size       Int // bytes
+  createdBy  String? // audit — uploader
+  createdAt  DateTime @default(now())
+  updatedBy  String? // audit
+  updatedAt  DateTime @updatedAt
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }

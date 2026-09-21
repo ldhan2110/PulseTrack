@@ -52,3 +52,19 @@ changes:
     owner: "worker-cc"
     archived: archive/compact-kanban-card
     notes: "verified live (anle@CARIS backlog board): 3-zone compact card + responsive columns pass; req-2 overdue border code+build verified (no overdue task on board to render live)"
+  add-realtime-chat:
+    title: Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history
+    tasks_md: changes/add-realtime-chat/tasks.md
+    depends_on: []
+    skills: []
+    status: done
+    owner: "worker-cc"
+    notes: "All 9 sections pass (65 API tests green, build clean). Migration generated via schema-to-schema diff to avoid a PRE-EXISTING EntityType.MESSAGE drift; verified on a local scratch DB (shared team DB untouched). Added a member-gated chat:join socket handler (room delivery glue not separately spec'd)."
+  add-realtime-chat-web:
+    title: Real-time chat frontend — chat page (Channels/DMs split, thread, pill composer), /chat socket, inline-image attachments (copy + paste/drag), new-conversation overlay, AppSidebar Chat item + /chat route
+    tasks_md: changes/add-realtime-chat-web/tasks.md
+    depends_on: [add-realtime-chat]
+    skills: [frontend-design]
+    status: pending
+    owner: ""
+    notes: "Consumes backend REST + /chat socket. Access via new AppSidebar item + /chat route; unread badge separate from NotificationBell. Reuse planner chat components (ChatMessage/ChatInput/ChatMessageList/ChatAttachment) + shadcn. Approved mockup at mockups/chat-page.html. §8.2 is a MANUAL BA screenshot gate."
