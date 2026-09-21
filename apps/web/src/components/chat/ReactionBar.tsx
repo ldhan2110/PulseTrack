@@ -1,27 +1,14 @@
-import { useState } from 'react';
-import data from '@emoji-mart/data';
-import Picker from '@emoji-mart/react';
+import { lazy, Suspense, useState } from 'react';
 import { SmilePlus, Plus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useReactMessage } from '@/hooks/useChat';
-import type { Message, MessageReaction } from '@/lib/types';
+import { groupReactions, reactorNames } from '@/hooks/reactions.util';
+import type { Message } from '@/lib/types';
+
+const Picker = lazy(() => import('./EmojiPickerLazy'));
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
-
-export function groupReactions(reactions: MessageReaction[] = []) {
-  const map = new Map<string, MessageReaction[]>();
-  for (const r of reactions) {
-    (map.get(r.emoji) ?? map.set(r.emoji, []).get(r.emoji)!).push(r);
-  }
-  return [...map.entries()].map(([emoji, rows]) => ({ emoji, rows }));
-}
-
-export function reactorNames(rows: MessageReaction[], myId: string) {
-  const names = rows.map((r) => (r.userId === myId ? 'you' : r.user.name || r.user.username));
-  if (names.length <= 2) return names.join(' and ');
-  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
-}
 
 export function ReactionBar({ message, myId, convId }: { message: Message; myId: string; convId: string }) {
   const react = useReactMessage(convId);
@@ -63,7 +50,9 @@ export function ReactionBar({ message, myId, convId }: { message: Message; myId:
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2">
             {showPicker ? (
-              <Picker data={data} onEmojiSelect={(e: { native: string }) => { toggle(e.native); setOpen(false); }} theme="light" />
+              <Suspense fallback={<div className="p-4 text-xs text-muted-foreground">Loading…</div>}>
+                <Picker onEmojiSelect={(e: { native: string }) => { toggle(e.native); setOpen(false); }} />
+              </Suspense>
             ) : (
               <div className="flex items-center gap-1">
                 {QUICK_EMOJIS.map((e) => (

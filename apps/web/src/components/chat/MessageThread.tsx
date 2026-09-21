@@ -1,7 +1,6 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
-import { Hash, Pencil, Trash2, RotateCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Hash } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,60 +16,15 @@ import {
   useMessages,
   useEditMessage,
   useDeleteMessage,
+  usePresence,
+  useTyping,
 } from '@/hooks/useChat';
 import type { Conversation, Message } from '@/lib/types';
 import { getChatSocket } from '@/socket/instance';
+import { dayKey, groupMessages } from '@/lib/chatFormat';
 import { Composer } from './Composer';
-import { MessageAttachment } from './MessageAttachment';
-import { ReactionBar } from './ReactionBar';
-import { convTitle, initials, peerOf, usePresence, useTyping } from './chatUtils';
-
-const GROUP_WINDOW_MS = 5 * 60 * 1000;
-
-function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function dayKey(iso: string): string {
-  return new Date(iso).toDateString();
-}
-
-/** Google Chat–style day label: Today / Yesterday / weekday / date. */
-function dayLabel(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  const diffDays = (today.getTime() - d.getTime()) / 86_400_000;
-  if (diffDays < 7) return d.toLocaleDateString([], { weekday: 'long' });
-  return d.toLocaleDateString([], {
-    month: 'short',
-    day: 'numeric',
-    year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
-  });
-}
-
-/** Consecutive same-author messages within the window form one group. */
-function groupMessages(messages: Message[]): Message[][] {
-  const groups: Message[][] = [];
-  for (const m of messages) {
-    const last = groups[groups.length - 1];
-    const prev = last?.[last.length - 1];
-    if (
-      prev &&
-      prev.authorId === m.authorId &&
-      new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() <
-        GROUP_WINDOW_MS
-    ) {
-      last.push(m);
-    } else {
-      groups.push([m]);
-    }
-  }
-  return groups;
-}
+import { convTitle, initials, peerOf } from './chatUtils';
+import { MessageGroup } from './MessageGroup';
 
 /** Three dots with a staggered bounce. */
 function TypingDots() {
@@ -100,141 +54,41 @@ export function MessageThreadView({
   onRetry,
 }: ViewProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState('');
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const groups = groupMessages(messages);
+  const groups = useMemo(() => groupMessages(messages), [messages]);
+
+  const onStartEdit = useCallback((id: string) => setEditingId(id), []);
+  const onCancelEdit = useCallback(() => setEditingId(null), []);
+  const onCommitEdit = useCallback(
+    (id: string, body: string) => {
+      onEdit?.(id, body);
+      setEditingId(null);
+    },
+    [onEdit],
+  );
+  const onRequestDelete = useCallback((id: string) => setConfirmId(id), []);
 
   return (
     <div className="space-y-4">
       {groups.map((group, i) => {
         const first = group[0];
-        const own = first.authorId === myId;
         const prev = groups[i - 1]?.[0];
         const showDay = !prev || dayKey(prev.createdAt) !== dayKey(first.createdAt);
+        // pass editingId only to the group that owns the edited row → others memo-skip
+        const editingInGroup = group.some((m) => m.id === editingId) ? editingId : null;
         return (
-          <Fragment key={first.id}>
-            {showDay && (
-              <div className="flex items-center gap-3 py-2">
-                <div className="h-px flex-1 bg-border" />
-                <span className="px-2 text-xs font-medium text-muted-foreground">
-                  {dayLabel(first.createdAt)}
-                </span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-            )}
-          <div
-            className={`flex gap-2 ${own ? 'flex-row-reverse' : 'flex-row'}`}
-          >
-            {!own && (
-              <Avatar className="mt-5 size-7 shrink-0">
-                {first.author.imageUrl && <AvatarImage src={first.author.imageUrl} />}
-                <AvatarFallback className="text-[10px]">
-                  {initials(first.author)}
-                </AvatarFallback>
-              </Avatar>
-            )}
-            <div className={`flex max-w-[75%] flex-col gap-1 ${own ? 'items-end' : 'items-start'}`}>
-              <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-                {!own && (
-                  <span className="font-semibold text-foreground">
-                    {first.author.name ?? first.author.username}
-                  </span>
-                )}
-                <span>{timeLabel(first.createdAt)}</span>
-              </div>
-
-              {group.map((m) => {
-                const isEditing = editingId === m.id;
-                if (m.deletedAt) {
-                  return (
-                    <div
-                      key={m.id}
-                      className="rounded-xl bg-muted/50 px-3 py-2 text-sm italic text-muted-foreground"
-                      data-testid="deleted-placeholder"
-                    >
-                      {m.author?.name ?? m.author?.username ?? 'User'} has deleted
-                      this message
-                    </div>
-                  );
-                }
-                return (
-                  <div key={m.id} className="group/msg relative flex items-center gap-1">
-                    {own && !isEditing && (
-                      <div className="absolute -top-3 right-2 z-10 hidden rounded-md border bg-background shadow-sm group-hover/msg:flex">
-                        <button
-                          aria-label="Edit"
-                          className="rounded-l-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                          onClick={() => {
-                            setEditingId(m.id);
-                            setDraft(m.body);
-                          }}
-                        >
-                          <Pencil className="size-3.5" />
-                        </button>
-                        <button
-                          aria-label="Delete"
-                          className="rounded-r-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
-                          onClick={() => setConfirmId(m.id)}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    )}
-                    {isEditing ? (
-                      <Input
-                        autoFocus
-                        value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            onEdit?.(m.id, draft.trim());
-                            setEditingId(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingId(null);
-                          }
-                        }}
-                        onBlur={() => setEditingId(null)}
-                        className="h-8 w-64"
-                      />
-                    ) : (
-                      <div className="flex flex-col gap-1">
-                        <div
-                          className={`rounded-xl px-3 py-2 text-sm ${
-                            own
-                              ? 'rounded-br-sm bg-primary text-primary-foreground'
-                              : 'rounded-bl-sm bg-muted'
-                          } ${m.status === 'failed' ? 'opacity-60 ring-1 ring-destructive' : ''}`}
-                        >
-                          {m.body && <div className="whitespace-pre-wrap">{m.body}</div>}
-                          {m.attachments && m.attachments.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1.5">
-                              {m.attachments.map((att) => (
-                                <MessageAttachment key={att.id} attachment={att} own={own} />
-                              ))}
-                            </div>
-                          )}
-                          <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] opacity-70">
-                            {m.editedAt && <span>edited</span>}
-                            {own && m.status === 'sending' && <span>sending…</span>}
-                            {own && m.status === 'failed' && (
-                              <button
-                                className="flex items-center gap-0.5 text-destructive"
-                                onClick={() => onRetry?.(m)}
-                              >
-                                <RotateCw className="size-3" /> retry
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {!m.deletedAt && <ReactionBar message={m} myId={myId} convId={m.conversationId} />}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          </Fragment>
+          <MessageGroup
+            key={first.id}
+            group={group}
+            myId={myId}
+            showDay={showDay}
+            editingId={editingInGroup}
+            onStartEdit={onStartEdit}
+            onCancelEdit={onCancelEdit}
+            onCommitEdit={onCommitEdit}
+            onRequestDelete={onRequestDelete}
+            onRetry={onRetry}
+          />
         );
       })}
 
@@ -277,6 +131,15 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
   } = useMessages(convId);
   const edit = useEditMessage(convId);
   const del = useDeleteMessage(convId);
+  const editMutate = edit.mutate;
+  const delMutate = del.mutate;
+  const handleEdit = useCallback(
+    (id: string, body: string) => {
+      if (body) editMutate({ id, body });
+    },
+    [editMutate],
+  );
+  const handleDelete = useCallback((id: string) => delMutate(id), [delMutate]);
   const presence = usePresence();
   const typing = useTyping(convId);
   const typer =
@@ -301,10 +164,10 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
   }, [convId]);
 
   // pages are newest-first; flatten and reverse to chronological order
-  const messages: Message[] = (data?.pages ?? [])
-    .flatMap((p) => p.items)
-    .slice()
-    .reverse();
+  const messages: Message[] = useMemo(
+    () => (data?.pages ?? []).flatMap((p) => p.items).slice().reverse(),
+    [data],
+  );
 
   // stick to bottom on new messages (not when prepending history)
   const lastId = messages[messages.length - 1]?.id;
@@ -388,8 +251,8 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
           <MessageThreadView
             messages={messages}
             myId={myId}
-            onEdit={(id, body) => body && edit.mutate({ id, body })}
-            onDelete={(id) => del.mutate(id)}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         )}
         {typing && typing.userId !== myId && (

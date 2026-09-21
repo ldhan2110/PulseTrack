@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { upsertReactions, toggleReactionLocal } from './reactions.util';
-import { groupReactions, reactorNames } from '../components/chat/ReactionBar';
+import {
+  upsertReactions,
+  toggleReactionLocal,
+  groupReactions,
+  reactorNames,
+} from './reactions.util';
 import type { MessageReaction } from '../lib/types';
 
 const page = (msgs: any[]) => ({ pages: [{ items: msgs, nextCursor: null }], pageParams: [undefined] });

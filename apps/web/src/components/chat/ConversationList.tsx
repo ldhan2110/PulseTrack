@@ -6,9 +6,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/auth/useAuth';
 import { useUiStore } from '@/store/uiStore';
-import { useConversations, useMarkChatRead } from '@/hooks/useChat';
+import { useConversations, useMarkChatRead, usePresence } from '@/hooks/useChat';
 import type { Conversation } from '@/lib/types';
-import { convTitle, initials, peerOf, usePresence } from './chatUtils';
+import { convTitle, initials, peerOf } from './chatUtils';
 
 function UnreadBadge({ count }: { count: number }) {
   if (!count) return null;

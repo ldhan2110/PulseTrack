@@ -264,6 +264,31 @@ export function useMarkChatRead() {
   });
 }
 
+/** Live presence map, kept current by useChatSync via setQueryData. */
+export function usePresence(): Record<string, boolean> {
+  return (
+    useQuery<Record<string, boolean>>({
+      queryKey: chatKeys.presence,
+      queryFn: () => ({}),
+      staleTime: Infinity,
+      gcTime: Infinity,
+    }).data ?? {}
+  );
+}
+
+/** Live "who is typing" for a conversation (or null). */
+export function useTyping(conversationId: string | null): { userId: string } | null {
+  return (
+    useQuery<{ userId: string; at: number } | null>({
+      queryKey: typingKey(conversationId ?? '__none__'),
+      queryFn: () => null,
+      staleTime: Infinity,
+      gcTime: Infinity,
+      enabled: !!conversationId,
+    }).data ?? null
+  );
+}
+
 export function useSearchChatTargets(query: string) {
   return useQuery({
     queryKey: ['chat', 'search', query],

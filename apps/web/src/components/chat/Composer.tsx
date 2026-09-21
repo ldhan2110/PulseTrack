@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { Smile, Image as ImageIcon, Paperclip, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { getChatSocket } from '@/socket/instance';
 import { useSendMessage, useMarkChatRead, chatKeys } from '@/hooks/useChat';
-import EmojiPicker from '@emoji-mart/react';
-import emojiData from '@emoji-mart/data';
+
+const EmojiPicker = lazy(() => import('./EmojiPickerLazy'));
 
 export function Composer({
   conversationId,
@@ -161,14 +161,14 @@ export function Composer({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto border-0 p-0">
-            <EmojiPicker
-              data={emojiData}
-              theme="light"
-              previewPosition="none"
-              onEmojiSelect={(e: { native: string }) =>
-                setText((t) => t + e.native)
-              }
-            />
+            <Suspense fallback={<div className="p-4 text-xs text-muted-foreground">Loading…</div>}>
+              <EmojiPicker
+                previewPosition="none"
+                onEmojiSelect={(e: { native: string }) =>
+                  setText((t) => t + e.native)
+                }
+              />
+            </Suspense>
           </PopoverContent>
         </Popover>
 

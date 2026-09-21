@@ -31,6 +31,24 @@ export function upsertReactions(
   return mapMessage(data, messageId, () => reactions);
 }
 
+/** Group a message's reactions by emoji, preserving first-seen order. */
+export function groupReactions(reactions: MessageReaction[] = []) {
+  const map = new Map<string, MessageReaction[]>();
+  for (const r of reactions) {
+    const rows = map.get(r.emoji);
+    if (rows) rows.push(r);
+    else map.set(r.emoji, [r]);
+  }
+  return [...map.entries()].map(([emoji, rows]) => ({ emoji, rows }));
+}
+
+/** Human list of who reacted, e.g. "you, Bo and Al". */
+export function reactorNames(rows: MessageReaction[], myId: string) {
+  const names = rows.map((r) => (r.userId === myId ? 'you' : r.user.name || r.user.username));
+  if (names.length <= 2) return names.join(' and ');
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+}
+
 /** Optimistic local toggle for the current user; server broadcast reconciles. */
 export function toggleReactionLocal(
   data: Infinite,

@@ -1,8 +1,17 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// grouping/deleted are what this suite verifies; ReactionBar pulls auth+query providers
+vi.mock('./ReactionBar', () => ({ ReactionBar: () => null }));
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MessageThreadView } from './MessageThread';
 import type { Message } from '@/lib/types';
+
+function renderView(ui: React.ReactElement) {
+  const qc = new QueryClient();
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 
 const mai = { id: 'u2', username: 'mai', email: 'm@x.y', name: 'Mai Khanh', imageUrl: null };
 
@@ -28,7 +37,7 @@ describe('MessageThreadView', () => {
       m('2', { createdAt: '2026-09-21T10:01:00.000Z' }),
       m('3', { createdAt: '2026-09-21T10:02:00.000Z' }),
     ];
-    render(<MessageThreadView messages={messages} myId="me" />);
+    renderView((<MessageThreadView messages={messages} myId="me" />));
 
     // name shown once for the whole group
     expect(screen.getAllByText('Mai Khanh')).toHaveLength(1);
@@ -42,7 +51,7 @@ describe('MessageThreadView', () => {
     const messages = [
       m('1', { deletedAt: '2026-09-21T10:05:00.000Z', body: 'secret' }),
     ];
-    render(<MessageThreadView messages={messages} myId="me" />);
+    renderView((<MessageThreadView messages={messages} myId="me" />));
 
     expect(screen.getByTestId('deleted-placeholder').textContent).toContain(
       'has deleted this message',
