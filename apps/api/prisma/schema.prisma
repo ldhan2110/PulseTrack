@@ -231,6 +231,7 @@ model User {
   createdConversations    Conversation[]      @relation("ConversationCreator")
   conversationMemberships ConversationMember[] @relation("ConversationMemberUser")
   authoredMessages        Message[]           @relation("MessageAuthor")
+  messageReactions        MessageReaction[]
 }
 
 model Project {
@@ -1255,8 +1256,23 @@ model Message {
   conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   author       User                @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   attachments  MessageAttachment[]
+  reactions    MessageReaction[]
 
   @@index([conversationId, createdAt])
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
 }
 
 model MessageAttachment {
