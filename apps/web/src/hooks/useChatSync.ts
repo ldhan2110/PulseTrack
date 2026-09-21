@@ -47,6 +47,10 @@ export function useChatSync() {
       qc.setQueryData<Infinite>(chatKeys.messages(msg.conversationId), (d) =>
         reconcile(d, msg),
       );
+      // the sender's message just arrived → they stopped typing; clear the dots
+      qc.setQueryData(typingKey(msg.conversationId), (cur) =>
+        cur && (cur as { userId: string }).userId === msg.authorId ? null : cur,
+      );
       void qc.invalidateQueries({ queryKey: chatKeys.conversations });
     }
 

@@ -6,15 +6,22 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { getChatSocket } from '@/socket/instance';
-import { useSendMessage, chatKeys } from '@/hooks/useChat';
+import { useSendMessage, useMarkChatRead, chatKeys } from '@/hooks/useChat';
 import EmojiPicker from '@emoji-mart/react';
 import emojiData from '@emoji-mart/data';
 
-export function Composer({ conversationId }: { conversationId: string }) {
+export function Composer({
+  conversationId,
+  unread = 0,
+}: {
+  conversationId: string;
+  unread?: number;
+}) {
   const [text, setText] = useState('');
   const [pending, setPending] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const send = useSendMessage(conversationId);
+  const markRead = useMarkChatRead();
   const qc = useQueryClient();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -123,6 +130,9 @@ export function Composer({ conversationId }: { conversationId: string }) {
           ref={taRef}
           value={text}
           rows={1}
+          onFocus={() => {
+            if (unread) markRead.mutate(conversationId);
+          }}
           onChange={(e) => {
             setText(e.target.value);
             autoGrow();

@@ -172,7 +172,7 @@ export class ChatService {
       orderBy: { createdAt: 'desc' },
       take: HISTORY_PAGE,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      include: { author: memberUserSelect },
+      include: { author: memberUserSelect, attachments: true },
     });
     const items = rows.map((m) => (m.deletedAt ? { ...m, body: '' } : m));
     const nextCursor =

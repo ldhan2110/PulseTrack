@@ -17,7 +17,6 @@ import {
   useMessages,
   useEditMessage,
   useDeleteMessage,
-  useMarkChatRead,
 } from '@/hooks/useChat';
 import type { Conversation, Message } from '@/lib/types';
 import { getChatSocket } from '@/socket/instance';
@@ -208,7 +207,7 @@ export function MessageThreadView({
                         {m.attachments && m.attachments.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1.5">
                             {m.attachments.map((att) => (
-                              <MessageAttachment key={att.id} attachment={att} />
+                              <MessageAttachment key={att.id} attachment={att} own={own} />
                             ))}
                           </div>
                         )}
@@ -274,7 +273,6 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
   } = useMessages(convId);
   const edit = useEditMessage(convId);
   const del = useDeleteMessage(convId);
-  const markRead = useMarkChatRead();
   const presence = usePresence();
   const typing = useTyping(convId);
   const typer =
@@ -324,12 +322,6 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [convId, lastId]);
-
-  // viewing the thread clears unread — fire on open and on each new message
-  useEffect(() => {
-    if (conversation.unreadCount) markRead.mutate(convId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [convId, lastId, conversation.unreadCount]);
 
   // infinite scroll upward — load older, preserve position
   function onScroll() {
@@ -405,7 +397,7 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
         <div ref={bottomRef} />
       </div>
 
-      <Composer conversationId={convId} />
+      <Composer conversationId={convId} unread={conversation.unreadCount ?? 0} />
     </div>
   );
 }

@@ -12,9 +12,15 @@ function formatSize(bytes: number) {
 
 const isImage = (mime: string) => mime.startsWith('image/');
 
-export function MessageAttachment({ attachment }: { attachment: Att }) {
+export function MessageAttachment({
+  attachment,
+  own = false,
+}: {
+  attachment: Att;
+  own?: boolean;
+}) {
   if (isImage(attachment.mimeType)) return <ImageAttachment attachment={attachment} />;
-  return <FileChip attachment={attachment} />;
+  return <FileChip attachment={attachment} own={own} />;
 }
 
 function ImageAttachment({ attachment }: { attachment: Att }) {
@@ -50,6 +56,22 @@ function ImageAttachment({ attachment }: { attachment: Att }) {
     }
   }
 
+  async function download() {
+    try {
+      const blob = await api.downloadChatAttachment(attachment.id);
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(href);
+    } catch {
+      toast.error('Download failed');
+    }
+  }
+
   return (
     <>
       <div className="group/att relative inline-block">
@@ -63,13 +85,22 @@ function ImageAttachment({ attachment }: { attachment: Att }) {
         ) : (
           <div className="h-32 w-40 animate-pulse rounded-md bg-muted" />
         )}
-        <button
-          onClick={copy}
-          aria-label="Copy image"
-          className="absolute right-1 top-1 hidden items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-[11px] shadow group-hover/att:flex"
-        >
-          <Copy className="size-3" /> Copy
-        </button>
+        <div className="absolute right-1 top-1 hidden gap-1 group-hover/att:flex">
+          <button
+            onClick={copy}
+            aria-label="Copy image"
+            className="flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-[11px] shadow"
+          >
+            <Copy className="size-3" /> Copy
+          </button>
+          <button
+            onClick={download}
+            aria-label="Download image"
+            className="flex items-center gap-1 rounded bg-background/90 px-1.5 py-0.5 text-[11px] shadow"
+          >
+            <Download className="size-3" /> Save
+          </button>
+        </div>
       </div>
       {zoom && url && (
         <div
@@ -83,7 +114,7 @@ function ImageAttachment({ attachment }: { attachment: Att }) {
   );
 }
 
-function FileChip({ attachment }: { attachment: Att }) {
+function FileChip({ attachment, own = false }: { attachment: Att; own?: boolean }) {
   const Icon = attachment.mimeType === 'application/pdf' ? FileText : FileIcon;
   async function download() {
     try {
@@ -100,15 +131,19 @@ function FileChip({ attachment }: { attachment: Att }) {
       toast.error('Download failed');
     }
   }
+  const chip = own
+    ? 'bg-primary-foreground/15 hover:bg-primary-foreground/25'
+    : 'bg-background/70 hover:bg-background';
+  const sub = own ? 'text-primary-foreground/70' : 'text-muted-foreground';
   return (
     <button
       onClick={download}
-      className="flex items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs hover:bg-muted"
+      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ${chip}`}
     >
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      <Icon className={`size-3.5 shrink-0 ${sub}`} />
       <span className="max-w-[150px] truncate">{attachment.filename}</span>
-      <span className="text-muted-foreground">{formatSize(attachment.size)}</span>
-      <Download className="size-3 text-muted-foreground" />
+      <span className={sub}>{formatSize(attachment.size)}</span>
+      <Download className={`size-3 ${sub}`} />
     </button>
   );
 }
