@@ -1,174 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DevSpec Report — PulseTrack</title>
-<style>
-  :root{
-    --bg:#f6f7f9; --card:#fff; --ink:#1a1d21; --muted:#697586; --line:#e3e8ef;
-    --done:#0f9d58; --prog:#d69e2e; --block:#e02424; --pend:#697586;
-    --accent:#2563eb;
-  }
-  @media (prefers-color-scheme:dark){
-    :root{--bg:#15181c;--card:#1e2228;--ink:#e6e9ee;--muted:#9aa5b1;--line:#2c323b;}
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    padding:24px 16px}
-  .wrap{max-width:960px;margin:0 auto}
-  h1{font-size:20px;margin:0 0 4px}
-  .ts{color:var(--muted);font-size:12px;margin-bottom:20px}
-  .counts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
-  .pill{padding:4px 12px;border-radius:999px;font-weight:600;font-size:13px;
-    border:1px solid var(--line);background:var(--card)}
-  .pill b{font-weight:800}
-  .c-done{color:var(--done)} .c-prog{color:var(--prog)}
-  .c-block{color:var(--block)} .c-pend{color:var(--pend)}
-  h2{font-size:15px;margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
-  .row{background:var(--card);border:1px solid var(--line);border-radius:8px;
-    padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
-  .row .title{flex:1;min-width:0}
-  .row .title .name{font-weight:600}
-  .row .title .note{color:var(--muted);font-size:12px;margin-top:3px}
-  .badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
-    padding:2px 8px;border-radius:5px;white-space:nowrap}
-  .b-done{background:rgba(15,157,88,.14);color:var(--done)}
-  .b-prog{background:rgba(214,158,46,.16);color:var(--prog)}
-  .b-block{background:rgba(224,36,36,.14);color:var(--block)}
-  .b-pend{background:rgba(105,117,134,.16);color:var(--pend)}
-  .sec{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;
-    white-space:nowrap;padding-top:1px}
-  .empty{color:var(--muted);font-style:italic;padding:6px 2px}
-  .hist{background:var(--card);border:1px solid var(--line);border-radius:8px;
-    padding:12px 14px;margin-bottom:8px}
-  .hist .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
-  .hist .htitle{font-weight:600}
-  .hist .hts{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
-  .hist .sum{color:var(--ink);font-size:13px}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <h1>DevSpec Report — PulseTrack</h1>
-  <div class="ts">Generated 2026-09-21 · whole-board status across changes + run history</div>
+<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>DevSpec Report — PulseTrack</title><style>
+:root{color-scheme:light dark;--bg:#f6f7f9;--card:#fff;--fg:#1a1d21;--mut:#6b7280;--bd:#e5e7eb}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b21;--fg:#e6e8eb;--mut:#9aa4b2;--bd:#2a2f37}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:20px;margin:0 0 4px}.gen{color:var(--mut);font-size:12px;margin-bottom:20px}
+.pills span{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:600;font-size:12px;margin:0 6px 6px 0;border:1px solid var(--bd)}
+h2{font-size:15px;margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--bd)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin:8px 0}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.t{font-weight:600}.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;white-space:nowrap}
+.sec{color:var(--mut);font-size:12px;font-variant-numeric:tabular-nums}
+.note{color:var(--mut);font-size:12.5px;margin-top:6px;white-space:pre-wrap}
+.blk{background:var(--card);border:1px solid #dc2626;border-left-width:4px;border-radius:10px;padding:12px 14px;margin:8px 0}
+.blk h3{margin:0 0 6px;font-size:13.5px}.blk .body{color:var(--mut);font-size:12.5px;white-space:pre-wrap}
+.empty{color:var(--mut);font-style:italic}
+.hist{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin:8px 0}
+.hist .meta{font-size:11.5px;color:var(--mut);font-variant-numeric:tabular-nums}.hist .sm{margin-top:4px;font-size:12.5px}
+code{background:rgba(127,127,127,.15);padding:1px 4px;border-radius:4px;font-size:12px}
+</style><div class=wrap>
+<h1>DevSpec Report — PulseTrack</h1><div class=gen>generated 2026-09-21 03:29 UTC</div>
+<div class=pills><span style="border-color:#16a34a">6 done</span><span style="border-color:#d97706">1 in-progress</span><span style="border-color:#dc2626">1 blocked</span><span>8 total</span></div>
+<h2>Open Blockers</h2>
+<div class=blk><h3>add-realtime-chat-web — §1.2/§6 missing dependency endpoint + §8.2 MANUAL gate</h3><div class=body>add-realtime-chat-web — §1.2/§6 missing dependency endpoint + §8.2 MANUAL gate
+_worker-cc · 2026-09-21_
 
-  <div class="counts">
-    <span class="pill"><b class="c-done">6</b> done</span>
-    <span class="pill"><b class="c-prog">1</b> in-progress</span>
-    <span class="pill"><b class="c-block">0</b> blocked</span>
-    <span class="pill"><b>8</b> total</span>
-  </div>
+**status: open** — two independent human-gated blockers
 
-  <h2>Open Blockers</h2>
-  <div class="empty">No open blockers.</div>
+### 1. Missing chat-target search/discovery endpoint (hard-block: impossible as written)
+req-3 + design.md architecture require `api.searchChatTargets(q)` returning **all people AND channels, including never-messaged, cross-project** (§1.2, §1.3 `useSearchChatTargets`, §4.1 search box, §6 whole overlay, §8.1 wiring).
 
-  <h2>Implemented</h2>
+The `depends_on` backend `add-realtime-chat` shipped **no such endpoint**:
+- `chat.controller.ts` — 9 routes, none search/discover.
+- Backend spec req-1..req-12 — no search/discovery requirement.
+- Only user search that a normal user can call: `GET /projects/:projectId/members/search` — **project-scoped**, needs a projectId; the `/chat` page is global/cross-project (design default: &quot;chat crosses projects&quot;).
+- `GET /users` is **admin-only** (`SystemRolesGuard @SystemRoles(&#x27;admin&#x27;)`); `GET /users/me` is self.
+- **No channel-discovery endpoint at all** (search channels not joined).
 
-  <div class="row">
-    <div class="title"><div class="name">Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history</div></div>
-    <span class="sec">9/9 sections</span>
-    <span class="badge b-done">done</span>
-  </div>
+Can&#x27;t resolve in-scope: this change&#x27;s Blast Radius is web-only (&quot;NotificationBell/notification code untouched; new files + one route + one sidebar item&quot;). Adding a NestJS route (+guard +DTO +test) is a redesign of the backend dependency — not a web-only edit and not covered by any Impact Area Decision Default. Narrowing req-3 to project-scoped people-only (drop cross-project + channel discovery) is a spec change only the author/BA may make.
 
-  <div class="row">
-    <div class="title"><div class="name">Dashboard redesign — status strip, bug banner, layout restyle per mockup</div></div>
-    <span class="sec">7/7 sections</span>
-    <span class="badge b-done">done</span>
-  </div>
+### 2. §8.2 terminal MANUAL gate
+`- [ ] MANUAL: BA approves screenshot of /chat against mockups/chat-page.html` is unticked. Per worker rules an unticked MANUAL gate blocks the change; it cannot reach `done` autonomously this run regardless of blocker 1.
 
-  <div class="row">
-    <div class="title"><div class="name">MCP agent write consent — per-token opt-in gate on write tools</div></div>
-    <span class="sec">5/5 sections</span>
-    <span class="badge b-done">done</span>
-  </div>
+**To resume:** a human picks one of —
+- (a) add a chat-target search endpoint to the backend (e.g. `GET /chat/search?q=` returning people + channels, member-gated) and record its contract, then the FE can implement §1.2/§6; **or**
+- (b) amend FE req-3 to reuse `GET /projects/:projectId/members/search` (project-scoped, people-only, drop channel discovery) with a Decision Default in design.md.
+Then tick §8.2 after the BA screenshot review, and reset board `status: blocked → pending`.
 
-  <div class="row">
-    <div class="title"><div class="name">Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</div></div>
-    <span class="sec">3/3 sections</span>
-    <span class="badge b-done">done</span>
-  </div>
-
-  <div class="row">
-    <div class="title"><div class="name">Compact three-zone Kanban task card + responsive column widths</div></div>
-    <span class="sec">3/3 sections</span>
-    <span class="badge b-done">done</span>
-  </div>
-
-  <div class="row">
-    <div class="title"><div class="name">Backlog Excel export — sanitize description HTML + add Parent Task Key column</div></div>
-    <span class="sec">3/3 sections</span>
-    <span class="badge b-done">done</span>
-  </div>
-
-  <h2>In progress / Left</h2>
-
-  <div class="row">
-    <div class="title"><div class="name">Project card redesign — logo, member avatars, pinned footer</div>
-      <div class="note">owner: worker-1</div></div>
-    <span class="sec">— sections</span>
-    <span class="badge b-prog">doing</span>
-  </div>
-
-  <div class="row">
-    <div class="title"><div class="name">Real-time chat frontend — chat page, /chat socket, inline-image attachments, new-conversation overlay, AppSidebar Chat item + /chat route</div>
-      <div class="note">waiting on: add-realtime-chat (done) — now runnable</div></div>
-    <span class="sec">0/8 sections</span>
-    <span class="badge b-pend">pending</span>
-  </div>
-
-  <h2>History</h2>
-
-  <div class="hist">
-    <div class="head"><span class="htitle">Real-time chat backend</span>
-      <span class="badge b-done">done</span><span class="sec">9/9</span>
-      <span class="hts">2026-09-21 03:14 UTC</span></div>
-    <div class="sum">Built self-contained ChatModule (4 Prisma models + enum via additive migration, ChatGateway on /chat reusing SocketAuthService, ConversationMemberGuard, full ChatService). All 9 sections verified: 65 API tests green, build clean. Migration generated via schema-to-schema diff to skip a pre-existing EntityType.MESSAGE drift; verified on a local scratch DB (shared team DB untouched).</div>
-  </div>
-
-  <div class="hist">
-    <div class="head"><span class="htitle">Backlog Excel export — sanitize + Parent Task Key</span>
-      <span class="badge b-done">done</span><span class="sec">3/3</span>
-      <span class="hts">2026-09-18 11:23 UTC</span></div>
-    <div class="sum">Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</div>
-  </div>
-
-  <div class="hist">
-    <div class="head"><span class="htitle">Compact three-zone Kanban card</span>
-      <span class="badge b-done">done</span><span class="sec">3/3</span>
-      <span class="hts">2026-09-18 10:45 UTC</span></div>
-    <div class="sum">Redesigned KanbanCard to a compact 3-zone layout (type-icon+key / title / footer avatar·type-badge·date·priority-icon), removed rail/priority-pill/meta-row/progress-bar/story-points, overdue now a thin red top border. Widened KanbanColumn to responsive tiers 280/300/340px. Verified live on CARIS backlog board; build green.</div>
-  </div>
-
-  <div class="hist">
-    <div class="head"><span class="htitle">Edit sprint name and dates</span>
-      <span class="badge b-done">done</span><span class="sec">3/3</span>
-      <span class="hts">2026-09-18 10:17 UTC</span></div>
-    <div class="sum">Wired unused useUpdateSprint into UI: dual-mode CreateSprintDialog (create/edit), Edit button on PLANNED sprints, create prefills endDate=start+14d. Verified live with anle@CARIS — all 4 reqs pass.</div>
-  </div>
-
-  <div class="hist">
-    <div class="head"><span class="htitle">MCP agent write consent</span>
-      <span class="badge b-done">done</span><span class="sec">5/5</span>
-      <span class="hts">2026-09-18 07:35 UTC</span></div>
-    <div class="sum">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div>
-  </div>
-
-  <div class="hist">
-    <div class="head"><span class="htitle">MCP agent write consent</span>
-      <span class="badge b-block">blocked</span><span class="sec">2/5</span>
-      <span class="hts">2026-09-18 07:20 UTC</span></div>
-    <div class="sum">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div>
-  </div>
-
-  <div class="hist">
-    <div class="head"><span class="htitle">Dashboard redesign</span>
-      <span class="badge b-done">done</span><span class="sec">7/7</span>
-      <span class="hts">2026-09-18 04:45 UTC</span></div>
-    <div class="sum">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div>
-  </div>
-
+**No code written this run** — blocker 1 surfaces at §1.2 (top of the data layer, before any section can complete its Verify), so no section was completable; committing partial unverified UI would be a lying-green.</div></div>
+<h2>Implemented</h2>
+<div class=card><div class=row><span class=t>MCP agent write consent — per-token opt-in gate on write tools</span><span class=sec>5/5 sections</span></div></div>
+<div class=card><div class=row><span class=t>Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history</span><span class=sec>9/9 sections</span></div></div>
+<div class=card><div class=row><span class=t>Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</span><span class=sec>3/3 sections</span></div></div>
+<div class=card><div class=row><span class=t>Compact three-zone Kanban task card + responsive column widths</span><span class=sec>3/3 sections</span></div></div>
+<div class=card><div class=row><span class=t>Backlog Excel export — sanitize description HTML + add Parent Task Key column</span><span class=sec>3/3 sections</span></div></div>
+<div class=card><div class=row><span class=t>Dashboard redesign — status strip, bug banner, layout restyle per mockup</span><span class=sec>7/7 sections</span></div></div>
+<h2>In progress / Left</h2>
+<div class=card><div class=row><span class=t>Real-time chat frontend — chat page (Channels/DMs split, thread, pill composer), /chat socket, inline-image attachments (copy + paste/drag), new-conversation overlay, AppSidebar Chat item + /chat route</span><span class=badge style="background:#dc2626">blocked</span></div><div class=sec>0/8 sections</div>
+<div class=note>BLOCKED (see report/blockers.md): (1) §1.2/§6 require api.searchChatTargets — no chat-target search/discovery endpoint shipped by add-realtime-chat (only project-scoped members/search; /users admin-only; no channel discovery); web-only scope forbids adding backend route. (2) §8.2 MANUAL BA gate unticked. Human: add endpoint OR narrow req-3, tick §8.2, reset blocked→pending. No code written. Consumes backend REST + /chat socket. Access via new AppSidebar item + /chat route; unread badge separate from NotificationBell. Reuse planner chat components (ChatMessage/ChatInput/ChatMessageList/ChatAttachment) + shadcn. Approved mockup at mockups/chat-page.html. §8.2 is a MANUAL BA screenshot gate.</div>
 </div>
-</body>
-</html>
+<div class=card><div class=row><span class=t>Project card redesign — logo, member avatars, pinned footer</span><span class=badge style="background:#d97706">doing</span></div><div class=sec>— sections</div>
+</div>
+<h2>History</h2>
+<div class=hist><div class=row><span class=t>Real-time chat frontend — chat page, /chat socket, attachments, new-conversation overlay, sidebar item + route</span><span class=badge style="background:#dc2626">blocked</span></div><div class=meta>2026-09-21T03:20:00Z · 0/8 sections</div><div class=sm>Claimed the only runnable change and read all artifacts + backend contracts. Found req-3/§6 (and the §1.2 searchChatTargets method the data layer starts with) depend on a chat-target search endpoint the backend dependency never shipped; blocking here rather than silently rewiring to project-scoped search or adding an out-of-scope backend route. Logged blocker; no code written.</div></div>
+<div class=hist><div class=row><span class=t>Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-21T03:14:50Z · 9/9 sections</div><div class=sm>Built self-contained ChatModule (4 Prisma models + enum via additive migration, ChatGateway on /chat reusing SocketAuthService, ConversationMemberGuard, full ChatService). All 9 sections verified: 65 API tests green, build clean. Migration generated via schema-to-schema diff to skip a pre-existing EntityType.MESSAGE drift; verified on a local scratch DB (shared team DB untouched).</div></div>
+<div class=hist><div class=row><span class=t>Backlog Excel export — sanitize description HTML + add Parent Task Key column</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-18T11:23:37Z · 3/3 sections</div><div class=sm>Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</div></div>
+<div class=hist><div class=row><span class=t>Compact three-zone Kanban task card + responsive column widths</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-18T10:45:00Z · 3/3 sections</div><div class=sm>Redesigned KanbanCard to a compact 3-zone layout (type-icon+key / title / footer avatar·type-badge·date·priority-icon), removed rail/priority-pill/meta-row/progress-bar/story-points, overdue now a thin red top border. Widened KanbanColumn to responsive tiers 280/300/340px. Verified live on CARIS backlog board; build green.</div></div>
+<div class=hist><div class=row><span class=t>Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-18T10:17:08Z · 3/3 sections</div><div class=sm>Wired unused useUpdateSprint into UI: dual-mode CreateSprintDialog (create/edit), Edit button on PLANNED sprints, create prefills endDate=start+14d. Verified live with anle@CARIS — all 4 reqs pass.</div></div>
+<div class=hist><div class=row><span class=t>MCP agent write consent — per-token opt-in gate on write tools</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-18T07:35:00Z · 5/5 sections</div><div class=sm>Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section&#x27;s verify to this change&#x27;s own tests (all green; build green both apps). Archived.</div></div>
+<div class=hist><div class=row><span class=t>MCP agent write consent — per-token opt-in gate on write tools</span><span class=badge style="background:#dc2626">blocked</span></div><div class=meta>2026-09-18T07:20:00Z · 2/5 sections</div><div class=sm>Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div></div>
+<div class=hist><div class=row><span class=t>Dashboard redesign — status strip, bug banner, layout restyle per mockup</span><span class=badge style="background:#16a34a">done</span></div><div class=meta>2026-09-18T04:45:00Z · 7/7 sections</div><div class=sm>Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div></div>
+</div></html>

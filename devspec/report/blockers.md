@@ -26,3 +26,30 @@ Either (a) fix/refresh the 3 pre-existing `mcp-tools.spec.ts` expectations+mocks
 **Sections done before stop**: 1 (migration), 2 (persist+expose) — both verified green. Sections 4 (frontend) + 5 (full build) not started.
 
 **status: resolved** (2026-09-18) — human ruled the 3 pre-existing failures out of scope; section 3 verify narrowed to `... test mcp-tools -t "consent gate"` (green, exit 0). Change resumed.
+
+## add-realtime-chat-web — §1.2/§6 missing dependency endpoint + §8.2 MANUAL gate
+_worker-cc · 2026-09-21_
+
+**status: open** — two independent human-gated blockers
+
+### 1. Missing chat-target search/discovery endpoint (hard-block: impossible as written)
+req-3 + design.md architecture require `api.searchChatTargets(q)` returning **all people AND channels, including never-messaged, cross-project** (§1.2, §1.3 `useSearchChatTargets`, §4.1 search box, §6 whole overlay, §8.1 wiring).
+
+The `depends_on` backend `add-realtime-chat` shipped **no such endpoint**:
+- `chat.controller.ts` — 9 routes, none search/discover.
+- Backend spec req-1..req-12 — no search/discovery requirement.
+- Only user search that a normal user can call: `GET /projects/:projectId/members/search` — **project-scoped**, needs a projectId; the `/chat` page is global/cross-project (design default: "chat crosses projects").
+- `GET /users` is **admin-only** (`SystemRolesGuard @SystemRoles('admin')`); `GET /users/me` is self.
+- **No channel-discovery endpoint at all** (search channels not joined).
+
+Can't resolve in-scope: this change's Blast Radius is web-only ("NotificationBell/notification code untouched; new files + one route + one sidebar item"). Adding a NestJS route (+guard +DTO +test) is a redesign of the backend dependency — not a web-only edit and not covered by any Impact Area Decision Default. Narrowing req-3 to project-scoped people-only (drop cross-project + channel discovery) is a spec change only the author/BA may make.
+
+### 2. §8.2 terminal MANUAL gate
+`- [ ] MANUAL: BA approves screenshot of /chat against mockups/chat-page.html` is unticked. Per worker rules an unticked MANUAL gate blocks the change; it cannot reach `done` autonomously this run regardless of blocker 1.
+
+**To resume:** a human picks one of —
+- (a) add a chat-target search endpoint to the backend (e.g. `GET /chat/search?q=` returning people + channels, member-gated) and record its contract, then the FE can implement §1.2/§6; **or**
+- (b) amend FE req-3 to reuse `GET /projects/:projectId/members/search` (project-scoped, people-only, drop channel discovery) with a Decision Default in design.md.
+Then tick §8.2 after the BA screenshot review, and reset board `status: blocked → pending`.
+
+**No code written this run** — blocker 1 surfaces at §1.2 (top of the data layer, before any section can complete its Verify), so no section was completable; committing partial unverified UI would be a lying-green.
