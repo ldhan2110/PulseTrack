@@ -1580,6 +1580,14 @@ export interface MessageAttachment {
   createdAt: string;
 }
 
+export interface MessageReaction {
+  id: string;
+  messageId: string;
+  emoji: string;
+  userId: string;
+  user: ChatUser;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -1590,6 +1598,7 @@ export interface Message {
   createdAt: string;
   author: ChatUser;
   attachments?: MessageAttachment[];
+  reactions?: MessageReaction[];
   // client-only: optimistic send bookkeeping (never sent by the server)
   clientTempId?: string;
   status?: 'sending' | 'failed' | 'sent';

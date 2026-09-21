@@ -117,6 +117,7 @@ import type {
   TimesheetData,
   Conversation,
   Message,
+  MessageReaction,
   MessagePage,
   CreateConversationPayload,
 } from './types';
@@ -1181,6 +1182,11 @@ export const api = {
   deleteChatMessage: (id: string) =>
     request<{ id: string; deletedAt: string }>(`/chat/messages/${id}`, {
       method: 'DELETE',
+    }),
+  reactToChatMessage: (id: string, emoji: string) =>
+    request<MessageReaction[]>(`/chat/messages/${id}/reactions`, {
+      method: 'POST',
+      body: JSON.stringify({ emoji }),
     }),
   markChatRead: (conversationId: string) =>
     request<{ conversationId: string; lastReadAt: string }>(
