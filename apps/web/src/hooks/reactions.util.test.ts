@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { upsertReactions, toggleReactionLocal } from './reactions.util';
+import { groupReactions, reactorNames } from '../components/chat/ReactionBar';
 import type { MessageReaction } from '../lib/types';
 
 const page = (msgs: any[]) => ({ pages: [{ items: msgs, nextCursor: null }], pageParams: [undefined] });
@@ -34,5 +35,14 @@ describe('reactions util', () => {
     expect(added.pages[0].items[0].reactions).toHaveLength(1);
     const removed = toggleReactionLocal(added as any, 'm1', '👍', u);
     expect(removed.pages[0].items[0].reactions).toHaveLength(0);
+  });
+
+  it('groups by emoji and formats reactor names', () => {
+    const rx: any = [
+      { emoji: '👍', userId: 'u1', user: { name: 'Al' } },
+      { emoji: '👍', userId: 'u2', user: { name: 'Bo' } },
+    ];
+    expect(groupReactions(rx)).toHaveLength(1);
+    expect(reactorNames(rx, 'u1')).toBe('you and Bo');
   });
 });

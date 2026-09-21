@@ -22,6 +22,7 @@ import type { Conversation, Message } from '@/lib/types';
 import { getChatSocket } from '@/socket/instance';
 import { Composer } from './Composer';
 import { MessageAttachment } from './MessageAttachment';
+import { ReactionBar } from './ReactionBar';
 import { convTitle, initials, peerOf, usePresence, useTyping } from './chatUtils';
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -196,33 +197,36 @@ export function MessageThreadView({
                         className="h-8 w-64"
                       />
                     ) : (
-                      <div
-                        className={`rounded-xl px-3 py-2 text-sm ${
-                          own
-                            ? 'rounded-br-sm bg-primary text-primary-foreground'
-                            : 'rounded-bl-sm bg-muted'
-                        } ${m.status === 'failed' ? 'opacity-60 ring-1 ring-destructive' : ''}`}
-                      >
-                        {m.body && <div className="whitespace-pre-wrap">{m.body}</div>}
-                        {m.attachments && m.attachments.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1.5">
-                            {m.attachments.map((att) => (
-                              <MessageAttachment key={att.id} attachment={att} own={own} />
-                            ))}
-                          </div>
-                        )}
-                        <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] opacity-70">
-                          {m.editedAt && <span>edited</span>}
-                          {own && m.status === 'sending' && <span>sending…</span>}
-                          {own && m.status === 'failed' && (
-                            <button
-                              className="flex items-center gap-0.5 text-destructive"
-                              onClick={() => onRetry?.(m)}
-                            >
-                              <RotateCw className="size-3" /> retry
-                            </button>
+                      <div className="flex flex-col gap-1">
+                        <div
+                          className={`rounded-xl px-3 py-2 text-sm ${
+                            own
+                              ? 'rounded-br-sm bg-primary text-primary-foreground'
+                              : 'rounded-bl-sm bg-muted'
+                          } ${m.status === 'failed' ? 'opacity-60 ring-1 ring-destructive' : ''}`}
+                        >
+                          {m.body && <div className="whitespace-pre-wrap">{m.body}</div>}
+                          {m.attachments && m.attachments.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {m.attachments.map((att) => (
+                                <MessageAttachment key={att.id} attachment={att} own={own} />
+                              ))}
+                            </div>
                           )}
+                          <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] opacity-70">
+                            {m.editedAt && <span>edited</span>}
+                            {own && m.status === 'sending' && <span>sending…</span>}
+                            {own && m.status === 'failed' && (
+                              <button
+                                className="flex items-center gap-0.5 text-destructive"
+                                onClick={() => onRetry?.(m)}
+                              >
+                                <RotateCw className="size-3" /> retry
+                              </button>
+                            )}
+                          </div>
                         </div>
+                        {!m.deletedAt && <ReactionBar message={m} myId={myId} convId={m.conversationId} />}
                       </div>
                     )}
                   </div>
