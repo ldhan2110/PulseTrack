@@ -3,58 +3,172 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DevSpec Board Report — PulseTrack</title>
+<title>DevSpec Report — PulseTrack</title>
 <style>
-  :root { --bg:#0f1115; --card:#1a1d24; --fg:#e6e8ec; --muted:#9aa0aa; --line:#2a2e37;
-          --done:#3fb950; --prog:#d29922; --block:#f85149; }
-  * { box-sizing:border-box; }
-  body { margin:0; padding:2rem; background:var(--bg); color:var(--fg);
-         font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
-  h1 { font-size:1.4rem; margin:0 0 .25rem; }
-  h2 { font-size:1.05rem; margin:2rem 0 .75rem; padding-bottom:.35rem; border-bottom:1px solid var(--line); }
-  .ts { color:var(--muted); font-size:.85rem; }
-  .counts { margin:.75rem 0 0; font-size:.95rem; }
-  .pill { display:inline-block; padding:.1rem .5rem; border-radius:999px; font-size:.8rem; font-weight:600; }
-  .pill.done { background:rgba(63,185,80,.15); color:var(--done); }
-  .pill.prog { background:rgba(210,153,34,.15); color:var(--prog); }
-  .pill.block { background:rgba(248,81,73,.15); color:var(--block); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:.85rem 1rem; margin:.5rem 0; }
-  .card .title { font-weight:600; }
-  .card .meta { color:var(--muted); font-size:.85rem; margin-top:.2rem; }
-  .sec { font-variant-numeric:tabular-nums; color:var(--muted); }
-  .empty { color:var(--muted); font-style:italic; }
-  .hist { border-left:2px solid var(--line); padding:.35rem 0 .35rem 1rem; margin:.4rem 0; }
-  .hist .h { font-size:.85rem; color:var(--muted); }
-  .hist .s { margin-top:.25rem; }
+  :root{
+    --bg:#f6f7f9; --card:#fff; --ink:#1a1d21; --muted:#697586; --line:#e3e8ef;
+    --done:#0f9d58; --prog:#d69e2e; --block:#e02424; --pend:#697586;
+    --accent:#2563eb;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#15181c;--card:#1e2228;--ink:#e6e9ee;--muted:#9aa5b1;--line:#2c323b;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:24px 16px}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .ts{color:var(--muted);font-size:12px;margin-bottom:20px}
+  .counts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+  .pill{padding:4px 12px;border-radius:999px;font-weight:600;font-size:13px;
+    border:1px solid var(--line);background:var(--card)}
+  .pill b{font-weight:800}
+  .c-done{color:var(--done)} .c-prog{color:var(--prog)}
+  .c-block{color:var(--block)} .c-pend{color:var(--pend)}
+  h2{font-size:15px;margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .row{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+  .row .title{flex:1;min-width:0}
+  .row .title .name{font-weight:600}
+  .row .title .note{color:var(--muted);font-size:12px;margin-top:3px}
+  .badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    padding:2px 8px;border-radius:5px;white-space:nowrap}
+  .b-done{background:rgba(15,157,88,.14);color:var(--done)}
+  .b-prog{background:rgba(214,158,46,.16);color:var(--prog)}
+  .b-block{background:rgba(224,36,36,.14);color:var(--block)}
+  .b-pend{background:rgba(105,117,134,.16);color:var(--pend)}
+  .sec{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;
+    white-space:nowrap;padding-top:1px}
+  .empty{color:var(--muted);font-style:italic;padding:6px 2px}
+  .hist{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;margin-bottom:8px}
+  .hist .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
+  .hist .htitle{font-weight:600}
+  .hist .hts{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+  .hist .sum{color:var(--ink);font-size:13px}
 </style>
 </head>
 <body>
-  <h1>DevSpec Board — PulseTrack</h1>
-  <div class="ts">Generated 2026-09-18 11:24 UTC</div>
+<div class="wrap">
+  <h1>DevSpec Report — PulseTrack</h1>
+  <div class="ts">Generated 2026-09-21 · whole-board status across changes + run history</div>
+
   <div class="counts">
-    <span class="pill done">5 done</span>
-    <span class="pill prog">1 in-progress</span>
-    <span class="pill block">0 blocked</span>
-    &middot; 6 total
+    <span class="pill"><b class="c-done">6</b> done</span>
+    <span class="pill"><b class="c-prog">1</b> in-progress</span>
+    <span class="pill"><b class="c-block">0</b> blocked</span>
+    <span class="pill"><b>8</b> total</span>
   </div>
 
   <h2>Open Blockers</h2>
-  <p class="empty">No open blockers.</p>
+  <div class="empty">No open blockers.</div>
 
   <h2>Implemented</h2>
-  <div class="card"><div class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</div><div class="meta"><span class="sec">7/7 sections</span></div></div>
-  <div class="card"><div class="title">MCP agent write consent — per-token opt-in gate on write tools</div><div class="meta"><span class="sec">5/5 sections</span></div></div>
-  <div class="card"><div class="title">Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
-  <div class="card"><div class="title">Compact three-zone Kanban task card + responsive column widths</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
-  <div class="card"><div class="title">Backlog Excel export — sanitize description HTML + add Parent Task Key column</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
+
+  <div class="row">
+    <div class="title"><div class="name">Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history</div></div>
+    <span class="sec">9/9 sections</span>
+    <span class="badge b-done">done</span>
+  </div>
+
+  <div class="row">
+    <div class="title"><div class="name">Dashboard redesign — status strip, bug banner, layout restyle per mockup</div></div>
+    <span class="sec">7/7 sections</span>
+    <span class="badge b-done">done</span>
+  </div>
+
+  <div class="row">
+    <div class="title"><div class="name">MCP agent write consent — per-token opt-in gate on write tools</div></div>
+    <span class="sec">5/5 sections</span>
+    <span class="badge b-done">done</span>
+  </div>
+
+  <div class="row">
+    <div class="title"><div class="name">Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</div></div>
+    <span class="sec">3/3 sections</span>
+    <span class="badge b-done">done</span>
+  </div>
+
+  <div class="row">
+    <div class="title"><div class="name">Compact three-zone Kanban task card + responsive column widths</div></div>
+    <span class="sec">3/3 sections</span>
+    <span class="badge b-done">done</span>
+  </div>
+
+  <div class="row">
+    <div class="title"><div class="name">Backlog Excel export — sanitize description HTML + add Parent Task Key column</div></div>
+    <span class="sec">3/3 sections</span>
+    <span class="badge b-done">done</span>
+  </div>
 
   <h2>In progress / Left</h2>
-  <div class="card"><div class="title">Project card redesign — logo, member avatars, pinned footer <span class="pill prog">doing</span></div><div class="meta"><span class="sec">— sections</span> &middot; owner worker-1 (artifacts not on this filesystem)</div></div>
+
+  <div class="row">
+    <div class="title"><div class="name">Project card redesign — logo, member avatars, pinned footer</div>
+      <div class="note">owner: worker-1</div></div>
+    <span class="sec">— sections</span>
+    <span class="badge b-prog">doing</span>
+  </div>
+
+  <div class="row">
+    <div class="title"><div class="name">Real-time chat frontend — chat page, /chat socket, inline-image attachments, new-conversation overlay, AppSidebar Chat item + /chat route</div>
+      <div class="note">waiting on: add-realtime-chat (done) — now runnable</div></div>
+    <span class="sec">0/8 sections</span>
+    <span class="badge b-pend">pending</span>
+  </div>
 
   <h2>History</h2>
-  <div class="hist"><div class="h">2026-09-18 11:23 UTC &middot; Backlog Excel export — sanitize description HTML + add Parent Task Key column &middot; <span class="pill done">done</span> &middot; 3/3</div><div class="s">Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</div></div>
-  <div class="hist"><div class="h">2026-09-18 07:35 UTC &middot; MCP agent write consent — per-token opt-in gate on write tools &middot; <span class="pill done">done</span> &middot; 5/5</div><div class="s">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div></div>
-  <div class="hist"><div class="h">2026-09-18 07:20 UTC &middot; MCP agent write consent — per-token opt-in gate on write tools &middot; <span class="pill block">blocked</span> &middot; 2/5</div><div class="s">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div></div>
-  <div class="hist"><div class="h">2026-09-18 04:45 UTC &middot; Dashboard redesign — status strip, bug banner, layout restyle per mockup &middot; <span class="pill done">done</span> &middot; 7/7</div><div class="s">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div></div>
+
+  <div class="hist">
+    <div class="head"><span class="htitle">Real-time chat backend</span>
+      <span class="badge b-done">done</span><span class="sec">9/9</span>
+      <span class="hts">2026-09-21 03:14 UTC</span></div>
+    <div class="sum">Built self-contained ChatModule (4 Prisma models + enum via additive migration, ChatGateway on /chat reusing SocketAuthService, ConversationMemberGuard, full ChatService). All 9 sections verified: 65 API tests green, build clean. Migration generated via schema-to-schema diff to skip a pre-existing EntityType.MESSAGE drift; verified on a local scratch DB (shared team DB untouched).</div>
+  </div>
+
+  <div class="hist">
+    <div class="head"><span class="htitle">Backlog Excel export — sanitize + Parent Task Key</span>
+      <span class="badge b-done">done</span><span class="sec">3/3</span>
+      <span class="hts">2026-09-18 11:23 UTC</span></div>
+    <div class="sum">Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</div>
+  </div>
+
+  <div class="hist">
+    <div class="head"><span class="htitle">Compact three-zone Kanban card</span>
+      <span class="badge b-done">done</span><span class="sec">3/3</span>
+      <span class="hts">2026-09-18 10:45 UTC</span></div>
+    <div class="sum">Redesigned KanbanCard to a compact 3-zone layout (type-icon+key / title / footer avatar·type-badge·date·priority-icon), removed rail/priority-pill/meta-row/progress-bar/story-points, overdue now a thin red top border. Widened KanbanColumn to responsive tiers 280/300/340px. Verified live on CARIS backlog board; build green.</div>
+  </div>
+
+  <div class="hist">
+    <div class="head"><span class="htitle">Edit sprint name and dates</span>
+      <span class="badge b-done">done</span><span class="sec">3/3</span>
+      <span class="hts">2026-09-18 10:17 UTC</span></div>
+    <div class="sum">Wired unused useUpdateSprint into UI: dual-mode CreateSprintDialog (create/edit), Edit button on PLANNED sprints, create prefills endDate=start+14d. Verified live with anle@CARIS — all 4 reqs pass.</div>
+  </div>
+
+  <div class="hist">
+    <div class="head"><span class="htitle">MCP agent write consent</span>
+      <span class="badge b-done">done</span><span class="sec">5/5</span>
+      <span class="hts">2026-09-18 07:35 UTC</span></div>
+    <div class="sum">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div>
+  </div>
+
+  <div class="hist">
+    <div class="head"><span class="htitle">MCP agent write consent</span>
+      <span class="badge b-block">blocked</span><span class="sec">2/5</span>
+      <span class="hts">2026-09-18 07:20 UTC</span></div>
+    <div class="sum">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div>
+  </div>
+
+  <div class="hist">
+    <div class="head"><span class="htitle">Dashboard redesign</span>
+      <span class="badge b-done">done</span><span class="sec">7/7</span>
+      <span class="hts">2026-09-18 04:45 UTC</span></div>
+    <div class="sum">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div>
+  </div>
+
+</div>
 </body>
 </html>
