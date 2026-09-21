@@ -25,6 +25,7 @@ import { ConversationMemberGuard } from './conversation-member.guard';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { EditMessageDto } from './dto/edit-message.dto';
+import { ReactMessageDto } from './dto/react-message.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -76,6 +77,11 @@ export class ChatController {
   @Delete('messages/:id')
   remove(@Req() req: any, @Param('id') id: string) {
     return this.chatService.deleteMessage(id, req.user.id);
+  }
+
+  @Post('messages/:id/reactions')
+  react(@Req() req: any, @Param('id') id: string, @Body() dto: ReactMessageDto) {
+    return this.chatService.toggleReaction(id, req.user.id, dto.emoji);
   }
 
   @Post('conversations/:id/attachments')
