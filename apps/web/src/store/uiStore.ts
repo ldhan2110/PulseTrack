@@ -10,6 +10,10 @@ interface UiState {
   setBacklogView: (view: 'table' | 'board') => void;
   fullWidth: boolean;
   setFullWidth: (fullWidth: boolean) => void;
+  activeConversationId: string | null;
+  setActiveConversationId: (id: string | null) => void;
+  chatOverlayOpen: boolean;
+  setChatOverlayOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -22,4 +26,8 @@ export const useUiStore = create<UiState>((set) => ({
   setBacklogView: (view) => set({ backlogView: view }),
   fullWidth: false,
   setFullWidth: (fullWidth) => set({ fullWidth }),
+  activeConversationId: null,
+  setActiveConversationId: (id) => set({ activeConversationId: id }),
+  chatOverlayOpen: false,
+  setChatOverlayOpen: (open) => set({ chatOverlayOpen: open }),
 }));

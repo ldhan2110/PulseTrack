@@ -23,6 +23,9 @@ export const chatKeys = {
   presence: ['chat', 'presence'] as const,
 };
 
+export const typingKey = (conversationId: string) =>
+  ['chat', 'typing', conversationId] as const;
+
 type Infinite = InfiniteData<MessagePage> | undefined;
 
 // ── pure cache helpers (exported for unit tests + useChatSync) ────────────────

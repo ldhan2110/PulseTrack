@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useAuth } from '../auth/useAuth';
 import { getChatSocket } from '../socket/instance';
 import {
   chatKeys,
+  typingKey,
   applyIncoming,
   applyUpdated,
   applyDeleted,
 } from './useChat';
-import type { Conversation, Message } from '../lib/types';
+import type { Conversation, Message, MessagePage } from '../lib/types';
 
-export const typingKey = (conversationId: string) =>
-  ['chat', 'typing', conversationId] as const;
+type Infinite = InfiniteData<MessagePage> | undefined;
 
 /**
  * Mounted at the chat page. Owns the `/chat` socket lifecycle (connect +
@@ -42,20 +42,20 @@ export function useChatSync() {
     if (!socket) return;
 
     function onNew(msg: Message) {
-      qc.setQueryData(chatKeys.messages(msg.conversationId), (d) =>
+      qc.setQueryData<Infinite>(chatKeys.messages(msg.conversationId), (d) =>
         applyIncoming(d, msg),
       );
       void qc.invalidateQueries({ queryKey: chatKeys.conversations });
     }
 
     function onUpdated(msg: Message) {
-      qc.setQueryData(chatKeys.messages(msg.conversationId), (d) =>
+      qc.setQueryData<Infinite>(chatKeys.messages(msg.conversationId), (d) =>
         applyUpdated(d, msg),
       );
     }
 
     function onDeleted(payload: { id: string; conversationId: string }) {
-      qc.setQueryData(chatKeys.messages(payload.conversationId), (d) =>
+      qc.setQueryData<Infinite>(chatKeys.messages(payload.conversationId), (d) =>
         applyDeleted(d, payload.id),
       );
     }
