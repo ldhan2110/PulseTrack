@@ -28,6 +28,8 @@ export function ReactionBar({ message, myId, convId }: { message: Message; myId:
   const [open, setOpen] = useState(false);
   const groups = groupReactions(message.reactions);
   const toggle = (emoji: string) => react.mutate({ id: message.id, emoji });
+  // ponytail: can't react to your own message; pills stay visible, just read-only
+  const canReact = message.authorId !== myId;
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -38,8 +40,9 @@ export function ReactionBar({ message, myId, convId }: { message: Message; myId:
             <TooltipTrigger asChild>
               <button
                 type="button"
+                disabled={!canReact}
                 onClick={() => toggle(emoji)}
-                className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${mine ? 'border-primary bg-primary/10' : 'border-border bg-muted'}`}
+                className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${mine ? 'border-primary bg-primary/10' : 'border-border bg-muted'} ${canReact ? '' : 'cursor-default'}`}
               >
                 <span>{emoji}</span>
                 <span>{rows.length}</span>
@@ -50,24 +53,26 @@ export function ReactionBar({ message, myId, convId }: { message: Message; myId:
         );
       })}
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button type="button" className="rounded-full p-1 text-muted-foreground hover:bg-muted" aria-label="Add reaction">
-            <SmilePlus className="h-4 w-4" />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-2">
-          <div className="mb-2 flex gap-1">
-            {QUICK_EMOJIS.map((e) => (
-              <button key={e} type="button" className="rounded p-1 text-lg hover:bg-muted"
-                onClick={() => { toggle(e); setOpen(false); }}>
-                {e}
-              </button>
-            ))}
-          </div>
-          <Picker data={data} onEmojiSelect={(e: { native: string }) => { toggle(e.native); setOpen(false); }} theme="auto" />
-        </PopoverContent>
-      </Popover>
+      {canReact && (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button type="button" className="rounded-full p-0.5 text-muted-foreground hover:bg-muted" aria-label="Add reaction">
+              <SmilePlus className="h-3.5 w-3.5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2">
+            <div className="mb-2 flex gap-1">
+              {QUICK_EMOJIS.map((e) => (
+                <button key={e} type="button" className="rounded p-1 text-lg hover:bg-muted"
+                  onClick={() => { toggle(e); setOpen(false); }}>
+                  {e}
+                </button>
+              ))}
+            </div>
+            <Picker data={data} onEmojiSelect={(e: { native: string }) => { toggle(e.native); setOpen(false); }} theme="auto" />
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }
