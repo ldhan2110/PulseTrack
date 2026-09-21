@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Hash } from 'lucide-react';
+import { Hash, MoreVertical } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +23,7 @@ import {
   useMessages,
   useEditMessage,
   useDeleteMessage,
+  useDeleteConversation,
   usePresence,
   useTyping,
 } from '@/hooks/useChat';
@@ -140,6 +148,8 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
     [editMutate],
   );
   const handleDelete = useCallback((id: string) => delMutate(id), [delMutate]);
+  const deleteConv = useDeleteConversation();
+  const [confirmDeleteConv, setConfirmDeleteConv] = useState(false);
   const presence = usePresence();
   const typing = useTyping(convId);
   const typer =
@@ -237,7 +247,59 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
             {online ? 'online' : 'offline'}
           </span>
         )}
+        {!isChannel && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto size-8 text-muted-foreground"
+                aria-label="Conversation options"
+              >
+                <MoreVertical className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => setConfirmDeleteConv(true)}
+              >
+                Delete conversation
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
+
+      <AlertDialog
+        open={confirmDeleteConv}
+        onOpenChange={(o) => !o && setConfirmDeleteConv(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the conversation from your chat. The other person
+              keeps it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteConv.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                deleteConv.mutate(conversation.id, {
+                  onSuccess: () => setConfirmDeleteConv(false),
+                });
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto p-4">
         {isFetchingNextPage && (

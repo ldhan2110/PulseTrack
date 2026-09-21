@@ -63,6 +63,12 @@ export class ChatController {
     return this.chatService.getMessages(id, cursor);
   }
 
+  @Delete('conversations/:id')
+  @UseGuards(ConversationMemberGuard)
+  leave(@Req() req: any, @Param('id') id: string) {
+    return this.chatService.leaveConversation(id, req.user.id);
+  }
+
   @Post('conversations/:id/read')
   @UseGuards(ConversationMemberGuard)
   markRead(@Req() req: any, @Param('id') id: string) {

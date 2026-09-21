@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
+import { useUiStore } from '../store/uiStore';
 import { upsertReactions, toggleReactionLocal } from './reactions.util';
 import type {
   Conversation,
@@ -259,6 +260,26 @@ export function useMarkChatRead() {
         list?.map((c) =>
           c.id === res.conversationId ? { ...c, unreadCount: 0 } : c,
         ),
+      );
+    },
+  });
+}
+
+export function useDeleteConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteChatConversation(id),
+    onSuccess: (_res, id) => {
+      qc.setQueryData<Conversation[]>(chatKeys.conversations, (list) =>
+        list?.filter((c) => c.id !== id),
+      );
+      if (useUiStore.getState().activeConversationId === id) {
+        useUiStore.getState().setActiveConversationId(null);
+      }
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete conversation',
       );
     },
   });

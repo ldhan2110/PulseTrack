@@ -11,6 +11,7 @@ function makePrisma() {
       findMany: vi.fn(),
       findFirst: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     },
     message: {
       count: vi.fn(),
@@ -377,5 +378,29 @@ describe('ChatService.toggleReaction', () => {
     await expect(
       service.toggleReaction('m1', 'u1', 'x'.repeat(17)),
     ).rejects.toThrow(BadRequestException);
+  });
+});
+
+describe('ChatService.leaveConversation', () => {
+  let prisma: any;
+  let service: ChatService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    service = new ChatService(prisma);
+  });
+
+  it('deletes only the caller membership, leaving messages + peer intact', async () => {
+    prisma.conversationMember.delete.mockResolvedValue({ id: 'cm1' });
+
+    const result = await service.leaveConversation('c1', 'u1');
+
+    expect(prisma.conversationMember.delete).toHaveBeenCalledTimes(1);
+    expect(prisma.conversationMember.delete).toHaveBeenCalledWith({
+      where: { conversationId_userId: { conversationId: 'c1', userId: 'u1' } },
+    });
+    // peer membership + messages untouched
+    expect(prisma.message.update).not.toHaveBeenCalled();
+    expect(result).toEqual({ deleted: true });
   });
 });

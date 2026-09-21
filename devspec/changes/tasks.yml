@@ -70,3 +70,11 @@ changes:
     owner: "worker-cc"
     archived: archive/add-realtime-chat-web
     notes: "Done 2026-09-21. All 8 sections: §1/§2 vitest green (5 tests), §3-8 UI built + 6 chat unit tests green + pnpm build clean; §3-8 visual gate via devspec-verify PASS (live app, anle@; empty/overlay/filled screenshots in verify/). Search reuses project-scoped members/search (people-only) per design Decision Default (narrows req-3 §6 unjoined-channel/cross-project). §8.2 MANUAL BA-approved by user (auto go). Pre-existing unrelated failure McpAccessCard.test (revoked-badge) out of scope. Consumes backend REST + /chat socket. Access via new AppSidebar item + /chat route; unread badge separate from NotificationBell. Reuse planner chat components (ChatMessage/ChatInput/ChatMessageList/ChatAttachment) + shadcn. Approved mockup at mockups/chat-page.html. §8.2 is a MANUAL BA screenshot gate."
+  chat-delete-conversation:
+    title: Delete a DM for yourself — three-dot header menu + confirm dialog, hard-deletes the caller's own ConversationMember row
+    tasks_md: changes/chat-delete-conversation/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: done
+    owner: "worker-cc"
+    notes: "All 3 sections pass. §1 api chat tests green (leaveConversation deletes only caller's ConversationMember row). §2 web useChat tests green (cache drop + active-id clear). §3 devspec-verify live PASS (anle@): DM header ⋯ present, channel header none, styled AlertDialog confirm, confirm removed DM from list + cleared pane. pnpm build clean. No mockup → per-property diff skipped; reused shadcn Button/DropdownMenu/AlertDialog. Verify filter names in tasks.md said @pulsetrack/* but real package is @pm/* (used actual). Pre-existing unrelated McpAccessCard.test failure out of scope."

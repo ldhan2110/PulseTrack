@@ -41,6 +41,14 @@ export class ChatService {
     }
   }
 
+  /** Hard-deletes only the caller's own membership; leaves messages + peers intact. */
+  async leaveConversation(conversationId: string, userId: string) {
+    await this.prisma.conversationMember.delete({
+      where: { conversationId_userId: { conversationId, userId } },
+    });
+    return { deleted: true };
+  }
+
   async createConversation(userId: string, dto: CreateConversationDto) {
     if (dto.type === ConversationType.DM) {
       const otherId = dto.memberIds[0];

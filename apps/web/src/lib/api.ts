@@ -1154,6 +1154,10 @@ export const api = {
 
   // ─── Chat ─────────────────────────────────────────────────────────────────
   getChatConversations: () => request<Conversation[]>('/chat/conversations'),
+  deleteChatConversation: (id: string) =>
+    request<{ deleted: boolean }>(`/chat/conversations/${id}`, {
+      method: 'DELETE',
+    }),
   createChatConversation: (dto: CreateConversationPayload) =>
     request<Conversation>('/chat/conversations', {
       method: 'POST',
