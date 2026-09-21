@@ -14,6 +14,20 @@ describe('reactions util', () => {
     expect(out.pages[0].items[1].reactions).toEqual([]);
   });
 
+  it('upsertReactions preserves reference identity for non-matching updates', () => {
+    const data = page([{ id: 'm1', reactions: [] }, { id: 'm2', reactions: [] }]);
+    const rx: MessageReaction[] = [{ id: 'r1', messageId: 'missing-id', emoji: '👍', userId: 'u1', user: u }];
+    const out = upsertReactions(data as any, 'missing-id', rx);
+    expect(out).toBe(data);
+
+    const originalPage = data.pages[0];
+    const originalM2 = data.pages[0].items[1];
+    const matched = upsertReactions(data as any, 'm1', rx);
+    expect(matched).not.toBe(data);
+    expect(matched.pages[0]).not.toBe(originalPage);
+    expect(matched.pages[0].items[1]).toBe(originalM2);
+  });
+
   it('toggleReactionLocal adds then removes my emoji', () => {
     const data = page([{ id: 'm1', reactions: [] }]);
     const added = toggleReactionLocal(data as any, 'm1', '👍', u);

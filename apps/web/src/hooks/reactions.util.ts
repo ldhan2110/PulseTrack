@@ -8,15 +8,19 @@ function mapMessage(
   messageId: string,
   fn: (rx: MessageReaction[]) => MessageReaction[],
 ): Infinite {
-  return {
-    ...data,
-    pages: data.pages.map((p) => ({
+  let changed = false;
+  const pages = data.pages.map((p) => {
+    if (!p.items.some((m) => m.id === messageId)) return p;
+    changed = true;
+    return {
       ...p,
       items: p.items.map((m) =>
         m.id === messageId ? { ...m, reactions: fn(m.reactions ?? []) } : m,
       ),
-    })),
-  };
+    };
+  });
+  if (!changed) return data;
+  return { ...data, pages };
 }
 
 export function upsertReactions(
