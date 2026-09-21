@@ -5,7 +5,7 @@ import { getChatSocket } from '../socket/instance';
 import {
   chatKeys,
   typingKey,
-  applyIncoming,
+  reconcile,
   applyUpdated,
   applyDeleted,
 } from './useChat';
@@ -42,8 +42,10 @@ export function useChatSync() {
     if (!socket) return;
 
     function onNew(msg: Message) {
+      // reconcile (not applyIncoming): replaces the sender's optimistic temp by
+      // clientTempId; for other members it has no match and simply inserts.
       qc.setQueryData<Infinite>(chatKeys.messages(msg.conversationId), (d) =>
-        applyIncoming(d, msg),
+        reconcile(d, msg),
       );
       void qc.invalidateQueries({ queryKey: chatKeys.conversations });
     }

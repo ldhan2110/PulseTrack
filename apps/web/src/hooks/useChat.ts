@@ -158,7 +158,7 @@ export function useSendMessage(conversationId: string) {
 
   return useMutation({
     mutationFn: (vars: { body: string; clientTempId: string }) =>
-      api.sendChatMessage(conversationId, vars.body),
+      api.sendChatMessage(conversationId, vars.body, vars.clientTempId),
     onMutate: async (vars) => {
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<InfiniteData<MessagePage>>(key);
@@ -237,11 +237,11 @@ export function useMarkChatRead() {
   });
 }
 
-export function useSearchChatTargets(projectId: string | null, query: string) {
+export function useSearchChatTargets(query: string) {
   return useQuery({
-    queryKey: ['chat', 'search', projectId, query],
-    queryFn: () => api.searchChatTargets(projectId as string, query),
-    enabled: !!projectId && query.trim().length > 0,
+    queryKey: ['chat', 'search', query],
+    queryFn: () => api.searchChatTargets(query),
+    enabled: query.trim().length > 0,
   });
 }
 

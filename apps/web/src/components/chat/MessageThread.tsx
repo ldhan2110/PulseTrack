@@ -1,7 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
-import { Hash, Pencil, Trash2, Check, CheckCheck, RotateCw } from 'lucide-react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { Hash, Pencil, Trash2, RotateCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/auth/useAuth';
 import {
   useMessages,
@@ -9,6 +19,7 @@ import {
   useDeleteMessage,
 } from '@/hooks/useChat';
 import type { Conversation, Message } from '@/lib/types';
+import { getChatSocket } from '@/socket/instance';
 import { Composer } from './Composer';
 import { MessageAttachment } from './MessageAttachment';
 import { convTitle, initials, peerOf, usePresence, useTyping } from './chatUtils';
@@ -17,6 +28,27 @@ const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
 function timeLabel(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function dayKey(iso: string): string {
+  return new Date(iso).toDateString();
+}
+
+/** Google Chat–style day label: Today / Yesterday / weekday / date. */
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Today';
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  const diffDays = (today.getTime() - d.getTime()) / 86_400_000;
+  if (diffDays < 7) return d.toLocaleDateString([], { weekday: 'long' });
+  return d.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+  });
 }
 
 /** Consecutive same-author messages within the window form one group. */
@@ -39,10 +71,20 @@ function groupMessages(messages: Message[]): Message[][] {
   return groups;
 }
 
+/** Three dots with a staggered bounce. */
+function TypingDots() {
+  return (
+    <span className="inline-flex items-end gap-0.5">
+      <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+      <span className="size-1 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+      <span className="size-1 animate-bounce rounded-full bg-current" />
+    </span>
+  );
+}
+
 interface ViewProps {
   messages: Message[]; // chronological (oldest → newest)
   myId: string;
-  peerLastReadAt?: string | null;
   onEdit?: (id: string, body: string) => void;
   onDelete?: (id: string) => void;
   onRetry?: (m: Message) => void;
@@ -52,23 +94,34 @@ interface ViewProps {
 export function MessageThreadView({
   messages,
   myId,
-  peerLastReadAt,
   onEdit,
   onDelete,
   onRetry,
 }: ViewProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const groups = groupMessages(messages);
 
   return (
     <div className="space-y-4">
-      {groups.map((group) => {
+      {groups.map((group, i) => {
         const first = group[0];
         const own = first.authorId === myId;
+        const prev = groups[i - 1]?.[0];
+        const showDay = !prev || dayKey(prev.createdAt) !== dayKey(first.createdAt);
         return (
+          <Fragment key={first.id}>
+            {showDay && (
+              <div className="flex items-center gap-3 py-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="px-2 text-xs font-medium text-muted-foreground">
+                  {dayLabel(first.createdAt)}
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            )}
           <div
-            key={first.id}
             className={`flex gap-2 ${own ? 'flex-row-reverse' : 'flex-row'}`}
           >
             {!own && (
@@ -98,17 +151,18 @@ export function MessageThreadView({
                       className="rounded-xl bg-muted/50 px-3 py-2 text-sm italic text-muted-foreground"
                       data-testid="deleted-placeholder"
                     >
-                      message deleted
+                      {m.author?.name ?? m.author?.username ?? 'User'} has deleted
+                      this message
                     </div>
                   );
                 }
                 return (
                   <div key={m.id} className="group/msg relative flex items-center gap-1">
                     {own && !isEditing && (
-                      <div className="flex opacity-0 transition group-hover/msg:opacity-100">
+                      <div className="absolute -top-3 right-2 z-10 hidden rounded-md border bg-background shadow-sm group-hover/msg:flex">
                         <button
                           aria-label="Edit"
-                          className="rounded p-1 text-muted-foreground hover:text-foreground"
+                          className="rounded-l-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                           onClick={() => {
                             setEditingId(m.id);
                             setDraft(m.body);
@@ -118,8 +172,8 @@ export function MessageThreadView({
                         </button>
                         <button
                           aria-label="Delete"
-                          className="rounded p-1 text-muted-foreground hover:text-destructive"
-                          onClick={() => onDelete?.(m.id)}
+                          className="rounded-r-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
+                          onClick={() => setConfirmId(m.id)}
                         >
                           <Trash2 className="size-3.5" />
                         </button>
@@ -168,13 +222,6 @@ export function MessageThreadView({
                               <RotateCw className="size-3" /> retry
                             </button>
                           )}
-                          {own && m.status !== 'sending' && m.status !== 'failed' && (
-                            peerLastReadAt && peerLastReadAt >= m.createdAt ? (
-                              <CheckCheck className="size-3" />
-                            ) : (
-                              <Check className="size-3" />
-                            )
-                          )}
                         </div>
                       </div>
                     )}
@@ -183,8 +230,32 @@ export function MessageThreadView({
               })}
             </div>
           </div>
+          </Fragment>
         );
       })}
+
+      <AlertDialog open={!!confirmId} onOpenChange={(o) => !o && setConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This message will be removed for everyone. This can&rsquo;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmId) onDelete?.(confirmId);
+                setConfirmId(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -204,9 +275,26 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
   const del = useDeleteMessage(convId);
   const presence = usePresence();
   const typing = useTyping(convId);
+  const typer =
+    typing && typing.userId !== myId
+      ? conversation.members.find((mem) => mem.userId === typing.userId)?.user
+      : null;
+  const typerName = typer?.name ?? typer?.username ?? 'Someone';
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Join the conversation room so its live events reach this socket.
+  // Re-join on reconnect (socket.io drops room membership on disconnect).
+  useEffect(() => {
+    const socket = getChatSocket();
+    const join = () => socket.emit('chat:join', convId);
+    join();
+    socket.on('connect', join);
+    return () => {
+      socket.off('connect', join);
+    };
+  }, [convId]);
 
   // pages are newest-first; flatten and reverse to chronological order
   const messages: Message[] = (data?.pages ?? [])
@@ -240,7 +328,6 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
   const isChannel = conversation.type === 'CHANNEL';
   const peer = peerOf(conversation, myId);
   const online = peer ? presence[peer.id] : false;
-  const peerMember = conversation.members.find((m) => m.userId !== myId);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -282,13 +369,15 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
           <MessageThreadView
             messages={messages}
             myId={myId}
-            peerLastReadAt={peerMember?.lastReadAt}
             onEdit={(id, body) => body && edit.mutate({ id, body })}
             onDelete={(id) => del.mutate(id)}
           />
         )}
         {typing && typing.userId !== myId && (
-          <div className="px-1 pt-2 text-xs italic text-muted-foreground">typing…</div>
+          <div className="flex items-center gap-1.5 px-1 pt-2 text-xs italic text-muted-foreground">
+            <span>{typerName} is typing</span>
+            <TypingDots />
+          </div>
         )}
         <div ref={bottomRef} />
       </div>

@@ -45,7 +45,7 @@ describe('MessageThreadView', () => {
     render(<MessageThreadView messages={messages} myId="me" />);
 
     expect(screen.getByTestId('deleted-placeholder').textContent).toContain(
-      'message deleted',
+      'has deleted this message',
     );
     expect(screen.queryByText('secret')).toBeNull();
   });

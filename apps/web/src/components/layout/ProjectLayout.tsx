@@ -49,14 +49,14 @@ export function ProjectLayout() {
       }
     >
       <AppSidebar onCreateProject={() => setCreateProjectOpen(true)} />
-      <SidebarInset className="min-w-0 overflow-hidden">
+      <SidebarInset className="h-svh min-w-0 overflow-hidden">
         <div className="flex justify-between px-4 pt-2">
           <SidebarTrigger className="md:hidden" aria-label="Open sidebar" />
           <div className="ml-auto">
             <NotificationBell />
           </div>
         </div>
-        <main className={fullWidth ? 'px-4 pt-0 pb-4 w-full overflow-auto' : 'px-8 pt-1 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
+        <main className={fullWidth ? 'flex-1 min-h-0 px-4 pt-0 pb-4 w-full overflow-auto' : 'flex-1 min-h-0 px-8 pt-1 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
           <Outlet />
         </main>
       </SidebarInset>

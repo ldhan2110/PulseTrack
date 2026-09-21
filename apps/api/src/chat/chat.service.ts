@@ -94,6 +94,21 @@ export class ChatService {
     });
   }
 
+  async searchTargets(userId: string, query: string) {
+    return this.prisma.user.findMany({
+      where: {
+        id: { not: userId },
+        OR: [
+          { username: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+          { name: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      ...memberUserSelect,
+      take: 20,
+    });
+  }
+
   async listMyConversations(userId: string) {
     const memberships = await this.prisma.conversationMember.findMany({
       where: { userId },
@@ -136,14 +151,17 @@ export class ChatService {
     conversationId: string,
     authorId: string,
     body: string | undefined,
+    clientTempId?: string,
   ) {
     if (!body || !body.trim()) {
       throw new BadRequestException('Message body is required');
     }
-    const message = await this.prisma.message.create({
+    const created = await this.prisma.message.create({
       data: { conversationId, authorId, body, createdBy: authorId },
       include: { author: memberUserSelect },
     });
+    // Transient echo (not persisted) so the sender can match its optimistic message.
+    const message = { ...created, clientTempId };
     this.emitToConvo(conversationId, 'chat:message:new', message);
     return message;
   }

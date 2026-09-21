@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { useChatSync } from '@/hooks/useChatSync';
 import { useConversations } from '@/hooks/useChat';
@@ -9,6 +10,13 @@ import { NewConversationDialog } from '@/components/chat/NewConversationDialog';
 export function ChatPage() {
   useChatSync();
   const activeId = useUiStore((s) => s.activeConversationId);
+  const setFullWidth = useUiStore((s) => s.setFullWidth);
+
+  useEffect(() => {
+    setFullWidth(true);
+    return () => setFullWidth(false);
+  }, [setFullWidth]);
+
   const { data: conversations } = useConversations();
   const active = (conversations ?? []).find((c) => c.id === activeId) ?? null;
 

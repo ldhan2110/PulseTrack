@@ -41,6 +41,11 @@ export class ChatController {
     return this.chatService.listMyConversations(req.user.id);
   }
 
+  @Get('search-targets')
+  searchTargets(@Req() req: any, @Query('q') q?: string) {
+    return this.chatService.searchTargets(req.user.id, q ?? '');
+  }
+
   @Post('conversations/:id/messages')
   @UseGuards(ConversationMemberGuard)
   send(
@@ -48,7 +53,7 @@ export class ChatController {
     @Param('id') id: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.chatService.sendMessage(id, req.user.id, dto.body);
+    return this.chatService.sendMessage(id, req.user.id, dto.body, dto.clientTempId);
   }
 
   @Get('conversations/:id/messages')

@@ -19,6 +19,15 @@ export function Composer({ conversationId }: { conversationId: string }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimer = useRef<number | undefined>(undefined);
+  const sendingRef = useRef(false);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  function autoGrow() {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }
 
   function emitTyping() {
     if (typingTimer.current) return; // debounce: at most one emit / 1.5s
@@ -29,25 +38,32 @@ export function Composer({ conversationId }: { conversationId: string }) {
   }
 
   async function handleSend() {
+    if (sendingRef.current) return; // guard rapid double-fire (key repeat, stale closure)
     const body = text.trim();
     if (!body && pending.length === 0) return;
+    sendingRef.current = true;
     setText('');
+    if (taRef.current) taRef.current.style.height = 'auto'; // shrink back after send
     const files = pending;
     setPending([]);
-    if (body) {
-      send.mutate({ body, clientTempId: crypto.randomUUID() });
-    }
-    // attachments upload as their own messages (backend emits chat:message:new)
-    for (const file of files) {
-      try {
-        await api.uploadChatAttachment(conversationId, file);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Upload failed');
+    try {
+      if (body) {
+        send.mutate({ body, clientTempId: crypto.randomUUID() });
       }
-    }
-    if (files.length) {
-      void qc.invalidateQueries({ queryKey: chatKeys.messages(conversationId) });
-      void qc.invalidateQueries({ queryKey: chatKeys.conversations });
+      // attachments upload as their own messages (backend emits chat:message:new)
+      for (const file of files) {
+        try {
+          await api.uploadChatAttachment(conversationId, file);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : 'Upload failed');
+        }
+      }
+      if (files.length) {
+        void qc.invalidateQueries({ queryKey: chatKeys.messages(conversationId) });
+        void qc.invalidateQueries({ queryKey: chatKeys.conversations });
+      }
+    } finally {
+      sendingRef.current = false;
     }
   }
 
@@ -98,29 +114,34 @@ export function Composer({ conversationId }: { conversationId: string }) {
           ))}
         </div>
       )}
-      <div className="mb-1 text-[11px] text-muted-foreground">
-        Paste or drag an image to attach
-      </div>
       <div
-        className={`flex items-center gap-1 rounded-full border bg-background px-2 py-1 ${
+        className={`flex items-end gap-1 rounded-2xl border bg-background px-2 py-1 ${
           dragOver ? 'ring-2 ring-primary' : ''
         }`}
       >
-        <input
+        <textarea
+          ref={taRef}
           value={text}
+          rows={1}
           onChange={(e) => {
             setText(e.target.value);
+            autoGrow();
             emitTyping();
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (
+              e.key === 'Enter' &&
+              !e.shiftKey &&
+              !e.repeat &&
+              !e.nativeEvent.isComposing
+            ) {
               e.preventDefault();
               void handleSend();
             }
           }}
           onPaste={onPaste}
-          placeholder="Message"
-          className="flex-1 bg-transparent px-2 py-1 text-sm outline-none"
+          placeholder="Type a message… (Shift+Enter for new line)"
+          className="flex-1 resize-none bg-transparent px-2 py-1 text-sm outline-none max-h-32"
         />
 
         <Popover>
@@ -185,15 +206,16 @@ export function Composer({ conversationId }: { conversationId: string }) {
           <Paperclip className="size-4" />
         </Button>
 
-        <Button
-          size="icon"
-          className="size-8 shrink-0 rounded-full"
-          aria-label="Send"
-          onClick={() => void handleSend()}
-          disabled={!text.trim() && pending.length === 0}
-        >
-          <Send className="size-4" />
-        </Button>
+        {(text.trim() || pending.length > 0) && (
+          <Button
+            size="icon"
+            className="size-8 shrink-0 rounded-full"
+            aria-label="Send"
+            onClick={() => void handleSend()}
+          >
+            <Send className="size-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

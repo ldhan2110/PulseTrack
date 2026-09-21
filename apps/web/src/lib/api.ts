@@ -1160,18 +1160,18 @@ export const api = {
     }),
   // Chat-target search reuses the project-scoped member search (see design.md
   // Decision Default 2026-09-21 — no dedicated chat search endpoint exists).
-  searchChatTargets: (projectId: string, query: string) =>
+  searchChatTargets: (query: string) =>
     request<UserSearchResult[]>(
-      `/projects/${projectId}/members/search?q=${encodeURIComponent(query)}`,
+      `/chat/search-targets?q=${encodeURIComponent(query)}`,
     ),
   getChatMessages: (conversationId: string, cursor?: string) => {
     const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
     return request<MessagePage>(`/chat/conversations/${conversationId}/messages${qs}`);
   },
-  sendChatMessage: (conversationId: string, body: string) =>
+  sendChatMessage: (conversationId: string, body: string, clientTempId?: string) =>
     request<Message>(`/chat/conversations/${conversationId}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, clientTempId }),
     }),
   editChatMessage: (id: string, body: string) =>
     request<Message>(`/chat/messages/${id}`, {

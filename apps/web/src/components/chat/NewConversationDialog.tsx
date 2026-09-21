@@ -22,10 +22,9 @@ export function NewConversationDialog() {
   const open = useUiStore((s) => s.chatOverlayOpen);
   const setOpen = useUiStore((s) => s.setChatOverlayOpen);
   const setActive = useUiStore((s) => s.setActiveConversationId);
-  const projectId = useUiStore((s) => s.activeProjectId);
   const [query, setQuery] = useState('');
 
-  const { data: people } = useSearchChatTargets(projectId, query);
+  const { data: people } = useSearchChatTargets(query);
   const { data: conversations } = useConversations();
   const create = useCreateConversation();
 
@@ -75,11 +74,12 @@ export function NewConversationDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>New conversation</DialogTitle>
         </DialogHeader>
 
+        <div className="flex min-h-[200px] flex-col gap-3 px-4 pb-4">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
@@ -99,11 +99,11 @@ export function NewConversationDialog() {
           </TabsList>
 
           <TabsContent value="all">
-            <PeopleList people={peopleResults} onMessage={startDm} projectId={projectId} />
+            <PeopleList people={peopleResults} onMessage={startDm} />
             <ChannelList channels={channels} onOpen={openChannel} />
           </TabsContent>
           <TabsContent value="people">
-            <PeopleList people={peopleResults} onMessage={startDm} projectId={projectId} />
+            <PeopleList people={peopleResults} onMessage={startDm} />
           </TabsContent>
           <TabsContent value="channels">
             <ChannelList channels={channels} onOpen={openChannel} />
@@ -119,6 +119,7 @@ export function NewConversationDialog() {
             <Plus className="size-4" /> Create channel “{query.trim()}”
           </Button>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -127,21 +128,12 @@ export function NewConversationDialog() {
 function PeopleList({
   people,
   onMessage,
-  projectId,
 }: {
   people: { id: string; name: string | null; username: string; imageUrl: string | null }[];
   onMessage: (id: string) => void;
-  projectId: string | null;
 }) {
-  if (!projectId) {
-    return (
-      <p className="px-1 py-2 text-xs text-muted-foreground">
-        Open a project to search people.
-      </p>
-    );
-  }
   return (
-    <div className="max-h-56 space-y-1 overflow-y-auto py-1">
+    <div className="max-h-96 space-y-1 overflow-y-auto py-1">
       {people.map((p) => (
         <div key={p.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent">
           <Avatar className="size-6">
@@ -166,7 +158,7 @@ function ChannelList({
   onOpen: (id: string) => void;
 }) {
   return (
-    <div className="max-h-56 space-y-1 overflow-y-auto py-1">
+    <div className="max-h-96 space-y-1 overflow-y-auto py-1">
       {channels.map((c) => (
         <div key={c.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent">
           <Hash className="size-4 text-muted-foreground" />
