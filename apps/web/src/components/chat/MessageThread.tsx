@@ -17,6 +17,7 @@ import {
   useMessages,
   useEditMessage,
   useDeleteMessage,
+  useMarkChatRead,
 } from '@/hooks/useChat';
 import type { Conversation, Message } from '@/lib/types';
 import { getChatSocket } from '@/socket/instance';
@@ -273,6 +274,7 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
   } = useMessages(convId);
   const edit = useEditMessage(convId);
   const del = useDeleteMessage(convId);
+  const markRead = useMarkChatRead();
   const presence = usePresence();
   const typing = useTyping(convId);
   const typer =
@@ -304,9 +306,30 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
 
   // stick to bottom on new messages (not when prepending history)
   const lastId = messages[messages.length - 1]?.id;
+
+  // opening/switching a thread should jump to the latest message; flag the
+  // pending jump so it lands once the new conversation's messages render
+  const pendingJump = useRef(true);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [lastId]);
+    pendingJump.current = true;
+  }, [convId]);
+
+  useEffect(() => {
+    if (pendingJump.current) {
+      if (!lastId) return; // messages not loaded yet — wait
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight; // instant, no animation
+      pendingJump.current = false;
+    } else {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [convId, lastId]);
+
+  // viewing the thread clears unread — fire on open and on each new message
+  useEffect(() => {
+    if (conversation.unreadCount) markRead.mutate(convId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [convId, lastId, conversation.unreadCount]);
 
   // infinite scroll upward — load older, preserve position
   function onScroll() {

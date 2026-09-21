@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { getChatSocket } from '@/socket/instance';
 import { useSendMessage, chatKeys } from '@/hooks/useChat';
-
-const EMOJIS = ['😀', '😂', '😅', '👍', '🙏', '🎉', '❤️', '🔥', '✅', '👀'];
+import EmojiPicker from '@emoji-mart/react';
+import emojiData from '@emoji-mart/data';
 
 export function Composer({ conversationId }: { conversationId: string }) {
   const [text, setText] = useState('');
@@ -150,18 +150,15 @@ export function Composer({ conversationId }: { conversationId: string }) {
               <Smile className="size-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-2">
-            <div className="grid grid-cols-5 gap-1">
-              {EMOJIS.map((e) => (
-                <button
-                  key={e}
-                  className="rounded p-1 text-lg hover:bg-accent"
-                  onClick={() => setText((t) => t + e)}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
+          <PopoverContent className="w-auto border-0 p-0">
+            <EmojiPicker
+              data={emojiData}
+              theme="light"
+              previewPosition="none"
+              onEmojiSelect={(e: { native: string }) =>
+                setText((t) => t + e.native)
+              }
+            />
           </PopoverContent>
         </Popover>
 
