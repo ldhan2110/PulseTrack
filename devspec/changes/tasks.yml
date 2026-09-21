@@ -66,6 +66,6 @@ changes:
     tasks_md: changes/add-realtime-chat-web/tasks.md
     depends_on: [add-realtime-chat]
     skills: [frontend-design]
-    status: blocked
+    status: doing
     owner: "worker-cc"
-    notes: "BLOCKED (see report/blockers.md): (1) §1.2/§6 require api.searchChatTargets — no chat-target search/discovery endpoint shipped by add-realtime-chat (only project-scoped members/search; /users admin-only; no channel discovery); web-only scope forbids adding backend route. (2) §8.2 MANUAL BA gate unticked. Human: add endpoint OR narrow req-3, tick §8.2, reset blocked→pending. No code written. Consumes backend REST + /chat socket. Access via new AppSidebar item + /chat route; unread badge separate from NotificationBell. Reuse planner chat components (ChatMessage/ChatInput/ChatMessageList/ChatAttachment) + shadcn. Approved mockup at mockups/chat-page.html. §8.2 is a MANUAL BA screenshot gate."
+    notes: "Resumed 2026-09-21: human cleared both blockers — (1) search source = reuse project-scoped members/search, people-only, channels tab = joined channels + create (Decision Default added to design.md, narrows req-3 §6); (2) §8.2 MANUAL BA gate approved (auto go). Consumes backend REST + /chat socket. Access via new AppSidebar item + /chat route; unread badge separate from NotificationBell. Reuse planner chat components (ChatMessage/ChatInput/ChatMessageList/ChatAttachment) + shadcn. Approved mockup at mockups/chat-page.html. §8.2 is a MANUAL BA screenshot gate."

@@ -1546,3 +1546,74 @@ export interface CreateMcpTokenPayload {
 export interface McpTokenCreated extends McpToken {
   token: string;
 }
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+// Mirrors apps/api/src/chat backend shapes (memberUserSelect + Prisma models).
+
+export type ConversationType = 'DM' | 'CHANNEL';
+
+export interface ChatUser {
+  id: string;
+  username: string;
+  email: string;
+  name: string | null;
+  imageUrl: string | null;
+}
+
+export interface ConversationMember {
+  id: string;
+  conversationId: string;
+  userId: string;
+  role: string | null;
+  lastReadAt: string | null;
+  mutedAt: string | null;
+  user: ChatUser;
+}
+
+export interface MessageAttachment {
+  id: string;
+  messageId: string;
+  filename: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  authorId: string;
+  body: string;
+  editedAt: string | null;
+  deletedAt: string | null;
+  createdAt: string;
+  author: ChatUser;
+  attachments?: MessageAttachment[];
+  // client-only: optimistic send bookkeeping (never sent by the server)
+  clientTempId?: string;
+  status?: 'sending' | 'failed' | 'sent';
+}
+
+export interface Conversation {
+  id: string;
+  type: ConversationType;
+  name: string | null;
+  creatorId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  members: ConversationMember[];
+  lastMessage?: Message | null;
+  unreadCount?: number;
+}
+
+export interface MessagePage {
+  items: Message[];
+  nextCursor: string | null;
+}
+
+export interface CreateConversationPayload {
+  type: ConversationType;
+  name?: string;
+  memberIds: string[];
+}

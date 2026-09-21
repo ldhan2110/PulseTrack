@@ -115,6 +115,10 @@ import type {
   AutomationRun,
   ProjectVariable,
   TimesheetData,
+  Conversation,
+  Message,
+  MessagePage,
+  CreateConversationPayload,
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
@@ -1146,4 +1150,72 @@ export const api = {
       ticket: filters.ticket ?? '',
       typeIds: filters.typeIds?.join(',') ?? '',
     }),
+
+  // ─── Chat ─────────────────────────────────────────────────────────────────
+  getChatConversations: () => request<Conversation[]>('/chat/conversations'),
+  createChatConversation: (dto: CreateConversationPayload) =>
+    request<Conversation>('/chat/conversations', {
+      method: 'POST',
+      body: JSON.stringify(dto),
+    }),
+  // Chat-target search reuses the project-scoped member search (see design.md
+  // Decision Default 2026-09-21 — no dedicated chat search endpoint exists).
+  searchChatTargets: (projectId: string, query: string) =>
+    request<UserSearchResult[]>(
+      `/projects/${projectId}/members/search?q=${encodeURIComponent(query)}`,
+    ),
+  getChatMessages: (conversationId: string, cursor?: string) => {
+    const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+    return request<MessagePage>(`/chat/conversations/${conversationId}/messages${qs}`);
+  },
+  sendChatMessage: (conversationId: string, body: string) =>
+    request<Message>(`/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+  editChatMessage: (id: string, body: string) =>
+    request<Message>(`/chat/messages/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ body }),
+    }),
+  deleteChatMessage: (id: string) =>
+    request<{ id: string; deletedAt: string }>(`/chat/messages/${id}`, {
+      method: 'DELETE',
+    }),
+  markChatRead: (conversationId: string) =>
+    request<{ conversationId: string; lastReadAt: string }>(
+      `/chat/conversations/${conversationId}/read`,
+      { method: 'POST' },
+    ),
+  uploadChatAttachment: async (
+    conversationId: string,
+    file: File,
+    body?: string,
+  ): Promise<Message> => {
+    const token = keycloak.token;
+    const form = new FormData();
+    form.append('file', file);
+    if (body) form.append('body', body);
+    const res = await fetch(
+      `${API_BASE}/chat/conversations/${conversationId}/attachments`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      },
+    );
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error((errBody as { message?: string }).message || `Upload failed: ${res.status}`);
+    }
+    return res.json() as Promise<Message>;
+  },
+  downloadChatAttachment: async (id: string): Promise<Blob> => {
+    const token = keycloak.token;
+    const res = await fetch(`${API_BASE}/chat/attachments/${id}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    return res.blob();
+  },
 };
