@@ -57,6 +57,9 @@ export class ChatGateway
     if (wasOffline) {
       this.server?.emit('chat:presence', { userId, online: true });
     }
+    // Snapshot of everyone currently online — so a fresh/refreshed client shows
+    // correct status instead of waiting for live deltas that never come.
+    socket.emit('chat:presence:snapshot', [...this.presence.keys()]);
   }
 
   handleDisconnect(socket: Socket): void {
@@ -88,7 +91,10 @@ export class ChatGateway
     @ConnectedSocket() socket: Socket,
     @MessageBody() conversationId: string,
   ): Promise<void> {
-    await this.chatService.assertMember(conversationId, socket.data.userId);
+    // chat:join can arrive before the async handleConnection sets userId — ignore until authed.
+    const userId = socket.data.userId as string | undefined;
+    if (!userId) return;
+    await this.chatService.assertMember(conversationId, userId);
     await socket.join(`convo:${conversationId}`);
   }
 

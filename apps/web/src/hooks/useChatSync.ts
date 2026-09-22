@@ -96,6 +96,14 @@ export function useChatSync() {
       }));
     }
 
+    // Full online set sent on (re)connect — replace the map so stale entries clear.
+    function onPresenceSnapshot(userIds: string[]) {
+      qc.setQueryData<Record<string, boolean>>(
+        chatKeys.presence,
+        Object.fromEntries(userIds.map((id) => [id, true])),
+      );
+    }
+
     function onRead(payload: {
       conversationId: string;
       userId: string;
@@ -143,6 +151,7 @@ export function useChatSync() {
     socket.on('chat:message:reaction', onReaction);
     socket.on('chat:typing', onTyping);
     socket.on('chat:presence', onPresence);
+    socket.on('chat:presence:snapshot', onPresenceSnapshot);
     socket.on('chat:read', onRead);
     socket.on('chat:conversation:added', onMembershipChanged);
     socket.on('chat:conversation:removed', onMembershipChanged);
@@ -157,6 +166,7 @@ export function useChatSync() {
       socket.off('chat:message:reaction', onReaction);
       socket.off('chat:typing', onTyping);
       socket.off('chat:presence', onPresence);
+      socket.off('chat:presence:snapshot', onPresenceSnapshot);
       socket.off('chat:read', onRead);
       socket.off('chat:conversation:added', onMembershipChanged);
       socket.off('chat:conversation:removed', onMembershipChanged);

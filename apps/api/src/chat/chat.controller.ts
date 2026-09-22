@@ -60,8 +60,12 @@ export class ChatController {
 
   @Get('conversations/:id/messages')
   @UseGuards(ConversationMemberGuard)
-  history(@Param('id') id: string, @Query('cursor') cursor?: string) {
-    return this.chatService.getMessages(id, cursor);
+  history(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.chatService.getMessages(id, req.user.id, cursor);
   }
 
   @Post('conversations/:id/members')

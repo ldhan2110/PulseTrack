@@ -273,6 +273,9 @@ export function useDeleteConversation() {
       qc.setQueryData<Conversation[]>(chatKeys.conversations, (list) =>
         list?.filter((c) => c.id !== id),
       );
+      // Drop cached messages so reopening the same DM refetches (empty past the floor)
+      // instead of reshowing stale history.
+      qc.removeQueries({ queryKey: chatKeys.messages(id) });
       if (useUiStore.getState().activeConversationId === id) {
         useUiStore.getState().setActiveConversationId(null);
       }

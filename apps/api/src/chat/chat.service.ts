@@ -47,11 +47,33 @@ export class ChatService {
     }
   }
 
-  /** Hard-deletes only the caller's own membership; leaves messages + peers intact. */
+  /**
+   * DM: soft-closes the caller's membership (hidden + message floor set) so reopening
+   * the same pair reuses this record instead of creating a duplicate. Channel: hard delete.
+   * Peers + messages always intact.
+   */
   async leaveConversation(conversationId: string, userId: string) {
-    await this.prisma.conversationMember.delete({
-      where: { conversationId_userId: { conversationId, userId } },
+    const convo = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { type: true },
     });
+    if (convo?.type === ConversationType.DM) {
+      const now = new Date();
+      await this.prisma.conversationMember.update({
+        where: { conversationId_userId: { conversationId, userId } },
+        data: { deletedAt: now, clearedAt: now },
+      });
+    } else {
+      await this.prisma.conversationMember.delete({
+        where: { conversationId_userId: { conversationId, userId } },
+      });
+    }
+    const updated = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { members: { include: { user: memberUserSelect } } },
+    });
+    this.emitToConvo(conversationId, 'chat:members:changed', updated?.members);
+    this.emitToUser(userId, 'chat:conversation:removed', { conversationId });
     return { deleted: true };
   }
 
@@ -129,7 +151,17 @@ export class ChatService {
         },
         include: { members: { include: { user: memberUserSelect } } },
       });
-      if (existing) return existing;
+      if (existing) {
+        // Reopen: un-hide caller and set floor to now so old messages stay cut off.
+        const mine = existing.members?.find((m) => m.userId === userId);
+        if (mine?.deletedAt) {
+          await this.prisma.conversationMember.update({
+            where: { conversationId_userId: { conversationId: existing.id, userId } },
+            data: { deletedAt: null, clearedAt: new Date() },
+          });
+        }
+        return existing;
+      }
 
       return this.prisma.conversation.create({
         data: {
@@ -186,7 +218,7 @@ export class ChatService {
 
   async listMyConversations(userId: string) {
     const memberships = await this.prisma.conversationMember.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       include: {
         conversation: {
           include: {
@@ -201,19 +233,24 @@ export class ChatService {
     // ponytail: per-conversation unread count (N+1). Batch with groupBy if the list grows.
     return Promise.all(
       memberships.map(async (m) => {
+        // Floor = later of read cursor and DM-close floor; messages before it are hidden.
+        const floor = [m.lastReadAt, m.clearedAt]
+          .filter((d): d is Date => !!d)
+          .sort((a, b) => +b - +a)[0];
         const unreadCount = await this.prisma.message.count({
           where: {
             conversationId: m.conversationId,
             authorId: { not: userId },
             deletedAt: null,
-            ...(m.lastReadAt ? { createdAt: { gt: m.lastReadAt } } : {}),
+            ...(floor ? { createdAt: { gt: floor } } : {}),
           },
         });
         const last = m.conversation.messages[0];
+        const lastVisible = last && (!m.clearedAt || last.createdAt > m.clearedAt);
         return {
           ...m.conversation,
           messages: undefined,
-          lastMessage: last
+          lastMessage: lastVisible
             ? { ...last, body: last.deletedAt ? '' : last.body }
             : null,
           unreadCount,
@@ -267,9 +304,16 @@ export class ChatService {
     }
   }
 
-  async getMessages(conversationId: string, cursor?: string) {
+  async getMessages(conversationId: string, userId: string, cursor?: string) {
+    const me = await this.prisma.conversationMember.findUnique({
+      where: { conversationId_userId: { conversationId, userId } },
+      select: { clearedAt: true },
+    });
     const rows = await this.prisma.message.findMany({
-      where: { conversationId },
+      where: {
+        conversationId,
+        ...(me?.clearedAt ? { createdAt: { gt: me.clearedAt } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: HISTORY_PAGE,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

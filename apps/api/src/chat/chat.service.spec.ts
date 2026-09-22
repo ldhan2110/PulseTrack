@@ -71,6 +71,48 @@ describe('ChatService.createConversation', () => {
   });
 });
 
+describe('ChatService.leaveConversation (DM soft-close)', () => {
+  let prisma: any;
+  let service: ChatService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    service = new ChatService(prisma);
+  });
+
+  it('DM: soft-hides the caller (deletedAt+clearedAt), never hard-deletes', async () => {
+    prisma.conversation.findUnique.mockResolvedValue({ type: ConversationType.DM });
+    await service.leaveConversation('dm1', 'u1');
+
+    expect(prisma.conversationMember.delete).not.toHaveBeenCalled();
+    const data = prisma.conversationMember.update.mock.calls[0][0].data;
+    expect(data.deletedAt).toBeInstanceOf(Date);
+    expect(data.clearedAt).toBeInstanceOf(Date);
+  });
+
+  it('channel: hard-deletes the membership', async () => {
+    prisma.conversation.findUnique.mockResolvedValue({ type: ConversationType.CHANNEL });
+    await service.leaveConversation('c1', 'u1');
+    expect(prisma.conversationMember.delete).toHaveBeenCalled();
+  });
+
+  it('reopen: un-hides caller and resets the message floor', async () => {
+    prisma.conversation.findFirst.mockResolvedValue({
+      id: 'dm1',
+      members: [{ userId: 'u1', deletedAt: new Date() }],
+    });
+    await service.createConversation('u1', {
+      type: ConversationType.DM,
+      memberIds: ['u2'],
+    });
+
+    const data = prisma.conversationMember.update.mock.calls[0][0].data;
+    expect(data.deletedAt).toBeNull();
+    expect(data.clearedAt).toBeInstanceOf(Date);
+    expect(prisma.conversation.create).not.toHaveBeenCalled();
+  });
+});
+
 describe('ChatService.listMyConversations', () => {
   let prisma: any;
   let service: ChatService;
@@ -147,7 +189,7 @@ describe('ChatService.getMessages', () => {
     }));
     prisma.message.findMany.mockResolvedValue(rows);
 
-    const { items, nextCursor } = await service.getMessages('c1');
+    const { items, nextCursor } = await service.getMessages('c1', 'u1');
 
     const args = prisma.message.findMany.mock.calls[0][0];
     expect(args.take).toBe(30);
@@ -162,7 +204,7 @@ describe('ChatService.getMessages', () => {
       { id: 'm40', deletedAt: null, body: 'x' },
     ]);
 
-    const { nextCursor } = await service.getMessages('c1', 'm29');
+    const { nextCursor } = await service.getMessages('c1', 'u1', 'm29');
 
     const args = prisma.message.findMany.mock.calls[0][0];
     expect(args.cursor).toEqual({ id: 'm29' });
@@ -175,7 +217,7 @@ describe('ChatService.getMessages', () => {
       { id: 'm1', deletedAt: new Date(), body: 'secret' },
     ]);
 
-    const { items } = await service.getMessages('c1');
+    const { items } = await service.getMessages('c1', 'u1');
     expect(items[0].body).toBe('');
   });
 });
