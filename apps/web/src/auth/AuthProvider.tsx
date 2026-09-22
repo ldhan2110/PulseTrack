@@ -3,13 +3,14 @@ import keycloak from './keycloak';
 import { externalSession } from './externalSession';
 import { keycloakSession } from './keycloakSession';
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   keycloakId: string | null;
   email: string;
   username: string;
   name: string | null;
   imageUrl: string | null;
+  userType: 'INTERNAL' | 'EXTERNAL';
 }
 
 export type KeycloakUserInfo = {
@@ -22,6 +23,7 @@ export type AuthContextValue = {
   accessDenied: boolean;
   token: string | undefined;
   user: UserProfile | null;
+  setUser: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   keycloakUserInfo: KeycloakUserInfo | null;
   signInExternal: (email: string, password: string) => Promise<void>;
   signInWithTokens: (accessToken: string, refreshToken: string, user: UserProfile) => void;
@@ -271,6 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         accessDenied,
         token: mode.current === 'external' ? externalAccess : keycloak.token,
         user,
+        setUser,
         keycloakUserInfo,
         signInExternal,
         signInWithTokens,

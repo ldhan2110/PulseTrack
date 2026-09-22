@@ -22,6 +22,7 @@ import {
   BarChart3,
   MessageSquare,
   Plus,
+  UserCog,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -43,6 +44,7 @@ import { Separator } from '@/components/ui/separator';
 import { useProjects } from '@/hooks/useProjects';
 import { useChatUnread } from '@/hooks/useChat';
 import { useAuth } from '@/auth/useAuth';
+import { ProfileModal } from '@/components/profile/ProfileModal';
 import { useUiStore } from '@/store/uiStore';
 
 interface NavItem {
@@ -112,13 +114,14 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ 'Project Planner': true });
+  const [profileOpen, setProfileOpen] = useState(false);
   const { data: projects } = useProjects();
   const chatUnread = useChatUnread();
   const { user, keycloakUserInfo, logout } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
 
   const userName = keycloakUserInfo?.usrNm ?? user?.username ?? user?.email ?? 'User';
-  const userAvatarUrl = keycloakUserInfo?.imgUrl ?? null;
+  const userAvatarUrl = keycloakUserInfo?.imgUrl ?? user?.imageUrl ?? null;
 
   const userInitials = userName
     .split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -405,6 +408,20 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Profile"
+                  onClick={() => setProfileOpen(true)}
+                  className="size-8"
+                >
+                  <UserCog className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Profile</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label="Sign out"
                   onClick={logout}
                   className="size-8"
@@ -427,6 +444,20 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Profile"
+                  onClick={() => setProfileOpen(true)}
+                  className="size-8 shrink-0"
+                >
+                  <UserCog className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Profile</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label="Sign out"
                   onClick={logout}
                   className="size-8 shrink-0"
@@ -439,6 +470,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
           </div>
         )}
       </SidebarFooter>
+      <ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
     </Sidebar>
   );
 }

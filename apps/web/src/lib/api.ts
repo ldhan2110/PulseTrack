@@ -125,6 +125,7 @@ import type {
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
 import { externalSession } from '../auth/externalSession';
+import type { UserProfile } from '../auth/AuthProvider';
 
 const API_BASE = '/api';
 
@@ -202,6 +203,7 @@ export interface AuthUser {
   name: string | null;
   imageUrl: string | null;
   keycloakId: string | null;
+  userType: 'INTERNAL' | 'EXTERNAL';
 }
 
 export interface AuthLoginResponse {
@@ -227,6 +229,32 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
+
+  // ─── Own profile (EXTERNAL self-service) ─────────────────────────────────────
+  updateMyProfile: (data: { name: string }) =>
+    request<UserProfile>('/users/me', { method: 'PATCH', body: JSON.stringify(data) }),
+  changeMyPassword: (data: { currentPassword: string; newPassword: string }) =>
+    request<{ success: boolean }>('/users/me/password', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  uploadMyAvatar: async (file: File): Promise<UserProfile> => {
+    const token = currentToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/users/me/avatar`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message || `Upload failed: ${res.status}`);
+    }
+    return res.json() as Promise<UserProfile>;
+  },
 
   // ─── Projects ──────────────────────────────────────────────────────────────
   getProjects: () => request<ProjectListItem[]>('/projects'),

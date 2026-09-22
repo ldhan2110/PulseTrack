@@ -82,3 +82,18 @@ Then tick §8.2 after the BA screenshot review, and reset board `status: blocked
 Review `changes/chat-members-mentions/verify/*.png` vs `mockups/{new-conversation-dialog,members-panel,mention}.html`. If approved: tick §9.1 `[x]` in `tasks.md` AND reset board `status: blocked → pending`. Next worker run will finish + archive.
 
 **Pre-existing, out of scope**: `McpAccessCard.test` revoked-badge (1 failure, ruled out on 3 prior chat changes) — unrelated to this change.
+
+## external-profile — §8 external editable path: no live browser proof (non-blocking)
+_logged: 2026-09-22 by worker-cc_
+
+The EXTERNAL editable variant of the Profile modal was NOT verified in a live
+browser: no EXTERNAL test account exists in this environment (only `anle`,
+which is INTERNAL/Keycloak). The INTERNAL read-only variant WAS live-verified
+(PASS, screenshot in changes/external-profile → archived verify/). Backend
+external logic is unit-tested green (12 tests). Change was marked `done` on
+that basis per user direction ("skip, I will verify later").
+
+To close: log in as an EXTERNAL user, open Profile from the sidebar, and confirm
+name edit + avatar upload + change-password all save and reflect in the sidebar
+without reload. Needs an EXTERNAL account (invite→set-password, or a seeded
+argon2 user). See improve/testing.md for the missing fixture.
