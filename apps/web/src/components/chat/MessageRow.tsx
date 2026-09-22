@@ -21,11 +21,7 @@ function renderBody(body: string, myId: string) {
       <span
         key={key++}
         data-mention={isMe ? 'me' : 'other'}
-        className={
-          isMe
-            ? 'font-semibold text-[oklch(0.45_0.17_250)]'
-            : 'font-semibold text-[oklch(0.5_0.12_250)]'
-        }
+        className="font-semibold"
       >
         @{display}
       </span>,
@@ -60,9 +56,6 @@ export const MessageRow = memo(function MessageRow({
   onRequestDelete,
   onRetry,
 }: RowProps) {
-  const mentionsMe = m.body
-    ? [...m.body.matchAll(MENTION_RE)].some((x) => x[2] === myId)
-    : false;
   // draft lives here → typing in the edit box no longer re-renders the thread
   const [draft, setDraft] = useState(m.body);
   useEffect(() => {
@@ -122,7 +115,7 @@ export const MessageRow = memo(function MessageRow({
               own
                 ? 'rounded-br-sm bg-primary text-primary-foreground'
                 : 'rounded-bl-sm bg-muted'
-            } ${mentionsMe ? 'border-l-[3px] border-l-[oklch(0.6_0.16_250)]' : ''} ${
+            } ${
               m.status === 'failed' ? 'opacity-60 ring-1 ring-destructive' : ''
             }`}
           >
