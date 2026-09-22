@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spec — external-profile</title>
+<style>
+  :root{--bg:#f7f7f8;--card:#fff;--fg:#18181b;--mut:#6b7280;--bd:#e5e7eb;--pri:#18181b;
+        --ok:#15803d;--okbg:#dcfce7;--err:#b91c1c;--errbg:#fee2e2;--acc:#2563eb;--radius:10px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+  header h1{margin:0 0 4px;font-size:22px}
+  header .meta{color:var(--mut);font-size:13px}
+  nav{position:sticky;top:0;background:var(--bg);padding:12px 0;border-bottom:1px solid var(--bd);margin-bottom:24px;font-size:13px;z-index:5}
+  nav a{color:var(--acc);text-decoration:none;margin-right:14px}
+  section{background:var(--card);border:1px solid var(--bd);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px}
+  section>h2{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:8px}
+  h3{font-size:14px;margin:18px 0 8px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:#f1f1f3;padding:1px 5px;border-radius:4px}
+  pre{background:#0f0f11;color:#e6e6e6;padding:14px;border-radius:8px;overflow:auto;font-size:12.5px;line-height:1.5}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0}
+  th,td{border:1px solid var(--bd);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#fafafa}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--secondary,#eef);border:1px solid var(--bd)}
+  .tag{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:#eef2ff;color:#3730a3;margin-right:6px}
+  .tag.backend{background:#e0f2fe;color:#075985}.tag.service{background:#ede9fe;color:#5b21b6}
+  .tag.frontend{background:#dcfce7;color:#166534}.tag.db{background:#fef3c7;color:#92400e}.tag.test{background:#fee2e2;color:#991b1b}
+  ul.tasks{list-style:none;padding:0;margin:0}
+  ul.tasks li{padding:4px 0;border-bottom:1px solid #f0f0f2}
+  .verify{font-size:12.5px;color:var(--mut);margin-top:8px}
+  .verify code{background:#eef6ee;color:#15803d}
+  .banner{padding:12px 16px;border-radius:8px;font-weight:600;font-size:13.5px}
+  .banner.ok{background:var(--okbg);color:var(--ok)}
+  .banner.bad{background:var(--errbg);color:var(--err)}
+  .req{font-size:11px;font-weight:700;color:#3730a3;background:#eef2ff;padding:1px 6px;border-radius:4px}
+  iframe{width:100%;height:760px;border:1px solid var(--bd);border-radius:8px;background:#fff}
+  .scn{margin:0 0 10px;padding-left:14px;border-left:2px solid var(--bd)}
+  .scn b{color:var(--acc)}
+  .muted{color:var(--mut)}
+  .risk{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px}
+  .risk.med{background:#fef3c7;color:#92400e}.risk.low{background:#dcfce7;color:#166534}.risk.sec{background:#fee2e2;color:#991b1b}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>external-profile</h1>
+  <div class="meta">Self-service profile (name · avatar · password) for EXTERNAL users · <span class="pill">status: capturing</span> · depends_on: none</div>
+</header>
+
+<nav>
+  <a href="#proposal">Proposal</a>
+  <a href="#arch">Architecture</a>
+  <a href="#impact">Impact</a>
+  <a href="#backend">Backend</a>
+  <a href="#frontend">Frontend</a>
+  <a href="#tasks">Tasks</a>
+  <a href="#coverage">Coverage</a>
+</nav>
+
+<section id="proposal">
+  <h2>Proposal</h2>
+  <p><b>Why.</b> EXTERNAL users (PulseTrack email/password, no Keycloak) can't maintain their own profile — <code>name</code>/<code>imageUrl</code> are set at invite and never updated. INTERNAL users re-sync from Keycloak every login (<code>jwt.strategy.ts:75-90</code>), so a local edit is clobbered anyway.</p>
+  <p><b>Delivers.</b> A <b>Profile</b> item in the sidebar user footer opening a modal: editable display name, avatar upload (reusing the project-avatar pipeline), and change-password (reusing argon2 helpers). INTERNAL users see it read-only ("Managed by SSO").</p>
+  <h3>Scope</h3>
+  <table>
+    <tr><th>In</th><th>Out</th></tr>
+    <tr>
+      <td>Gated self-service endpoints (name / avatar / password), all EXTERNAL-only · Profile modal + sidebar trigger · refresh cached user after save · sanitize <code>/users/me</code> secret leak · INTERNAL read-only view</td>
+      <td>Edit email/username · any INTERNAL editing · admin editing others · avatar crop/resize</td>
+    </tr>
+  </table>
+</section>
+
+<section id="arch">
+  <h2>Architecture <span class="muted" style="font-size:12px;font-weight:400">(ASCII fallback — archify not invoked)</span></h2>
+<pre>
+Sidebar footer (AppSidebar) --click "Profile"--> ProfileModal (gated on user.userType)
+                                                    |
+       EXTERNAL: editable                           |  INTERNAL: read-only "Managed by SSO"
+                                                    v
+ api.ts client --> Users API (JwtAuthGuard)
+    PATCH /users/me            { name }            -> UsersService.updateOwnProfile
+    POST  /users/me/avatar     multipart(file)     -> UsersService.updateOwnAvatar   (diskStorage -> /api/uploads/avatars)
+    PATCH /users/me/password   { current, new }    -> UsersService.changeOwnPassword (AuthService.verify/hash)
+                                                       | all: assert userType===EXTERNAL else 403
+                                                       v
+                                                    Prisma User (name / imageUrl / passwordHash)
+    on success --> AuthProvider.setUser(refreshed)  --> sidebar name+avatar update
+</pre>
+</section>
+
+<section id="impact">
+  <h2>Impact Area</h2>
+  <h3>Decision Defaults</h3>
+  <table>
+    <tr><th>Gray area</th><th>Default</th></tr>
+    <tr><td>Avatar size/type</td><td>2 MB, image mimetypes — match projects multer</td></tr>
+    <tr><td>Old avatar on replace</td><td>Leave on disk (overwrite URL only)</td></tr>
+    <tr><td>Password change → session?</td><td>Keep tokens; only hash changes</td></tr>
+    <tr><td>Name validation</td><td>Required, trimmed, 1–100 chars</td></tr>
+    <tr><td>Save orchestration</td><td>avatar → name → password, sequential, stop+error on first fail</td></tr>
+    <tr><td>Empty password fields</td><td>Skip password call (name/avatar-only save)</td></tr>
+    <tr><td>INTERNAL hits write endpoint</td><td>403 server-side gate</td></tr>
+    <tr><td>Confirm-password mismatch</td><td>Client blocks; server ignores confirm</td></tr>
+  </table>
+  <h3>Blast Radius</h3>
+  <ul>
+    <li><code>users.controller.ts</code> — +3 endpoints; <code>getMe</code> sanitized</li>
+    <li><code>users.service.ts</code> — +updateOwnProfile/updateOwnAvatar/changeOwnPassword/sanitizeUser</li>
+    <li><code>users.module.ts</code> imports <code>AuthModule</code>; <code>auth.module.ts</code> exports <code>AuthService</code></li>
+    <li><code>AuthProvider.tsx:20</code> — expose <code>setUser</code> on context (seam: no setter today)</li>
+    <li><code>AppSidebar.tsx:121</code> — avatar <code>keycloakUserInfo?.imgUrl ?? user?.imageUrl</code> (external avatar seam)</li>
+    <li><code>api.ts</code> +3 client calls · <code>UserProfile</code> type needs <code>userType</code>+<code>imageUrl</code> · new <code>ProfileModal.tsx</code></li>
+  </ul>
+  <h3>Risk</h3>
+  <ul>
+    <li><span class="risk sec">security</span> password change — verify current before hash, EXTERNAL-gate, len≥8</li>
+    <li><span class="risk low">low</span> response sanitize — fixes existing secret leak, reversible</li>
+    <li><span class="risk med">medium</span> avatar upload — reuse proven projects multer config unchanged</li>
+    <li><span class="risk low">low</span> no migration — uses existing User columns; all additive/reversible</li>
+  </ul>
+</section>
+
+<section id="backend">
+  <h2>Backend</h2>
+  <table>
+    <tr><th>Endpoint</th><th>Body</th><th>Gate</th><th>Req</th></tr>
+    <tr><td><code>PATCH /users/me</code></td><td>{ name }</td><td>EXTERNAL else 403</td><td><span class="req">req-1</span></td></tr>
+    <tr><td><code>POST /users/me/avatar</code></td><td>multipart <code>file</code></td><td>EXTERNAL else 403</td><td><span class="req">req-2</span></td></tr>
+    <tr><td><code>PATCH /users/me/password</code></td><td>{ currentPassword, newPassword }</td><td>EXTERNAL else 403</td><td><span class="req">req-3</span></td></tr>
+    <tr><td><code>GET /users/me</code></td><td>—</td><td>sanitized response</td><td><span class="req">req-4</span></td></tr>
+  </table>
+  <p class="muted">Avatar reuses <code>projects.controller.ts:126</code> diskStorage config verbatim. Password reuses <code>AuthService.verifyPassword</code>/<code>hashPassword</code>. All writes return <code>sanitizeUser()</code>.</p>
+  <h3>Scenarios</h3>
+  <div class="scn"><b>WHEN</b> EXTERNAL <code>PATCH /users/me</code> valid name <b>THEN</b> updated + sanitized user <span class="req">req-1</span></div>
+  <div class="scn"><b>WHEN</b> INTERNAL any write endpoint <b>THEN</b> 403 <span class="req">req-1/2/3</span></div>
+  <div class="scn"><b>WHEN</b> avatar not image mimetype <b>THEN</b> 400, imageUrl unchanged <span class="req">req-2</span></div>
+  <div class="scn"><b>WHEN</b> wrong currentPassword <b>THEN</b> 401, hash unchanged <span class="req">req-3</span></div>
+  <div class="scn"><b>WHEN</b> newPassword &lt; 8 chars <b>THEN</b> 400 <span class="req">req-3</span></div>
+  <div class="scn"><b>WHEN</b> <code>GET /users/me</code> <b>THEN</b> no passwordHash/pwResetTokenHash/pwResetTokenExp <span class="req">req-4</span></div>
+</section>
+
+<section id="frontend">
+  <h2>Frontend</h2>
+  <p class="muted">Approved mockup <code>mockups/profile-modal.html</code> — <a href="mockups/profile-modal.html" target="_blank">open standalone</a>. shadcn Dialog; reuse Dialog/Avatar/Input/Label/Button. Trigger = sidebar footer.</p>
+  <iframe src="mockups/profile-modal.html" title="Profile modal mockup"></iframe>
+  <h3>Scenarios</h3>
+  <div class="scn"><b>WHEN</b> EXTERNAL opens modal <b>THEN</b> editable name/avatar/password + disabled email <span class="req">req-5</span></div>
+  <div class="scn"><b>WHEN</b> INTERNAL opens modal <b>THEN</b> all disabled, "Managed by SSO", no Save <span class="req">req-5</span></div>
+  <div class="scn"><b>WHEN</b> EXTERNAL saves name/avatar <b>THEN</b> modal closes, sidebar updates without reload <span class="req">req-5</span></div>
+  <div class="scn"><b>WHEN</b> EXTERNAL with imageUrl, no Keycloak info <b>THEN</b> sidebar renders image not initials <span class="req">req-6</span></div>
+</section>
+
+<section id="tasks">
+  <h2>Tasks <span class="muted" style="font-size:12px;font-weight:400">(grouped by layer)</span></h2>
+
+  <h3>1. Reusable auth helpers + sanitizer <span class="req">req-3</span> <span class="req">req-4</span></h3>
+  <ul class="tasks">
+    <li><span class="tag backend">backend</span> 1.1 Export <code>AuthService</code> from <code>auth.module.ts</code></li>
+    <li><span class="tag backend">backend</span> 1.2 Import <code>AuthModule</code> into <code>users.module.ts</code></li>
+    <li><span class="tag service">service</span> 1.3 <code>sanitizeUser()</code> — strip 3 secret fields</li>
+  </ul>
+  <div class="verify">Verify: <code>pnpm --filter @pm/api build</code></div>
+
+  <h3>2. Update own name <span class="req">req-1</span></h3>
+  <ul class="tasks">
+    <li><span class="tag backend">backend</span> 2.1 <code>UpdateProfileDto</code> — name, NotEmpty, MaxLength 100, trim</li>
+    <li><span class="tag service">service</span> 2.2 <code>updateOwnProfile</code> — EXTERNAL gate, update, sanitize</li>
+    <li><span class="tag backend">backend</span> 2.3 <code>PATCH /users/me</code></li>
+    <li><span class="tag test">test</span> 2.4 external ok / internal 403 / blank 400</li>
+  </ul>
+  <div class="verify">Verify: <code>pnpm --filter @pm/api test -- users</code></div>
+
+  <h3>3. Update own avatar <span class="req">req-2</span></h3>
+  <ul class="tasks">
+    <li><span class="tag backend">backend</span> 3.1 <code>POST /users/me/avatar</code> — reuse projects diskStorage verbatim</li>
+    <li><span class="tag service">service</span> 3.2 <code>updateOwnAvatar</code> — EXTERNAL gate, set imageUrl, sanitize</li>
+    <li><span class="tag test">test</span> 3.3 external persists / internal 403 / non-image rejected</li>
+  </ul>
+  <div class="verify">Verify: <code>pnpm --filter @pm/api test -- users</code></div>
+
+  <h3>4. Change own password <span class="req">req-3</span></h3>
+  <ul class="tasks">
+    <li><span class="tag backend">backend</span> 4.1 <code>ChangePasswordDto</code> — current, new MinLength 8</li>
+    <li><span class="tag service">service</span> 4.2 <code>changeOwnPassword</code> — gate, verify current→401, hash new</li>
+    <li><span class="tag backend">backend</span> 4.3 <code>PATCH /users/me/password</code></li>
+    <li><span class="tag test">test</span> 4.4 correct/wrong/short/internal cases</li>
+  </ul>
+  <div class="verify">Verify: <code>pnpm --filter @pm/api test -- users</code></div>
+
+  <h3>5. Sanitize existing /users/me <span class="req">req-4</span></h3>
+  <ul class="tasks">
+    <li><span class="tag backend">backend</span> 5.1 <code>getMe</code> returns <code>sanitizeUser(req.user)</code></li>
+    <li><span class="tag test">test</span> 5.2 no secret fields on <code>/users/me</code></li>
+  </ul>
+  <div class="verify">Verify: <code>pnpm --filter @pm/api test -- users</code></div>
+
+  <h3>6. Web API client + auth context seam <span class="req">req-5</span> <span class="req">req-6</span></h3>
+  <ul class="tasks">
+    <li><span class="tag frontend">frontend</span> 6.1 <code>api.ts</code> — updateProfile / uploadOwnAvatar / changeOwnPassword</li>
+    <li><span class="tag frontend">frontend</span> 6.2 expose <code>setUser</code> on <code>AuthContextValue</code></li>
+    <li><span class="tag frontend">frontend</span> 6.3 <code>UserProfile</code> type has <code>userType</code>+<code>imageUrl</code></li>
+  </ul>
+  <div class="verify">Verify: <code>pnpm --filter @pm/web build</code></div>
+
+  <h3>7. Profile modal <span class="req">req-5</span></h3>
+  <ul class="tasks">
+    <li><span class="tag frontend">frontend</span> 7.1 <code>ProfileModal.tsx</code> — reuse Dialog/Avatar/Input/Label/Button</li>
+    <li><span class="tag frontend">frontend</span> 7.2 branch on userType (editable vs read-only SSO)</li>
+    <li><span class="tag frontend">frontend</span> 7.3 Save orchestration + states (default/saving/error) + confirm-match</li>
+    <li><span class="tag frontend">frontend</span> 7.4 success → <code>setUser</code> + close</li>
+  </ul>
+  <div class="verify">Verify: <code>pnpm --filter @pm/web build</code></div>
+
+  <h3>8. Sidebar trigger + avatar fallback <span class="req">req-5</span> <span class="req">req-6</span></h3>
+  <ul class="tasks">
+    <li><span class="tag frontend">frontend</span> 8.1 "Profile" footer item opens <code>&lt;ProfileModal&gt;</code></li>
+    <li><span class="tag frontend">frontend</span> 8.2 <code>AppSidebar.tsx:121</code> avatar <code>?? user?.imageUrl</code></li>
+  </ul>
+  <div class="verify">Verify: <code>/devspec-verify external-profile</code> (agent-browser: modal opens, editable vs read-only, states, sidebar reflects save)</div>
+</section>
+
+<section id="coverage">
+  <h2>Coverage</h2>
+  <div class="banner ok">✓ Every requirement is covered — req-1 §2 · req-2 §3 · req-3 §1,§4 · req-4 §1,§5 · req-5 §6,§7,§8 · req-6 §6,§8. No orphan tasks.</div>
+</section>
+
+</div>
+</body>
+</html>
