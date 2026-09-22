@@ -140,38 +140,18 @@ export class MembersService {
       return this.addMember(projectId, { userId: existingUser.id, roleId: dto.roleId });
     }
 
-    // External customer: PulseTrack owns the password. Provision an
+    // A brand-new email invitee is not in the Keycloak directory, so they are
+    // an EXTERNAL customer: PulseTrack owns the password. Provision an
     // EXTERNAL/INVITED row with no password and email a set-password link.
-    if (dto.external) {
-      const user = await this.prisma.user.create({
-        data: {
-          email,
-          username: email.split('@')[0],
-          keycloakId: null,
-          userType: 'EXTERNAL',
-          status: 'INVITED',
-          passwordHash: null,
-        },
-      });
-
-      const member = await this.prisma.projectMember.create({
-        data: { projectId, userId: user.id, roleId: dto.roleId },
-        include: {
-          user: {
-            select: { id: true, email: true, username: true, name: true, imageUrl: true },
-          },
-        },
-      });
-
-      const token = await this.auth.issueSetPasswordToken(user.id, INVITE_TOKEN_TTL_MS);
-      await this.auth.enqueueSetPasswordEmail(email, token);
-
-      return member;
-    }
-
-    // No user yet: provision a pending row (claimed on first Keycloak login by email).
     const user = await this.prisma.user.create({
-      data: { email, username: email.split('@')[0], keycloakId: null },
+      data: {
+        email,
+        username: email.split('@')[0],
+        keycloakId: null,
+        userType: 'EXTERNAL',
+        status: 'INVITED',
+        passwordHash: null,
+      },
     });
 
     const member = await this.prisma.projectMember.create({
@@ -183,14 +163,8 @@ export class MembersService {
       },
     });
 
-    const project = await this.prisma.project.findUnique({
-      where: { id: projectId },
-      select: { name: true },
-    });
-    await this.emailQueue.add('invite', {
-      email,
-      projectName: project?.name ?? '',
-    });
+    const token = await this.auth.issueSetPasswordToken(user.id, INVITE_TOKEN_TTL_MS);
+    await this.auth.enqueueSetPasswordEmail(email, token);
 
     return member;
   }
