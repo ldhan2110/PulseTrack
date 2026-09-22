@@ -58,6 +58,7 @@ Then tick §8.2 after the BA screenshot review, and reset board `status: blocked
 
 ## chat-members-mentions — §9 MANUAL BA visual sign-off (unticked)
 
+**status: open** — human BA visual sign-off pending
 **When**: 2026-09-22 (run worker-cc)
 **Section**: 9. Visual sign-off — `Verify: MANUAL: BA approves screenshot`
 **Status**: §1–§8 all implemented + verified; §9.1 MANUAL box unticked → blocked (never self-approve).
