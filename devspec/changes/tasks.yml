@@ -97,9 +97,10 @@ changes:
     notes: "§1-§8 all done + verified (API 26 chat.service + gateway tests green; web unit tests green; §5-§8 devspec-verify live PASS @localhost:5173 anle@, screenshots in verify/). BLOCKED on §9.1 MANUAL: BA visual sign-off — box unticked, worker never self-approves. To resume: BA ticks §9.1 [x] + reset status blocked→pending. See report/blockers.md."
   dual-auth:
     title: Dual auth — external customer email/password login alongside Keycloak; invite→set-password, silent refresh, anti-squatting + directory-scoping isolation
-    tasks_md: changes/dual-auth/tasks.md
+    tasks_md: archive/dual-auth/tasks.md
     depends_on: []
     skills: [frontend-design]
     status: done
     owner: "worker-cc"
+    archived: archive/dual-auth
     notes: "All 9 sections done + verified. API: 40 tests green (dual strategy, anti-squatting, argon2 login/refresh-rotate, set/forgot-password, throttler 5/60s IP+email, external invite, directory scoping) + nest build clean. Migration hand-authored (additive) + replay-verified on scratch DB (INTERNAL/ACTIVE backfill) — Prisma 7 migration engine (rtk) absent here so `migrate diff/dev` can't run; team DB NOT migrated (human applies). §7: searchTargets was UNSCOPED (chat-members-mentions didn't scope it) so scoped it + users.findAll; search.service has no user results. Web build clean; /devspec-verify PASS live (agent-browser, web:5173 + API on scratch DB:3000) — all 3 auth pages + error/sent/invalid-token states; one fix applied+reverified (AuthShell used prefers-color-scheme media query → switched to app's .dark class strategy). Added deps @node-rs/argon2 + @nestjs/throttler. NEEDS ops before prod: apply migration to team DB + set EXTERNAL_JWT_SECRET (code reads from config; used a temp secret only for local verify). Socket/planner-SSE still read keycloak.token directly (out of §9.3 scope = api.ts) — external chat/planner a follow-up. ui.md BA-screenshot gate is advisory (not encoded as a MANUAL subtask); screenshots in verify/."
