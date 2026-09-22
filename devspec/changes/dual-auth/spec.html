@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spec — dual-auth</title>
+<style>
+  :root{--fg:#1a1a1a;--mut:#666;--bd:#e2e2e2;--bg:#fafafa;--card:#fff;--accent:#4b3ff0;--ok:#128a4e;--bad:#c0362c;--code:#f4f4f5}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--fg);background:var(--bg);line-height:1.55}
+  .wrap{max-width:900px;margin:0 auto;padding:32px 20px 80px}
+  header h1{margin:0 0 4px;font-size:26px}
+  header .meta{color:var(--mut);font-size:13px}
+  nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--bd);padding:10px 0;margin:16px 0 24px;font-size:13px;display:flex;flex-wrap:wrap;gap:14px;z-index:5}
+  nav a{color:var(--accent);text-decoration:none}
+  section{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:20px 22px;margin:0 0 18px}
+  h2{font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--accent);display:inline-block}
+  h3{font-size:15px;margin:18px 0 6px}
+  h4{font-size:13.5px;margin:12px 0 4px;color:var(--mut)}
+  pre{background:var(--code);border:1px solid var(--bd);border-radius:7px;padding:12px;overflow-x:auto;font-size:12.5px;line-height:1.45}
+  code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:12.5px}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0}
+  th,td{border:1px solid var(--bd);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:#f6f6f7}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px}
+  .p-status{background:#eef;color:#3333aa}
+  .p-sec{background:#eee;color:#555;font-family:ui-monospace,monospace}
+  .p-req{background:#e7f0ff;color:#2455b8;font-family:ui-monospace,monospace}
+  .p-crit{background:#fdecec;color:var(--bad)}
+  .p-break{background:#fff2e0;color:#b5651d}
+  .banner{border-radius:8px;padding:12px 14px;font-size:14px;font-weight:500}
+  .banner.ok{background:#e8f7ee;border:1px solid #b6e2c6;color:var(--ok)}
+  .banner.warn{background:#fff6e5;border:1px solid #f2d79b;color:#8a6100}
+  ul{margin:6px 0;padding-left:20px}
+  li{margin:3px 0}
+  .task{margin:4px 0}
+  .box{color:var(--mut);font-family:ui-monospace,monospace;font-size:12px}
+  .verify{color:var(--ok);font-size:12px;font-family:ui-monospace,monospace;margin:4px 0 10px}
+  iframe{width:100%;height:560px;border:1px solid var(--bd);border-radius:8px;background:#fff}
+  .mock-row{margin:14px 0}
+  .mock-row a{font-size:12px}
+  .layer{font-weight:600;font-size:12px;color:var(--accent);margin-top:14px;text-transform:uppercase;letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Spec — dual-auth</h1>
+  <div class="meta">Add external-customer email/password login alongside Keycloak. &nbsp;·&nbsp; disposable page, regenerated from the markdown artifacts.</div>
+</header>
+
+<nav>
+  <a href="#context">Context</a><a href="#proposal">Proposal</a><a href="#arch">Architecture</a>
+  <a href="#impact">Impact Area</a><a href="#backend">Backend</a><a href="#frontend">Frontend</a>
+  <a href="#tasks">Tasks</a><a href="#coverage">Coverage</a><a href="#board">Board</a>
+</nav>
+
+<section id="context">
+  <h2>Context</h2>
+  <p><b>Change id:</b> <code>dual-auth</code> &nbsp; <span class="pill p-status">status: pending (not yet planned)</span></p>
+  <p><b>depends_on:</b> none &nbsp;·&nbsp; <b>overlaps:</b> <code>chat-members-mentions</code> (blocked) — shares the user-search scoping surface (req-10).</p>
+</section>
+
+<section id="proposal">
+  <h2>Proposal</h2>
+  <p>Today PulseTrack authenticates <b>only</b> through Keycloak (internal corporate identity, federated with the Blueprint directory). We need to invite <b>external customers</b> who have only an email — no Keycloak account — so they need email + password auth owned by PulseTrack.</p>
+  <h3>Delivers</h3>
+  <ul>
+    <li>Dual login page (replaces the auto-redirect to Keycloak): "Sign in with company account" (Keycloak, unchanged) + email/password form (new).</li>
+    <li>PulseTrack-owned password auth for external users: password set via invite link, tokens issued by PulseTrack, silent refresh.</li>
+    <li>Isolation so external users cannot escalate into / masquerade as internal users, nor enumerate the internal directory.</li>
+  </ul>
+  <h3>Scope — OUT (deferred, do not build)</h3>
+  <ul>
+    <li>External self-registration (invite-only now; <code>userType</code> designed to allow it later).</li>
+    <li>Corporate email domain allowlist.</li>
+    <li><code>@InternalOnly</code> route gating — external = normal platform user, same UI; data isolation stays per-project via <code>ProjectMember</code>.</li>
+    <li>Server-side refresh-token store / reuse-detection (tokens are stateless, rotated on use).</li>
+    <li>httpOnly cookie refresh (Option C+) — rejected, see Architecture.</li>
+  </ul>
+</section>
+
+<section id="arch">
+  <h2>Architecture</h2>
+  <p class="box">ASCII flow (archify not invoked — static fallback). Real component names match the tasks below.</p>
+  <pre>FRONTEND (apps/web)
+  LoginPage --"company account"--&gt; keycloak.login()  (PKCE, unchanged) --&gt; KC token (RS256)
+           \--"email + password"--&gt; POST /api/auth/login --&gt; PT access (HS256) + refresh
+  AuthProvider: no more hard redirect. Holds whichever token; silent-refresh timer.
+    internal -&gt; keycloak.updateToken()   external -&gt; POST /api/auth/refresh (from localStorage)
+  api.ts: Authorization: Bearer &lt;access token&gt;  (same header for both)
+
+BACKEND (apps/api)
+  Guard: AuthGuard(['jwt','external-jwt'])  -- passport tries both, first valid wins
+    |- 'jwt'          RS256, Keycloak JWKS, issuer-locked      -&gt; INTERNAL (unchanged)
+    \- 'external-jwt' HS256, EXTERNAL_JWT_SECRET, iss=pulsetrack -&gt; EXTERNAL (new)
+  both resolve req.user = DB User -&gt; all 42 existing controllers work unchanged
+
+  AuthController (new): /auth/login  /auth/refresh  /auth/set-password  /auth/forgot-password
+  AuthService: argon2 hash/verify, PT-JWT sign/verify, single-use token issue/redeem
+  Admin invite (external) -&gt; User{EXTERNAL,INVITED} + emailed single-use set-password link</pre>
+
+  <h3>Rejected: Option C+ (httpOnly cookie refresh) — rule conflict</h3>
+  <div class="banner warn"><code>rules.md</code>: "No cookies/credentials (CORS <code>origin:'*'</code> relies on Bearer)." Browsers forbid <code>Allow-Origin:'*'</code> + credentials, and the product keeps wildcard CORS. So the refresh token lives in <b>localStorage</b>, not a cookie. Accepted tradeoff: XSS could read it → mitigated by short refresh TTL + rotate-on-use + CSP; server-side reuse-detection deferred.</div>
+
+  <h3>Security invariants (enforced in code)</h3>
+  <ul>
+    <li><b>No cross-claim</b> — Keycloak claim-by-email gated to <code>userType=INTERNAL</code>; an external row is never captured by a KC login (anti-squatting). <span class="pill p-crit">security-critical</span></li>
+    <li><b>No Blueprint bleed</b> — only the internal strategy runs Blueprint <code>user-info</code> sync.</li>
+    <li><b>No cross-validation</b> — separate signing material + issuer; token-confusion rejected. <span class="pill p-crit">security-critical</span></li>
+    <li><b>Directory scoping</b> — user search scoped to shared membership (closes external→internal enumeration).</li>
+  </ul>
+</section>
+
+<section id="impact">
+  <h2>Impact Area</h2>
+  <h3>Decision Defaults</h3>
+  <table>
+    <tr><th>Gray area</th><th>Default</th></tr>
+    <tr><td>Password hash</td><td>argon2id (<code>@node-rs/argon2</code>); bcrypt fallback</td></tr>
+    <tr><td>Password policy</td><td>min 8 chars, no complexity rules (deferred)</td></tr>
+    <tr><td>Access token</td><td>15 min, HS256, <code>iss=pulsetrack</code>, <code>{sub, userType:'EXTERNAL'}</code></td></tr>
+    <tr><td>Refresh token</td><td>7 days, rotate-on-use, stateless; body param; <code>localStorage</code></td></tr>
+    <tr><td>Set-password / reset token</td><td>32-byte random, stored hashed on <code>User</code>, single-use; invite 24h / reset 1h</td></tr>
+    <tr><td>Login failure copy</td><td>generic "invalid email or password"</td></tr>
+    <tr><td>forgot-password</td><td>always neutral "if an account exists…" (anti-enumeration)</td></tr>
+    <tr><td>Login rate limit</td><td><code>@nestjs/throttler</code> — 5 fails / 60s per IP+email → 429</td></tr>
+    <tr><td>Invite internal vs external</td><td>explicit <code>external:true</code> flag on invite; no domain inference</td></tr>
+    <tr><td>Keycloak + CORS</td><td>untouched; CORS stays <code>origin:'*'</code></td></tr>
+  </table>
+  <h3>Blast Radius</h3>
+  <h4>Backend</h4>
+  <ul>
+    <li><code>auth/jwt.strategy.ts</code> — gate claim-by-email on INTERNAL; Blueprint sync internal-only <span class="pill p-crit">security-critical</span></li>
+    <li><code>auth/jwt-auth.guard.ts</code> — accept <code>['jwt','external-jwt']</code> <span class="pill p-break">high-blast (42 controllers)</span></li>
+    <li><code>auth/auth.module.ts</code> + <b>new</b> <code>external-jwt.strategy.ts</code>, <code>auth.controller.ts</code>, <code>auth.service.ts</code></li>
+    <li><code>members/members.service.ts:142</code> — external-invite branch</li>
+    <li><code>chat/chat.service.ts:204</code>, <code>users/users.service.ts</code>, <code>search/search.service.ts</code> — membership-scope</li>
+    <li><code>prisma/schema.prisma</code> + additive migration <span class="pill p-status">reversible</span></li>
+  </ul>
+  <h4>Frontend</h4>
+  <ul>
+    <li><code>auth/AuthProvider.tsx</code> — drop hard redirect; dual token; silent refresh <span class="pill p-break">breaking entry</span></li>
+    <li><code>lib/api.ts</code> — Bearer + 401 refresh-retry</li>
+    <li><b>new</b> <code>LoginPage.tsx</code>, <code>SetPasswordPage.tsx</code>, <code>ForgotPasswordPage.tsx</code> + routes in <code>App.tsx</code></li>
+  </ul>
+</section>
+
+<section id="backend">
+  <h2>Backend contract</h2>
+  <pre>POST /api/auth/login           {email,password}            -&gt; 200 {accessToken, refreshToken, user} | 401 generic
+POST /api/auth/refresh         {refreshToken}              -&gt; 200 {accessToken, refreshToken} | 401
+POST /api/auth/set-password    {token, newPassword}        -&gt; 200 (signed in) | 400/401 generic
+POST /api/auth/forgot-password {email}                     -&gt; 200 neutral (always)</pre>
+  <p>All external-only. Only <code>EXTERNAL</code> + <code>ACTIVE</code> users log in. Rate limit on <code>/auth/login</code>. See <code>spec.md</code> req-1/5/7/8/9 for scenarios.</p>
+</section>
+
+<section id="frontend">
+  <h2>Frontend — approved mockups</h2>
+  <div class="mock-row"><b>login</b> — <a href="mockups/login.html" target="_blank">open standalone</a><br/><iframe src="mockups/login.html"></iframe></div>
+  <div class="mock-row"><b>set-password</b> — <a href="mockups/set-password.html" target="_blank">open standalone</a><br/><iframe src="mockups/set-password.html"></iframe></div>
+  <div class="mock-row"><b>forgot-password</b> — <a href="mockups/forgot-password.html" target="_blank">open standalone</a><br/><iframe src="mockups/forgot-password.html"></iframe></div>
+  <p class="box">Real logo + shadcn primitives (Card/Input/Button/Label/Alert). Tokens from <code>apps/web/src/index.css</code>; bubble palette sampled from the logo. See <code>ui.md</code>.</p>
+</section>
+
+<section id="tasks">
+  <h2>Tasks</h2>
+
+  <div class="layer">db</div>
+  <h3>1. User model migration <span class="pill p-req">req-12</span></h3>
+  <div class="task">☐ 1.1 [db] Add <code>userType</code>/<code>passwordHash</code>/<code>status</code>/<code>pwResetTokenHash</code>/<code>pwResetTokenExp</code> + enums to <code>schema.prisma</code></div>
+  <div class="task">☐ 1.2 [db] Generate forward migration; defaults backfill INTERNAL/ACTIVE</div>
+  <div class="verify">Verify: migrate diff clean + scratch-DB test asserts existing row = INTERNAL/ACTIVE</div>
+
+  <div class="layer">backend</div>
+  <h3>2. External JWT strategy + dual guard <span class="pill p-req">req-2</span> <span class="pill p-req">req-4</span></h3>
+  <div class="task">☐ 2.1 [backend] <code>external-jwt.strategy.ts</code> — HS256, <code>EXTERNAL_JWT_SECRET</code>, iss=pulsetrack, assert EXTERNAL, no Blueprint</div>
+  <div class="task">☐ 2.2 [backend] guard → <code>AuthGuard(['jwt','external-jwt'])</code></div>
+  <div class="task">☐ 2.3 [backend] register strategy in <code>auth.module.ts</code></div>
+  <div class="task">☐ 2.4 [test] external+KC accepted; cross-validation rejected; no Blueprint sync for external</div>
+  <div class="verify">Verify: pnpm --filter @pm/api test auth</div>
+
+  <h3>3. Anti-squatting gate <span class="pill p-req">req-3</span></h3>
+  <div class="task">☐ 3.1 [backend] gate claim-by-email on <code>userType===INTERNAL</code> in <code>jwt.strategy.ts</code></div>
+  <div class="task">☐ 3.2 [test] KC login matching an EXTERNAL email does not claim it</div>
+  <div class="verify">Verify: pnpm --filter @pm/api test jwt.strategy</div>
+
+  <h3>4. AuthService — login + refresh + rate limit <span class="pill p-req">req-1</span> <span class="pill p-req">req-5</span> <span class="pill p-req">req-9</span></h3>
+  <div class="task">☐ 4.1 [service] <code>auth.service.ts</code> — argon2; sign access 15m + refresh 7d rotate-on-use</div>
+  <div class="task">☐ 4.2 [backend] <code>auth.controller.ts</code> — /auth/login, /auth/refresh</div>
+  <div class="task">☐ 4.3 [backend] throttler 5/60s → 429 on /auth/login</div>
+  <div class="task">☐ 4.4 [test] login ok/badpw/inactive; refresh ok/expired; 429</div>
+  <div class="verify">Verify: pnpm --filter @pm/api test auth</div>
+
+  <h3>5. Set-password + forgot-password <span class="pill p-req">req-7</span> <span class="pill p-req">req-8</span></h3>
+  <div class="task">☐ 5.1 [service] single-use hashed token issue/redeem (invite 24h / reset 1h)</div>
+  <div class="task">☐ 5.2 [backend] POST /auth/set-password — valid→set&sign-in; expired/reused→400/401; &lt;8→400</div>
+  <div class="task">☐ 5.3 [backend] POST /auth/forgot-password — neutral always; email only for known external</div>
+  <div class="task">☐ 5.4 [test] set-password activate+burn+reuse-reject; forgot neutral known vs unknown</div>
+  <div class="verify">Verify: pnpm --filter @pm/api test auth</div>
+
+  <h3>6. External invite <span class="pill p-req">req-6</span></h3>
+  <div class="task">☐ 6.1 [service] <code>members.service.ts:142</code> external branch → EXTERNAL/INVITED + set-password email</div>
+  <div class="task">☐ 6.2 [test] external invite row+email; internal path unchanged</div>
+  <div class="verify">Verify: pnpm --filter @pm/api test members</div>
+
+  <h3>7. User directory scoping <span class="pill p-req">req-10</span></h3>
+  <div class="task">☐ 7.1 [backend] scope <code>searchTargets</code> / <code>users.findAll</code> / search to shared membership (check chat-members-mentions first)</div>
+  <div class="task">☐ 7.2 [test] no shared membership → no users; co-member returned</div>
+  <div class="verify">Verify: pnpm --filter @pm/api test chat users</div>
+
+  <div class="layer">frontend</div>
+  <h3>8. Auth pages (login / set-password / forgot) <span class="pill p-req">req-11</span></h3>
+  <div class="task">☐ 8.1 [frontend] <code>LoginPage.tsx</code> — shadcn Card/Button/Input/Label/Alert + bubble bg, dual actions</div>
+  <div class="task">☐ 8.2 [frontend] <code>SetPasswordPage.tsx</code> (reads ?token=) + invalid-token state</div>
+  <div class="task">☐ 8.3 [frontend] <code>ForgotPasswordPage.tsx</code> + neutral sent-state</div>
+  <div class="task">☐ 8.4 [frontend] routes in <code>App.tsx</code> outside <code>ProtectedRoute</code></div>
+  <div class="verify">Verify: /devspec-verify dual-auth (both actions, all states, frosted card + logo)</div>
+
+  <h3>9. AuthProvider dual-token + silent refresh <span class="pill p-req">req-11</span> <span class="pill p-req">req-5</span></h3>
+  <div class="task">☐ 9.1 [frontend] <code>AuthProvider.tsx</code> — drop hard redirect; render LoginPage; store external refresh in localStorage</div>
+  <div class="task">☐ 9.2 [frontend] silent refresh: KC updateToken / external timer → /auth/refresh (survives reload)</div>
+  <div class="task">☐ 9.3 [frontend] <code>api.ts</code> Bearer + 401 refresh-retry</div>
+  <div class="verify">Verify: pnpm --filter @pm/web build + /devspec-verify external session survives reload</div>
+</section>
+
+<section id="coverage">
+  <h2>Coverage</h2>
+  <div class="banner ok">✓ Every requirement is covered. req-1 §4 · req-2 §2 · req-3 §3 · req-4 §2 · req-5 §4/§9 · req-6 §6 · req-7 §5 · req-8 §5 · req-9 §4 · req-10 §7 · req-11 §8/§9 · req-12 §1. No orphan tasks.</div>
+</section>
+
+<section id="board">
+  <h2>Board</h2>
+  <p>Not yet on <code>tasks.yml</code> — <code>/devspec-plan</code> registers it. Suggested: <code>status: pending</code>, <code>depends_on: []</code>. Coordinate req-10 with <code>chat-members-mentions</code> (blocked) to avoid a conflicting edit on <code>searchTargets</code>.</p>
+</section>
+
+</div>
+</body>
+</html>

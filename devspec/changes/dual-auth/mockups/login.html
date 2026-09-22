@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — Login (CareOne)</title>
+<style>
+  /* tokens copied from apps/web/src/index.css (:root) */
+  :root{
+    --background:oklch(1 0 0);--foreground:oklch(0.145 0 0);
+    --card:oklch(1 0 0);--card-foreground:oklch(0.145 0 0);
+    --primary:oklch(0.205 0 0);--primary-foreground:oklch(0.985 0 0);
+    --secondary:oklch(0.97 0 0);--secondary-foreground:oklch(0.205 0 0);
+    --muted:oklch(0.97 0 0);--muted-foreground:oklch(0.556 0 0);
+    --destructive:oklch(0.577 0.245 27.325);
+    --border:oklch(0.922 0 0);--input:oklch(0.922 0 0);--ring:oklch(0.708 0 0);
+    --radius:0.625rem;
+    /* brand palette sampled from the real logo (public/images/logo.png) */
+    --brand:#4b3ff0;      /* logo dot — vivid indigo */
+    --brand2:#9e93f5;     /* logo ring — light violet */
+    --brand3:#170f49;     /* CareOne wordmark navy */
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--foreground);position:relative;overflow-x:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:28px;padding:40px 16px;min-height:100vh;
+    background:linear-gradient(160deg,oklch(0.98 0.01 250),oklch(0.96 0.02 300))}
+  /* modern gradient bubble background — blurred floating blobs */
+  .bubbles{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+  .bubble{position:absolute;border-radius:50%;filter:blur(48px);opacity:.5;
+    animation:float 18s ease-in-out infinite}
+  .b1{width:420px;height:420px;background:var(--brand);top:-120px;left:-90px}
+  .b2{width:360px;height:360px;background:var(--brand2);bottom:-110px;right:-80px;animation-delay:-6s}
+  .b3{width:300px;height:300px;background:var(--brand3);top:40%;right:12%;animation-delay:-11s;opacity:.35}
+  .b4{width:220px;height:220px;background:var(--brand2);bottom:18%;left:8%;animation-delay:-3s;opacity:.3}
+  @keyframes float{0%,100%{transform:translate(0,0) scale(1)}
+    33%{transform:translate(30px,-40px) scale(1.08)}
+    66%{transform:translate(-25px,20px) scale(.95)}}
+  .note{position:relative;z-index:1;font-size:12px;color:var(--muted-foreground);
+    background:#fff;border:1px dashed var(--border);border-radius:8px;padding:6px 10px}
+  .state-label{position:relative;z-index:1;font-size:11px;font-weight:600;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--muted-foreground);margin:2px 0 -14px}
+  /* shadcn Card — glass lift over bubbles */
+  .card{position:relative;z-index:1;width:404px;max-width:100%;
+    background:oklch(1 0 0 / .82);backdrop-filter:blur(12px);color:var(--card-foreground);
+    border:1px solid oklch(1 0 0 / .6);border-radius:var(--radius);
+    box-shadow:0 12px 40px -12px oklch(0.205 0.05 260 / .28);padding:30px}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .brand .logo{width:34px;height:34px;object-fit:contain;display:block}
+  .brand h1{font-size:19px;font-weight:650;margin:0;letter-spacing:-.01em;color:var(--brand3)}
+  .sub{font-size:13px;color:var(--muted-foreground);margin:2px 0 22px}
+  /* shadcn Button */
+  .btn{width:100%;height:40px;border-radius:calc(var(--radius) - 2px);font-size:14px;font-weight:500;
+    border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn-primary{background:var(--primary);color:var(--primary-foreground)}
+  .btn-outline{background:oklch(1 0 0 / .5);color:var(--foreground);border-color:var(--border)}
+  .btn[disabled]{opacity:.6;cursor:not-allowed}
+  .btn svg{width:16px;height:16px}
+  .spinner{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;
+    border-radius:50%;display:inline-block;animation:spin .6s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted-foreground);font-size:12px}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+  /* shadcn Label + Input (with leading icon) */
+  .field{margin-bottom:14px}
+  label{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+  .input-wrap{position:relative;display:flex;align-items:center}
+  .input-wrap svg{position:absolute;left:11px;width:16px;height:16px;color:var(--muted-foreground)}
+  .input{width:100%;height:40px;padding:0 12px 0 34px;font-size:14px;border-radius:calc(var(--radius) - 2px);
+    border:1px solid var(--input);background:var(--background);color:var(--foreground)}
+  .input:focus{outline:2px solid var(--ring);outline-offset:1px}
+  .input.err{border-color:var(--destructive)}
+  .row-between{display:flex;justify-content:flex-end;margin:-4px 0 16px}
+  .link{font-size:12.5px;color:var(--muted-foreground);text-decoration:none}
+  .link:hover{color:var(--foreground);text-decoration:underline}
+  .alert{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--destructive);
+    border:1px solid var(--destructive);border-radius:calc(var(--radius) - 2px);
+    padding:9px 11px;margin-bottom:16px;background:oklch(0.577 0.245 27.325 / .06)}
+</style>
+</head>
+<body>
+  <div class="bubbles"><div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div><div class="bubble b4"></div></div>
+
+  <div class="note">Mockup — CareOne login. Gradient bubble bg (animated). Icons: lucide-style (heart logo, mail, lock — same stroke set shadcn ships). States stacked. Tokens from <b>apps/web/src/index.css</b>; <b>--brand*</b> = mockup-only accent, tune in real build.</div>
+
+  <!-- EMPTY -->
+  <div class="state-label">state: empty (default)</div>
+  <div class="card">
+    <div class="brand">
+      <img class="logo" src="logo.png" alt="CareOne" />
+      <h1>CareOne</h1>
+    </div>
+    <div class="sub">Sign in to continue</div>
+    <button class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 8 9 6 9-6"/></svg>
+      Sign in with company account
+    </button>
+    <div class="divider">or with email</div>
+    <div class="field"><label>Email</label>
+      <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg><input class="input" placeholder="you@example.com" /></div>
+    </div>
+    <div class="field"><label>Password</label>
+      <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input class="input" type="password" placeholder="••••••••" /></div>
+    </div>
+    <div class="row-between"><a class="link" href="#">Forgot password?</a></div>
+    <button class="btn btn-outline">Sign in</button>
+  </div>
+
+  <!-- SUBMITTING -->
+  <div class="state-label">state: submitting (email form)</div>
+  <div class="card">
+    <div class="brand">
+      <img class="logo" src="logo.png" alt="CareOne" />
+      <h1>CareOne</h1>
+    </div>
+    <div class="sub">Sign in to continue</div>
+    <button class="btn btn-primary">Sign in with company account</button>
+    <div class="divider">or with email</div>
+    <div class="field"><label>Email</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg><input class="input" value="cust@acme.com" /></div></div>
+    <div class="field"><label>Password</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input class="input" type="password" value="secret123" /></div></div>
+    <div class="row-between"><a class="link" href="#">Forgot password?</a></div>
+    <button class="btn btn-outline" disabled><span class="spinner"></span> Signing in…</button>
+  </div>
+
+  <!-- ERROR -->
+  <div class="state-label">state: error (bad credentials)</div>
+  <div class="card">
+    <div class="brand">
+      <img class="logo" src="logo.png" alt="CareOne" />
+      <h1>CareOne</h1>
+    </div>
+    <div class="sub">Sign in to continue</div>
+    <button class="btn btn-primary">Sign in with company account</button>
+    <div class="divider">or with email</div>
+    <div class="alert">✕ Invalid email or password.</div>
+    <div class="field"><label>Email</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg><input class="input err" value="cust@acme.com" /></div></div>
+    <div class="field"><label>Password</label><div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input class="input err" type="password" value="wrong" /></div></div>
+    <div class="row-between"><a class="link" href="#">Forgot password?</a></div>
+    <button class="btn btn-outline">Sign in</button>
+  </div>
+</body>
+</html>

@@ -1,5 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute';
+import { LoginPage } from './pages/LoginPage';
+import { SetPasswordPage } from './pages/SetPasswordPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
 import { ProjectLayout } from './components/layout/ProjectLayout';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -27,6 +30,10 @@ import { ReportPage } from './pages/ReportPage';
 function App() {
   return (
     <Routes>
+      {/* Public auth routes — outside ProtectedRoute */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/set-password" element={<SetPasswordPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/access-denied" element={<AccessDeniedPage />} />
       <Route
         element={
