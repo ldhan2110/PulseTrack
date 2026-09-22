@@ -8,6 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SocketAuthService {
   private readonly jwksClient: jwksRsa.JwksClient;
   private readonly issuer: string;
+  // keycloakId → internal userId. Avoids a DB lookup on every socket connect
+  // (2 sockets/user × login storm). ponytail: never invalidated — the mapping
+  // is stable and bounded by headcount; restart clears it.
+  private readonly userIdCache = new Map<string, string>();
 
   constructor(
     private readonly config: ConfigService,
@@ -43,11 +47,15 @@ export class SocketAuthService {
       const keycloakId = (payload as any).preferred_username as string | undefined;
       if (!keycloakId) return null;
 
+      const cached = this.userIdCache.get(keycloakId);
+      if (cached) return cached;
+
       const user = await this.prisma.user.findUnique({
         where: { keycloakId },
         select: { id: true },
       });
 
+      if (user) this.userIdCache.set(keycloakId, user.id);
       return user?.id ?? null;
     } catch {
       return null;

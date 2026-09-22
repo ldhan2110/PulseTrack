@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ChatGateway } from './chat.gateway';
 
 function makeSocket(id = 's1') {
@@ -9,6 +9,7 @@ function makeSocket(id = 's1') {
     disconnect: vi.fn(),
     to: vi.fn(),
     join: vi.fn(),
+    emit: vi.fn(),
   } as any;
 }
 
@@ -75,11 +76,16 @@ describe('ChatGateway presence', () => {
   let server: { emit: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    vi.useFakeTimers();
     const g = makeGateway();
     gateway = g.gateway;
     auth = g.auth;
     server = gateway.server as any;
     auth.extractUserFromHandshake.mockResolvedValue('u1');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('stays online across two sockets, goes offline only after the last closes', async () => {
@@ -95,16 +101,33 @@ describe('ChatGateway presence', () => {
 
     gateway.handleDisconnect(s2);
     expect(gateway.isOnline('u1')).toBe(false);
+  });
 
-    // exactly one online transition and one offline transition
-    expect(server.emit).toHaveBeenCalledTimes(2);
-    expect(server.emit).toHaveBeenNthCalledWith(1, 'chat:presence', {
-      userId: 'u1',
-      online: true,
-    });
-    expect(server.emit).toHaveBeenNthCalledWith(2, 'chat:presence', {
-      userId: 'u1',
-      online: false,
-    });
+  it('batches presence transitions into one broadcast per flush window', async () => {
+    const s1 = makeSocket('s1');
+
+    // connect then last-socket disconnect within one window → net offline
+    await gateway.handleConnection(s1);
+    gateway.handleDisconnect(s1);
+
+    // nothing emitted before the window elapses
+    expect(server.emit).not.toHaveBeenCalled();
+
+    vi.runOnlyPendingTimers();
+
+    expect(server.emit).toHaveBeenCalledTimes(1);
+    expect(server.emit).toHaveBeenCalledWith('chat:presence:batch', [
+      { userId: 'u1', online: false },
+    ]);
+  });
+
+  it('flushes an online transition after the window', async () => {
+    await gateway.handleConnection(makeSocket('s1'));
+
+    vi.runOnlyPendingTimers();
+
+    expect(server.emit).toHaveBeenCalledWith('chat:presence:batch', [
+      { userId: 'u1', online: true },
+    ]);
   });
 });

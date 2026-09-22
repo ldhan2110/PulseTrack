@@ -89,11 +89,13 @@ export function useChatSync() {
       }, 3000);
     }
 
-    function onPresence(payload: { userId: string; online: boolean }) {
-      qc.setQueryData<Record<string, boolean>>(chatKeys.presence, (m) => ({
-        ...(m ?? {}),
-        [payload.userId]: payload.online,
-      }));
+    // Presence deltas arrive batched (backend collapses login-storm broadcasts).
+    function onPresenceBatch(batch: { userId: string; online: boolean }[]) {
+      qc.setQueryData<Record<string, boolean>>(chatKeys.presence, (m) => {
+        const next = { ...(m ?? {}) };
+        for (const { userId, online } of batch) next[userId] = online;
+        return next;
+      });
     }
 
     // Full online set sent on (re)connect — replace the map so stale entries clear.
@@ -150,7 +152,7 @@ export function useChatSync() {
     socket.on('chat:message:deleted', onDeleted);
     socket.on('chat:message:reaction', onReaction);
     socket.on('chat:typing', onTyping);
-    socket.on('chat:presence', onPresence);
+    socket.on('chat:presence:batch', onPresenceBatch);
     socket.on('chat:presence:snapshot', onPresenceSnapshot);
     socket.on('chat:read', onRead);
     socket.on('chat:conversation:added', onMembershipChanged);
@@ -165,7 +167,7 @@ export function useChatSync() {
       socket.off('chat:message:deleted', onDeleted);
       socket.off('chat:message:reaction', onReaction);
       socket.off('chat:typing', onTyping);
-      socket.off('chat:presence', onPresence);
+      socket.off('chat:presence:batch', onPresenceBatch);
       socket.off('chat:presence:snapshot', onPresenceSnapshot);
       socket.off('chat:read', onRead);
       socket.off('chat:conversation:added', onMembershipChanged);

@@ -98,14 +98,17 @@ describe('useChatSync', () => {
     expect(data!.pages[0].items[0].id).toBe('m1');
   });
 
-  it('updates the presence cache on chat:presence', () => {
+  it('updates the presence cache on chat:presence:batch', () => {
     renderHook(() => useChatSync(), { wrapper: makeWrapper(qc) });
 
-    fake.emitServer('chat:presence', { userId: 'u2', online: true });
+    fake.emitServer('chat:presence:batch', [
+      { userId: 'u2', online: true },
+      { userId: 'u3', online: false },
+    ]);
 
     const presence = qc.getQueryData<Record<string, boolean>>(
       chatKeys.presence,
     );
-    expect(presence).toEqual({ u2: true });
+    expect(presence).toEqual({ u2: true, u3: false });
   });
 });

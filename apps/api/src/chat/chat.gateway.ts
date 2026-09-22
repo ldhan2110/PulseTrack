@@ -22,6 +22,35 @@ export class ChatGateway
   // In-memory presence: userId → set of live socket ids. Single-node (see design open-q).
   private readonly presence = new Map<string, Set<string>>();
 
+  // Presence transitions are batched: a login storm (500 users) would otherwise
+  // fire 500 global broadcasts. Instead we collect the latest state per user and
+  // flush one `chat:presence:batch` per window. ponytail: fixed 1s window, tune
+  // if presence feels laggy.
+  private static readonly PRESENCE_FLUSH_MS = 1000;
+  private readonly pendingPresence = new Map<string, boolean>();
+  private flushTimer?: ReturnType<typeof setTimeout>;
+
+  private queuePresence(userId: string, online: boolean): void {
+    this.pendingPresence.set(userId, online);
+    if (!this.flushTimer) {
+      this.flushTimer = setTimeout(
+        () => this.flushPresence(),
+        ChatGateway.PRESENCE_FLUSH_MS,
+      );
+    }
+  }
+
+  private flushPresence(): void {
+    this.flushTimer = undefined;
+    if (this.pendingPresence.size === 0) return;
+    const batch = [...this.pendingPresence].map(([userId, online]) => ({
+      userId,
+      online,
+    }));
+    this.pendingPresence.clear();
+    this.server?.emit('chat:presence:batch', batch);
+  }
+
   constructor(
     private readonly socketAuthService: SocketAuthService,
     private readonly chatService: ChatService,
@@ -55,7 +84,7 @@ export class ChatGateway
     sockets.add(socket.id);
     this.presence.set(userId, sockets);
     if (wasOffline) {
-      this.server?.emit('chat:presence', { userId, online: true });
+      this.queuePresence(userId, true);
     }
     // Snapshot of everyone currently online — so a fresh/refreshed client shows
     // correct status instead of waiting for live deltas that never come.
@@ -70,7 +99,7 @@ export class ChatGateway
     sockets.delete(socket.id);
     if (sockets.size === 0) {
       this.presence.delete(userId);
-      this.server?.emit('chat:presence', { userId, online: false });
+      this.queuePresence(userId, false);
     }
   }
 
