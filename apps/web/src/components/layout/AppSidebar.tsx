@@ -21,6 +21,7 @@ import {
   ScanSearch,
   BarChart3,
   MessageSquare,
+  Plus,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -240,7 +241,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                         className="cursor-pointer"
                       >
                         {project.avatarUrl ? (
-                          <img src={project.avatarUrl} alt={`${project.name} avatar`} className="size-4 rounded" />
+                          <img src={project.avatarUrl} alt={`${project.name} avatar`} className="size-4 shrink-0 rounded" />
                         ) : (
                           <FolderKanban className="size-4" />
                         )}
@@ -264,7 +265,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                     onClick={onCreateProject}
                     className="cursor-pointer text-muted-foreground hover:text-foreground"
                   >
-                    <span className="font-medium">+</span>
+                    <Plus className="size-4" />
                     {!isCollapsed && <span>New Project</span>}
                   </SidebarMenuButton>
                 </TooltipTrigger>

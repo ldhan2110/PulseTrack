@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface UiState {
   sidebarCollapsed: boolean;
@@ -16,7 +17,9 @@ interface UiState {
   setChatOverlayOpen: (open: boolean) => void;
 }
 
-export const useUiStore = create<UiState>((set) => ({
+export const useUiStore = create<UiState>()(
+  persist(
+    (set) => ({
   sidebarCollapsed: false,
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
@@ -30,4 +33,11 @@ export const useUiStore = create<UiState>((set) => ({
   setActiveConversationId: (id) => set({ activeConversationId: id }),
   chatOverlayOpen: false,
   setChatOverlayOpen: (open) => set({ chatOverlayOpen: open }),
-}));
+    }),
+    {
+      name: 'pulsetrack-ui',
+      // persist only sidebar collapse across reloads
+      partialize: (s) => ({ sidebarCollapsed: s.sidebarCollapsed }),
+    },
+  ),
+);
