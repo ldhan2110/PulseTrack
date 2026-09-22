@@ -76,11 +76,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const userInfo = payload['user-info'];
     if (userInfo) {
       const blueprintUrl = this.config.get<string>('BLUEPRINT_URL') || '';
-      const name = userInfo.usrNm ?? null;
-      const email = userInfo.usrEml ?? '';
+      // Keep the existing value when a claim is absent — otherwise a missing
+      // field would overwrite good data AND trigger a DB write on every request.
+      const name = userInfo.usrNm ?? user.name;
+      const email = userInfo.usrEml ?? user.email;
       const imageUrl = userInfo.imgUrl
         ? `${blueprintUrl}/upload/${userInfo.imgUrl.replace(/\\/g, '/')}`
-        : null;
+        : user.imageUrl;
 
       if (user.name !== name || user.email !== email || user.imageUrl !== imageUrl) {
         return this.prisma.user.update({
