@@ -167,6 +167,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
         pkceMethod: 'S256',
         checkLoginIframe: false,
+        // A stale KC session left over from the old (pre-dual-login) auth makes
+        // the silent-SSO iframe never post back. Reject fast instead of hanging.
+        messageReceiveTimeout: 5000,
       })
       .then(async (auth) => {
         if (!auth) {
