@@ -149,6 +149,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 2) No external session → silent Keycloak check (no forced redirect).
+    // keycloak-js 26 needs Web Crypto (crypto.subtle) for PKCE S256, which only
+    // exists in a secure context. On HTTP / old browsers it's absent and init()
+    // hangs forever → fall back to the login page instead of a stuck spinner.
+    if (!window.isSecureContext || !window.crypto?.subtle) {
+      setAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
+    // Hard timeout: init() can hang if the silent-SSO iframe never posts back
+    // (old browsers, blocked storage). Never leave the spinner up indefinitely.
+    const killer = setTimeout(() => setLoading(false), 8000);
     keycloak
       .init({
         onLoad: 'check-sso',
@@ -207,7 +219,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch((err) => {
         console.error('Keycloak init failed:', err);
         setLoading(false);
-      });
+      })
+      .finally(() => clearTimeout(killer));
 
     keycloak.onTokenExpired = () => {
       keycloak.updateToken(30).catch(() => keycloak.logout());
