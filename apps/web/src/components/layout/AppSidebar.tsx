@@ -120,7 +120,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const { user, keycloakUserInfo, logout } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
 
-  const userName = keycloakUserInfo?.usrNm ?? user?.username ?? user?.email ?? 'User';
+  const userName = keycloakUserInfo?.usrNm ?? user?.name ?? user?.username ?? user?.email ?? 'User';
   const userAvatarUrl = keycloakUserInfo?.imgUrl ?? user?.imageUrl ?? null;
 
   const userInitials = userName
