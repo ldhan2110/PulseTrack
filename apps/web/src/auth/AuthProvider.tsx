@@ -201,6 +201,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // on different sites in production. Fall back to check-sso only when we have
     // no stored tokens (first load / the login-redirect callback), where the
     // code is in the URL and no cross-site cookie is needed.
+    // A dead refresh token left in localStorage (abandoned logout, expired
+    // session) forces a blocking updateToken() that hangs until `killer`.
+    // Reject it locally first so first load falls straight to check-sso.
+    if (keycloakSession.isRefreshExpired()) keycloakSession.clear();
+
     const stored = keycloakSession.get();
     const initInternal = stored.refreshToken
       ? keycloak

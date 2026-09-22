@@ -36,6 +36,19 @@ export const keycloakSession = {
   has(): boolean {
     return !!this.get().refreshToken;
   },
+  // Local exp check — no network. A dead refresh token otherwise forces a
+  // blocking keycloak.updateToken() on first load that hangs until the init
+  // timeout. Decode the JWT exp and reject client-side instead.
+  isRefreshExpired(): boolean {
+    const t = this.get().refreshToken;
+    if (!t) return true;
+    try {
+      const { exp } = JSON.parse(atob(t.split('.')[1]));
+      return !exp || exp * 1000 < Date.now();
+    } catch {
+      return true; // unparseable → treat as dead
+    }
+  },
   clear() {
     try {
       localStorage.removeItem(TOKEN_KEY);
