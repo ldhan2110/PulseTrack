@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // After auth: persist tokens, load the profile, drop the spinner.
     const finishInternal = async () => {
       mode.current = 'internal';
-      keycloakSession.save(keycloak.token, keycloak.refreshToken);
+      keycloakSession.save(keycloak.token, keycloak.refreshToken, keycloak.idToken);
       setAuthenticated(true);
 
       // Extract user-info from JWT payload
@@ -207,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .init({
             token: stored.token,
             refreshToken: stored.refreshToken,
+            idToken: stored.idToken,
             pkceMethod: 'S256',
             checkLoginIframe: false,
           })
@@ -250,7 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     keycloak.onTokenExpired = () => {
       keycloak
         .updateToken(30)
-        .then(() => keycloakSession.save(keycloak.token, keycloak.refreshToken))
+        .then(() => keycloakSession.save(keycloak.token, keycloak.refreshToken, keycloak.idToken))
         .catch(() => keycloak.logout());
     };
   }, [loadExternalUser]);

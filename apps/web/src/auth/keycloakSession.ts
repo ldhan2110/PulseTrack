@@ -8,21 +8,26 @@
  */
 const TOKEN_KEY = 'pt_kc_token';
 const REFRESH_KEY = 'pt_kc_refresh';
+// idToken is needed as id_token_hint on logout — without it Keycloak shows a
+// "confirm logout" page instead of redirecting straight back.
+const ID_KEY = 'pt_kc_id';
 
 export const keycloakSession = {
-  save(token?: string, refreshToken?: string) {
+  save(token?: string, refreshToken?: string, idToken?: string) {
     try {
       if (token) localStorage.setItem(TOKEN_KEY, token);
       if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+      if (idToken) localStorage.setItem(ID_KEY, idToken);
     } catch {
       // storage disabled — restore just won't survive a new tab
     }
   },
-  get(): { token?: string; refreshToken?: string } {
+  get(): { token?: string; refreshToken?: string; idToken?: string } {
     try {
       return {
         token: localStorage.getItem(TOKEN_KEY) ?? undefined,
         refreshToken: localStorage.getItem(REFRESH_KEY) ?? undefined,
+        idToken: localStorage.getItem(ID_KEY) ?? undefined,
       };
     } catch {
       return {};
@@ -35,6 +40,7 @@ export const keycloakSession = {
     try {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(REFRESH_KEY);
+      localStorage.removeItem(ID_KEY);
     } catch {
       // ignore
     }
