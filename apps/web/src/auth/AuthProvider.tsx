@@ -121,7 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error((body as { message?: string }).message || 'Invalid email or password');
+        throw new Error(
+          (body as { message?: string }).message ||
+            'The email or password you entered is incorrect. Please try again.',
+        );
       }
       const data = (await res.json()) as {
         accessToken: string;

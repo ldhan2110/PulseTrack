@@ -24,12 +24,34 @@ export function LoginPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await signInExternal(email, password);
+      await signInExternal(trimmedEmail, password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid email or password');
+      // fetch throws TypeError on network failure — don't surface "Failed to fetch".
+      setError(
+        err instanceof TypeError
+          ? 'Unable to reach the server. Please check your connection and try again.'
+          : err instanceof Error && err.message
+            ? err.message
+            : 'The email or password you entered is incorrect. Please try again.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -37,7 +59,9 @@ export function LoginPage() {
 
   return (
     <AuthShell>
-      <p className="mb-5 text-sm text-muted-foreground">Sign in to continue</p>
+      <p className="mb-5 text-sm text-muted-foreground">
+        Welcome back — sign in to access your workspace.
+      </p>
 
       <Button
         type="button"
