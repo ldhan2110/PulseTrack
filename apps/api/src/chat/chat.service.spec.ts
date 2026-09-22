@@ -575,7 +575,7 @@ describe('ChatService.leaveConversation', () => {
 });
 
 describe('ChatService.searchTargets — directory scoping (req-10)', () => {
-  it('scopes to users sharing a project or conversation with the caller (not global)', async () => {
+  it('scopes to users sharing an invited project with the caller (not global, not past DMs)', async () => {
     const prisma = { user: { findMany: vi.fn().mockResolvedValue([]) } } as any;
     const service = new ChatService(prisma);
 
@@ -583,11 +583,12 @@ describe('ChatService.searchTargets — directory scoping (req-10)', () => {
 
     const arg = prisma.user.findMany.mock.calls[0][0];
     expect(arg.where.id).toEqual({ not: 'u1' });
-    const scopeJson = JSON.stringify(arg.where.OR);
-    expect(scopeJson).toContain('projectMembers');
-    expect(scopeJson).toContain('conversationMemberships');
+    const scopeJson = JSON.stringify(arg.where.projectMembers);
+    expect(scopeJson).toContain('project');
     expect(scopeJson).toContain('u1');
-    // the text query still applies, nested under AND
-    expect(JSON.stringify(arg.where.AND)).toContain('bob');
+    // past DM partners are no longer a discovery path
+    expect(JSON.stringify(arg.where)).not.toContain('conversationMemberships');
+    // the text query still applies
+    expect(JSON.stringify(arg.where.OR)).toContain('bob');
   });
 });
