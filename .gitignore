@@ -23,4 +23,5 @@ skills-lock.json
 .code-review-graph
 docs
 openspec
+devspec/improve/testing.md
 devspec

@@ -11,6 +11,6 @@ import { SocketAuthService } from './socket-auth.service';
   imports: [ConfigModule, PrismaModule, QueueModule],
   controllers: [NotificationsController],
   providers: [NotificationsGateway, NotificationsService, SocketAuthService],
-  exports: [NotificationsService],
+  exports: [NotificationsService, SocketAuthService],
 })
 export class NotificationsModule {}

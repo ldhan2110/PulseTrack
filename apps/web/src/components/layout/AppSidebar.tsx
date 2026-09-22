@@ -20,6 +20,7 @@ import {
   Target,
   ScanSearch,
   BarChart3,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -34,10 +35,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useProjects } from '@/hooks/useProjects';
+import { useChatUnread } from '@/hooks/useChat';
 import { useAuth } from '@/auth/useAuth';
 import { useUiStore } from '@/store/uiStore';
 
@@ -109,6 +112,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   const isCollapsed = state === 'collapsed';
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ 'Project Planner': true });
   const { data: projects } = useProjects();
+  const chatUnread = useChatUnread();
   const { user, keycloakUserInfo, logout } = useAuth();
   const activeProjectId = useUiStore((s) => s.activeProjectId);
 
@@ -181,6 +185,31 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                 </TooltipTrigger>
                 {isCollapsed && (
                   <TooltipContent side="right">My Tasks</TooltipContent>
+                )}
+              </Tooltip>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton
+                    isActive={location.pathname === '/chat'}
+                    aria-label="Chat"
+                    onClick={() => navigate('/chat')}
+                    className="cursor-pointer"
+                  >
+                    <MessageSquare className="size-4" />
+                    <span>Chat</span>
+                    {chatUnread > 0 && (
+                      <Badge className="ml-auto h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px]">
+                        {chatUnread > 99 ? '99+' : chatUnread}
+                      </Badge>
+                    )}
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="right">
+                    Chat{chatUnread > 0 ? ` (${chatUnread})` : ''}
+                  </TooltipContent>
                 )}
               </Tooltip>
             </SidebarMenuItem>

@@ -52,3 +52,38 @@ changes:
     owner: "worker-cc"
     archived: archive/compact-kanban-card
     notes: "verified live (anle@CARIS backlog board): 3-zone compact card + responsive columns pass; req-2 overdue border code+build verified (no overdue task on board to render live)"
+  add-realtime-chat:
+    title: Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history
+    tasks_md: archive/add-realtime-chat/tasks.md
+    depends_on: []
+    skills: []
+    status: done
+    owner: "worker-cc"
+    archived: archive/add-realtime-chat
+    notes: "All 9 sections pass (65 API tests green, build clean). Migration generated via schema-to-schema diff to avoid a PRE-EXISTING EntityType.MESSAGE drift; verified on a local scratch DB (shared team DB untouched). Added a member-gated chat:join socket handler (room delivery glue not separately spec'd)."
+  add-realtime-chat-web:
+    title: Real-time chat frontend — chat page (Channels/DMs split, thread, pill composer), /chat socket, inline-image attachments (copy + paste/drag), new-conversation overlay, AppSidebar Chat item + /chat route
+    tasks_md: archive/add-realtime-chat-web/tasks.md
+    depends_on: [add-realtime-chat]
+    skills: [frontend-design]
+    status: done
+    owner: "worker-cc"
+    archived: archive/add-realtime-chat-web
+    notes: "Done 2026-09-21. All 8 sections: §1/§2 vitest green (5 tests), §3-8 UI built + 6 chat unit tests green + pnpm build clean; §3-8 visual gate via devspec-verify PASS (live app, anle@; empty/overlay/filled screenshots in verify/). Search reuses project-scoped members/search (people-only) per design Decision Default (narrows req-3 §6 unjoined-channel/cross-project). §8.2 MANUAL BA-approved by user (auto go). Pre-existing unrelated failure McpAccessCard.test (revoked-badge) out of scope. Consumes backend REST + /chat socket. Access via new AppSidebar item + /chat route; unread badge separate from NotificationBell. Reuse planner chat components (ChatMessage/ChatInput/ChatMessageList/ChatAttachment) + shadcn. Approved mockup at mockups/chat-page.html. §8.2 is a MANUAL BA screenshot gate."
+  chat-delete-conversation:
+    title: Delete a DM for yourself — three-dot header menu + confirm dialog, hard-deletes the caller's own ConversationMember row
+    tasks_md: archive/chat-delete-conversation/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: done
+    owner: "worker-cc"
+    archived: archive/chat-delete-conversation
+    notes: "All 3 sections pass. §1 api chat tests green (leaveConversation deletes only caller's ConversationMember row). §2 web useChat tests green (cache drop + active-id clear). §3 devspec-verify live PASS (anle@): DM header ⋯ present, channel header none, styled AlertDialog confirm, confirm removed DM from list + cleared pane. pnpm build clean. No mockup → per-property diff skipped; reused shadcn Button/DropdownMenu/AlertDialog. Verify filter names in tasks.md said @pulsetrack/* but real package is @pm/* (used actual). Pre-existing unrelated McpAccessCard.test failure out of scope."
+  chat-members-mentions:
+    title: Chat channel usability — DM|Channel create toggle + member multiselect, members panel (add any-member / remove owner-only / leave), @mention autocomplete + colored render + real-time toast (Option A, no schema)
+    tasks_md: changes/chat-members-mentions/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "§1-§8 all done + verified (API 26 chat.service + gateway tests green; web unit tests green; §5-§8 devspec-verify live PASS @localhost:5173 anle@, screenshots in verify/). BLOCKED on §9.1 MANUAL: BA visual sign-off — box unticked, worker never self-approves. To resume: BA ticks §9.1 [x] + reset status blocked→pending. See report/blockers.md."

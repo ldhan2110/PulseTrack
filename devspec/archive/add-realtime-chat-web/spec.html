@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>add-realtime-chat-web — spec review</title>
+<style>
+  :root{--bg:#fff;--fg:#1a1a1a;--muted:#666;--line:#e2e2e2;--accent:#2563eb;--code:#f5f5f5;
+        --ok:#166534;--okbg:#dcfce7;--pre:#0f172a;}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg);background:var(--bg)}
+  .wrap{display:flex}
+  nav{position:sticky;top:0;align-self:flex-start;width:210px;padding:20px 14px;border-right:1px solid var(--line);height:100vh;overflow:auto;font-size:13px}
+  nav a{display:block;color:var(--muted);text-decoration:none;padding:3px 0}
+  nav a:hover{color:var(--accent)}
+  main{flex:1;max-width:880px;padding:28px 40px}
+  h1{margin:0 0 4px;font-size:26px}
+  h2{margin:34px 0 10px;padding-top:10px;border-top:2px solid var(--line);font-size:20px}
+  h3{margin:20px 0 6px;font-size:16px}
+  h4{margin:12px 0 4px;font-size:14px;color:var(--muted)}
+  code{background:var(--code);padding:1px 5px;border-radius:4px;font:13px SFMono-Regular,Consolas,monospace}
+  pre{background:var(--pre);color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow:auto;font:12.5px/1.5 SFMono-Regular,Consolas,monospace}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:var(--code)}
+  .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:10px;background:#eef2ff;color:var(--accent);margin-right:4px}
+  .layer{display:inline-block;font-size:10.5px;padding:0 5px;border-radius:3px;background:#f1f5f9;color:#475569;margin-right:5px;text-transform:uppercase}
+  .banner{padding:10px 14px;border-radius:8px;margin:12px 0;font-weight:600}
+  .ok{background:var(--okbg);color:var(--ok)}
+  .verify{font-size:12.5px;color:var(--muted);margin:4px 0 14px}
+  .verify code{background:#eef6ff}
+  ul.tasks{list-style:none;padding-left:0}
+  ul.tasks li{margin:3px 0}
+  .meta{color:var(--muted);font-size:13px}
+  .box{border:1px solid var(--line);border-radius:8px;padding:2px 16px;margin:10px 0}
+  iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:8px;background:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <strong>add-realtime-chat-web</strong>
+  <a href="#context">Context</a>
+  <a href="#proposal">Proposal</a>
+  <a href="#arch">Architecture</a>
+  <a href="#impact">Impact Area</a>
+  <a href="#frontend">Frontend (mockup)</a>
+  <a href="#spec">Behavior spec</a>
+  <a href="#tasks">Tasks</a>
+  <a href="#coverage">Coverage</a>
+  <a href="#board">Board</a>
+</nav>
+<main>
+
+<h1>Spec review — add-realtime-chat-web</h1>
+<p class="meta">Frontend of real-time chat · rendered from artifacts · disposable</p>
+
+<h2 id="context">Context</h2>
+<div class="box"><table>
+<tr><th>Change id</th><td><code>add-realtime-chat-web</code></td></tr>
+<tr><th>Status</th><td>not yet on board (registers on <code>/devspec-plan</code>)</td></tr>
+<tr><th>Scope</th><td>Frontend only</td></tr>
+<tr><th>depends_on</th><td><code>[add-realtime-chat]</code> — needs the backend's built endpoints + <code>/chat</code> socket</td></tr>
+<tr><th>skills</th><td><code>frontend-design</code></td></tr>
+</table></div>
+
+<h2 id="proposal">Proposal</h2>
+<p>Build the web UI users chat in — conversation list, message thread, composer — wired to the <code>add-realtime-chat</code> backend REST + <code>/chat</code> Socket.IO namespace. Integrated into the existing shell (new <code>AppSidebar</code> item + <code>/chat</code> route), not standalone.</p>
+<p><strong>Delivers:</strong> chat page (Channels + Direct Messages split, thread, composer) · <code>api.ts</code> chat methods + <code>useChat*</code> hooks · <code>/chat</code> socket live updates · unread badge separate from the notification bell · message edit/delete · inline image attachments with copy + paste/drag · infinite-scroll history · text emoji picker (unicode).</p>
+<p class="meta"><strong>Out:</strong> all backend (owned by add-realtime-chat) · emoji reactions · chat in the notification bell · search/threads/pinning.</p>
+
+<h2 id="arch">Architecture</h2>
+<p class="meta">ASCII fallback (archify not detected).</p>
+<pre>AppSidebar  - Chat item + unread badge (useChatUnread) -&gt; route /chat
+App.tsx &lt;Route path="/chat"&gt; -&gt; ChatPage
+  |- ConversationList  (useConversations) -----------------&gt; api.getChatConversations()
+  |    |- Channels group / Direct Messages group
+  |    \- search box -&gt; NewConversationDialog (shadcn Dialog)
+  |                      (useSearchChatTargets) ------------&gt; api.searchChatTargets(q)
+  |                      Message / Open / Join / Create ----&gt; api.createChatConversation()
+  \- MessageThread (selected)
+       |- useMessages(convId) infinite ---------------------&gt; api.getChatMessages(convId, cursor)
+       |- MessageList (grouped; reuse planner ChatMessage)
+       |- Composer (reuse planner ChatInput): emoji/image/attach/paste/send
+       |    send (useSendMessage optimistic) ---------------&gt; api.sendChatMessage()
+       |    upload -----------------------------------------&gt; api.uploadChatAttachment()
+       \- edit/delete/markRead -----------------------------&gt; api.*, api.markChatRead()
+
+getChatSocket() ('/chat' ns, Keycloak auth)
+  useChatSync(): message:new/updated/deleted, typing, presence, read
+       -&gt; qc.setQueryData(['chat', ...])  (live; unread badge recomputed)</pre>
+
+<h2 id="impact">Impact Area</h2>
+<h3>Decision Defaults</h3>
+<table>
+<tr><th>Gray area</th><th>Default</th></tr>
+<tr><td>Chat route</td><td><code>/chat</code> global (cross-project)</td></tr>
+<tr><td>Sidebar placement</td><td>new item after "My Tasks" in AppSidebar</td></tr>
+<tr><td>Unread badge source</td><td>sum of per-conversation unread from getChatConversations</td></tr>
+<tr><td>Live update</td><td>socket <code>setQueryData</code>; invalidate on reconnect</td></tr>
+<tr><td>Optimistic send</td><td>temp id + "sending", reconcile on echo</td></tr>
+<tr><td>Send failure</td><td>failed bubble + retry, draft preserved</td></tr>
+<tr><td>Inline files</td><td><code>image/*</code> only; all else download chip</td></tr>
+<tr><td>Image copy / paste</td><td>Clipboard API write blob; composer paste+drop upload</td></tr>
+<tr><td>Emoji</td><td>picker inserts unicode (no reactions)</td></tr>
+<tr><td>Grouping</td><td>same author, &lt;5 min, merge</td></tr>
+<tr><td>History</td><td>30/page, infinite scroll upward</td></tr>
+<tr><td>Mark read</td><td>on open + on new message while focused</td></tr>
+</table>
+<h3>Blast Radius</h3>
+<ul>
+<li><code>App.tsx</code> — add <code>/chat</code> route. <span class="tag">risk low</span></li>
+<li><code>AppSidebar.tsx</code> — Chat item + badge. <span class="tag">risk low · additive</span></li>
+<li><code>lib/api.ts</code> + <code>lib/types.ts</code> — chat methods/types. <span class="tag">risk low</span></li>
+<li><code>socket/instance.ts</code> — add <code>getChatSocket()</code> (/chat ns); existing socket untouched. <span class="tag">risk med · reconnect on token refresh</span></li>
+<li>new <code>pages/ChatPage.tsx</code> + <code>components/chat/*</code> + <code>hooks/useChat*.ts</code>. <span class="tag">risk low · new</span></li>
+<li>NotificationBell — untouched (separate unread). <span class="tag">risk none</span></li>
+</ul>
+<h3>Dependency</h3>
+<p>Hard on <code>add-realtime-chat</code> (backend). <code>depends_on: [add-realtime-chat]</code>.</p>
+<h3>Rejected</h3>
+<ul>
+<li>Reuse the default-namespace socket — dedicated <code>/chat</code> namespace instead.</li>
+<li>Render all attachments inline — only <code>image/*</code>; others are chips (user decision).</li>
+<li>Poll for messages — socket push + setQueryData (existing pattern).</li>
+</ul>
+
+<h2 id="frontend">Frontend — approved mockup</h2>
+<p class="meta">Source: <code>mockups/chat-page.html</code>. Tokens from <code>apps/web/src/index.css</code>; bubbles mirror planner <code>ChatMessage</code>. <a href="mockups/chat-page.html" target="_blank">open standalone ↗</a></p>
+<iframe src="mockups/chat-page.html" title="chat page mockup"></iframe>
+<p class="meta">States in the mockup: 0 access · 1 filled · 2 message states (inline image + copy, non-image chip) · 3 empty · 4 loading · 5 error · 6 search overlay · 6b no-match.</p>
+
+<h2 id="spec">Behavior spec</h2>
+<table>
+<tr><th>req</th><th>SHALL</th></tr>
+<tr><td>req-1</td><td>Chat sidebar entry → <code>/chat</code>, unread badge separate from bell</td></tr>
+<tr><td>req-2</td><td>conversation list split Channels / Direct Messages, unread + presence</td></tr>
+<tr><td>req-3</td><td>overlay searches all people/channels; DM / open / join / create</td></tr>
+<tr><td>req-4</td><td>thread renders grouped runs, edited + deleted markers</td></tr>
+<tr><td>req-5</td><td>optimistic send + live receive over <code>/chat</code>; failure ret/retry</td></tr>
+<tr><td>req-6</td><td>infinite-scroll older history by cursor</td></tr>
+<tr><td>req-7</td><td>edit / delete own message</td></tr>
+<tr><td>req-8</td><td>attach by button/paste/drag; images inline + copy; non-image chip</td></tr>
+<tr><td>req-9</td><td>emit + show typing indicator</td></tr>
+<tr><td>req-10</td><td>live presence on DMs + thread header</td></tr>
+<tr><td>req-11</td><td>mark read on open, clear badge, read receipts</td></tr>
+<tr><td>req-12</td><td><code>/chat</code> socket auth + reconnect on token refresh</td></tr>
+</table>
+<p class="meta">Full WHEN/THEN scenarios in <code>spec.md</code>.</p>
+
+<h2 id="tasks">Tasks <span class="meta">(layer-tagged; UI verify = /devspec-verify agent-browser)</span></h2>
+
+<h3>1. Data layer — api + types + hooks <span class="tag">req-1</span><span class="tag">req-2</span><span class="tag">req-5</span><span class="tag">req-6</span><span class="tag">req-7</span><span class="tag">req-11</span></h3>
+<ul class="tasks">
+<li>☐ 1.1 <span class="layer">frontend</span> chat types in <code>lib/types.ts</code></li>
+<li>☐ 1.2 <span class="layer">frontend</span> chat methods in <code>lib/api.ts</code> (get/create/search/messages/send/edit/delete/read/upload/download)</li>
+<li>☐ 1.3 <span class="layer">frontend</span> <code>hooks/useChat.ts</code> — conversations, unread, infinite messages, optimistic send, edit/delete/read/search</li>
+<li>☐ 1.4 <span class="layer">test</span> useChat.test: optimistic reconcile; unread derivation</li>
+</ul>
+<p class="verify">Verify: <code>pnpm --filter @pm/web test useChat</code></p>
+
+<h3>2. Chat socket namespace + live sync <span class="tag">req-5</span><span class="tag">req-9</span><span class="tag">req-10</span><span class="tag">req-12</span></h3>
+<ul class="tasks">
+<li>☐ 2.1 <span class="layer">frontend</span> <code>getChatSocket()</code> (/chat ns) in <code>socket/instance.ts</code></li>
+<li>☐ 2.2 <span class="layer">frontend</span> reconnect on token refresh (mirror SocketProvider)</li>
+<li>☐ 2.3 <span class="layer">frontend</span> <code>hooks/useChatSync.ts</code> — setQueryData on socket events; invalidate on reconnect</li>
+<li>☐ 2.4 <span class="layer">test</span> useChatSync.test: message:new appends; presence updates</li>
+</ul>
+<p class="verify">Verify: <code>pnpm --filter @pm/web test useChatSync</code></p>
+
+<h3>3. Access — sidebar item + route <span class="tag">req-1</span></h3>
+<ul class="tasks">
+<li>☐ 3.1 <span class="layer">frontend</span> Chat item in <code>AppSidebar.tsx</code> (mirror My Tasks) + unread Badge</li>
+<li>☐ 3.2 <span class="layer">frontend</span> <code>/chat</code> route in <code>App.tsx</code> under ProjectLayout</li>
+<li>☐ 3.3 <span class="layer">frontend</span> mount <code>useChatSync()</code> while chat active</li>
+</ul>
+<p class="verify">Verify: <code>/devspec-verify add-realtime-chat-web</code> (Chat item + badge, click → /chat)</p>
+
+<h3>4. Conversation list <span class="tag">req-2</span><span class="tag">req-11</span></h3>
+<ul class="tasks">
+<li>☐ 4.1 <span class="layer">frontend</span> <code>components/chat/ConversationList.tsx</code> — Channels + Direct Messages groups, badges, presence, + New</li>
+<li>☐ 4.2 <span class="layer">frontend</span> select → active + markChatRead</li>
+<li>☐ 4.3 <span class="layer">frontend</span> empty / loading / error states (mockup 3–5)</li>
+<li>☐ 4.4 <span class="layer">frontend</span> UI state in <code>store/uiStore.ts</code> (active conv, overlay open)</li>
+</ul>
+<p class="verify">Verify: <code>/devspec-verify add-realtime-chat-web</code> (groups, badges, empty state)</p>
+
+<h3>5. Message thread + composer <span class="tag">req-4</span><span class="tag">req-5</span><span class="tag">req-6</span><span class="tag">req-7</span><span class="tag">req-9</span></h3>
+<ul class="tasks">
+<li>☐ 5.1 <span class="layer">frontend</span> <code>components/chat/MessageThread.tsx</code> — grouped runs, reuse planner ChatMessageList/ChatMessage look</li>
+<li>☐ 5.2 <span class="layer">frontend</span> edited marker + deleted placeholder; hover own → edit/delete</li>
+<li>☐ 5.3 <span class="layer">frontend</span> infinite scroll upward, preserve position</li>
+<li>☐ 5.4 <span class="layer">frontend</span> <code>components/chat/Composer.tsx</code> — pill + ghost icons (emoji/image/attach/send), Enter sends, typing emit</li>
+<li>☐ 5.5 <span class="layer">frontend</span> typing indicator + read receipts</li>
+<li>☐ 5.6 <span class="layer">test</span> MessageThread.test: grouping; deleted placeholder</li>
+</ul>
+<p class="verify">Verify: <code>/devspec-verify add-realtime-chat-web</code> (grouped bubbles, composer pill, typing; styling not plain)</p>
+
+<h3>6. New-conversation overlay <span class="tag">req-3</span></h3>
+<ul class="tasks">
+<li>☐ 6.1 <span class="layer">frontend</span> <code>components/chat/NewConversationDialog.tsx</code> — shadcn Dialog, tabs, search</li>
+<li>☐ 6.2 <span class="layer">frontend</span> People→Message, Channels→Open/Join, Create channel</li>
+<li>☐ 6.3 <span class="layer">frontend</span> no-match state (mockup 6b)</li>
+<li>☐ 6.4 <span class="layer">test</span> dialog.test: filter; Message on new person creates DM</li>
+</ul>
+<p class="verify">Verify: <code>/devspec-verify add-realtime-chat-web</code> (overlay over dimmed app, tabs, results, create)</p>
+
+<h3>7. Attachments — inline images + copy + paste/drag <span class="tag">req-8</span></h3>
+<ul class="tasks">
+<li>☐ 7.1 <span class="layer">frontend</span> <code>components/chat/MessageAttachment.tsx</code> — image/* inline &lt;img&gt; + Copy; else download chip</li>
+<li>☐ 7.2 <span class="layer">frontend</span> composer paste + drop image → upload on send</li>
+<li>☐ 7.3 <span class="layer">test</span> attachment.test: png → img+copy; pdf → chip only</li>
+</ul>
+<p class="verify">Verify: <code>/devspec-verify add-realtime-chat-web</code> (inline image + copy, pdf chip, paste hint)</p>
+
+<h3>8. End-to-end visual gate <span class="tag">req-1..12</span></h3>
+<ul class="tasks">
+<li>☐ 8.1 <span class="layer">frontend</span> <code>pages/ChatPage.tsx</code> = list + thread + overlay; route active</li>
+<li>☐ 8.2 MANUAL: BA approves screenshot of /chat vs mockup (filled, empty, overlay, inline image)</li>
+</ul>
+<p class="verify">Verify: MANUAL: BA approves <code>/devspec-verify</code> screenshot matches the approved mockup</p>
+
+<h2 id="coverage">Coverage</h2>
+<div class="banner ok">✓ Every requirement is covered. 12 / 12 reqs mapped; no orphan sections. §8 is the e2e gate.</div>
+<table>
+<tr><th>req</th><th>section(s)</th></tr>
+<tr><td>req-1</td><td>1, 3, 4</td></tr><tr><td>req-2</td><td>1, 4</td></tr><tr><td>req-3</td><td>6</td></tr>
+<tr><td>req-4</td><td>5</td></tr><tr><td>req-5</td><td>1, 2, 5</td></tr><tr><td>req-6</td><td>1, 5</td></tr>
+<tr><td>req-7</td><td>1, 5</td></tr><tr><td>req-8</td><td>7</td></tr><tr><td>req-9</td><td>2, 5</td></tr>
+<tr><td>req-10</td><td>2, 4</td></tr><tr><td>req-11</td><td>1, 4, 5</td></tr><tr><td>req-12</td><td>2</td></tr>
+</table>
+
+<h2 id="board">Board</h2>
+<p class="meta">Not yet registered — <code>/devspec-plan</code> adds the row.</p>
+<pre>add-realtime-chat       depends_on: []                   (backend, pending)
+add-realtime-chat-web   depends_on: [add-realtime-chat]  (this change — waits for backend)</pre>
+
+</main>
+</div>
+</body>
+</html>

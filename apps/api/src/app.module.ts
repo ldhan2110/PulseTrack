@@ -42,6 +42,7 @@ import { TestAutomationModule } from './test-automation/test-automation.module';
 import { AgentsModule } from './agents/agents.module';
 import { AiTaskGenerationModule } from './ai-task-generation/ai-task-generation.module';
 import { McpModule } from './mcp/mcp.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { McpModule } from './mcp/mcp.module';
     WbsModule,
     TestAutomationModule,
     AgentsModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

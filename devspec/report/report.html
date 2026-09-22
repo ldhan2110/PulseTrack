@@ -1,60 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DevSpec Board Report — PulseTrack</title>
+<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1"><title>DevSpec Report</title>
 <style>
-  :root { --bg:#0f1115; --card:#1a1d24; --fg:#e6e8ec; --muted:#9aa0aa; --line:#2a2e37;
-          --done:#3fb950; --prog:#d29922; --block:#f85149; }
-  * { box-sizing:border-box; }
-  body { margin:0; padding:2rem; background:var(--bg); color:var(--fg);
-         font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
-  h1 { font-size:1.4rem; margin:0 0 .25rem; }
-  h2 { font-size:1.05rem; margin:2rem 0 .75rem; padding-bottom:.35rem; border-bottom:1px solid var(--line); }
-  .ts { color:var(--muted); font-size:.85rem; }
-  .counts { margin:.75rem 0 0; font-size:.95rem; }
-  .pill { display:inline-block; padding:.1rem .5rem; border-radius:999px; font-size:.8rem; font-weight:600; }
-  .pill.done { background:rgba(63,185,80,.15); color:var(--done); }
-  .pill.prog { background:rgba(210,153,34,.15); color:var(--prog); }
-  .pill.block { background:rgba(248,81,73,.15); color:var(--block); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:.85rem 1rem; margin:.5rem 0; }
-  .card .title { font-weight:600; }
-  .card .meta { color:var(--muted); font-size:.85rem; margin-top:.2rem; }
-  .sec { font-variant-numeric:tabular-nums; color:var(--muted); }
-  .empty { color:var(--muted); font-style:italic; }
-  .hist { border-left:2px solid var(--line); padding:.35rem 0 .35rem 1rem; margin:.4rem 0; }
-  .hist .h { font-size:.85rem; color:var(--muted); }
-  .hist .s { margin-top:.25rem; }
-</style>
-</head>
-<body>
-  <h1>DevSpec Board — PulseTrack</h1>
-  <div class="ts">Generated 2026-09-18 11:24 UTC</div>
-  <div class="counts">
-    <span class="pill done">5 done</span>
-    <span class="pill prog">1 in-progress</span>
-    <span class="pill block">0 blocked</span>
-    &middot; 6 total
-  </div>
-
-  <h2>Open Blockers</h2>
-  <p class="empty">No open blockers.</p>
-
-  <h2>Implemented</h2>
-  <div class="card"><div class="title">Dashboard redesign — status strip, bug banner, layout restyle per mockup</div><div class="meta"><span class="sec">7/7 sections</span></div></div>
-  <div class="card"><div class="title">MCP agent write consent — per-token opt-in gate on write tools</div><div class="meta"><span class="sec">5/5 sections</span></div></div>
-  <div class="card"><div class="title">Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
-  <div class="card"><div class="title">Compact three-zone Kanban task card + responsive column widths</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
-  <div class="card"><div class="title">Backlog Excel export — sanitize description HTML + add Parent Task Key column</div><div class="meta"><span class="sec">3/3 sections</span></div></div>
-
-  <h2>In progress / Left</h2>
-  <div class="card"><div class="title">Project card redesign — logo, member avatars, pinned footer <span class="pill prog">doing</span></div><div class="meta"><span class="sec">— sections</span> &middot; owner worker-1 (artifacts not on this filesystem)</div></div>
-
-  <h2>History</h2>
-  <div class="hist"><div class="h">2026-09-18 11:23 UTC &middot; Backlog Excel export — sanitize description HTML + add Parent Task Key column &middot; <span class="pill done">done</span> &middot; 3/3</div><div class="s">Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</div></div>
-  <div class="hist"><div class="h">2026-09-18 07:35 UTC &middot; MCP agent write consent — per-token opt-in gate on write tools &middot; <span class="pill done">done</span> &middot; 5/5</div><div class="s">Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section's verify to this change's own tests (all green; build green both apps). Archived.</div></div>
-  <div class="hist"><div class="h">2026-09-18 07:20 UTC &middot; MCP agent write consent — per-token opt-in gate on write tools &middot; <span class="pill block">blocked</span> &middot; 2/5</div><div class="s">Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</div></div>
-  <div class="hist"><div class="h">2026-09-18 04:45 UTC &middot; Dashboard redesign — status strip, bug banner, layout restyle per mockup &middot; <span class="pill done">done</span> &middot; 7/7</div><div class="s">Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</div></div>
-</body>
-</html>
+body{font:14px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;background:#f4f4f5;color:#18181b}
+.wrap{max-width:960px;margin:0 auto;padding:24px 16px}
+h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:28px 0 8px;color:#3f3f46}
+.sub{color:#71717a;font-size:12px;margin:0 0 8px}
+.counts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+.pill{background:#fff;border:1px solid #e4e4e7;border-radius:8px;padding:6px 12px;font-size:13px}
+.pill b{font-size:16px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e4e4e7;border-radius:8px;overflow:hidden}
+td{padding:8px 12px;border-top:1px solid #f0f0f1;vertical-align:top}
+tr:first-child td{border-top:0}
+.muted{color:#a1a1aa}
+.blk{background:#fff;border:1px solid #fecaca;border-left:3px solid #b91c1c;border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.bh{font-weight:600;color:#b91c1c;margin-bottom:4px}
+.blk pre{white-space:pre-wrap;font:12px/1.5 ui-monospace,monospace;margin:0;color:#3f3f46}
+</style></head><body><div class=wrap>
+<h1>DevSpec Report</h1>
+<p class=sub>generated 2026-09-22 09:16</p>
+<div class=counts>
+<span class=pill><b>8</b> done</span>
+<span class=pill><b>1</b> in-progress</span>
+<span class=pill><b>1</b> blocked</span>
+<span class=pill><b>10</b> total</span></div>
+<h2>Open Blockers</h2><div class='blk'><div class='bh'>chat-members-mentions — §9 MANUAL BA visual sign-off (unticked)</div><pre>**status: open** — human BA visual sign-off pending
+**When**: 2026-09-22 (run worker-cc)
+**Section**: 9. Visual sign-off — `Verify: MANUAL: BA approves screenshot`
+**Status**: §1–§8 all implemented + verified; §9.1 MANUAL box unticked → blocked (never self-approve).
+**What&#x27;s done (verified)**
+- §1 add/remove member endpoints + DTO + service (`chat.service.ts`, `chat.controller.ts`, `dto/add-members.dto.ts`) — `pnpm --filter @pm/api test -- chat.service` green (26 chat.service tests).
+- §2 per-user room (`ChatGateway.handleConnection` joins `user:{id}`) + `emitToUser` + membership emits — `chat</pre></div>
+<h2>Implemented</h2><table><tr><td>Backlog Excel export — sanitize description HTML + add Parent Task Key column</td><td style='white-space:nowrap'>—</td></tr><tr><td>Dashboard redesign — status strip, bug banner, layout restyle per mockup</td><td style='white-space:nowrap'>—</td></tr><tr><td>MCP agent write consent — per-token opt-in gate on write tools</td><td style='white-space:nowrap'>—</td></tr><tr><td>Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default</td><td style='white-space:nowrap'>—</td></tr><tr><td>Compact three-zone Kanban task card + responsive column widths</td><td style='white-space:nowrap'>—</td></tr><tr><td>Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history</td><td style='white-space:nowrap'>—</td></tr><tr><td>Real-time chat frontend — chat page (Channels/DMs split, thread, pill composer), /chat socket, inline-image attachments (copy + paste/drag), new-conversation overlay, AppSidebar Chat item + /chat route</td><td style='white-space:nowrap'>—</td></tr><tr><td>Delete a DM for yourself — three-dot header menu + confirm dialog, hard-deletes the caller&#x27;s own ConversationMember row</td><td style='white-space:nowrap'>—</td></tr></table>
+<h2>In progress / Left</h2><table><tr><td>Project card redesign — logo, member avatars, pinned footer <span style="background:#b45309;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">doing</span></td><td style='white-space:nowrap'>—</td><td style='color:#b91c1c;font-size:12px'></td></tr><tr><td>Chat channel usability — DM|Channel create toggle + member multiselect, members panel (add any-member / remove owner-only / leave), @mention autocomplete + colored render + real-time toast (Option A, no schema) <span style="background:#b91c1c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">blocked</span></td><td style='white-space:nowrap'>—</td><td style='color:#b91c1c;font-size:12px'>§1-§8 all done + verified (API 26 chat.service + gateway tests green; web unit tests green; §5-§8 devspec-verify live PASS @localhost:5173 anle@, screenshots in verify/). BLOCKED on §9.1 MANUAL: BA visual sign-off — box unticked, worker never self-approves. To resume: BA ticks §9.1 [x] + reset status blocked→pending. See report/blockers.md.</td></tr></table>
+<h2>History</h2><table><tr><td style='white-space:nowrap'>2026-09-22T02:14:36Z</td><td>Chat channel usability — DM|Channel toggle, members panel, @mentions (Option A) <span style="background:#b91c1c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">blocked</span></td><td style='white-space:nowrap'>8/9</td><td>Implemented and verified §1-§8: membership endpoints (owner-only remove, DM 400), per-user room + emitToUser, mention parse/notify, web hooks+socket listeners, DM|Channel create toggle, MembersPanel, @mention composer + colored render. API+web tests green, both builds clean, §5-§8 devspec-verify live PASS. Blocked only on the §9 MANUAL BA screenshot gate.</td></tr><tr><td style='white-space:nowrap'>2026-09-21T09:32:34Z</td><td>Delete a DM for yourself — three-dot header menu + confirm dialog, hard-deletes the caller&#x27;s own ConversationMember row <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>3/3</td><td>Implemented DELETE /chat/conversations/:id (ConversationMemberGuard) → ChatService.leaveConversation hard-deleting only the caller&#x27;s membership row; added web deleteChatConversation api + useDeleteConversation mutation (cache drop + active-id clear); added DM-only ⋯ DropdownMenu + AlertDialog confirm in MessageThread. API+web unit tests green, pnpm build clean, devspec-verify live PASS on anle@.</td></tr><tr><td style='white-space:nowrap'>2026-09-21T03:40:00Z</td><td>Real-time chat frontend — chat page, /chat socket, attachments, new-conversation overlay, sidebar item + route <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>8/8</td><td>Human cleared both earlier blockers (search reuses project-scoped members/search per a design Decision Default; §8.2 BA-approved). Built all 8 sections: chat types/api/hooks, /chat socket sync, sidebar Chat item + route, ConversationList, MessageThread + Composer + attachments + overlay, ChatPage wiring. 11 chat unit tests + build green; §3-8 visual gate via devspec-verify PASS on the live app (empty/overlay/filled screenshots). Archived.</td></tr><tr><td style='white-space:nowrap'>2026-09-21T03:20:00Z</td><td>Real-time chat frontend — chat page, /chat socket, attachments, new-conversation overlay, sidebar item + route <span style="background:#b91c1c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">blocked</span></td><td style='white-space:nowrap'>0/8</td><td>Claimed the only runnable change and read all artifacts + backend contracts. Found req-3/§6 (and the §1.2 searchChatTargets method the data layer starts with) depend on a chat-target search endpoint the backend dependency never shipped; blocking here rather than silently rewiring to project-scoped search or adding an out-of-scope backend route. Logged blocker; no code written.</td></tr><tr><td style='white-space:nowrap'>2026-09-21T03:14:50Z</td><td>Real-time chat backend — DM + standalone channels, ChatGateway, attachments, typing/presence/read/unread/edit/soft-delete/history <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>9/9</td><td>Built self-contained ChatModule (4 Prisma models + enum via additive migration, ChatGateway on /chat reusing SocketAuthService, ConversationMemberGuard, full ChatService). All 9 sections verified: 65 API tests green, build clean. Migration generated via schema-to-schema diff to skip a pre-existing EntityType.MESSAGE drift; verified on a local scratch DB (shared team DB untouched).</td></tr><tr><td style='white-space:nowrap'>2026-09-18T11:23:37Z</td><td>Backlog Excel export — sanitize description HTML + add Parent Task Key column <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>3/3</td><td>Added sanitizeDescription helper (strip tags, decode entities, collapse whitespace) applied at export row build, and a Parent Task Key column (second) mapping sub-tasks to parents. New export-excel.spec.ts passes 3 scenarios; build clean.</td></tr><tr><td style='white-space:nowrap'>2026-09-18T10:45:00Z</td><td>Compact three-zone Kanban task card + responsive column widths <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>3/3</td><td>Redesigned KanbanCard to a compact 3-zone layout (type-icon+key / title / footer avatar·type-badge·date·priority-icon), removed rail/priority-pill/meta-row/progress-bar/story-points, overdue now a thin red top border. Widened KanbanColumn to responsive tiers 280/300/340px. Verified live on CARIS backlog board; build green.</td></tr><tr><td style='white-space:nowrap'>2026-09-18T10:17:08Z</td><td>Edit sprint name and dates — dual-mode CreateSprintDialog, two-week default <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>3/3</td><td>Wired unused useUpdateSprint into UI: dual-mode CreateSprintDialog (create/edit), Edit button on PLANNED sprints, create prefills endDate=start+14d. Verified live with anle@CARIS — all 4 reqs pass.</td></tr><tr><td style='white-space:nowrap'>2026-09-18T07:35:00Z</td><td>MCP agent write consent — per-token opt-in gate on write tools <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>5/5</td><td>Resumed after human ruled 4 pre-existing unrelated test failures out of scope. Completed frontend consent checkbox + advisory warning in McpAccessCard, allowWrite through types/api/hook/payload, and narrowed each section&#x27;s verify to this change&#x27;s own tests (all green; build green both apps). Archived.</td></tr><tr><td style='white-space:nowrap'>2026-09-18T07:20:00Z</td><td>MCP agent write consent — per-token opt-in gate on write tools <span style="background:#b91c1c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">blocked</span></td><td style='white-space:nowrap'>2/5</td><td>Implemented allowWrite column + Prisma migration, DTO/service persist+expose (both verified green), and the requireScope consent gate with McpSession.allowWrite + WRITE_SCOPES + 4 passing consent tests. Blocked before ticking section 3 because its whole-file verify is red on 3 pre-existing mcp-tools.spec failures unrelated to this change (net +4 green, zero regressions).</td></tr><tr><td style='white-space:nowrap'>2026-09-18T04:45:00Z</td><td>Dashboard redesign — status strip, bug banner, layout restyle per mockup <span style="background:#16803c;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600">done</span></td><td style='white-space:nowrap'>7/7</td><td>Added myWork + activity to dashboard API (userId-scoped counts, approximated activity feed) with vitest specs; built Hero/MyWorkStrip/ActivityFeed, permission-gated sections, and divider-cell restyle of status strip + bug banner. Browser-verified against mockup (numbers 30px/28px matched after fix); build + backend tests green.</td></tr></table>
+</div></body></html>

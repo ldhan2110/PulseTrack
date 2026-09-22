@@ -45,6 +45,12 @@ import { useQuery } from '@tanstack/react-query';
 
 export function TestCasesPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
+  const setFullWidth = useUiStore((s) => s.setFullWidth);
+
+  useEffect(() => {
+    setFullWidth(true);
+    return () => setFullWidth(false);
+  }, [setFullWidth]);
 
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedSuiteId, setSelectedSuiteId] = useState<string | null>(null);
@@ -173,12 +179,12 @@ export function TestCasesPage() {
   // Empty state
   if (!isLoading && caseList.length === 0 && !selectedModuleId && !selectedSuiteId && !search && !statusFilter && !priorityFilter) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex h-full min-h-0 flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
           {toolbarActions}
         </div>
-        <div className="flex">
+        <div className="flex flex-1 min-h-0">
           <div className="w-60 border-r pr-2 shrink-0">
             <ModuleTree
               projectId={projectId}
@@ -256,7 +262,7 @@ export function TestCasesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Test Cases</h1>
         {toolbarActions}

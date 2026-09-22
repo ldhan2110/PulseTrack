@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat page — mockup</title>
+<style>
+  /* tokens copied from apps/web/src/index.css :root (shadcn oklch neutral) */
+  :root{
+    --background:oklch(1 0 0); --foreground:oklch(0.145 0 0);
+    --card:oklch(1 0 0); --muted:oklch(0.97 0 0); --muted-foreground:oklch(0.556 0 0);
+    --primary:oklch(0.205 0 0); --primary-foreground:oklch(0.985 0 0);
+    --accent:oklch(0.97 0 0); --border:oklch(0.922 0 0); --input:oklch(0.922 0 0);
+    --ring:oklch(0.708 0 0); --destructive:oklch(0.577 0.245 27.325);
+    --sidebar:oklch(0.985 0 0); --radius:0.625rem;
+    --online:oklch(0.65 0.2 145); --unread:oklch(0.577 0.245 27.325);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--muted);color:var(--foreground);
+    font:14px/1.5 "Geist Variable",-apple-system,Segoe UI,Roboto,sans-serif}
+  .note{max-width:1100px;margin:0 auto;padding:22px 16px 6px}
+  .note h1{font-size:20px;margin:0 0 2px}
+  .note p{color:var(--muted-foreground);margin:0}
+  .state-label{max-width:1100px;margin:26px auto 8px;padding:0 16px;
+    font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-foreground)}
+  .frame{max-width:1100px;margin:0 auto;background:var(--background);border:1px solid var(--border);
+    border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px oklch(0 0 0 /.06)}
+  .app{display:grid;grid-template-columns:56px 280px 1fr;height:560px}
+  /* nav rail */
+  .rail{background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;
+    align-items:center;padding:12px 0;gap:14px}
+  .rail .ic{position:relative;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+    color:var(--muted-foreground);font-size:18px}
+  .rail .ic.active{background:var(--accent);color:var(--foreground)}
+  .pill{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;
+    background:var(--unread);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center}
+  /* conversation sidebar */
+  .side{border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0}
+  .side header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .side header b{font-size:15px}
+  .btn{border:1px solid var(--border);background:var(--background);border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer}
+  .btn.primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+  .search{margin:10px 12px;padding:7px 10px;border:1px solid var(--input);border-radius:8px;color:var(--muted-foreground);font-size:13px}
+  .search.active{border-color:var(--ring);color:var(--foreground);box-shadow:0 0 0 3px oklch(0.708 0 0 /.15)}
+  .sechint{padding:2px 14px 6px;font-size:11px;color:var(--muted-foreground)}
+  .res-h{padding:9px 14px 3px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground)}
+  .create{display:flex;align-items:center;gap:10px;padding:10px 14px;margin-top:4px;border-top:1px solid var(--border);cursor:pointer;color:var(--foreground)}
+  .create .plus{width:34px;height:34px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;font-size:18px;flex:none}
+  .go{font-size:12px;color:var(--muted-foreground);border:1px solid var(--border);border-radius:7px;padding:3px 8px;flex:none}
+  .convos{overflow:auto;flex:1}
+  .grp{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground)}
+  .grp .add{cursor:pointer;font-size:14px;line-height:1}
+  .convo{display:flex;gap:10px;align-items:center;padding:9px 12px;cursor:pointer;border-left:2px solid transparent}
+  .convo:hover{background:var(--accent)}
+  .convo.sel{background:var(--accent);border-left-color:var(--primary)}
+  .av{width:34px;height:34px;border-radius:50%;background:var(--muted);display:grid;place-items:center;
+    font-size:13px;font-weight:600;color:var(--muted-foreground);position:relative;flex:none}
+  .dot{position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;border:2px solid var(--background)}
+  .dot.on{background:var(--online)} .dot.off{background:oklch(0.75 0 0)}
+  .cmeta{min-width:0;flex:1}
+  .cmeta .top{display:flex;justify-content:space-between;gap:6px}
+  .cmeta .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cmeta .tm{font-size:11px;color:var(--muted-foreground);flex:none}
+  .cmeta .pre{font-size:12.5px;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cbadge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--unread);color:#fff;
+    font-size:10.5px;font-weight:700;display:grid;place-items:center;flex:none}
+  .hash{color:var(--muted-foreground);font-weight:700}
+  /* thread */
+  .thread{display:flex;flex-direction:column;min-width:0}
+  .thead{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .thead .sub{font-size:12px;color:var(--muted-foreground)}
+  .tbody{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--background)}
+  .loadmore{align-self:center;font-size:12px;color:var(--muted-foreground);padding:4px 10px;border:1px solid var(--border);border-radius:20px}
+  .daysep{align-self:center;font-size:11px;color:var(--muted-foreground);background:var(--muted);padding:2px 10px;border-radius:20px}
+  .row{display:flex;gap:8px;max-width:78%}
+  .row.me{align-self:flex-end;flex-direction:row-reverse}
+  /* grouped: consecutive msgs from same author merge — avatar+name once, bubbles stacked */
+  .group{display:flex;gap:8px;max-width:78%}
+  .group.me{align-self:flex-end;flex-direction:row-reverse}
+  .group .stack{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .group.me .stack{align-items:flex-end}
+  .av.spacer{background:transparent} /* keeps alignment when avatar hidden on merged rows */
+  .bubble{border-radius:12px;padding:7px 11px;font-size:13.5px;width:fit-content}
+  .group.them .bubble{background:var(--muted)}
+  .group.me .bubble{background:var(--primary);color:var(--primary-foreground)}
+  /* only the first/last bubble in a run gets the tail corner */
+  .group.them .stack>.bubble:first-of-type{border-top-left-radius:12px}
+  .group.them .stack>.bubble:last-of-type{border-bottom-left-radius:3px}
+  .group.me .stack>.bubble:last-of-type{border-bottom-right-radius:3px}
+  .who{font-size:11px;font-weight:600;color:oklch(0.45 0 0);margin-bottom:2px}
+  .stamp{font-size:10.5px;color:var(--muted-foreground);margin-top:1px}
+  .group.me .stamp{text-align:right}
+  .edited{font-style:italic;opacity:.7;font-size:10px}
+  .deleted{font-style:italic;color:var(--muted-foreground);background:transparent;border:1px dashed var(--border)}
+  .att{display:flex;align-items:center;gap:8px;margin-top:5px;padding:6px 9px;border-radius:8px;
+    background:var(--background);border:1px solid var(--border);font-size:12.5px;color:var(--foreground)}
+  .att .fi{width:26px;height:26px;border-radius:6px;background:var(--accent);display:grid;place-items:center}
+  /* image attachments render INLINE as a thumbnail (not a file chip) */
+  .imgatt{position:relative;margin-top:5px;width:180px;height:120px;border-radius:10px;overflow:hidden;border:1px solid var(--border);
+    background:repeating-conic-gradient(oklch(0.9 0 0) 0 25%, oklch(0.96 0 0) 0 50%) 0 0/22px 22px;display:grid;place-items:center;color:var(--muted-foreground);font-size:26px;cursor:zoom-in}
+  .imgatt .copy{position:absolute;top:6px;right:6px;background:oklch(0 0 0 /.6);color:#fff;font-size:11px;
+    padding:3px 7px;border-radius:6px;display:flex;gap:4px;align-items:center}
+  .pastehint{font-size:11px;color:var(--muted-foreground);padding:0 4px 6px}
+  .navitem{display:flex;align-items:center;gap:10px;padding:8px 12px;margin:2px 8px;border-radius:8px;color:var(--foreground);cursor:pointer;position:relative}
+  .navitem.on{background:var(--accent);font-weight:600}
+  .navitem .nb{margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--unread);color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center}
+  .tick{font-size:10.5px}
+  .sending{opacity:.55}
+  .typing{display:flex;align-items:center;gap:6px;color:var(--muted-foreground);font-size:12px;padding:2px 4px}
+  .typing i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;animation:b 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s} .typing i:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+  /* composer — single pill, ghost icons inline right (ref: Screenshot 2026-09-21 09.18.27) */
+  .composer{padding:12px 14px}
+  .pill-input{display:flex;align-items:center;gap:6px;background:var(--accent);border-radius:22px;padding:8px 10px 8px 16px}
+  .cinput{flex:1;color:var(--muted-foreground);border:0;background:transparent;font-size:13.5px}
+  .gi{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;color:var(--muted-foreground);cursor:pointer}
+  .gi:hover{background:oklch(0.93 0 0);color:var(--foreground)}
+  .gi.send{color:var(--foreground)}
+  /* generic center states */
+  .center{display:grid;place-items:center;height:100%;text-align:center;color:var(--muted-foreground);padding:24px}
+  .center .big{font-size:34px;margin-bottom:8px;opacity:.5}
+  .spin{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto 10px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .errbox{border:1px solid var(--destructive);color:var(--destructive);border-radius:8px;padding:10px 14px}
+  /* search overlay modal */
+  .overlay{position:relative}
+  .overlay .backdrop{position:absolute;inset:0;background:oklch(0 0 0 /.45);display:grid;justify-items:center;padding-top:60px;z-index:5}
+  .modal{width:460px;max-width:92%;background:var(--background);border:1px solid var(--border);border-radius:14px;
+    box-shadow:0 12px 40px oklch(0 0 0 /.3);overflow:hidden}
+  .modal .m-in{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--border);font-size:15px}
+  .modal .m-in input{border:0;outline:0;flex:1;font-size:15px;color:var(--foreground);background:transparent}
+  .modal .m-body{max-height:320px;overflow:auto}
+  .modal .esc{font-size:11px;color:var(--muted-foreground);border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+  .tab{display:flex;gap:4px;padding:8px 12px 0}
+  .tab span{font-size:12px;padding:5px 12px;border-radius:8px 8px 0 0;color:var(--muted-foreground);cursor:pointer}
+  .tab span.on{background:var(--accent);color:var(--foreground);font-weight:600}
+  .skel{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--muted),var(--accent),var(--muted));background-size:200% 100%;animation:sh 1.3s infinite}
+  @keyframes sh{to{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<div class="note">
+  <h1>Chat page — add-realtime-chat-web</h1>
+  <p>Static prop for shape/state alignment. Tokens from <code>apps/web/src/index.css</code>; bubble style mirrors planner <code>ChatMessage</code>. Reactions intentionally absent. Scroll for every state.</p>
+</div>
+
+<!-- ============ ACCESS POINT ============ -->
+<div class="state-label">0 · Access — integrated into the existing app, not standalone</div>
+<div class="frame"><div style="display:grid;grid-template-columns:230px 1fr;height:230px">
+  <!-- existing AppSidebar (src/components/layout/AppSidebar.tsx) -->
+  <div style="background:var(--sidebar);border-right:1px solid var(--border);padding:8px 0">
+    <div style="padding:10px 14px;font-weight:700">PulseTrack</div>
+    <div class="navitem">🗂️ Projects</div>
+    <div class="navitem">✅ My Tasks</div>
+    <div class="navitem on">💬 Chat <span class="nb">7</span></div>
+    <div style="border-top:1px solid var(--border);margin:8px 0"></div>
+    <div class="navitem" style="color:var(--muted-foreground)">▸ CARIS project nav…</div>
+  </div>
+  <div style="position:relative;background:var(--background)">
+    <div style="display:flex;justify-content:flex-end;padding:8px 12px;gap:10px;border-bottom:1px solid var(--border)">
+      <span style="color:var(--muted-foreground)">🔔 <span style="font-size:11px">notification bell (unchanged)</span></span>
+    </div>
+    <div class="center" style="height:170px"><div>Chat opens here in the main area at route <code style="background:var(--accent);padding:2px 6px;border-radius:5px">/chat</code><br>
+      <span style="font-size:12px;color:var(--muted-foreground)">New nav item in existing AppSidebar · unread badge separate from 🔔 bell</span></div></div>
+  </div>
+</div></div>
+
+<!-- ============ FILLED ============ -->
+<div class="state-label">1 · Filled — conversation selected, live thread</div>
+<div class="frame">
+  <div class="app">
+    <!-- nav rail -->
+    <div class="rail">
+      <div class="ic">▦</div>
+      <div class="ic active">💬<span class="pill">7</span></div>
+      <div class="ic">🔔</div>
+      <div class="ic" style="margin-top:auto">🙂</div>
+    </div>
+    <!-- sidebar -->
+    <div class="side">
+      <header><b>Chat</b><button class="btn primary">+ New</button></header>
+      <div class="search">Search people &amp; channels…</div>
+      <div class="convos">
+        <div class="grp">Channels <span class="add">+</span></div>
+        <div class="convo">
+          <div class="av"><span class="hash">#</span></div>
+          <div class="cmeta"><div class="top"><span class="nm"># logistics-ops</span><span class="tm">14m</span></div>
+            <div class="pre">Tuan: shipment ETA moved to Fri</div></div>
+          <span class="cbadge">3</span>
+        </div>
+        <div class="convo">
+          <div class="av"><span class="hash">#</span></div>
+          <div class="cmeta"><div class="top"><span class="nm"># qa-releases</span><span class="tm">3h</span></div>
+            <div class="pre">Lan: regression suite green ✅</div></div>
+          <span class="cbadge">4</span>
+        </div>
+        <div class="grp">Direct Messages <span class="add">+</span></div>
+        <div class="convo sel">
+          <div class="av">MK<span class="dot on"></span></div>
+          <div class="cmeta"><div class="top"><span class="nm">Mai Khanh</span><span class="tm">2m</span></div>
+            <div class="pre">Sounds good — pushing the fix now</div></div>
+        </div>
+        <div class="convo">
+          <div class="av">DP<span class="dot off"></span></div>
+          <div class="cmeta"><div class="top"><span class="nm">Duc Phan</span><span class="tm">1h</span></div>
+            <div class="pre">You: thanks!</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- thread -->
+    <div class="thread">
+      <div class="thead">
+        <div class="av" style="width:30px;height:30px">MK<span class="dot on"></span></div>
+        <div><div style="font-weight:600">Mai Khanh</div><div class="sub">Online</div></div>
+      </div>
+      <div class="tbody">
+        <div class="loadmore">↑ Load older messages</div>
+        <div class="daysep">Today</div>
+        <!-- grouped run: 3 consecutive from Mai Khanh — avatar + name shown once -->
+        <div class="group them">
+          <div class="av">MK</div>
+          <div class="stack"><div class="who">Mai Khanh</div>
+            <div class="bubble">Did you get a chance to look at the booking bug? 🐛</div>
+            <div class="bubble">It's blocking the release</div>
+            <div class="bubble">Screenshot for reference:</div>
+            <div class="imgatt">🖼️<div class="copy">⧉ Copy</div></div>
+            <div class="stamp">09:41 – 09:43</div></div>
+        </div>
+        <!-- grouped run: 2 consecutive from me — no avatar/name repeat -->
+        <div class="group me">
+          <div class="stack">
+            <div class="bubble">Yep — root cause is the token expiry check.</div>
+            <div class="bubble">Pushing the fix now <span class="edited">(edited)</span></div>
+            <div class="stamp">09:44 · <span class="tick">✓✓ Read</span></div></div>
+        </div>
+        <div class="typing"><i></i><i></i><i></i> Mai Khanh is typing…</div>
+      </div>
+      <div class="composer">
+        <div class="pastehint">Paste an image (⌘V) to attach · drag &amp; drop supported</div>
+        <div class="pill-input">
+          <div class="cinput">Message Mai Khanh…</div>
+          <span class="gi">🙂</span>
+          <span class="gi">🖼️</span>
+          <span class="gi">📎</span>
+          <span class="gi send">➤</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MESSAGE STATES ============ -->
+<div class="state-label">2 · Message states — sending / sent / read / edited / deleted / attachment</div>
+<div class="frame"><div style="padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--background)">
+  <div class="group me"><div class="stack"><div class="bubble sending">Sending this one…</div><div class="stamp">now · sending…</div></div></div>
+  <div class="group me"><div class="stack"><div class="bubble">Delivered message</div><div class="stamp">09:50 · <span class="tick">✓ Sent</span></div></div></div>
+  <div class="group me"><div class="stack"><div class="bubble">Seen message</div><div class="stamp">09:51 · <span class="tick">✓✓ Read</span></div></div></div>
+  <div class="group me"><div class="stack"><div class="bubble">Edited message <span class="edited">(edited)</span></div><div class="stamp">09:52 · ✓✓ Read</div></div></div>
+  <div class="group me"><div class="stack"><div class="bubble deleted">🚫 This message was deleted</div><div class="stamp">09:53</div></div></div>
+  <div class="group them"><div class="av">DP</div><div class="stack"><div class="who">Duc Phan</div>
+    <div class="bubble">Image → renders inline, hover to copy:</div>
+    <div class="imgatt">🖼️<div class="copy">⧉ Copy</div></div>
+    <div class="bubble">Non-image file → download chip, not shown inline:</div>
+    <div class="att"><div class="fi">📄</div><div>chat-spec.pdf<div style="font-size:11px;color:var(--muted-foreground)">1.2 MB · click to download</div></div></div>
+    <div class="stamp">09:54</div></div></div>
+  <p style="color:var(--muted-foreground);font-size:12px;margin:2px 0 0">Images (png/jpg/gif/webp) display inline + right-click/⧉ copy + paste-to-send. All other MIME types render as the download chip only. Hover own message → edit / delete (omitted from static mock).</p>
+</div></div>
+
+<!-- ============ EMPTY ============ -->
+<div class="state-label">3 · Empty — no conversations / no messages</div>
+<div class="frame"><div class="app">
+  <div class="rail"><div class="ic">▦</div><div class="ic active">💬</div><div class="ic">🔔</div></div>
+  <div class="side">
+    <header><b>Chat</b><button class="btn primary">+ New</button></header>
+    <div class="search">Search people &amp; channels…</div>
+    <div class="center"><div><div class="big">💬</div>No conversations yet<br><span style="font-size:12px">Start a DM or create a channel</span></div></div>
+  </div>
+  <div class="thread"><div class="center"><div><div class="big">✉️</div>No messages yet<br><span style="font-size:12px">Say hello to start the conversation</span></div></div>
+    <div class="composer"><div class="pill-input"><div class="cinput">Message…</div><span class="gi">🙂</span><span class="gi">🖼️</span><span class="gi">📎</span><span class="gi send">➤</span></div></div>
+  </div>
+</div></div>
+
+<!-- ============ LOADING ============ -->
+<div class="state-label">4 · Loading — conversations + thread skeleton</div>
+<div class="frame"><div class="app">
+  <div class="rail"><div class="ic">▦</div><div class="ic active">💬</div><div class="ic">🔔</div></div>
+  <div class="side">
+    <header><b>Chat</b><button class="btn primary">+ New</button></header>
+    <div class="search">Search…</div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:10px;align-items:center"><div class="av"></div><div style="flex:1"><div class="skel" style="width:60%"></div><div class="skel" style="width:85%;margin-top:6px"></div></div></div>
+      <div style="display:flex;gap:10px;align-items:center"><div class="av"></div><div style="flex:1"><div class="skel" style="width:50%"></div><div class="skel" style="width:75%;margin-top:6px"></div></div></div>
+      <div style="display:flex;gap:10px;align-items:center"><div class="av"></div><div style="flex:1"><div class="skel" style="width:55%"></div><div class="skel" style="width:80%;margin-top:6px"></div></div></div>
+    </div>
+  </div>
+  <div class="thread"><div class="center"><div><div class="spin"></div>Loading messages…</div></div></div>
+</div></div>
+
+<!-- ============ ERROR ============ -->
+<div class="state-label">5 · Error — thread failed to load</div>
+<div class="frame"><div class="app">
+  <div class="rail"><div class="ic">▦</div><div class="ic active">💬</div><div class="ic">🔔</div></div>
+  <div class="side">
+    <header><b>Chat</b><button class="btn primary">+ New</button></header>
+    <div class="search">Search…</div>
+    <div class="convos"><div class="convo sel"><div class="av">MK<span class="dot off"></span></div><div class="cmeta"><div class="top"><span class="nm">Mai Khanh</span></div><div class="pre">—</div></div></div></div>
+  </div>
+  <div class="thread"><div class="center"><div class="errbox">⚠️ Couldn't load messages<br><span style="font-size:12px">Check your connection</span><br><button class="btn" style="margin-top:8px">Retry</button></div></div>
+    <div class="composer"><div class="pill-input" style="opacity:.5"><div class="cinput">Reconnecting…</div><span class="gi">🙂</span><span class="gi">🖼️</span><span class="gi">📎</span><span class="gi send">➤</span></div></div>
+  </div>
+</div></div>
+
+<!-- ============ SEARCH / NEW CONVERSATION OVERLAY ============ -->
+<div class="state-label">6 · New-conversation overlay — search ALL people/channels (incl. ones you've never talked to)</div>
+<div class="frame"><div class="app overlay">
+  <!-- app dimmed behind -->
+  <div class="rail"><div class="ic">▦</div><div class="ic active">💬</div><div class="ic">🔔</div></div>
+  <div class="side"><header><b>Chat</b><button class="btn primary">+ New</button></header><div class="search">Search…</div></div>
+  <div class="thread"></div>
+  <!-- overlay modal -->
+  <div class="backdrop">
+    <div class="modal">
+      <div class="m-in">🔍 <input value="lo" placeholder="Search people or channels…"><span class="esc">Esc</span></div>
+      <div class="tab"><span class="on">All</span><span>People</span><span>Channels</span></div>
+      <div class="m-body">
+        <div class="res-h">People</div>
+        <div class="convo"><div class="av">LA<span class="dot on"></span></div>
+          <div class="cmeta"><div class="top"><span class="nm">Long Anh</span></div><div class="pre">Logistics · never messaged</div></div>
+          <span class="go">Message</span></div>
+        <div class="convo"><div class="av">LO<span class="dot off"></span></div>
+          <div class="cmeta"><div class="top"><span class="nm">Loan Tran</span></div><div class="pre">Finance · offline</div></div>
+          <span class="go">Message</span></div>
+        <div class="res-h">Channels</div>
+        <div class="convo"><div class="av"><span class="hash">#</span></div>
+          <div class="cmeta"><div class="top"><span class="nm"># logistics-ops</span></div><div class="pre">12 members · joined</div></div>
+          <span class="go">Open</span></div>
+        <div class="convo"><div class="av"><span class="hash">#</span></div>
+          <div class="cmeta"><div class="top"><span class="nm"># logistics-planning</span></div><div class="pre">8 members</div></div>
+          <span class="go">Join</span></div>
+      </div>
+      <div class="create"><div class="plus">+</div><div><div style="font-weight:600">Create channel “lo…”</div><div style="font-size:12px;color:var(--muted-foreground)">or start a group DM</div></div></div>
+    </div>
+  </div>
+</div></div>
+<div class="state-label">6b · Overlay — no match</div>
+<div class="frame"><div class="app overlay">
+  <div class="rail"><div class="ic">▦</div><div class="ic active">💬</div><div class="ic">🔔</div></div>
+  <div class="side"><header><b>Chat</b><button class="btn primary">+ New</button></header><div class="search">Search…</div></div>
+  <div class="thread"></div>
+  <div class="backdrop"><div class="modal">
+    <div class="m-in">🔍 <input value="zzz" placeholder="Search people or channels…"><span class="esc">Esc</span></div>
+    <div class="m-body"><div class="center" style="height:150px"><div><div class="big">🕳️</div>No people or channels match “zzz”</div></div></div>
+    <div class="create"><div class="plus">+</div><div><div style="font-weight:600">Create channel “zzz”</div></div></div>
+  </div></div>
+</div></div>
+
+<div class="note" style="padding-top:18px"><p>Reactions UI intentionally omitted (deferred with backend). Nav-rail chat icon shows the unread pill (7) separate from the 🔔 notification bell.</p></div>
+
+</body>
+</html>

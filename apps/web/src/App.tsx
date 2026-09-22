@@ -19,6 +19,7 @@ import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { WikiPage } from './pages/WikiPage';
 import { MyTasksPage } from './pages/MyTasksPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { ChatPage } from './pages/ChatPage';
 import { PlannerPage } from './pages/PlannerPage';
 import { WbsPage } from './pages/WbsPage';
 import { ReportPage } from './pages/ReportPage';
@@ -38,6 +39,7 @@ function App() {
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/my-tasks" element={<MyTasksPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/chat" element={<ChatPage />} />
         <Route path="/projects/:projectPrefix/dashboard" element={<ProjectDashboardPage />} />
         <Route path="/projects/:projectPrefix/planner" element={<PlannerPage />} />
         <Route path="/projects/:projectPrefix/wbs" element={<WbsPage />} />
