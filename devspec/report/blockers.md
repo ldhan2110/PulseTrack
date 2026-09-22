@@ -97,3 +97,25 @@ To close: log in as an EXTERNAL user, open Profile from the sidebar, and confirm
 name edit + avatar upload + change-password all save and reflect in the sidebar
 without reload. Needs an EXTERNAL account (invite→set-password, or a seeded
 argon2 user). See improve/testing.md for the missing fixture.
+
+## sidebar-permission-gating — §3 live visual verify not runnable (env, non-blocking to logic)
+_logged: 2026-09-22 by worker-cc_
+
+**Section**: 3. Live visual check — `Verify: /devspec-verify sidebar-permission-gating`
+**Status**: §1 + §2 complete and verified; §3 could not run in this environment.
+
+**Why §3 can't run now**
+1. App not running — web:5173 and api:3000 both down; devspec-verify never fakes a pass against a dead server.
+2. No mockups — this change captured a lightweight `ui.md` (no `mockups/*.html`), so the skill's core app↔mockup style-diff rung is N/A; §3 is a presence/absence walk, not a pixel diff.
+3. No restricted-role fixture — observing items hide requires the test account in a NON-system role with selective `view` boxes off. `anle` (improve/testing.md) logs in via Keycloak and is effectively admin/system → `can()` returns true → sees every item, so hiding can't be observed without first creating a custom role (bugs.view/wiki.view off) and assigning it in a project.
+
+**Implementation is complete and logic-proven** (not blocked on code):
+- §1 `pnpm --filter @pm/web build && --filter @pm/api build` → clean (wiki area compiles both sides; RolesPermissionsTab auto-renders the new Wiki row via PERMISSION_AREAS).
+- §2 `vitest run AppSidebar` → 7/7 green against the REAL `PROJECT_NAV_ITEMS` map: Bugs hides on `bugs.view=false`, Wiki hides on `wiki.view=false`, Project Planner collapses when planner+wbs both off, shows only WBS when planner off/wbs on, system role shows all, no-area leaf always shown, source not mutated.
+- 8 full-suite web test failures confirmed PRE-EXISTING (identical on clean tree with this change stashed) — unrelated.
+
+**To resolve (human)**
+1. Start the app: `pnpm dev:web` + `pnpm dev:api` (see improve/testing.md — web http://localhost:5173, login anle / acbd@).
+2. In a project's Settings → Roles & Permissions, create/select a NON-system role, uncheck `Bugs.view` and `Wiki.view` (and both `Planner.view`+`WBS.view` to test parent collapse), save; assign `anle` that role.
+3. Re-run `/devspec-verify sidebar-permission-gating` (or eyeball): Bugs + Wiki absent from sidebar, Project Planner gone when planner+wbs off; an admin/system user still sees the full list; collapsed sidebar shows the same reduced set.
+4. On pass: tick §3.1 `[x]` in `tasks.md` AND set board `status: blocked → pending` (worker finishes + archives) — or mark `done` directly since §1/§2 are committed.

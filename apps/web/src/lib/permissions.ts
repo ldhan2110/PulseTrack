@@ -19,6 +19,7 @@ export interface RolePermissions {
   report: PermissionSet;
   wbs: PermissionSet;
   planner: PermissionSet;
+  wiki: PermissionSet;
   [key: string]: PermissionSet;
 }
 
@@ -39,6 +40,7 @@ export const PERMISSION_AREAS: { key: PermissionArea; label: string }[] = [
   { key: 'report', label: 'Report' },
   { key: 'wbs', label: 'WBS' },
   { key: 'planner', label: 'Planner' },
+  { key: 'wiki', label: 'Wiki' },
 ];
 
 export const PERMISSION_ACTIONS: PermissionAction[] = ['view', 'create', 'update', 'delete'];

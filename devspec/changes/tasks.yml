@@ -113,3 +113,11 @@ changes:
     owner: "worker-cc"
     archived: archive/external-profile
     notes: "All 8 sections done. API: build clean + 125 tests green (12 new: EXTERNAL name/avatar/password update, INTERNAL 403 gating, wrong-pw 401, /users/me secret-strip). Reused projects avatar multer verbatim + AuthService argon2 helpers (auth.module already exported AuthService, users.module already imported AuthModule — §1.1/§1.2 pre-satisfied). Name trimmed+validated in service (not DTO @Transform) to close whitespace-only @IsNotEmpty bypass. Web build clean; ProfileModal reuses shadcn Dialog/Avatar/Input/Label/Button; AppSidebar footer Profile trigger + avatar fallback keycloak?.imgUrl ?? user?.imageUrl. UserProfile lives in AuthProvider.tsx (not types.ts as spec guessed) — added userType + exposed setUser there; also added userType to api.ts AuthUser. §8 verify PARTIAL: INTERNAL read-only path live-PASS via anle (agent-browser, verify/profile-internal.png); EXTERNAL editable path NOT live-verified (no external account in env) — unit-proven + shared component; deferred to human per user ('skip, verify later'), logged report/blockers.md."
+  sidebar-permission-gating:
+    title: Gate project sidebar items by role view permission + add `wiki` area
+    tasks_md: changes/sidebar-permission-gating/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "§1+§2 done & verified (web+api build clean; AppSidebar unit 7/7 on real nav map; wiki area added web+api). §3 live /devspec-verify NOT runnable: app down + no mockups + needs a non-system role fixture (anle is admin). Impl complete & logic-proven. See report/blockers.md — human starts app, sets a restricted role, re-verifies, then tick §3 + done."

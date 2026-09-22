@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec — sidebar-permission-gating</title>
+<style>
+  :root { --bg:#f7f7f9; --fg:#1c1c22; --muted:#6b7280; --card:#fff; --border:#e3e3e8;
+    --accent:#4f46e5; --ok:#15803d; --okbg:#dcfce7; --bad:#b91c1c; --badbg:#fee2e2;
+    --code:#f1f1f5; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:900px; margin:0 auto; padding:32px 20px 80px; }
+  header h1 { margin:0 0 4px; font-size:24px; }
+  header .sub { color:var(--muted); font-size:14px; }
+  nav.toc { position:sticky; top:0; background:var(--bg); padding:12px 0; margin:16px 0;
+    border-bottom:1px solid var(--border); font-size:13px; z-index:5; }
+  nav.toc a { color:var(--accent); text-decoration:none; margin-right:14px; white-space:nowrap; }
+  section { background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:20px 24px; margin:18px 0; }
+  section h2 { margin:0 0 12px; font-size:18px; border-bottom:2px solid var(--accent);
+    padding-bottom:6px; display:inline-block; }
+  h3 { font-size:15px; margin:16px 0 6px; }
+  h4 { font-size:13px; margin:10px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  pre { background:var(--code); padding:14px; border-radius:8px; overflow-x:auto;
+    font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  code { background:var(--code); padding:1px 5px; border-radius:4px;
+    font:13px ui-monospace,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin:8px 0; }
+  th,td { border:1px solid var(--border); padding:6px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--code); }
+  ul { margin:6px 0; padding-left:22px; }
+  li { margin:3px 0; }
+  .pill { display:inline-block; font-size:11px; padding:1px 8px; border-radius:999px;
+    background:var(--code); color:var(--muted); margin-right:6px; }
+  .pill.status { background:#fef9c3; color:#854d0e; }
+  .layer { display:inline-block; font-size:10px; font-weight:700; padding:1px 6px;
+    border-radius:4px; margin-right:6px; vertical-align:middle; }
+  .l-frontend { background:#dbeafe; color:#1e40af; }
+  .l-backend  { background:#e0e7ff; color:#3730a3; }
+  .l-test     { background:#dcfce7; color:#166534; }
+  .verify { color:var(--muted); font-size:13px; margin:6px 0 2px; }
+  .verify code { color:var(--fg); }
+  .banner { border-radius:8px; padding:12px 16px; font-weight:600; }
+  .banner.ok { background:var(--okbg); color:var(--ok); }
+  .banner.bad { background:var(--badbg); color:var(--bad); }
+  .note { color:var(--muted); font-size:13px; }
+  .chk { color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>sidebar-permission-gating</h1>
+  <div class="sub">Show/hide project sidebar items by the current role's <code>view</code> permission</div>
+</header>
+
+<nav class="toc">
+  <a href="#context">Context</a>
+  <a href="#proposal">Proposal</a>
+  <a href="#arch">Architecture</a>
+  <a href="#impact">Impact Area</a>
+  <a href="#backend">Backend</a>
+  <a href="#frontend">Frontend</a>
+  <a href="#tasks">Tasks</a>
+  <a href="#coverage">Coverage</a>
+  <a href="#board">Board</a>
+</nav>
+
+<section id="context">
+  <h2>Context</h2>
+  <p>
+    <span class="pill">id: sidebar-permission-gating</span>
+    <span class="pill status">status: not yet on board</span>
+    <span class="pill">depends_on: []</span>
+    <span class="pill">skills: [frontend-design]</span>
+  </p>
+  <p class="note">Registered on the board by <code>/devspec-plan</code> after approval.</p>
+</section>
+
+<section id="proposal">
+  <h2>Proposal</h2>
+  <h3>Why</h3>
+  <p>RBAC already exists: each role carries per-area <code>view/create/update/delete</code>,
+  edited in <strong>Settings → Roles &amp; Permissions</strong> (<code>RolesPermissionsTab</code>),
+  and the API enforces it on every route (<code>@RequirePermission</code>). But the left project
+  sidebar (<code>AppSidebar</code>) renders every nav item for every member regardless of
+  <code>view</code> — a member with <code>bugs.view = false</code> still sees the Bugs link.</p>
+  <h3>What it delivers</h3>
+  <p>Each project nav item is shown only when the member's role grants <code>view</code> on that
+  item's area; otherwise hidden. The "checked view box" becomes the show/hide switch. System
+  roles keep seeing everything (they bypass all checks).</p>
+  <h3>Scope</h3>
+  <h4>In</h4>
+  <ul>
+    <li>Gate every <code>PROJECT_NAV_ITEMS</code> entry by its area's <code>view</code> via existing <code>usePermissions().can()</code>.</li>
+    <li>Map each nav item to an area; "Project Planner" parent shown if any child viewable.</li>
+    <li>Add a new <code>wiki</code> permission area (web + api) so Wiki becomes gate-able + gets a view checkbox.</li>
+  </ul>
+  <h4>Out</h4>
+  <ul>
+    <li>No change to top-level nav (My Tasks, Chat, project switcher, footer).</li>
+    <li>No change to route guards / API enforcement — sidebar visibility only, not the security boundary.</li>
+    <li>No backfill of existing roles' stored JSON for <code>wiki</code> (accepted fail-closed default).</li>
+    <li>No checkbox-grid UI work — <code>RolesPermissionsTab</code> auto-renders the new area.</li>
+  </ul>
+</section>
+
+<section id="arch">
+  <h2>Architecture</h2>
+  <p class="note">ASCII flow (archify not used — single linear flow).</p>
+<pre><code>Member opens project
+        │
+        ▼
+AppSidebar (activeProjectId from uiStore)
+        │  usePermissions(activeProjectId).can(area,'view')
+        ▼
+filterNavByPermission(PROJECT_NAV_ITEMS, can)
+        │        ├─ leaf: show if !area || can(area,'view')
+        │        └─ parent: show if any child survives
+        ▼
+render surviving items only
+        ▲
+        │ role.permissions[area].view   (isSystem ⇒ always true)
+   RolesPermissionsTab checkbox grid ── writes ──▶ role.permissions (JSON)
+        ▲
+   PERMISSION_AREAS (now includes `wiki`)</code></pre>
+</section>
+
+<section id="impact">
+  <h2>Impact Area</h2>
+  <h3>Decision Defaults</h3>
+  <table>
+    <tr><th>Gray area</th><th>Default the worker takes</th></tr>
+    <tr><td>Sidebar render while members still loading</td><td><code>can</code> returns <code>false</code> (fail closed) → items hidden until load resolves; matches <code>PermissionGate</code>. No spinner.</td></tr>
+    <tr><td>No <code>activeProjectId</code></td><td><code>PROJECT_NAV_ITEMS</code> block isn't rendered anyway; leave that branch untouched.</td></tr>
+    <tr><td>System role member</td><td><code>can</code> returns true for all → sees every item incl. Wiki.</td></tr>
+    <tr><td>Existing custom role missing <code>wiki</code> key</td><td>Fail-closed hide Wiki until admin re-saves the role. No backfill.</td></tr>
+    <tr><td>Project Planner with all children hidden</td><td>Hide the parent entirely (no empty expandable).</td></tr>
+    <tr><td>Collapsed-sidebar / tooltip</td><td>Filtering runs before render → collapsed mode shows same reduced set; no separate logic.</td></tr>
+    <tr><td>New <code>wiki</code> preset defaults</td><td>SYSTEM=all true, DEFAULT_MEMBER=view only, EMPTY=all false.</td></tr>
+  </table>
+  <h3>Blast Radius</h3>
+  <ul>
+    <li><code>apps/web/src/components/layout/AppSidebar.tsx</code> — <code>area</code> on <code>NavItem</code>, <code>usePermissions</code>, filter (+ extract <code>filterNavByPermission</code>).</li>
+    <li><code>apps/web/src/lib/permissions.ts</code> — <code>wiki</code> in <code>RolePermissions</code> + <code>PERMISSION_AREAS</code>.</li>
+    <li><code>apps/api/src/auth/permissions.ts</code> — <code>wiki</code> in <code>RolePermissions</code> + 3 presets.</li>
+    <li>Auto-affected, no edit: <code>RolesPermissionsTab</code>, <code>PermissionGate</code>/<code>hasPermission</code>.</li>
+    <li>Not touched: API <code>@RequirePermission</code> guards, DB schema/migrations, routing.</li>
+  </ul>
+  <h3>Risk</h3>
+  <ul>
+    <li><strong>Reversibility:</strong> high — pure additive.</li>
+    <li><strong>Risk:</strong> low-medium — main hazard is over-hiding (wrong map entry / stale role JSON); mitigated by unit test + live verify. Data access unchanged → no security regression.</li>
+  </ul>
+</section>
+
+<section id="backend">
+  <h2>Backend</h2>
+  <p>One file: <code>apps/api/src/auth/permissions.ts</code>. Add <code>wiki: PermissionSet;</code> to
+  <code>RolePermissions</code> and a <code>wiki</code> entry to each preset:</p>
+  <table>
+    <tr><th>Preset</th><th>wiki value</th></tr>
+    <tr><td><code>SYSTEM_ROLE_PERMISSIONS</code></td><td>ALL_TRUE</td></tr>
+    <tr><td><code>DEFAULT_MEMBER_PERMISSIONS</code></td><td>VIEW_ONLY</td></tr>
+    <tr><td><code>EMPTY_PERMISSIONS</code></td><td>ALL_FALSE</td></tr>
+  </table>
+  <p class="note">No new endpoint, no DB migration (permissions is a JSON column). <code>hasPermission</code> is already generic over the area string.</p>
+</section>
+
+<section id="frontend">
+  <h2>Frontend</h2>
+  <p><code>ui.md</code> — no new visual design; existing items hidden/shown by role.</p>
+<pre><code>FULL (system/admin)        GATED (bugs/wiki/planner+wbs off)
+┌──────────────────┐       ┌──────────────────┐
+│ Dashboard        │       │ Dashboard        │
+│ ▸ Project Planner│       │ Backlog          │   ← Planner gone
+│   Scope Def.     │       │ Sprints          │
+│   WBS            │       │ Test Cases       │
+│ Backlog          │       │ Test Executions  │
+│ Sprints          │       │ Reports          │   ← Bugs gone
+│ Test Cases       │       │ Members & Groups │   ← Wiki gone
+│ Test Executions  │       │ Settings         │
+│ Bugs             │       └──────────────────┘
+│ Reports          │
+│ Members & Groups │       Loading → gated items hidden
+│ Wiki             │       (fail closed), then resolve.
+│ Settings         │
+└──────────────────┘</code></pre>
+  <p class="note">Reuse existing sidebar render only. Untouched: My Tasks, Chat, switcher, footer. Collapsed mode shows the same reduced set.</p>
+  <h3>Nav item → area map</h3>
+  <table>
+    <tr><th>Nav item</th><th>area (view)</th></tr>
+    <tr><td>Dashboard</td><td>dashboard</td></tr>
+    <tr><td>Project Planner</td><td><em>parent — any child</em></td></tr>
+    <tr><td>↳ Scope Definition</td><td>planner</td></tr>
+    <tr><td>↳ WBS</td><td>wbs</td></tr>
+    <tr><td>Backlog</td><td>tasks</td></tr>
+    <tr><td>Sprints</td><td>sprints</td></tr>
+    <tr><td>Test Cases</td><td>testCases</td></tr>
+    <tr><td>Test Executions</td><td>testExecutions</td></tr>
+    <tr><td>Bugs</td><td>bugs</td></tr>
+    <tr><td>Reports</td><td>report</td></tr>
+    <tr><td>Members &amp; Groups</td><td>members</td></tr>
+    <tr><td>Wiki</td><td>wiki <strong>(new)</strong></td></tr>
+    <tr><td>Settings</td><td>projectSettings</td></tr>
+  </table>
+</section>
+
+<section id="tasks">
+  <h2>Tasks</h2>
+
+  <h3>1. Add <code>wiki</code> permission area <span class="pill">req-4</span></h3>
+  <div><span class="chk">☐</span> 1.1 <span class="layer l-frontend">frontend</span> <code>lib/permissions.ts</code> — <code>wiki: PermissionSet;</code> in <code>RolePermissions</code> + <code>{ key:'wiki', label:'Wiki' }</code> in <code>PERMISSION_AREAS</code></div>
+  <div><span class="chk">☐</span> 1.2 <span class="layer l-backend">backend</span> <code>api/auth/permissions.ts</code> — <code>wiki</code> in <code>RolePermissions</code> + 3 presets (ALL_TRUE / VIEW_ONLY / ALL_FALSE)</div>
+  <div class="verify">Verify: <code>pnpm --filter @pm/web build &amp;&amp; pnpm --filter @pm/api build</code></div>
+
+  <h3>2. Gate sidebar nav items <span class="pill">req-1</span><span class="pill">req-2</span><span class="pill">req-3</span></h3>
+  <div><span class="chk">☐</span> 2.1 <span class="layer l-frontend">frontend</span> <code>AppSidebar.tsx</code> — <code>area?: PermissionArea</code> on <code>NavItem</code>, set per map; parent Planner has no <code>area</code></div>
+  <div><span class="chk">☐</span> 2.2 <span class="layer l-frontend">frontend</span> pure <code>filterNavByPermission(items, can)</code> — leaf kept if <code>!area || can(area,'view')</code>; parent kept if ≥1 child remains</div>
+  <div><span class="chk">☐</span> 2.3 <span class="layer l-frontend">frontend</span> call <code>usePermissions(activeProjectId)</code>, render filtered list; top-level nav untouched</div>
+  <div><span class="chk">☐</span> 2.4 <span class="layer l-test">test</span> <code>AppSidebar.test.tsx</code> — bugs hidden on deny; all shown for system; Planner hidden when planner+wbs denied; Planner shows only WBS when planner off / wbs on; no-area item always shown</div>
+  <div class="verify">Verify: <code>pnpm --filter @pm/web test -- AppSidebar</code></div>
+
+  <h3>3. Live visual check <span class="pill">req-1</span><span class="pill">req-3</span><span class="pill">req-4</span></h3>
+  <div><span class="chk">☐</span> 3.1 <span class="layer l-frontend">frontend</span> reuse existing render only; confirm collapsed mode shows reduced set</div>
+  <div class="verify">Verify: <code>/devspec-verify sidebar-permission-gating</code> — restricted role (bugs/wiki off) → those items absent; admin sees full list; Planner collapses when planner+wbs off</div>
+</section>
+
+<section id="coverage">
+  <h2>Coverage</h2>
+  <div class="banner ok">✓ Every requirement is covered by at least one task section.</div>
+  <table>
+    <tr><th>Requirement</th><th>Covered by</th></tr>
+    <tr><td>req-1 sidebar items gated by view</td><td>§2</td></tr>
+    <tr><td>req-2 correct nav-to-area mapping</td><td>§2</td></tr>
+    <tr><td>req-3 parent visible when any child is</td><td>§2, §3</td></tr>
+    <tr><td>req-4 wiki permission area exists</td><td>§1, §3</td></tr>
+  </table>
+  <p class="note">No orphan task sections (every section maps to a req).</p>
+</section>
+
+<section id="board">
+  <h2>Board</h2>
+  <p>Not yet registered. <code>/devspec-plan</code> adds:</p>
+<pre><code>sidebar-permission-gating:
+  title: Gate project sidebar items by role view permission + add `wiki` area
+  depends_on: []
+  skills: [frontend-design]
+  status: pending</code></pre>
+  <p class="note">No dependency on other in-flight changes — board scan found none touching sidebar/permission gating.</p>
+</section>
+
+</div>
+</body>
+</html>

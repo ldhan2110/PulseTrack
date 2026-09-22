@@ -46,35 +46,58 @@ import { useChatUnread } from '@/hooks/useChat';
 import { useAuth } from '@/auth/useAuth';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { useUiStore } from '@/store/uiStore';
+import { usePermissions } from '@/hooks/usePermissions';
+import type { PermissionArea } from '@/lib/permissions';
 
 interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
+  /** Permission area gating this item's `view`. Unset = always visible. */
+  area?: PermissionArea;
   children?: NavItem[];
 }
 
-const PROJECT_NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard' },
+export const PROJECT_NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, path: 'dashboard', area: 'dashboard' },
   {
     label: 'Project Planner',
     icon: Target,
     path: 'planner',
     children: [
-      { label: 'Scope Definition', icon: ScanSearch, path: 'planner' },
-      { label: 'WBS', icon: GanttChart, path: 'wbs' },
+      { label: 'Scope Definition', icon: ScanSearch, path: 'planner', area: 'planner' },
+      { label: 'WBS', icon: GanttChart, path: 'wbs', area: 'wbs' },
     ],
   },
-  { label: 'Backlog', icon: ListTodo, path: 'backlog' },
-  { label: 'Sprints', icon: Zap, path: 'sprints' },
-  { label: 'Test Cases', icon: ClipboardList, path: 'test-cases' },
-  { label: 'Test Executions', icon: Play, path: 'test-executions' },
-  { label: 'Bugs', icon: Bug, path: 'bugs' },
-  { label: 'Reports', icon: BarChart3, path: 'reports' },
-  { label: 'Members & Groups', icon: Users, path: 'members' },
-  { label: 'Wiki', icon: BookOpen, path: 'wiki' },
-  { label: 'Settings', icon: Settings, path: 'settings' },
+  { label: 'Backlog', icon: ListTodo, path: 'backlog', area: 'tasks' },
+  { label: 'Sprints', icon: Zap, path: 'sprints', area: 'sprints' },
+  { label: 'Test Cases', icon: ClipboardList, path: 'test-cases', area: 'testCases' },
+  { label: 'Test Executions', icon: Play, path: 'test-executions', area: 'testExecutions' },
+  { label: 'Bugs', icon: Bug, path: 'bugs', area: 'bugs' },
+  { label: 'Reports', icon: BarChart3, path: 'reports', area: 'report' },
+  { label: 'Members & Groups', icon: Users, path: 'members', area: 'members' },
+  { label: 'Wiki', icon: BookOpen, path: 'wiki', area: 'wiki' },
+  { label: 'Settings', icon: Settings, path: 'settings', area: 'projectSettings' },
 ];
+
+type CanFn = (area: string, action: string) => boolean;
+
+/**
+ * Keep only nav items the member may `view`. Leaf shown when it has no `area`
+ * or `can(area,'view')`; a parent is kept only if ≥1 of its children survives.
+ * Pure — returns new objects, never mutates PROJECT_NAV_ITEMS.
+ */
+export function filterNavByPermission(items: NavItem[], can: CanFn): NavItem[] {
+  return items.reduce<NavItem[]>((acc, item) => {
+    if (item.children) {
+      const children = item.children.filter((c) => !c.area || can(c.area as string, 'view'));
+      if (children.length > 0) acc.push({ ...item, children });
+      return acc;
+    }
+    if (!item.area || can(item.area as string, 'view')) acc.push(item);
+    return acc;
+  }, []);
+}
 
 function SidebarCollapseButton() {
   const { state, toggleSidebar } = useSidebar();
@@ -129,6 +152,10 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
   // Find active project to get its prefix for URL generation
   const activeProject = projects?.find((p) => p.id === activeProjectId);
   const activeProjectPrefix = activeProject?.prefix ?? activeProjectId ?? '';
+
+  // Gate project nav items by the member's `view` permission (fail closed).
+  const { can } = usePermissions(activeProjectId ?? '');
+  const projectNavItems = filterNavByPermission(PROJECT_NAV_ITEMS, can);
 
   return (
     <Sidebar collapsible="icon">
@@ -296,7 +323,7 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
                 </SidebarGroupLabel>
               )}
               <SidebarMenu>
-                {PROJECT_NAV_ITEMS.map((item) => {
+                {projectNavItems.map((item) => {
                   if (item.children) {
                     const isExpanded = expandedMenus[item.label] ?? false;
                     const childActive = item.children.some(
