@@ -12,12 +12,14 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { AddMembersDto } from './dto/add-members.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { AuthService, INVITE_TOKEN_TTL_MS } from '../auth/auth.service';
 
 @Injectable()
 export class MembersService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private auth: AuthService,
     @InjectQueue('notification-email') private emailQueue: Queue,
   ) {}
 
@@ -136,6 +138,35 @@ export class MembersService {
     });
     if (existingUser) {
       return this.addMember(projectId, { userId: existingUser.id, roleId: dto.roleId });
+    }
+
+    // External customer: PulseTrack owns the password. Provision an
+    // EXTERNAL/INVITED row with no password and email a set-password link.
+    if (dto.external) {
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          username: email.split('@')[0],
+          keycloakId: null,
+          userType: 'EXTERNAL',
+          status: 'INVITED',
+          passwordHash: null,
+        },
+      });
+
+      const member = await this.prisma.projectMember.create({
+        data: { projectId, userId: user.id, roleId: dto.roleId },
+        include: {
+          user: {
+            select: { id: true, email: true, username: true, name: true, imageUrl: true },
+          },
+        },
+      });
+
+      const token = await this.auth.issueSetPasswordToken(user.id, INVITE_TOKEN_TTL_MS);
+      await this.auth.enqueueSetPasswordEmail(email, token);
+
+      return member;
     }
 
     // No user yet: provision a pending row (claimed on first Keycloak login by email).

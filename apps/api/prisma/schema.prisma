@@ -191,6 +191,17 @@ enum AutomationRunStatus {
 // CORE MODELS
 // =====================
 
+enum UserType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  LOCKED
+}
+
 model User {
   id                String    @id @default(cuid())
   keycloakId        String?   @unique // sub from JWT; null = pending invite, claimed on first login
@@ -198,6 +209,11 @@ model User {
   username          String
   name              String?   // Display name from Keycloak user-info.usrNm
   imageUrl          String?   // Avatar URL from Keycloak user-info.imgUrl
+  userType          UserType   @default(INTERNAL) // INTERNAL = Keycloak; EXTERNAL = PulseTrack password
+  passwordHash      String?    // argon2 hash; set only for EXTERNAL, always null for INTERNAL
+  status            UserStatus @default(ACTIVE) // INVITED | ACTIVE | LOCKED
+  pwResetTokenHash  String?    // hash of single-use set-password / reset token; nulled on redeem
+  pwResetTokenExp   DateTime?  // expiry for the above
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

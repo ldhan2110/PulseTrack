@@ -205,10 +205,26 @@ export class ChatService {
     return this.prisma.user.findMany({
       where: {
         id: { not: userId },
+        // Directory scoping: only users who share a project or conversation with
+        // the caller — never the whole user table (external→internal enumeration).
         OR: [
-          { username: { contains: query, mode: 'insensitive' } },
-          { email: { contains: query, mode: 'insensitive' } },
-          { name: { contains: query, mode: 'insensitive' } },
+          {
+            projectMembers: { some: { project: { members: { some: { userId } } } } },
+          },
+          {
+            conversationMemberships: {
+              some: { conversation: { members: { some: { userId } } } },
+            },
+          },
+        ],
+        AND: [
+          {
+            OR: [
+              { username: { contains: query, mode: 'insensitive' } },
+              { email: { contains: query, mode: 'insensitive' } },
+              { name: { contains: query, mode: 'insensitive' } },
+            ],
+          },
         ],
       },
       ...memberUserSelect,
