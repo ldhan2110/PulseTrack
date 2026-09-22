@@ -23,6 +23,7 @@ const isMobile = vi.fn(() => true);
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => isMobile() }));
 vi.mock('./AppSidebar', () => ({ AppSidebar: () => <div data-testid="app-sidebar" /> }));
 vi.mock('@/components/notifications/NotificationBell', () => ({ NotificationBell: () => <div /> }));
+vi.mock('./GlobalSearch', () => ({ GlobalSearch: () => <div /> }));
 vi.mock('../projects/CreateProjectDialog', () => ({ CreateProjectDialog: () => null }));
 vi.mock('@/hooks/useProjects', () => ({ useProjectByPrefix: () => ({ data: undefined }) }));
 vi.mock('@/hooks/useMembershipSync', () => ({ useMembershipSync: () => {} }));

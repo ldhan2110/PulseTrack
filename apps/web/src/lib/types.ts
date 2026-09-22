@@ -1626,3 +1626,20 @@ export interface CreateConversationPayload {
   name?: string;
   memberIds: string[];
 }
+
+export interface GlobalSearchResult {
+  projects: {
+    id: string;
+    name: string;
+    prefix: string | null;
+    avatarUrl: string | null;
+  }[];
+  tasks: {
+    id: string;
+    taskKey: string | null;
+    title: string;
+    projectPrefix: string | null;
+    projectName: string;
+    statusName: string | null;
+  }[];
+}

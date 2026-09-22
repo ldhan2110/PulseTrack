@@ -8,6 +8,7 @@ import { useProjectByPrefix } from '@/hooks/useProjects';
 import { useMembershipSync } from '@/hooks/useMembershipSync';
 import { useTaskSync } from '@/hooks/useTaskSync';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { GlobalSearch } from './GlobalSearch';
 import { useNotificationSync } from '@/hooks/useNotifications';
 
 // 256px expanded, 48px collapsed — per UI-SPEC
@@ -50,13 +51,16 @@ export function ProjectLayout() {
     >
       <AppSidebar onCreateProject={() => setCreateProjectOpen(true)} />
       <SidebarInset className="h-svh min-w-0 overflow-hidden">
-        <div className="flex justify-between px-4 pt-2">
+        <div className="flex items-center gap-2 px-4 pt-2">
           <SidebarTrigger className="md:hidden" aria-label="Open sidebar" />
+          <div className="flex-1 max-w-[360px]">
+            <GlobalSearch />
+          </div>
           <div className="ml-auto">
             <NotificationBell />
           </div>
         </div>
-        <main className={fullWidth ? 'flex-1 min-h-0 px-4 pt-0 pb-4 w-full overflow-auto' : 'flex-1 min-h-0 px-8 pt-1 pb-8 max-w-[1280px] w-full mx-auto overflow-auto'}>
+        <main className={fullWidth ? 'flex-1 min-h-0 px-4 pt-4 pb-4 w-full overflow-auto' : 'flex-1 min-h-0 px-8 pt-4 pb-8 max-w-7xl w-full mx-auto overflow-auto'}>
           <Outlet />
         </main>
       </SidebarInset>

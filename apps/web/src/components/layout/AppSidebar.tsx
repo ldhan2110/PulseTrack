@@ -226,36 +226,41 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
               Projects
             </SidebarGroupLabel>
           )}
-          <SidebarMenu>
-            {(projects ?? []).map((project) => {
-              const projectIdentifier = project.prefix ?? project.id;
-              const isActive = location.pathname.startsWith(`/projects/${projectIdentifier}`);
-              return (
-                <SidebarMenuItem key={project.id}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        aria-label={project.name}
-                        onClick={() => navigate(`/projects/${projectIdentifier}/dashboard`)}
-                        className="cursor-pointer"
-                      >
-                        {project.avatarUrl ? (
-                          <img src={project.avatarUrl} alt={`${project.name} avatar`} className="size-4 shrink-0 rounded" />
-                        ) : (
-                          <FolderKanban className="size-4" />
-                        )}
-                        <span className="truncate">{project.name}</span>
-                      </SidebarMenuButton>
-                    </TooltipTrigger>
-                    {isCollapsed && (
-                      <TooltipContent side="right">{project.name}</TooltipContent>
-                    )}
-                  </Tooltip>
-                </SidebarMenuItem>
-              );
-            })}
+          {/* Projects list — capped height, scrolls internally when overflowing */}
+          <div className={isCollapsed ? undefined : 'max-h-[240px] overflow-y-auto'}>
+            <SidebarMenu>
+              {(projects ?? []).map((project) => {
+                const projectIdentifier = project.prefix ?? project.id;
+                const isActive = location.pathname.startsWith(`/projects/${projectIdentifier}`);
+                return (
+                  <SidebarMenuItem key={project.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          aria-label={project.name}
+                          onClick={() => navigate(`/projects/${projectIdentifier}/dashboard`)}
+                          className="cursor-pointer"
+                        >
+                          {project.avatarUrl ? (
+                            <img src={project.avatarUrl} alt={`${project.name} avatar`} className="size-4 shrink-0 rounded" />
+                          ) : (
+                            <FolderKanban className="size-4" />
+                          )}
+                          <span className="truncate">{project.name}</span>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      {isCollapsed && (
+                        <TooltipContent side="right">{project.name}</TooltipContent>
+                      )}
+                    </Tooltip>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </div>
 
+          <SidebarMenu>
             {/* New Project button */}
             <SidebarMenuItem>
               <Tooltip>

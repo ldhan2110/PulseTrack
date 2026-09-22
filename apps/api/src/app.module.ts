@@ -25,6 +25,7 @@ import { SkillsModule } from './skills/skills.module';
 import { TimeLogsModule } from './time-logs/time-logs.module';
 import { BugAttachmentsModule } from './bug-attachments/bug-attachments.module';
 import { WatchersModule } from './watchers/watchers.module';
+import { SearchModule } from './search/search.module';
 import { SavedFiltersModule } from './saved-filters/saved-filters.module';
 import { NotificationEmailModule } from './notification-email/notification-email.module';
 import { TestModulesModule } from './test-modules/test-modules.module';
@@ -73,6 +74,7 @@ import { ChatModule } from './chat/chat.module';
     TimeLogsModule,
     BugAttachmentsModule,
     WatchersModule,
+    SearchModule,
     SavedFiltersModule,
     NotificationEmailModule,
     TestModulesModule,

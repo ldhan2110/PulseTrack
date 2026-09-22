@@ -1,4 +1,5 @@
 import type {
+  GlobalSearchResult,
   McpToken,
   McpTokenCreated,
   CreateMcpTokenPayload,
@@ -1238,4 +1239,7 @@ export const api = {
     if (!res.ok) throw new Error(`Download failed: ${res.status}`);
     return res.blob();
   },
+
+  globalSearch: (q: string) =>
+    request<GlobalSearchResult>(`/search?q=${encodeURIComponent(q)}`),
 };

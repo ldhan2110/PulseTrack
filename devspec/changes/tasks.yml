@@ -79,6 +79,14 @@ changes:
     owner: "worker-cc"
     archived: archive/chat-delete-conversation
     notes: "All 3 sections pass. §1 api chat tests green (leaveConversation deletes only caller's ConversationMember row). §2 web useChat tests green (cache drop + active-id clear). §3 devspec-verify live PASS (anle@): DM header ⋯ present, channel header none, styled AlertDialog confirm, confirm removed DM from list + cleared pane. pnpm build clean. No mockup → per-property diff skipped; reused shadcn Button/DropdownMenu/AlertDialog. Verify filter names in tasks.md said @pulsetrack/* but real package is @pm/* (used actual). Pre-existing unrelated McpAccessCard.test failure out of scope."
+  global-search:
+    title: Global search palette (Cmd+K) across projects + tasks + capped sidebar projects scroll
+    tasks_md: changes/global-search/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: doing
+    owner: "worker-cc"
+    notes: ""
   chat-members-mentions:
     title: Chat channel usability — DM|Channel create toggle + member multiselect, members panel (add any-member / remove owner-only / leave), @mention autocomplete + colored render + real-time toast (Option A, no schema)
     tasks_md: changes/chat-members-mentions/tasks.md
