@@ -124,11 +124,17 @@ import type {
 } from './types';
 import type { RolePermissions } from './permissions';
 import keycloak from '../auth/keycloak';
+import { externalSession } from '../auth/externalSession';
 
 const API_BASE = '/api';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = keycloak.token;
+// Either the external access token (in memory) or the Keycloak token.
+function currentToken(): string | undefined {
+  return externalSession.getAccessToken() ?? keycloak.token;
+}
+
+async function request<T>(path: string, options?: RequestInit, retried = false): Promise<T> {
+  const token = currentToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
@@ -138,6 +144,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
+    // External session: an expired access token → refresh once, then retry.
+    if (
+      res.status === 401 &&
+      !retried &&
+      !path.startsWith('/auth/') &&
+      externalSession.hasSession()
+    ) {
+      try {
+        await externalSession.refresh();
+        return request<T>(path, options, true);
+      } catch {
+        // fall through to the error below
+      }
+    }
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message || `API error: ${res.status}`);
   }
@@ -146,7 +166,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 async function downloadFile(path: string, params?: Record<string, string>): Promise<void> {
-  const token = keycloak.token;
+  const token = currentToken();
   const sp = new URLSearchParams();
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
@@ -175,7 +195,39 @@ async function downloadFile(path: string, params?: Record<string, string>): Prom
   URL.revokeObjectURL(a.href);
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  name: string | null;
+  imageUrl: string | null;
+  keycloakId: string | null;
+}
+
+export interface AuthLoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUser;
+}
+
 export const api = {
+  // ─── Auth (external email/password) ─────────────────────────────────────────
+  authLogin: (email: string, password: string) =>
+    request<AuthLoginResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  authSetPassword: (token: string, newPassword: string) =>
+    request<AuthLoginResponse>('/auth/set-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
+  authForgotPassword: (email: string) =>
+    request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
   // ─── Projects ──────────────────────────────────────────────────────────────
   getProjects: () => request<ProjectListItem[]>('/projects'),
   createProject: (data: CreateProjectPayload) =>
@@ -191,7 +243,7 @@ export const api = {
   updateProjectSettings: (id: string, data: UpdateSettingsPayload) =>
     request<Project>(`/projects/${id}/settings`, { method: 'PATCH', body: JSON.stringify(data) }),
   uploadProjectAvatar: async (id: string, file: File): Promise<Project> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const formData = new FormData();
     formData.append('file', file);
     const res = await fetch(`${API_BASE}/projects/${id}/avatar`, {
@@ -337,7 +389,7 @@ export const api = {
   uploadBugAttachment: async (projectId: string, bugId: string, file: File, inline = false): Promise<BugAttachment> => {
     const form = new FormData();
     form.append('file', file);
-    const token = keycloak.token;
+    const token = currentToken();
     const url = `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments${inline ? '?inline=true' : ''}`;
     const res = await fetch(url, {
       method: 'POST',
@@ -355,7 +407,7 @@ export const api = {
   getBugAttachmentInlineUrl: (projectId: string, bugId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}/download?inline=true`,
   downloadBugAttachment: async (projectId: string, bugId: string, attachmentId: string): Promise<Blob> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(
       `${API_BASE}/projects/${projectId}/bugs/${bugId}/attachments/${attachmentId}/download`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} },
@@ -464,7 +516,7 @@ export const api = {
 
   // ─── AI Task Generation ────────────────────────────────────────────────────
   generateTasks: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(`${API_BASE}/projects/${projectId}/ai/generate-tasks`, {
       method: 'POST',
       headers: {
@@ -483,7 +535,7 @@ export const api = {
 
   // ─── AI Test Case Generation ──────────────────────────────────────────────
   generateTestCases: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(`${API_BASE}/projects/${projectId}/ai/generate-testcases`, {
       method: 'POST',
       headers: {
@@ -502,7 +554,7 @@ export const api = {
 
   // ─── AI WBS Generation ──────────────────────────────────────────────────
   generateWbs: async (projectId: string, data: FormData): Promise<{ jobId: string }> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(`${API_BASE}/projects/${projectId}/ai/generate-wbs`, {
       method: 'POST',
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -552,7 +604,7 @@ export const api = {
   getAttachments: (projectId: string, taskId: string) =>
     request<Attachment[]>(`/projects/${projectId}/tasks/${taskId}/attachments`),
   uploadAttachment: async (projectId: string, taskId: string, file: File, inline = false): Promise<Attachment> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const formData = new FormData();
     formData.append('file', file);
     const url = `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments${inline ? '?inline=true' : ''}`;
@@ -572,7 +624,7 @@ export const api = {
   getAttachmentDownloadUrl: (projectId: string, taskId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}/download`,
   downloadAttachment: async (projectId: string, taskId: string, attachmentId: string): Promise<Blob> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(
       `${API_BASE}/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}/download`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} },
@@ -771,7 +823,7 @@ export const api = {
   uploadExecutionEvidence: async (projectId: string, executionCaseId: string, file: File): Promise<TestExecutionAttachment> => {
     const form = new FormData();
     form.append('file', file);
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(`${API_BASE}/projects/${projectId}/test-executions/cases/${executionCaseId}/attachments`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -788,7 +840,7 @@ export const api = {
   getExecutionEvidenceDownloadUrl: (projectId: string, attachmentId: string) =>
     `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
   downloadExecutionEvidence: async (projectId: string, attachmentId: string): Promise<Blob> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(
       `${API_BASE}/projects/${projectId}/test-executions/attachments/${attachmentId}/download`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} },
@@ -801,7 +853,7 @@ export const api = {
     executionId: string,
     format: 'html' | 'pdf',
   ): Promise<Blob> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(
       `${API_BASE}/projects/${projectId}/test-executions/${executionId}/report?format=${format}`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} },
@@ -917,7 +969,7 @@ export const api = {
     request<PlannerMessage[]>(`/planner-sessions/${sessionId}/messages?take=${take}&skip=${skip}`),
 
   sendPlannerMessage: async (sessionId: string, content: string, files?: File[]) => {
-    const token = keycloak.token;
+    const token = currentToken();
     const formData = new FormData();
     formData.append('content', content);
     if (files) {
@@ -1213,7 +1265,7 @@ export const api = {
     file: File,
     body?: string,
   ): Promise<Message> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const form = new FormData();
     form.append('file', file);
     if (body) form.append('body', body);
@@ -1232,7 +1284,7 @@ export const api = {
     return res.json() as Promise<Message>;
   },
   downloadChatAttachment: async (id: string): Promise<Blob> => {
-    const token = keycloak.token;
+    const token = currentToken();
     const res = await fetch(`${API_BASE}/chat/attachments/${id}/download`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });

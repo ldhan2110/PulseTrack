@@ -18,7 +18,7 @@ export class UsersController {
   @Get()
   @UseGuards(SystemRolesGuard)
   @SystemRoles('admin')
-  async findAll() {
-    return this.usersService.findAll();
+  async findAll(@Req() req: any) {
+    return this.usersService.findAll(req.user.id);
   }
 }

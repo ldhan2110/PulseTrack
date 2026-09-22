@@ -1,4 +1,4 @@
-import { IsEmail, IsString } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class InviteMemberDto {
   @IsEmail()
@@ -6,4 +6,10 @@ export class InviteMemberDto {
 
   @IsString()
   roleId: string;
+
+  // When true, provision an EXTERNAL (PulseTrack password) customer instead of
+  // a pending Keycloak invite; the invitee gets a set-password link.
+  @IsOptional()
+  @IsBoolean()
+  external?: boolean;
 }

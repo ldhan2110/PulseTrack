@@ -51,11 +51,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     // No keycloakId match: claim a pending invite by email on first login.
+    // Anti-squatting: only INTERNAL rows are claimable. An EXTERNAL row (a
+    // PulseTrack password account) is never claimed or mutated by a Keycloak
+    // token, so an external who occupies ceo@company.com can't capture the
+    // real CEO's Keycloak login. Keeps Blueprint sync internal-only too, since
+    // only INTERNAL rows can be resolved here.
     if (!user && payload.email) {
       const pending = await this.prisma.user.findUnique({
         where: { email: payload.email },
       });
-      if (pending && pending.keycloakId === null) {
+      if (pending && pending.keycloakId === null && pending.userType === 'INTERNAL') {
         user = await this.prisma.user.update({
           where: { id: pending.id },
           data: { keycloakId: payload.preferred_username },

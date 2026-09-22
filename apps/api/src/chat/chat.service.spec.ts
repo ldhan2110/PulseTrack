@@ -573,3 +573,21 @@ describe('ChatService.leaveConversation', () => {
     expect(result).toEqual({ deleted: true });
   });
 });
+
+describe('ChatService.searchTargets — directory scoping (req-10)', () => {
+  it('scopes to users sharing a project or conversation with the caller (not global)', async () => {
+    const prisma = { user: { findMany: vi.fn().mockResolvedValue([]) } } as any;
+    const service = new ChatService(prisma);
+
+    await service.searchTargets('u1', 'bob');
+
+    const arg = prisma.user.findMany.mock.calls[0][0];
+    expect(arg.where.id).toEqual({ not: 'u1' });
+    const scopeJson = JSON.stringify(arg.where.OR);
+    expect(scopeJson).toContain('projectMembers');
+    expect(scopeJson).toContain('conversationMemberships');
+    expect(scopeJson).toContain('u1');
+    // the text query still applies, nested under AND
+    expect(JSON.stringify(arg.where.AND)).toContain('bob');
+  });
+});

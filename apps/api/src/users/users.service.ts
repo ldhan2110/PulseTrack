@@ -9,7 +9,23 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { keycloakId } });
   }
 
-  async findAll() {
-    return this.prisma.user.findMany();
+  async findAll(callerId: string) {
+    // Directory scoping: only users sharing a project or conversation with the
+    // caller — never the whole user table (external→internal enumeration).
+    return this.prisma.user.findMany({
+      where: {
+        id: { not: callerId },
+        OR: [
+          {
+            projectMembers: { some: { project: { members: { some: { userId: callerId } } } } },
+          },
+          {
+            conversationMemberships: {
+              some: { conversation: { members: { some: { userId: callerId } } } },
+            },
+          },
+        ],
+      },
+    });
   }
 }

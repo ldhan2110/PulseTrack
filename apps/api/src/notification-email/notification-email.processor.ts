@@ -44,6 +44,9 @@ export class NotificationEmailProcessor extends WorkerHost {
     if (job.name === 'added') {
       return this.processAdded(job as Job<{ email: string; projectName: string; prefix: string }>);
     }
+    if (job.name === 'set-password') {
+      return this.processSetPassword(job as Job<{ email: string; link: string }>);
+    }
     return this.processNotification(
       job as Job<{ notificationId: string; recipientEmail: string; recipientName: string }>,
     );
@@ -82,6 +85,23 @@ export class NotificationEmailProcessor extends WorkerHost {
     } catch (err) {
       const error = err as Error;
       this.logger.error(`Failed to send added email | to=${email} | error=${error.message}`, error.stack);
+      throw err;
+    }
+  }
+
+  private async processSetPassword(job: Job<{ email: string; link: string }>) {
+    const { email, link } = job.data;
+    const html = this.emailService.renderSetPasswordHtml({ link });
+    const subject = this.emailService.renderSetPasswordSubject();
+    const from = this.config.get('SMTP_FROM', 'CareOne <noreply-careone@cyberlogitec.com>');
+
+    this.logger.log(`Sending set-password | from=${from} | to=${email} | subject=${subject}`);
+    try {
+      const info = await this.transporter.sendMail({ from, to: email, subject, html });
+      this.logger.log(`Set-password email sent | messageId=${info.messageId}`);
+    } catch (err) {
+      const error = err as Error;
+      this.logger.error(`Failed to send set-password | to=${email} | error=${error.message}`, error.stack);
       throw err;
     }
   }
