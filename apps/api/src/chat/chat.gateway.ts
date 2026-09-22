@@ -46,6 +46,9 @@ export class ChatGateway
     }
 
     socket.data.userId = userId;
+    // Personal room for events targeted at the user even without a convo open
+    // (added-to-channel, @mention). See ChatService.emitToUser.
+    await socket.join(`user:${userId}`);
 
     const sockets = this.presence.get(userId) ?? new Set<string>();
     const wasOffline = sockets.size === 0;

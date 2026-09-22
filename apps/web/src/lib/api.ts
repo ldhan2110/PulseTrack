@@ -1163,6 +1163,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(dto),
     }),
+  addChatMembers: (id: string, userIds: string[]) =>
+    request<Conversation>(`/chat/conversations/${id}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userIds }),
+    }),
+  removeChatMember: (id: string, userId: string) =>
+    request<{ removed: boolean }>(
+      `/chat/conversations/${id}/members/${userId}`,
+      { method: 'DELETE' },
+    ),
   // Chat-target search reuses the project-scoped member search (see design.md
   // Decision Default 2026-09-21 — no dedicated chat search endpoint exists).
   searchChatTargets: (query: string) =>

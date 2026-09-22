@@ -5,11 +5,12 @@ import { ChatService } from './chat.service';
 
 function makePrisma() {
   return {
-    conversation: { findFirst: vi.fn(), create: vi.fn() },
+    conversation: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
     conversationMember: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      createMany: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -378,6 +379,132 @@ describe('ChatService.toggleReaction', () => {
     await expect(
       service.toggleReaction('m1', 'u1', 'x'.repeat(17)),
     ).rejects.toThrow(BadRequestException);
+  });
+});
+
+describe('ChatService.addMembers', () => {
+  let prisma: any;
+  let service: ChatService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    service = new ChatService(prisma);
+  });
+
+  it('adds users as members (skipDuplicates) and returns the grown member list', async () => {
+    prisma.conversationMember.findUnique.mockResolvedValue({ id: 'cm-actor' });
+    prisma.conversation.findUnique
+      .mockResolvedValueOnce({ type: ConversationType.CHANNEL })
+      .mockResolvedValueOnce({
+        id: 'c1',
+        members: [{ userId: 'u1' }, { userId: 'u2' }, { userId: 'u3' }],
+      });
+
+    const result = await service.addMembers('c1', 'u1', ['u2', 'u3']);
+
+    const call = prisma.conversationMember.createMany.mock.calls[0][0];
+    expect(call.skipDuplicates).toBe(true);
+    expect(call.data).toContainEqual({
+      conversationId: 'c1',
+      userId: 'u2',
+      role: 'member',
+      createdBy: 'u1',
+    });
+    expect(result.members).toHaveLength(3);
+  });
+
+  it('rejects add on a DM with 400', async () => {
+    prisma.conversationMember.findUnique.mockResolvedValue({ id: 'cm-actor' });
+    prisma.conversation.findUnique.mockResolvedValue({ type: ConversationType.DM });
+
+    await expect(service.addMembers('c1', 'u1', ['u2'])).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(prisma.conversationMember.createMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatService.removeMember', () => {
+  let prisma: any;
+  let service: ChatService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    service = new ChatService(prisma);
+  });
+
+  it('owner removes a member → deleted', async () => {
+    prisma.conversation.findUnique
+      .mockResolvedValueOnce({ type: ConversationType.CHANNEL })
+      .mockResolvedValueOnce({ id: 'c1', members: [{ userId: 'u1' }] });
+    prisma.conversationMember.findUnique.mockResolvedValue({ role: 'owner' });
+
+    const result = await service.removeMember('c1', 'u1', 'u2');
+
+    expect(prisma.conversationMember.delete).toHaveBeenCalledWith({
+      where: { conversationId_userId: { conversationId: 'c1', userId: 'u2' } },
+    });
+    expect(result).toEqual({ removed: true });
+  });
+
+  it('non-owner remove → 403', async () => {
+    prisma.conversation.findUnique.mockResolvedValue({
+      type: ConversationType.CHANNEL,
+    });
+    prisma.conversationMember.findUnique.mockResolvedValue({ role: 'member' });
+
+    await expect(
+      service.removeMember('c1', 'u2', 'u3'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.conversationMember.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatService.sendMessage mention notify', () => {
+  let prisma: any;
+  let service: ChatService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    service = new ChatService(prisma);
+  });
+
+  it('notifies a mentioned member, skips non-members and self', async () => {
+    prisma.message.create.mockResolvedValue({
+      id: 'm1',
+      author: { id: 'u1', name: 'An' },
+    });
+    // only u2 is a member of the conversation
+    prisma.conversationMember.findMany.mockResolvedValue([{ userId: 'u2' }]);
+    const emitToUser = vi.spyOn(service, 'emitToUser');
+
+    await service.sendMessage(
+      'c1',
+      'u1',
+      'hi @[Bob](u2) and @[Ghost](u9) and @[Me](u1)',
+    );
+
+    // member u2 notified; non-member u9 and self u1 not
+    expect(emitToUser).toHaveBeenCalledWith(
+      'u2',
+      'chat:mention',
+      expect.objectContaining({ conversationId: 'c1', messageId: 'm1' }),
+    );
+    expect(emitToUser).not.toHaveBeenCalledWith('u9', 'chat:mention', expect.anything());
+    expect(emitToUser).not.toHaveBeenCalledWith('u1', 'chat:mention', expect.anything());
+    // members query excluded self before hitting the DB
+    expect(prisma.conversationMember.findMany.mock.calls[0][0].where.userId.in).toEqual([
+      'u2',
+      'u9',
+    ]);
+  });
+
+  it('no mention token → no notify query', async () => {
+    prisma.message.create.mockResolvedValue({ id: 'm1', author: { id: 'u1', name: 'An' } });
+
+    await service.sendMessage('c1', 'u1', 'plain @nobody message');
+
+    expect(prisma.conversationMember.findMany).not.toHaveBeenCalled();
   });
 });
 

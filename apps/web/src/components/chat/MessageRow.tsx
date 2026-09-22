@@ -5,6 +5,37 @@ import type { Message } from '@/lib/types';
 import { MessageAttachment } from './MessageAttachment';
 import { ReactionBar } from './ReactionBar';
 
+const MENTION_RE = /@\[([^\]]+)\]\(([^)]+)\)/g;
+
+/** Render @[Name](userId) tokens as colored bold text; plain text stays plain. */
+function renderBody(body: string, myId: string) {
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  for (const match of body.matchAll(MENTION_RE)) {
+    const [full, display, userId] = match;
+    const idx = match.index ?? 0;
+    if (idx > last) nodes.push(body.slice(last, idx));
+    const isMe = userId === myId;
+    nodes.push(
+      <span
+        key={key++}
+        data-mention={isMe ? 'me' : 'other'}
+        className={
+          isMe
+            ? 'font-semibold text-[oklch(0.45_0.17_250)]'
+            : 'font-semibold text-[oklch(0.5_0.12_250)]'
+        }
+      >
+        @{display}
+      </span>,
+    );
+    last = idx + full.length;
+  }
+  if (last < body.length) nodes.push(body.slice(last));
+  return nodes;
+}
+
 export interface RowProps {
   message: Message;
   own: boolean;
@@ -29,6 +60,9 @@ export const MessageRow = memo(function MessageRow({
   onRequestDelete,
   onRetry,
 }: RowProps) {
+  const mentionsMe = m.body
+    ? [...m.body.matchAll(MENTION_RE)].some((x) => x[2] === myId)
+    : false;
   // draft lives here → typing in the edit box no longer re-renders the thread
   const [draft, setDraft] = useState(m.body);
   useEffect(() => {
@@ -88,9 +122,13 @@ export const MessageRow = memo(function MessageRow({
               own
                 ? 'rounded-br-sm bg-primary text-primary-foreground'
                 : 'rounded-bl-sm bg-muted'
-            } ${m.status === 'failed' ? 'opacity-60 ring-1 ring-destructive' : ''}`}
+            } ${mentionsMe ? 'border-l-[3px] border-l-[oklch(0.6_0.16_250)]' : ''} ${
+              m.status === 'failed' ? 'opacity-60 ring-1 ring-destructive' : ''
+            }`}
           >
-            {m.body && <div className="whitespace-pre-wrap">{m.body}</div>}
+            {m.body && (
+              <div className="whitespace-pre-wrap">{renderBody(m.body, myId)}</div>
+            )}
             {m.attachments && m.attachments.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {m.attachments.map((att) => (

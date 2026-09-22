@@ -34,6 +34,7 @@ describe('ChatGateway.handleConnection', () => {
 
     expect(socket.disconnect).not.toHaveBeenCalled();
     expect(socket.data.userId).toBe('u1');
+    expect(socket.join).toHaveBeenCalledWith('user:u1');
   });
 
   it('disconnects when the token is missing or invalid', async () => {

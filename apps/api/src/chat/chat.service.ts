@@ -30,6 +30,12 @@ export class ChatService {
     this.server?.to(`convo:${conversationId}`).emit(event, payload);
   }
 
+  /** Emit to a user's personal room (joined on connect), reaching them even
+   *  when they don't have the conversation open. Mirrors emitToConvo. */
+  emitToUser(userId: string, event: string, payload: unknown): void {
+    this.server?.to(`user:${userId}`).emit(event, payload);
+  }
+
   /** Throws ForbiddenException unless the user is a member of the conversation. */
   async assertMember(conversationId: string, userId: string): Promise<void> {
     const member = await this.prisma.conversationMember.findUnique({
@@ -47,6 +53,67 @@ export class ChatService {
       where: { conversationId_userId: { conversationId, userId } },
     });
     return { deleted: true };
+  }
+
+  /** Any channel member may add users (role 'member'); duplicates silently skipped. */
+  async addMembers(conversationId: string, actorId: string, userIds: string[]) {
+    await this.assertMember(conversationId, actorId);
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { type: true },
+    });
+    if (conversation?.type !== ConversationType.CHANNEL) {
+      throw new BadRequestException('Members can only be added to a channel');
+    }
+    const ids = [...new Set(userIds)];
+    await this.prisma.conversationMember.createMany({
+      data: ids.map((userId) => ({
+        conversationId,
+        userId,
+        role: 'member',
+        createdBy: actorId,
+      })),
+      skipDuplicates: true,
+    });
+    const updated = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { members: { include: { user: memberUserSelect } } },
+    });
+    this.emitToConvo(conversationId, 'chat:members:changed', updated?.members);
+    // ponytail: emit to every requested id; a duplicate already has the channel,
+    // so a redundant invalidate is harmless — no need to diff the createMany count.
+    for (const userId of ids) {
+      this.emitToUser(userId, 'chat:conversation:added', updated);
+    }
+    return updated;
+  }
+
+  /** Owner-only removal of another member from a channel. */
+  async removeMember(conversationId: string, actorId: string, targetId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { type: true },
+    });
+    if (conversation?.type !== ConversationType.CHANNEL) {
+      throw new BadRequestException('Members can only be removed from a channel');
+    }
+    const actor = await this.prisma.conversationMember.findUnique({
+      where: { conversationId_userId: { conversationId, userId: actorId } },
+      select: { role: true },
+    });
+    if (actor?.role !== 'owner') {
+      throw new ForbiddenException('Only the channel owner can remove members');
+    }
+    await this.prisma.conversationMember.delete({
+      where: { conversationId_userId: { conversationId, userId: targetId } },
+    });
+    const updated = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { members: { include: { user: memberUserSelect } } },
+    });
+    this.emitToConvo(conversationId, 'chat:members:changed', updated?.members);
+    this.emitToUser(targetId, 'chat:conversation:removed', { conversationId });
+    return { removed: true };
   }
 
   async createConversation(userId: string, dto: CreateConversationDto) {
@@ -171,7 +238,33 @@ export class ChatService {
     // Transient echo (not persisted) so the sender can match its optimistic message.
     const message = { ...created, clientTempId };
     this.emitToConvo(conversationId, 'chat:message:new', message);
+    await this.notifyMentions(conversationId, created.id, created.author, body);
     return message;
+  }
+
+  /** Parse @[Name](userId) tokens; notify mentioned members (not the author). No persistence. */
+  private async notifyMentions(
+    conversationId: string,
+    messageId: string,
+    author: { id: string; name: string | null },
+    body: string,
+  ): Promise<void> {
+    const ids = [...body.matchAll(/@\[([^\]]+)\]\(([^)]+)\)/g)].map((m) => m[2]);
+    const unique = [...new Set(ids)].filter((id) => id !== author.id);
+    if (unique.length === 0) return;
+    const members = await this.prisma.conversationMember.findMany({
+      where: { conversationId, userId: { in: unique } },
+      select: { userId: true },
+    });
+    const preview = body.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1').slice(0, 140);
+    for (const { userId } of members) {
+      this.emitToUser(userId, 'chat:mention', {
+        conversationId,
+        messageId,
+        from: { id: author.id, name: author.name },
+        preview,
+      });
+    }
   }
 
   async getMessages(conversationId: string, cursor?: string) {

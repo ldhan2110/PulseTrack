@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Hash, MoreVertical } from 'lucide-react';
+import { Hash, MoreVertical, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +33,7 @@ import { dayKey, groupMessages } from '@/lib/chatFormat';
 import { Composer } from './Composer';
 import { convTitle, initials, peerOf } from './chatUtils';
 import { MessageGroup } from './MessageGroup';
+import { MembersPanel } from './MembersPanel';
 
 /** Three dots with a staggered bounce. */
 function TypingDots() {
@@ -247,6 +248,7 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
             {online ? 'online' : 'offline'}
           </span>
         )}
+        {isChannel && <MembersPanel conversation={conversation} myId={myId} />}
         {!isChannel && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -259,11 +261,13 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
                 <MoreVertical className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="min-w-48">
               <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
+                variant="destructive"
+                className="whitespace-nowrap"
                 onSelect={() => setConfirmDeleteConv(true)}
               >
+                <Trash2 className="size-4" />
                 Delete conversation
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -326,7 +330,11 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
         <div ref={bottomRef} />
       </div>
 
-      <Composer conversationId={convId} unread={conversation.unreadCount ?? 0} />
+      <Composer
+        conversationId={convId}
+        unread={conversation.unreadCount ?? 0}
+        members={isChannel ? conversation.members : []}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ChatService } from './chat.service';
 import { ConversationMemberGuard } from './conversation-member.guard';
+import { AddMembersDto } from './dto/add-members.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { EditMessageDto } from './dto/edit-message.dto';
@@ -61,6 +62,26 @@ export class ChatController {
   @UseGuards(ConversationMemberGuard)
   history(@Param('id') id: string, @Query('cursor') cursor?: string) {
     return this.chatService.getMessages(id, cursor);
+  }
+
+  @Post('conversations/:id/members')
+  @UseGuards(ConversationMemberGuard)
+  addMembers(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: AddMembersDto,
+  ) {
+    return this.chatService.addMembers(id, req.user.id, dto.userIds);
+  }
+
+  @Delete('conversations/:id/members/:userId')
+  @UseGuards(ConversationMemberGuard)
+  removeMember(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.chatService.removeMember(id, req.user.id, userId);
   }
 
   @Delete('conversations/:id')

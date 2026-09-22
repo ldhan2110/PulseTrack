@@ -55,3 +55,29 @@ Then tick §8.2 after the BA screenshot review, and reset board `status: blocked
 **No code written this run** — blocker 1 surfaces at §1.2 (top of the data layer, before any section can complete its Verify), so no section was completable; committing partial unverified UI would be a lying-green.
 
 **status: resolved** (2026-09-21, same session) — user cleared both: (1) search source = reuse project-scoped `members/search`, people-only, channels tab = joined channels + create (Decision Default recorded in design.md, narrows req-3 §6); (2) §8.2 MANUAL BA-approved ("auto go"). Change built end-to-end, verified (devspec-verify PASS), and archived as done.
+
+## chat-members-mentions — §9 MANUAL BA visual sign-off (unticked)
+
+**When**: 2026-09-22 (run worker-cc)
+**Section**: 9. Visual sign-off — `Verify: MANUAL: BA approves screenshot`
+**Status**: §1–§8 all implemented + verified; §9.1 MANUAL box unticked → blocked (never self-approve).
+
+**What's done (verified)**
+- §1 add/remove member endpoints + DTO + service (`chat.service.ts`, `chat.controller.ts`, `dto/add-members.dto.ts`) — `pnpm --filter @pm/api test -- chat.service` green (26 chat.service tests).
+- §2 per-user room (`ChatGateway.handleConnection` joins `user:{id}`) + `emitToUser` + membership emits — `chat.gateway` tests green.
+- §3 mention parse + `chat:mention` notify in `sendMessage` — tests green (member notified, non-member/self skipped).
+- §4 `api.addChatMembers`/`removeChatMember`, `useAddChatMembers`/`useRemoveChatMember`, socket listeners (`chat:conversation:added|removed`, `chat:members:changed` → invalidate; `chat:mention` → toast) — web unit tests green.
+- §5 NewConversationDialog DM|Channel toggle + channel create form — devspec-verify live PASS.
+- §6 MembersPanel (pill, list, You·Owner badge, add filters existing + live grow, owner remove ✕ + confirm, Leave) — devspec-verify live PASS.
+- §7 Composer @mention autocomplete + serialize — unit test + live PASS.
+- §8 MessageRow token render (colored bold, own-mention accent + bubble left-border, plain @word untouched) — unit test + live PASS (token color `oklch(0.45 0.17 250)`, transparent bg, matches mockup).
+- Both apps build clean (`pnpm --filter @pm/web build`, `pnpm --filter @pm/api build`).
+- Live verify @ localhost:5173 (anle@): screenshots in `changes/chat-members-mentions/verify/` (new-conversation-channel, members-panel, remove-confirm, mention-composer, mention-render).
+
+**Why blocked, not ticked**
+§9.1 is a `- [ ] MANUAL: BA approves live screenshots vs mockups` gate. Worker rules: never self-approve a MANUAL gate. All engineering is done and green; only human visual sign-off remains.
+
+**To resolve (human)**
+Review `changes/chat-members-mentions/verify/*.png` vs `mockups/{new-conversation-dialog,members-panel,mention}.html`. If approved: tick §9.1 `[x]` in `tasks.md` AND reset board `status: blocked → pending`. Next worker run will finish + archive.
+
+**Pre-existing, out of scope**: `McpAccessCard.test` revoked-badge (1 failure, ruled out on 3 prior chat changes) — unrelated to this change.

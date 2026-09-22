@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useAuth } from '../auth/useAuth';
 import { getChatSocket } from '../socket/instance';
 import {
@@ -120,6 +121,22 @@ export function useChatSync() {
       void qc.invalidateQueries({ queryKey: ['chat'] });
     }
 
+    // Membership changes (added/removed to a channel, or its roster changed) →
+    // refresh the conversation list. Reuses the existing invalidation pattern.
+    function onMembershipChanged() {
+      void qc.invalidateQueries({ queryKey: chatKeys.conversations });
+    }
+
+    function onMention(payload: {
+      conversationId: string;
+      from: { id: string; name: string | null };
+      preview: string;
+    }) {
+      toast(`${payload.from.name ?? 'Someone'} mentioned you`, {
+        description: payload.preview,
+      });
+    }
+
     socket.on('chat:message:new', onNew);
     socket.on('chat:message:updated', onUpdated);
     socket.on('chat:message:deleted', onDeleted);
@@ -127,6 +144,10 @@ export function useChatSync() {
     socket.on('chat:typing', onTyping);
     socket.on('chat:presence', onPresence);
     socket.on('chat:read', onRead);
+    socket.on('chat:conversation:added', onMembershipChanged);
+    socket.on('chat:conversation:removed', onMembershipChanged);
+    socket.on('chat:members:changed', onMembershipChanged);
+    socket.on('chat:mention', onMention);
     socket.on('connect', onReconnect);
 
     return () => {
@@ -137,6 +158,10 @@ export function useChatSync() {
       socket.off('chat:typing', onTyping);
       socket.off('chat:presence', onPresence);
       socket.off('chat:read', onRead);
+      socket.off('chat:conversation:added', onMembershipChanged);
+      socket.off('chat:conversation:removed', onMembershipChanged);
+      socket.off('chat:members:changed', onMembershipChanged);
+      socket.off('chat:mention', onMention);
       socket.off('connect', onReconnect);
     };
   }, [socket, qc]);

@@ -318,6 +318,32 @@ export function useSearchChatTargets(query: string) {
   });
 }
 
+export function useAddChatMembers() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, userIds }: { id: string; userIds: string[] }) =>
+      api.addChatMembers(id, userIds),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: chatKeys.conversations });
+    },
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : 'Failed to add members'),
+  });
+}
+
+export function useRemoveChatMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
+      api.removeChatMember(id, userId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: chatKeys.conversations });
+    },
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : 'Failed to remove member'),
+  });
+}
+
 export function useCreateConversation() {
   const qc = useQueryClient();
   return useMutation({

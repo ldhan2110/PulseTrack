@@ -79,3 +79,11 @@ changes:
     owner: "worker-cc"
     archived: archive/chat-delete-conversation
     notes: "All 3 sections pass. §1 api chat tests green (leaveConversation deletes only caller's ConversationMember row). §2 web useChat tests green (cache drop + active-id clear). §3 devspec-verify live PASS (anle@): DM header ⋯ present, channel header none, styled AlertDialog confirm, confirm removed DM from list + cleared pane. pnpm build clean. No mockup → per-property diff skipped; reused shadcn Button/DropdownMenu/AlertDialog. Verify filter names in tasks.md said @pulsetrack/* but real package is @pm/* (used actual). Pre-existing unrelated McpAccessCard.test failure out of scope."
+  chat-members-mentions:
+    title: Chat channel usability — DM|Channel create toggle + member multiselect, members panel (add any-member / remove owner-only / leave), @mention autocomplete + colored render + real-time toast (Option A, no schema)
+    tasks_md: changes/chat-members-mentions/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "§1-§8 all done + verified (API 26 chat.service + gateway tests green; web unit tests green; §5-§8 devspec-verify live PASS @localhost:5173 anle@, screenshots in verify/). BLOCKED on §9.1 MANUAL: BA visual sign-off — box unticked, worker never self-approves. To resume: BA ticks §9.1 [x] + reset status blocked→pending. See report/blockers.md."

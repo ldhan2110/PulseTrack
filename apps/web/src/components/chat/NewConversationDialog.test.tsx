@@ -37,7 +37,7 @@ describe('NewConversationDialog', () => {
   it('filters people as the user types', () => {
     render(<NewConversationDialog />);
     // both visible initially (empty query matches all) — narrow to Alice
-    fireEvent.change(screen.getByPlaceholderText('Search people & channels'), {
+    fireEvent.change(screen.getByPlaceholderText('Search people'), {
       target: { value: 'ali' },
     });
     expect(screen.getAllByText('Alice').length).toBeGreaterThan(0);
@@ -46,7 +46,7 @@ describe('NewConversationDialog', () => {
 
   it('starts a DM via createChatConversation when a person row is clicked', () => {
     render(<NewConversationDialog />);
-    fireEvent.change(screen.getByPlaceholderText('Search people & channels'), {
+    fireEvent.change(screen.getByPlaceholderText('Search people'), {
       target: { value: 'alice' },
     });
     fireEvent.click(screen.getAllByText('Alice')[0]);
