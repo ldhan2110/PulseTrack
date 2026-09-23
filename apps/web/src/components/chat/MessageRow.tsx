@@ -96,29 +96,29 @@ export const MessageRow = memo(function MessageRow({
         <div className="absolute -top-3 right-2 z-10 hidden rounded-md border bg-background shadow-sm group-hover/msg:flex">
           <button
             aria-label="Reply"
-            className={`p-1 text-muted-foreground hover:bg-accent hover:text-foreground ${
+            className={`flex items-center gap-1 px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground ${
               own ? 'rounded-l-md' : 'rounded-md'
             }`}
             onClick={() => onSetReply?.(m)}
           >
-            <Reply className="size-3.5" />
+            <Reply className="size-3.5" /> Reply
           </button>
           {own && (
             <button
               aria-label="Edit"
-              className="p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="flex items-center gap-1 px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={() => onStartEdit(m.id)}
             >
-              <Pencil className="size-3.5" />
+              <Pencil className="size-3.5" /> Edit
             </button>
           )}
           {own && (
             <button
               aria-label="Delete"
-              className="rounded-r-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
+              className="flex items-center gap-1 rounded-r-md px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-destructive"
               onClick={() => onRequestDelete(m.id)}
             >
-              <Trash2 className="size-3.5" />
+              <Trash2 className="size-3.5" /> Delete
             </button>
           )}
         </div>
