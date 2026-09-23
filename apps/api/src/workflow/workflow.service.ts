@@ -3,27 +3,35 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SaveWorkflowDto } from './dto/save-workflow.dto';
 
 const DEFAULT_STATUSES = [
-  { key: 'BACKLOG', name: 'Backlog', color: '#6b7280', position: 0, isDefault: true, isClosed: false },
-  { key: 'IN_PROGRESS', name: 'In Progress', color: '#3b82f6', position: 1, isDefault: false, isClosed: false },
-  { key: 'IN_REVIEW', name: 'In Review', color: '#f59e0b', position: 2, isDefault: false, isClosed: false },
-  { key: 'DONE', name: 'Done', color: '#22c55e', position: 3, isDefault: false, isClosed: true },
-  { key: 'BLOCKED', name: 'Blocked', color: '#ef4444', position: 4, isDefault: false, isClosed: false },
+  { key: 'RECEIVED', name: 'Received', color: '#6b7280', position: 0, isDefault: true, isClosed: false },
+  { key: 'ASSIGNED', name: 'Assigned', color: '#8b5cf6', position: 1, isDefault: false, isClosed: false },
+  { key: 'IN_PROGRESS', name: 'In Progress', color: '#3b82f6', position: 2, isDefault: false, isClosed: false },
+  { key: 'REVIEW', name: 'Review', color: '#f59e0b', position: 3, isDefault: false, isClosed: false },
+  { key: 'DONE', name: 'Done', color: '#22c55e', position: 4, isDefault: false, isClosed: true },
+  { key: 'ON_HOLD', name: 'On Hold', color: '#eab308', position: 5, isDefault: false, isClosed: false },
+  { key: 'REJECTED', name: 'Rejected', color: '#ef4444', position: 6, isDefault: false, isClosed: true },
+  { key: 'CANCELED', name: 'Canceled', color: '#64748b', position: 7, isDefault: false, isClosed: true },
 ];
 
 const DEFAULT_TRANSITIONS: [string, string][] = [
-  ['BACKLOG', 'IN_PROGRESS'],
-  ['IN_PROGRESS', 'BACKLOG'],
-  ['IN_PROGRESS', 'IN_REVIEW'],
-  ['IN_REVIEW', 'IN_PROGRESS'],
-  ['IN_REVIEW', 'DONE'],
-  ['DONE', 'IN_REVIEW'],
-  ['BACKLOG', 'BLOCKED'],
-  ['IN_PROGRESS', 'BLOCKED'],
-  ['IN_REVIEW', 'BLOCKED'],
-  ['DONE', 'BLOCKED'],
-  ['BLOCKED', 'BACKLOG'],
-  ['BLOCKED', 'IN_PROGRESS'],
-  ['BLOCKED', 'IN_REVIEW'],
+  ['RECEIVED', 'ASSIGNED'],
+  ['ASSIGNED', 'IN_PROGRESS'],
+  ['IN_PROGRESS', 'REVIEW'],
+  ['REVIEW', 'DONE'],
+  ['REVIEW', 'IN_PROGRESS'],
+  ['ASSIGNED', 'ON_HOLD'],
+  ['ON_HOLD', 'ASSIGNED'],
+  ['IN_PROGRESS', 'ON_HOLD'],
+  ['ON_HOLD', 'IN_PROGRESS'],
+  ['REVIEW', 'ON_HOLD'],
+  ['ON_HOLD', 'REVIEW'],
+  ['ASSIGNED', 'REJECTED'],
+  ['IN_PROGRESS', 'REJECTED'],
+  ['REVIEW', 'REJECTED'],
+  ['RECEIVED', 'CANCELED'],
+  ['ASSIGNED', 'CANCELED'],
+  ['IN_PROGRESS', 'CANCELED'],
+  ['REVIEW', 'CANCELED'],
 ];
 
 const DEFAULT_BUG_STATUSES = [

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec — update-task-workflow-defaults</title>
+<style>
+  :root { --bg:#0f1115; --panel:#181b22; --ink:#e6e8ec; --mut:#9aa3af; --line:#2a2f3a; --accent:#3b82f6; --ok:#22c55e; --warn:#eab308; --bad:#ef4444; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 -apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:32px 20px 80px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:16px; margin:32px 0 10px; padding-top:14px; border-top:1px solid var(--line); }
+  h3 { font-size:14px; margin:18px 0 6px; }
+  .sub { color:var(--mut); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; }
+  table { border-collapse:collapse; width:100%; margin:8px 0; font-size:13px; }
+  th,td { border:1px solid var(--line); padding:6px 9px; text-align:left; }
+  th { background:#20242e; }
+  pre { background:#0b0d11; border:1px solid var(--line); border-radius:6px; padding:12px; overflow:auto; font-size:12.5px; }
+  code { background:#20242e; padding:1px 5px; border-radius:4px; font-size:12.5px; }
+  .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--mut); margin-left:6px; }
+  .tag { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:4px; margin-right:6px; background:#20242e; color:var(--mut); text-transform:uppercase; letter-spacing:.3px; }
+  .green { color:var(--ok); }
+  .banner-ok { background:rgba(34,197,94,.1); border:1px solid var(--ok); color:#bff0cf; border-radius:6px; padding:10px 14px; }
+  ul { margin:6px 0; padding-left:20px; }
+  li { margin:3px 0; }
+  .toc a { color:var(--accent); text-decoration:none; margin-right:14px; font-size:12.5px; }
+  .swatch { display:inline-block; width:11px; height:11px; border-radius:2px; vertical-align:middle; margin-right:6px; border:1px solid rgba(255,255,255,.2); }
+  .done { color:var(--ok); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>update-task-workflow-defaults</h1>
+  <div class="sub">Change spec review · backend-only · zero UI</div>
+  <div class="toc" style="margin-top:14px;">
+    <a href="#ctx">Context</a><a href="#prop">Proposal</a><a href="#arch">Architecture</a>
+    <a href="#impact">Impact</a><a href="#backend">Backend</a><a href="#tasks">Tasks</a><a href="#cov">Coverage</a><a href="#board">Board</a>
+  </div>
+
+  <h2 id="ctx">Context</h2>
+  <div class="card">
+    <div><b>Change id:</b> update-task-workflow-defaults</div>
+    <div><b>Status:</b> pending (not yet on board) <span class="pill">depends_on: none</span> <span class="pill">skills: none</span></div>
+    <div class="sub" style="margin-top:6px;">Data-only edit to the seed constants a new project's TASK workflow is created from.</div>
+  </div>
+
+  <h2 id="prop">Proposal</h2>
+  <div class="card">
+    <p><b>Why.</b> New projects seed <code>Backlog · In Progress · In Review · Done · Blocked</code>. We want the intended lifecycle instead: <b>Received · Assigned · In Progress · Review · Done · On Hold · Rejected · Canceled</b>.</p>
+    <p><b>Delivers.</b> On project create, the default TASK workflow seeds these 8 statuses (colors, one default start, three closed) plus a transition graph: linear happy path + on-hold / reject / cancel escapes.</p>
+    <p><b>Out of scope.</b> Bug workflow, existing projects (seed is guarded — no backfill), frontend (renders dynamically).</p>
+  </div>
+
+  <h2 id="arch">Architecture <span class="pill">ASCII fallback</span></h2>
+  <pre>POST /projects → ProjectsService.create
+                   ├─ WorkflowService.seedDefaultWorkflow(id)   ← reads DEFAULT_STATUSES / DEFAULT_TRANSITIONS  (THIS CHANGE)
+                   │     └─ tx: create workflowStatus[] + workflowTransition[]  (kind: TASK)
+                   └─ WorkflowService.seedDefaultBugWorkflow(id) (unchanged)</pre>
+
+  <h2 id="impact">Impact Area</h2>
+  <h3>Decision defaults</h3>
+  <table>
+    <tr><th>Gray area</th><th>Default</th></tr>
+    <tr><td>Status keys</td><td>Uppercase snake (RECEIVED, ON_HOLD, …)</td></tr>
+    <tr><td>Default start</td><td>RECEIVED</td></tr>
+    <tr><td>Closed / terminal</td><td>DONE, REJECTED, CANCELED</td></tr>
+    <tr><td>Colors</td><td>Reuse palette; new for ASSIGNED / ON_HOLD / CANCELED</td></tr>
+    <tr><td>Transition strictness</td><td>Linear + on-hold/reject/cancel escapes (not free any→any)</td></tr>
+    <tr><td>Existing projects</td><td>Untouched — no backfill</td></tr>
+    <tr><td>Bug workflow</td><td>Untouched</td></tr>
+  </table>
+  <h3>Blast radius</h3>
+  <ul>
+    <li><code>apps/api/src/workflow/workflow.service.ts</code> — the two constants only.</li>
+    <li><code>ProjectsService.create</code> calls the seed — behavior unchanged, only seeded data differs.</li>
+    <li>FE workflow board / status dropdowns render from <code>GET /workflow</code> — no code change.</li>
+  </ul>
+  <div class="sub"><b>Reversibility:</b> high · <b>Risk:</b> low (data-only, guarded seed, no schema/API change).</div>
+
+  <h2 id="backend">Backend</h2>
+  <h3>Status set</h3>
+  <table>
+    <tr><th>key</th><th>name</th><th>color</th><th>pos</th><th>isDefault</th><th>isClosed</th></tr>
+    <tr><td>RECEIVED</td><td>Received</td><td><span class="swatch" style="background:#6b7280"></span>#6b7280</td><td>0</td><td>true</td><td>false</td></tr>
+    <tr><td>ASSIGNED</td><td>Assigned</td><td><span class="swatch" style="background:#8b5cf6"></span>#8b5cf6</td><td>1</td><td>false</td><td>false</td></tr>
+    <tr><td>IN_PROGRESS</td><td>In Progress</td><td><span class="swatch" style="background:#3b82f6"></span>#3b82f6</td><td>2</td><td>false</td><td>false</td></tr>
+    <tr><td>REVIEW</td><td>Review</td><td><span class="swatch" style="background:#f59e0b"></span>#f59e0b</td><td>3</td><td>false</td><td>false</td></tr>
+    <tr><td>DONE</td><td>Done</td><td><span class="swatch" style="background:#22c55e"></span>#22c55e</td><td>4</td><td>false</td><td>true</td></tr>
+    <tr><td>ON_HOLD</td><td>On Hold</td><td><span class="swatch" style="background:#eab308"></span>#eab308</td><td>5</td><td>false</td><td>false</td></tr>
+    <tr><td>REJECTED</td><td>Rejected</td><td><span class="swatch" style="background:#ef4444"></span>#ef4444</td><td>6</td><td>false</td><td>true</td></tr>
+    <tr><td>CANCELED</td><td>Canceled</td><td><span class="swatch" style="background:#64748b"></span>#64748b</td><td>7</td><td>false</td><td>true</td></tr>
+  </table>
+  <div class="sub">1 default (RECEIVED), 3 closed (DONE, REJECTED, CANCELED) — matches the invariant <code>saveWorkflow</code> enforces.</div>
+  <h3>Transitions</h3>
+  <pre>RECEIVED    → ASSIGNED
+ASSIGNED    → IN_PROGRESS
+IN_PROGRESS → REVIEW
+REVIEW      → DONE
+REVIEW      → IN_PROGRESS          (send back)
+
+ASSIGNED    ⇄ ON_HOLD
+IN_PROGRESS ⇄ ON_HOLD
+REVIEW      ⇄ ON_HOLD
+
+ASSIGNED    → REJECTED
+IN_PROGRESS → REJECTED
+REVIEW      → REJECTED
+
+RECEIVED    → CANCELED
+ASSIGNED    → CANCELED
+IN_PROGRESS → CANCELED
+REVIEW      → CANCELED</pre>
+
+  <h2 id="tasks">Tasks</h2>
+
+  <h3>1. Rewrite default status + transition constants <span class="sub">[req-1] [req-2]</span></h3>
+  <ul>
+    <li>☐ 1.1 <span class="tag">backend</span> Replace <code>DEFAULT_STATUSES</code> (lines 5–11) with the 8 statuses above.</li>
+    <li>☐ 1.2 <span class="tag">backend</span> Replace <code>DEFAULT_TRANSITIONS</code> (lines 13–27) with the edge set above.</li>
+  </ul>
+  <div class="sub">Verify: <code>pnpm --filter @pm/api build</code></div>
+
+  <h3>2. Test the seed <span class="sub">[req-1] [req-2] [req-3]</span></h3>
+  <ul>
+    <li>☐ 2.1 <span class="tag">test</span> Add <code>apps/api/src/workflow/workflow.service.spec.ts</code> — assert 8 statuses (keys/positions/isDefault/isClosed), the transition edge set, and the <code>existing &gt; 0</code> guard returns early without writes.</li>
+  </ul>
+  <div class="sub">Verify: <code>pnpm --filter @pm/api test workflow.service</code></div>
+
+  <h2 id="cov">Coverage</h2>
+  <div class="banner-ok">✔ Every requirement is covered. req-1 → §1, §2 · req-2 → §1, §2 · req-3 → §2. No orphan tasks.</div>
+
+  <h2 id="board">Board</h2>
+  <div class="card sub">Not yet registered. On approval, <code>/devspec-plan</code> adds one row: <code>update-task-workflow-defaults</code> · depends_on: [] · skills: [] · status: pending. No dependency on any in-flight change.</div>
+
+</div>
+</body>
+</html>

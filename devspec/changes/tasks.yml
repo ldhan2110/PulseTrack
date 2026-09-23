@@ -129,3 +129,11 @@ changes:
     status: blocked
     owner: "worker-cc"
     notes: "Impl COMPLETE + proven: §1-§4 + §5 code done; 6 api unit tests green (projects.service.spec.ts); nest build + web tsc/vite build all clean. BLOCKED on live/visual verify only — §1 migration not applied to any running DB (shared pm_x off-limits + has pre-existing P3009 fail; rtk migrate engine absent; no scratch DB), so §5 /devspec-verify not runnable (app down + column missing) and §6 MANUAL needs a non-owner account. See report/blockers.md — human applies migration to app DB, starts app, runs verify + non-owner screenshot, ticks §6.1, resets blocked→pending."
+  update-task-workflow-defaults:
+    title: New-project default TASK workflow — seed Received/Assigned/In Progress/Review/Done/On Hold/Rejected/Canceled + transitions
+    tasks_md: changes/update-task-workflow-defaults/tasks.md
+    depends_on: []
+    skills: []
+    status: done
+    owner: "worker-cc"
+    notes: "Both sections pass. §1 nest build clean (DEFAULT_STATUSES + DEFAULT_TRANSITIONS rewritten to 8-status lifecycle). §2 vitest workflow.service.spec.ts 3/3 green (status set/flags, transition edge set, existing>0 guard). Bug workflow + existing projects untouched."
