@@ -140,9 +140,10 @@ changes:
     notes: "Both sections pass. §1 nest build clean (DEFAULT_STATUSES + DEFAULT_TRANSITIONS rewritten to 8-status lifecycle). §2 vitest workflow.service.spec.ts 3/3 green (status set/flags, transition edge set, existing>0 guard). Bug workflow + existing projects untouched."
   responsive-task-cards:
     title: Mobile card layouts for task board & tables (<768px)
-    tasks_md: changes/responsive-task-cards/tasks.md
+    tasks_md: archive/responsive-task-cards/tasks.md
     depends_on: []
     skills: [frontend-design]
     status: done
     owner: "worker-cc"
+    archived: archive/responsive-task-cards
     notes: "All 5 sections pass. 11 vitest green (TaskCard/KanbanBoard/TasksTable/MyTasksTable mobile), build clean, live visual gate @390px PASS on all 3 surfaces (my-tasks, backlog table, board stream + move dropdown)."
