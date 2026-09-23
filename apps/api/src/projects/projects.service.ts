@@ -7,17 +7,10 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 
 const DEFAULT_TASK_TYPES = [
-  'Analysis & Consulting',
-  'Design',
   'Development',
-  'UI/UX Design',
-  'Testing & QC',
-  'Bug Fix',
-  'Project Management',
-  'Meeting & Communication',
-  'Support & Maintenance',
-  'Documentation',
-  'Internal',
+  'Change',
+  'Defect',
+  'Support',
 ];
 
 @Injectable()
@@ -108,7 +101,7 @@ export class ProjectsService {
             },
             members: {
               include: {
-                user: { select: { id: true, name: true, imageUrl: true } },
+                user: { select: { id: true, name: true, username: true, imageUrl: true } },
               },
             },
           },
@@ -299,14 +292,14 @@ export class ProjectsService {
     const cleaned = types.map((t) => ({ ...t, name: t.name?.trim() }));
 
     if (cleaned.some((t) => !t.name)) {
-      throw new BadRequestException('Task type name cannot be empty');
+      throw new BadRequestException('Ticket type name cannot be empty');
     }
     const activeNames = cleaned.filter((t) => t.isActive).map((t) => t.name);
     if (new Set(activeNames).size !== activeNames.length) {
-      throw new BadRequestException('Duplicate active task type name');
+      throw new BadRequestException('Duplicate active ticket type name');
     }
     if (activeNames.length === 0) {
-      throw new BadRequestException('At least one active task type is required');
+      throw new BadRequestException('At least one active ticket type is required');
     }
 
     const existing = await this.prisma.projectTaskType.findMany({

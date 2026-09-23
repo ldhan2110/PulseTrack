@@ -70,7 +70,7 @@ export function AddSubTaskModal({ open, onOpenChange, onSave, taskTypes }: AddSu
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             autoFocus
           />
-          <label className="text-xs text-muted-foreground mt-3 mb-1 block">Task Type</label>
+          <label className="text-xs text-muted-foreground mt-3 mb-1 block">Ticket Type</label>
           <Select value={taskTypeId} onValueChange={setTaskTypeId}>
             <SelectTrigger className="h-9 w-full">
               <SelectValue placeholder="Select a type" />

@@ -152,7 +152,7 @@ export interface ProjectListItem {
   createdAt: string;
   userRole: string;
   taskSummary: { total: number; active: number };
-  members: { user: Pick<User, 'id' | 'name' | 'imageUrl'> }[];
+  members: { user: Pick<User, 'id' | 'name' | 'username' | 'imageUrl'> }[];
 }
 
 export interface CreateProjectPayload {

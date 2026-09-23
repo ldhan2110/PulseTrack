@@ -55,7 +55,7 @@ export function TaskTypesCard({ projectId, canManage }: Props) {
     mutationFn: (payload: Row[]) => api.setTaskTypes(projectId, payload),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['task-types', projectId] });
-      toast.success('Task types saved');
+      toast.success('Ticket types saved');
       setOpen(false);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -90,7 +90,7 @@ export function TaskTypesCard({ projectId, canManage }: Props) {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div>
-          <Label>Task Types</Label>
+          <Label>Ticket Types</Label>
           <p className="mt-1 text-xs text-muted-foreground">
             Categories available when creating a task. Required on every task.
           </p>
@@ -103,7 +103,7 @@ export function TaskTypesCard({ projectId, canManage }: Props) {
 
       <div className="flex flex-wrap gap-1.5">
         {activeTypes.length === 0 ? (
-          <span className="text-xs text-muted-foreground">No task types configured.</span>
+          <span className="text-xs text-muted-foreground">No ticket types configured.</span>
         ) : (
           <>
             {activeTypes.slice(0, MAX_VISIBLE_PILLS).map((t) => (
@@ -127,9 +127,9 @@ export function TaskTypesCard({ projectId, canManage }: Props) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Task Types</DialogTitle>
+            <DialogTitle>Ticket Types</DialogTitle>
             <DialogDescription>
-              Add, rename, reorder, or deactivate task types. At least one active type is required.
+              Add, rename, reorder, or deactivate ticket types. At least one active type is required.
             </DialogDescription>
           </DialogHeader>
 
@@ -158,7 +158,7 @@ export function TaskTypesCard({ projectId, canManage }: Props) {
                   value={row.name}
                   onChange={(e) => setName(i, e.target.value)}
                   disabled={!canManage || !row.isActive}
-                  placeholder="Task type name"
+                  placeholder="Ticket type name"
                   className={`flex-1 ${!row.isActive ? 'opacity-50 line-through' : ''}`}
                 />
                 {canManage && (
@@ -184,15 +184,15 @@ export function TaskTypesCard({ projectId, canManage }: Props) {
             {canManage && (
               <Button variant="ghost" size="sm" onClick={addRow} className="mt-1">
                 <Plus className="size-4 mr-1" />
-                Add task type
+                Add ticket type
               </Button>
             )}
 
             {hasEmpty && (
-              <p className="text-xs text-destructive">Active task types cannot have empty names.</p>
+              <p className="text-xs text-destructive">Active ticket types cannot have empty names.</p>
             )}
             {activeCount === 0 && (
-              <p className="text-xs text-destructive">At least one active task type is required.</p>
+              <p className="text-xs text-destructive">At least one active ticket type is required.</p>
             )}
           </DialogBody>
 

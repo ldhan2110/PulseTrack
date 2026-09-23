@@ -29,7 +29,7 @@ function FieldGroup({ children }: { children: React.ReactNode }) {
 }
 
 function initials(name: string | null): string {
-  if (!name) return '?';
+  if (!name) return 'U';
   return name
     .split(' ')
     .filter(Boolean)
@@ -89,7 +89,7 @@ function ProjectCard({ project }: { project: ProjectListItem }) {
           {shown.map((m) => (
             <Avatar key={m.user.id} size="sm">
               {m.user.imageUrl && <AvatarImage src={m.user.imageUrl} alt={m.user.name ?? ''} />}
-              <AvatarFallback>{initials(m.user.name)}</AvatarFallback>
+              <AvatarFallback>{initials(m.user.name || m.user.username)}</AvatarFallback>
             </Avatar>
           ))}
           {overflow > 0 && <AvatarGroupCount>+{overflow}</AvatarGroupCount>}

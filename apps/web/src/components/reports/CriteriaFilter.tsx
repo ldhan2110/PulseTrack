@@ -141,7 +141,7 @@ export function CriteriaFilter({ projectId, range, preset, selectedTypes, member
         {activeTypes.length > 0 && (
           <fieldset className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Task Types</label>
+              <label className="text-sm font-medium">Ticket Types</label>
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <Checkbox
                   checked={allChecked}

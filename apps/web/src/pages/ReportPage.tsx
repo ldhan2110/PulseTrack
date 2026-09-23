@@ -71,7 +71,7 @@ export function ReportPage() {
     setRange(DEFAULT_RANGE);
     setPreset(null);
     setUserIds([]);
-    // Task types are re-seeded to "all" by CriteriaFilter (it owns the active list).
+    // Ticket types are re-seeded to "all" by CriteriaFilter (it owns the active list).
   };
   const handlePreset = (label: string, r: DateRange) => {
     setRange(r);

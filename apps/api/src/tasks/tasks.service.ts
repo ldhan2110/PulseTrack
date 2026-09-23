@@ -64,7 +64,7 @@ export class TasksService {
           select: { id: true },
         });
         if (!taskType) {
-          throw new BadRequestException('Invalid task type for this project');
+          throw new BadRequestException('Invalid ticket type for this project');
         }
       }
 
@@ -313,7 +313,7 @@ export class TasksService {
         select: { id: true },
       });
       if (!taskType) {
-        throw new BadRequestException('Invalid task type for this project');
+        throw new BadRequestException('Invalid ticket type for this project');
       }
     }
 

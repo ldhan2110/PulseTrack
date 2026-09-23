@@ -156,7 +156,7 @@ export function CreateTaskDialog({
       }
     }
     if (!taskTypeId) {
-      newErrors.taskTypeId = 'Task type is required';
+      newErrors.taskTypeId = 'Ticket type is required';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -242,7 +242,7 @@ export function CreateTaskDialog({
               </Field>
 
               <Field>
-                <FieldLabel>Task Type <span className="text-destructive">*</span></FieldLabel>
+                <FieldLabel>Ticket Type <span className="text-destructive">*</span></FieldLabel>
                 <Select value={taskTypeId} onValueChange={setTaskTypeId}>
                   <SelectTrigger className="h-8 w-full" aria-invalid={!!errors.taskTypeId}>
                     <SelectValue placeholder="Select a type" />

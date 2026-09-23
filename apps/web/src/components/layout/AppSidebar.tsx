@@ -197,7 +197,8 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
 
       <Separator />
 
-      <SidebarContent>
+      {/* Re-show the native scrollbar when nav overflows (base SidebarContent hides it via `no-scrollbar`) */}
+      <SidebarContent className="[-ms-overflow-style:auto] [scrollbar-width:thin] [&::-webkit-scrollbar]:block [&::-webkit-scrollbar]:w-1.5">
         {/* My Tasks — top-level nav */}
         <SidebarGroup>
           <SidebarMenu>
@@ -256,8 +257,8 @@ function AppSidebarInner({ onCreateProject }: AppSidebarInnerProps) {
               Projects
             </SidebarGroupLabel>
           )}
-          {/* Projects list — capped height, scrolls internally when overflowing */}
-          <div className={isCollapsed ? undefined : 'max-h-[240px] overflow-y-auto'}>
+          {/* Projects list — capped height, scrolls internally when overflowing (both expanded & collapsed) */}
+          <div className="max-h-[240px] overflow-y-auto">
             <SidebarMenu>
               {(projects ?? []).map((project) => {
                 const projectIdentifier = project.prefix ?? project.id;

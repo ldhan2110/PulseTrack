@@ -78,7 +78,7 @@ function buildDescription(
     case 'storyPoints':
       return !newValue ? 'cleared story points' : `set story points to ${newValue}`;
     case 'taskType':
-      return !newValue ? 'cleared task type' : `set task type to ${newValue}`;
+      return !newValue ? 'cleared ticket type' : `set ticket type to ${newValue}`;
     case 'title':
       return 'renamed task';
     case 'comment_added':

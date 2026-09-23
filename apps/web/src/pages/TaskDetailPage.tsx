@@ -932,69 +932,65 @@ export function TaskDetailPage() {
               </div>
 
               {/* Priority */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Priority</SidebarLabel>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={task.priority ?? 'none'}
-                    onValueChange={(val) => {
-                      const priority = val === 'none' ? null : (val as Priority);
-                      optimisticMutate({ priority }, { taskId, data: { priority } });
-                    }}
-                    disabled={!canEdit}
-                  >
-                    <SelectTrigger className="h-7 w-[140px] text-xs">
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground text-xs">None</span>
+                <Select
+                  value={task.priority ?? 'none'}
+                  onValueChange={(val) => {
+                    const priority = val === 'none' ? null : (val as Priority);
+                    optimisticMutate({ priority }, { taskId, data: { priority } });
+                  }}
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-muted-foreground text-xs">None</span>
+                    </SelectItem>
+                    {PRIORITY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="inline-block size-2 rounded-full"
+                            style={{ backgroundColor: opt.color }}
+                          />
+                          <span className="text-xs" style={{ color: opt.color }}>{opt.label}</span>
+                        </div>
                       </SelectItem>
-                      {PRIORITY_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className="inline-block size-2 rounded-full"
-                              style={{ backgroundColor: opt.color }}
-                            />
-                            <span className="text-xs" style={{ color: opt.color }}>{opt.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Task Type */}
-              <div className="flex items-center justify-between">
-                <SidebarLabel>Task Type</SidebarLabel>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={task.taskTypeId ?? ''}
-                    onValueChange={(taskTypeId) =>
-                      optimisticMutate({ taskTypeId }, { taskId, data: { taskTypeId } })
-                    }
-                    disabled={!canEdit}
-                  >
-                    <SelectTrigger className="h-7 w-[140px] text-xs">
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* Keep current type visible even if it was deactivated */}
-                      {task.taskType && !taskTypes.some((t) => t.id === task.taskTypeId && t.isActive) && (
-                        <SelectItem value={task.taskType.id}>
-                          <span className="text-xs">{task.taskType.name}</span>
-                        </SelectItem>
-                      )}
-                      {taskTypes.filter((t) => t.isActive).map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          <span className="text-xs">{t.name}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Ticket Type */}
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Ticket Type</SidebarLabel>
+                <Select
+                  value={task.taskTypeId ?? ''}
+                  onValueChange={(taskTypeId) =>
+                    optimisticMutate({ taskTypeId }, { taskId, data: { taskTypeId } })
+                  }
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Keep current type visible even if it was deactivated */}
+                    {task.taskType && !taskTypes.some((t) => t.id === task.taskTypeId && t.isActive) && (
+                      <SelectItem value={task.taskType.id}>
+                        <span className="text-xs">{task.taskType.name}</span>
+                      </SelectItem>
+                    )}
+                    {taskTypes.filter((t) => t.isActive).map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        <span className="text-xs">{t.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Task Progress */}
