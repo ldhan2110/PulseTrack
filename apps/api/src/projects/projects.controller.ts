@@ -75,6 +75,13 @@ export class ProjectsController {
     return this.projectsService.unarchive(projectId);
   }
 
+  // Owner-only: no ProjectRolesGuard — ownership is enforced in the service,
+  // so a non-owner (even with projectSettings:update) is rejected.
+  @Delete(':projectId')
+  remove(@Req() req: any, @Param('projectId') projectId: string) {
+    return this.projectsService.remove(projectId, req.user.id);
+  }
+
   @Patch(':projectId/settings')
   @UseGuards(ProjectRolesGuard)
   @RequirePermission('projectSettings', 'update')

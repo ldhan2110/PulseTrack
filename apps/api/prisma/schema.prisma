@@ -255,6 +255,7 @@ model Project {
   name        String
   description String?
   archived    Boolean   @default(false)
+  deletedAt   DateTime? // owner-only soft delete; null = live, non-null = hidden from everyone (admin DB-only recovery)
   ownerId     String
   owner       User      @relation("ProjectOwner", fields: [ownerId], references: [id])
   prefix      String?   @unique   // 2-10 uppercase letters, URL slug + task key prefix

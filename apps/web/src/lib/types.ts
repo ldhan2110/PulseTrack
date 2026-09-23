@@ -131,6 +131,7 @@ export interface Project {
   prefix: string | null;
   avatarUrl: string | null;
   archived: boolean;
+  ownerId: string | null;
   emailNotificationsEnabled?: boolean;
   createdAt: string;
   updatedAt: string;

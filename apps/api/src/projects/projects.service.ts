@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkflowService } from '../workflow/workflow.service';
 import { SYSTEM_ROLE_PERMISSIONS, DEFAULT_MEMBER_PERMISSIONS } from '../auth/permissions';
@@ -117,7 +117,7 @@ export class ProjectsService {
     });
 
     return memberships
-      .filter((m) => !m.project.archived)
+      .filter((m) => !m.project.archived && !m.project.deletedAt)
       .map((m) => {
         const closedIds = new Set(
           m.project.workflowStatuses.filter((s) => s.isClosed).map((s) => s.id),
@@ -159,7 +159,7 @@ export class ProjectsService {
       },
     });
 
-    if (!project) {
+    if (!project || project.deletedAt) {
       throw new NotFoundException(`Project ${projectId} not found`);
     }
 
@@ -188,6 +188,27 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id: projectId },
       data: { archived: false },
+    });
+  }
+
+  // Owner-only soft delete. Deliberately NOT permission-gated (ProjectRolesGuard):
+  // a non-owner member — even one with projectSettings:update — must be rejected.
+  async remove(projectId: string, userId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { ownerId: true, deletedAt: true },
+    });
+
+    if (!project || project.deletedAt) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+    if (project.ownerId !== userId) {
+      throw new ForbiddenException('Only the project owner can delete this project');
+    }
+
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: { deletedAt: new Date() },
     });
   }
 

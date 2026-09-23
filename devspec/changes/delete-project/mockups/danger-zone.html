@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>delete-project — Danger Zone mockup</title>
+<style>
+  /* Real tokens copied from apps/web/src/index.css (shadcn, oklch) */
+  :root{
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --radius: 0.625rem;
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) * 0.8);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--muted); color:var(--foreground);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:14px; line-height:1.5; padding:32px 16px;
+  }
+  .page{max-width:760px; margin:0 auto}
+  .caption{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--muted-foreground); margin:32px 0 8px}
+  .caption:first-child{margin-top:0}
+  .tabs{display:flex; gap:4px; background:var(--muted); border:1px solid var(--border);
+    border-radius:var(--radius-md); padding:4px; width:max-content; margin-bottom:20px}
+  .tab{padding:6px 14px; border-radius:calc(var(--radius) * 0.6); font-weight:500; color:var(--muted-foreground)}
+  .tab.active{background:var(--background); color:var(--foreground); box-shadow:0 1px 2px oklch(0 0 0 / .08)}
+
+  /* shadcn Card */
+  .card{background:var(--card); color:var(--card-foreground); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:24px; box-shadow:0 1px 2px oklch(0 0 0 / .05); margin-bottom:16px}
+  .card h3{margin:0 0 4px; font-size:16px; font-weight:600}
+  .card p.sub{margin:0 0 16px; color:var(--muted-foreground); font-size:13px}
+  .field{margin-bottom:14px}
+  .label{display:block; font-weight:500; margin-bottom:6px}
+  .input{width:100%; border:1px solid var(--input); border-radius:var(--radius-md);
+    padding:8px 12px; background:var(--background); color:var(--foreground)}
+  .btn{display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 16px;
+    border-radius:var(--radius-md); font-weight:500; border:1px solid transparent; cursor:pointer}
+  .btn-primary{background:var(--primary); color:var(--primary-foreground)}
+  /* destructive variant per button.tsx: subtle, not solid */
+  .btn-destructive{background:oklch(0.577 0.245 27.325 / .1); color:var(--destructive)}
+  .btn-destructive:hover{background:oklch(0.577 0.245 27.325 / .2)}
+  .btn[disabled]{opacity:.5; cursor:not-allowed}
+
+  /* Danger Zone card — red-tinted border */
+  .danger{border-color:oklch(0.577 0.245 27.325 / .4)}
+  .danger h3{color:var(--destructive)}
+  .danger-row{display:flex; align-items:center; justify-content:space-between; gap:24px}
+  .danger-row .txt{max-width:70%}
+  .danger-row .txt .t{font-weight:600; margin-bottom:2px}
+  .danger-row .txt .d{color:var(--muted-foreground); font-size:13px}
+
+  .spinner{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;
+    border-radius:50%; display:inline-block; animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* AlertDialog */
+  .overlay{position:relative; background:oklch(0 0 0 / .5); border-radius:var(--radius-lg);
+    padding:40px 16px; display:flex; justify-content:center}
+  .dialog{background:var(--background); border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:24px; max-width:440px; width:100%; box-shadow:0 10px 30px oklch(0 0 0 / .2)}
+  .dialog h4{margin:0 0 8px; font-size:17px; font-weight:600}
+  .dialog p{margin:0 0 8px; color:var(--muted-foreground); font-size:13px}
+  .dialog .warn{color:var(--destructive); font-weight:500}
+  .dialog .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:20px}
+  .btn-outline{background:var(--background); border-color:var(--border); color:var(--foreground)}
+  .btn-solid-destructive{background:var(--destructive); color:var(--primary-foreground)}
+  code{background:var(--muted); padding:1px 6px; border-radius:4px; font-size:12px}
+  .note{background:var(--muted); border:1px dashed var(--border); border-radius:var(--radius-md);
+    padding:16px; color:var(--muted-foreground); font-size:13px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="caption">State A — Owner viewing Project Settings › General (Danger Zone present, default)</div>
+  <div class="tabs">
+    <span class="tab active">General</span>
+    <span class="tab">Workflow</span>
+    <span class="tab">Agent</span>
+    <span class="tab">Roles &amp; Permissions</span>
+    <span class="tab">Wiki</span>
+  </div>
+  <div class="card">
+    <h3>General</h3>
+    <p class="sub">Project name, description, prefix, avatar…</p>
+    <div class="field"><span class="label">Name</span><div class="input">Apollo Platform</div></div>
+    <div class="field"><span class="label">Prefix</span><div class="input">APL</div></div>
+    <button class="btn btn-primary">Save changes</button>
+  </div>
+  <!-- other General cards (Task Types, Repository, Reports, Default Watchers) omitted for mockup -->
+  <div class="card danger">
+    <h3>Danger Zone</h3>
+    <p class="sub">Irreversible actions for this project.</p>
+    <div class="danger-row">
+      <div class="txt">
+        <div class="t">Delete this project</div>
+        <div class="d">Hides the project from everyone, including members. Tasks, bugs, and data are kept but become inaccessible. Recovery is possible only by an administrator via the database.</div>
+      </div>
+      <button class="btn btn-destructive">Delete project</button>
+    </div>
+  </div>
+
+  <div class="caption">State B — Confirm dialog open (shadcn AlertDialog)</div>
+  <div class="overlay">
+    <div class="dialog">
+      <h4>Delete “Apollo Platform”?</h4>
+      <p>This hides the project from <strong>all members and you</strong>. Its tasks, bugs, sprints and other data are preserved but will no longer be reachable in the app.</p>
+      <p class="warn">This cannot be undone from the app — only an administrator can restore it.</p>
+      <div class="actions">
+        <button class="btn btn-outline">Cancel</button>
+        <button class="btn btn-solid-destructive">Delete project</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="caption">State C — Deleting (confirm button busy)</div>
+  <div class="overlay">
+    <div class="dialog">
+      <h4>Delete “Apollo Platform”?</h4>
+      <p>This hides the project from <strong>all members and you</strong>. Its tasks, bugs, sprints and other data are preserved but will no longer be reachable in the app.</p>
+      <p class="warn">This cannot be undone from the app — only an administrator can restore it.</p>
+      <div class="actions">
+        <button class="btn btn-outline" disabled>Cancel</button>
+        <button class="btn btn-solid-destructive" disabled><span class="spinner"></span> Deleting…</button>
+      </div>
+    </div>
+  </div>
+  <p class="note">On success: dialog closes, toast “Project deleted”, redirect out of the project to the projects list. The deleted project no longer appears in any list.</p>
+
+  <div class="caption">State D — Non-owner viewing the same General tab (Danger Zone ABSENT)</div>
+  <div class="card">
+    <h3>General</h3>
+    <p class="sub">Project name, description, prefix, avatar…</p>
+    <div class="field"><span class="label">Name</span><div class="input">Apollo Platform</div></div>
+    <div class="field"><span class="label">Prefix</span><div class="input">APL</div></div>
+    <button class="btn btn-primary">Save changes</button>
+  </div>
+  <p class="note">No Danger Zone card rendered — a non-owner (<code>user.id !== project.ownerId</code>) never sees the delete action. Not merely disabled: absent.</p>
+
+</div>
+</body>
+</html>

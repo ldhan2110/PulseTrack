@@ -119,3 +119,24 @@ _logged: 2026-09-22 by worker-cc_
 2. In a project's Settings → Roles & Permissions, create/select a NON-system role, uncheck `Bugs.view` and `Wiki.view` (and both `Planner.view`+`WBS.view` to test parent collapse), save; assign `anle` that role.
 3. Re-run `/devspec-verify sidebar-permission-gating` (or eyeball): Bugs + Wiki absent from sidebar, Project Planner gone when planner+wbs off; an admin/system user still sees the full list; collapsed sidebar shows the same reduced set.
 4. On pass: tick §3.1 `[x]` in `tasks.md` AND set board `status: blocked → pending` (worker finishes + archives) — or mark `done` directly since §1/§2 are committed.
+
+## delete-project — §5 live verify + §6 manual gate blocked on ops/human (2026-09-23)
+
+**Change**: delete-project — status `blocked`. Implementation COMPLETE and proven; only live/visual verification is blocked.
+
+**Done & verified (automated)**:
+- §1 schema `Project.deletedAt` + additive migration `20260923000000_add_project_soft_delete/migration.sql`. Prisma client regenerated OK.
+- §2 owner-guarded `DELETE /projects/:projectId` (`remove` in service, controller handler). §3 read-path filters (`findAllForUser`, `findOne`).
+- §2.3/§3.3 unit tests: 6 green (`apps/api/src/projects/projects.service.spec.ts`). `nest build` clean.
+- §4 web `api.deleteProject` + `useDeleteProject`. §5 `DangerZoneCard` (owner-gated) wired into General tab. Web `tsc -b` + `vite build` clean.
+
+**Blocked**:
+1. **§1 migration NOT applied to any running DB.** The only reachable DB is the shared team DB `pm_x` @ 10.0.0.85:5439 — off-limits (rules: never touch live DB), and it already has an unrelated FAILED migration (`20260918000000_add_mcp_allow_write`, P3009). Prisma migrate engine (`rtk`) is absent/shadowed here, so `migrate dev/deploy` can't run locally. No scratch Postgres available in this env.
+2. **§5 `/devspec-verify` not runnable.** App is down (web:5173 + api:3000 both down); even started, it points at a DB without the `deletedAt` column, so the feature would 500. Live agent-browser verify requires: human applies the migration to the app's DB + app running.
+3. **§6 MANUAL gate unticked.** Needs a second, non-owner account to confirm the Danger Zone card is absent for non-owners — not available in this env. Worker never self-approves.
+
+**To resume** (human):
+1. Apply migration `20260923000000_add_project_soft_delete` to the app's DB (the shared-DB P3009 failure is a separate pre-existing issue to resolve first).
+2. Start api + web; run `/devspec-verify delete-project` (owner sees styled Danger Zone card + working confirm; deletes + redirects; project gone from list).
+3. Log in as a non-owner member, confirm no Danger Zone card on General tab, tick §6.1 `[x]`.
+4. Reset board `status: blocked → pending` and re-run, or mark `done` if all verifies pass.

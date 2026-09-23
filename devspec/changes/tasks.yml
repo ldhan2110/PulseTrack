@@ -121,3 +121,11 @@ changes:
     status: blocked
     owner: "worker-cc"
     notes: "§1+§2 done & verified (web+api build clean; AppSidebar unit 7/7 on real nav map; wiki area added web+api). §3 live /devspec-verify NOT runnable: app down + no mockups + needs a non-system role fixture (anle is admin). Impl complete & logic-proven. See report/blockers.md — human starts app, sets a restricted role, re-verifies, then tick §3 + done."
+  delete-project:
+    title: Delete project — owner-only soft delete (Project.deletedAt), Danger Zone in Settings, warning confirm, hidden from everyone, DB-only recovery
+    tasks_md: changes/delete-project/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "Impl COMPLETE + proven: §1-§4 + §5 code done; 6 api unit tests green (projects.service.spec.ts); nest build + web tsc/vite build all clean. BLOCKED on live/visual verify only — §1 migration not applied to any running DB (shared pm_x off-limits + has pre-existing P3009 fail; rtk migrate engine absent; no scratch DB), so §5 /devspec-verify not runnable (app down + column missing) and §6 MANUAL needs a non-owner account. See report/blockers.md — human applies migration to app DB, starts app, runs verify + non-owner screenshot, ticks §6.1, resets blocked→pending."

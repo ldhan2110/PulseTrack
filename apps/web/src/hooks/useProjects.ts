@@ -61,6 +61,19 @@ export function useArchiveProject() {
   });
 }
 
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteProject(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+}
+
 export function useProjectByPrefix(prefix: string) {
   return useQuery({
     queryKey: ['project-by-prefix', prefix],

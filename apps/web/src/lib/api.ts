@@ -267,6 +267,7 @@ export const api = {
     request<void>(`/projects/${id}/archive`, { method: 'POST' }),
   unarchiveProject: (id: string) =>
     request<void>(`/projects/${id}/unarchive`, { method: 'POST' }),
+  deleteProject: (id: string) => request<void>(`/projects/${id}`, { method: 'DELETE' }),
   getProjectByPrefix: (prefix: string) => request<Project>(`/projects/by-prefix/${prefix}`),
   updateProjectSettings: (id: string, data: UpdateSettingsPayload) =>
     request<Project>(`/projects/${id}/settings`, { method: 'PATCH', body: JSON.stringify(data) }),

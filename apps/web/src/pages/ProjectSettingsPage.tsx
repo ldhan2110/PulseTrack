@@ -21,6 +21,7 @@ import { RolesPermissionsTab } from '@/components/settings/RolesPermissionsTab';
 import { WikiConfigCard } from '@/components/settings/WikiConfigCard';
 import { DefaultWatchersCard } from '@/components/settings/DefaultWatchersCard';
 import { TaskTypesCard } from '@/components/settings/TaskTypesCard';
+import { DangerZoneCard } from '@/components/settings/DangerZoneCard';
 
 export function ProjectSettingsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
@@ -239,6 +240,13 @@ export function ProjectSettingsPage() {
 
           {/* Default Watchers Card */}
           <DefaultWatchersCard projectId={projectId} canManage={canManage} />
+
+          {/* Danger Zone — owner only */}
+          <DangerZoneCard
+            projectId={project.id}
+            projectName={project.name}
+            ownerId={project.ownerId}
+          />
         </TabsContent>
 
         {canManage && (
