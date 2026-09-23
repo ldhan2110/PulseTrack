@@ -53,9 +53,8 @@ export function DangerZoneCard({ projectId, projectName, ownerId }: DangerZoneCa
         <div className="max-w-[70%]">
           <p className="font-medium">Delete this project</p>
           <p className="text-sm text-muted-foreground">
-            Hides the project from everyone, including members. Tasks, bugs, and other data are
-            kept but become inaccessible. Recovery is possible only by an administrator via the
-            database.
+            Removes the project for all members. Data is retained but inaccessible; only an
+            administrator can restore it.
           </p>
         </div>
         <AlertDialog open={open} onOpenChange={setOpen}>
@@ -66,10 +65,10 @@ export function DangerZoneCard({ projectId, projectName, ownerId }: DangerZoneCa
             <AlertDialogHeader>
               <AlertDialogTitle>Delete “{projectName}”?</AlertDialogTitle>
               <AlertDialogDescription>
-                This hides the project from all members and you. Its tasks, bugs, sprints and
-                other data are preserved but will no longer be reachable in the app.
+                The project will be removed for you and all members. Its data is retained but no
+                longer accessible in the app.
                 <span className="mt-2 block font-medium text-destructive">
-                  This cannot be undone from the app — only an administrator can restore it.
+                  This can’t be undone here — only an administrator can restore it.
                 </span>
               </AlertDialogDescription>
             </AlertDialogHeader>
