@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TaskCard } from './TaskCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -284,6 +286,7 @@ interface MyTasksTableProps {
 export function MyTasksTable({ tasks }: MyTasksTableProps) {
   const navigate = useNavigate();
   const deleteTask = useDeleteMyTask();
+  const isMobile = useIsMobile();
 
   const [sortField, setSortField] = useState<SortField>('dueDate');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -379,6 +382,27 @@ export function MyTasksTable({ tasks }: MyTasksTableProps) {
     setSelected(new Set());
     setShowDeleteDialog(false);
   };
+
+  // Mobile: stacked cards with a project chip (no table, no sort/filter/select/delete).
+  if (isMobile) {
+    if (filteredAndSorted.length === 0) {
+      return <p className="text-sm text-muted-foreground text-center py-8">No tasks assigned to you</p>;
+    }
+    return (
+      <div className="flex flex-col gap-2">
+        {filteredAndSorted.map((task) => (
+          <div key={task.id} onClick={() => handleRowClick(task)} className="cursor-pointer">
+            <TaskCard
+              task={task}
+              showProject
+              showPoints
+              statusControl={task.workflowStatus ? <StatusBadge status={task.workflowStatus} /> : undefined}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">

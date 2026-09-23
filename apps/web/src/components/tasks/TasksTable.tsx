@@ -31,10 +31,13 @@ import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown, Trash2 } fr
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from './StatusBadge';
+import { TaskCard } from './TaskCard';
 import { TaskProgressBar } from './TaskProgressBar';
 import { getParentProgress } from './task-progress-utils';
 import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn, progressFilterFn, matchesFilters } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useNavigate } from 'react-router-dom';
 import { formatMinutes } from '@/lib/time-utils';
 import { format } from 'date-fns';
 import type { Task, Member, Sprint, Priority, WorkflowStatus } from '@/lib/types';
@@ -116,6 +119,8 @@ export function TasksTable({
   onFiltersChange,
 }: TasksTableProps) {
   const updateTaskStatus = useUpdateTaskStatus(projectId);
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters ?? []);
   const [globalFilter, setGlobalFilter] = useState(initialGlobalFilter ?? '');
@@ -471,6 +476,30 @@ export function TasksTable({
       <div className="flex flex-col gap-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full rounded-md" />
+        ))}
+      </div>
+    );
+  }
+
+  // Mobile: stacked cards instead of the tanstack table (no sort/filter/select/expand).
+  if (isMobile) {
+    if (tasks.length === 0) {
+      return <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>;
+    }
+    return (
+      <div className="flex flex-col gap-2">
+        {tasks.map((task) => (
+          <div
+            key={task.id}
+            onClick={() => navigate(`/projects/${projectPrefix}/tasks/${task.taskKey ?? task.id}`)}
+            className="cursor-pointer"
+          >
+            <TaskCard
+              task={task}
+              showPoints
+              statusControl={task.workflowStatus ? <StatusBadge status={task.workflowStatus} /> : undefined}
+            />
+          </div>
         ))}
       </div>
     );
