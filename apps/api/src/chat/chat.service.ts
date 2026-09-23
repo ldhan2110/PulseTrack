@@ -13,6 +13,18 @@ const memberUserSelect = {
   select: { id: true, username: true, email: true, name: true, imageUrl: true },
 };
 
+// Shallow parent preview for a reply — no nested replyTo, no reactions/attachments.
+const replyToInclude = {
+  select: { id: true, body: true, deletedAt: true, author: memberUserSelect },
+};
+
+/** Blank a soft-deleted parent's body so a reply shows "message deleted", never stale text. */
+function stripDeletedReply<T extends { replyTo?: { deletedAt: Date | null; body: string } | null }>(
+  m: T,
+): T {
+  return m.replyTo?.deletedAt ? { ...m, replyTo: { ...m.replyTo, body: '' } } : m;
+}
+
 const HISTORY_PAGE = 30;
 
 @Injectable()
@@ -267,17 +279,31 @@ export class ChatService {
     conversationId: string,
     authorId: string,
     body: string | undefined,
+    replyToId?: string,
     clientTempId?: string,
   ) {
     if (!body || !body.trim()) {
       throw new BadRequestException('Message body is required');
     }
+    if (replyToId) {
+      const parent = await this.prisma.message.findUnique({
+        where: { id: replyToId },
+        select: { conversationId: true },
+      });
+      if (!parent || parent.conversationId !== conversationId) {
+        throw new BadRequestException('Reply target is not in this conversation');
+      }
+    }
     const created = await this.prisma.message.create({
-      data: { conversationId, authorId, body, createdBy: authorId },
-      include: { author: memberUserSelect, reactions: { include: { user: memberUserSelect } } },
+      data: { conversationId, authorId, body, replyToId, createdBy: authorId },
+      include: {
+        author: memberUserSelect,
+        reactions: { include: { user: memberUserSelect } },
+        replyTo: replyToInclude,
+      },
     });
     // Transient echo (not persisted) so the sender can match its optimistic message.
-    const message = { ...created, clientTempId };
+    const message = { ...stripDeletedReply(created), clientTempId };
     this.emitToConvo(conversationId, 'chat:message:new', message);
     await this.notifyMentions(conversationId, created.id, created.author, body);
     return message;
@@ -325,9 +351,12 @@ export class ChatService {
         author: memberUserSelect,
         attachments: true,
         reactions: { include: { user: memberUserSelect } },
+        replyTo: replyToInclude,
       },
     });
-    const items = rows.map((m) => (m.deletedAt ? { ...m, body: '' } : m));
+    const items = rows.map((m) =>
+      stripDeletedReply(m.deletedAt ? { ...m, body: '' } : m),
+    );
     const nextCursor =
       rows.length === HISTORY_PAGE ? rows[rows.length - 1].id : null;
     return { items, nextCursor };
@@ -345,11 +374,17 @@ export class ChatService {
     if (message.authorId !== userId) {
       throw new ForbiddenException('Only the author can edit this message');
     }
-    const updated = await this.prisma.message.update({
-      where: { id: messageId },
-      data: { body, editedAt: new Date(), updatedBy: userId },
-      include: { author: memberUserSelect, reactions: { include: { user: memberUserSelect } } },
-    });
+    const updated = stripDeletedReply(
+      await this.prisma.message.update({
+        where: { id: messageId },
+        data: { body, editedAt: new Date(), updatedBy: userId },
+        include: {
+          author: memberUserSelect,
+          reactions: { include: { user: memberUserSelect } },
+          replyTo: replyToInclude,
+        },
+      }),
+    );
     this.emitToConvo(updated.conversationId, 'chat:message:updated', updated);
     return updated;
   }

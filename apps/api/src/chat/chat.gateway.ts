@@ -130,7 +130,7 @@ export class ChatGateway
   @SubscribeMessage('chat:send')
   async handleSend(
     @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { conversationId: string; body?: string },
+    @MessageBody() payload: { conversationId: string; body?: string; replyToId?: string },
   ): Promise<void> {
     await this.chatService.assertMember(
       payload.conversationId,
@@ -141,6 +141,7 @@ export class ChatGateway
       payload.conversationId,
       socket.data.userId,
       payload.body,
+      payload.replyToId,
     );
   }
 }

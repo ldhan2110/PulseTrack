@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { getChatSocket } from '@/socket/instance';
 import { useSendMessage, useMarkChatRead, chatKeys } from '@/hooks/useChat';
 import { initials } from './chatUtils';
-import type { ConversationMember } from '@/lib/types';
+import type { ConversationMember, Message } from '@/lib/types';
 
 const EmojiPicker = lazy(() => import('./EmojiPickerLazy'));
 
@@ -25,10 +25,14 @@ export function Composer({
   conversationId,
   unread = 0,
   members = [],
+  replyTarget = null,
+  onCancelReply,
 }: {
   conversationId: string;
   unread?: number;
   members?: ConversationMember[];
+  replyTarget?: Message | null;
+  onCancelReply?: () => void;
 }) {
   const [text, setText] = useState('');
   const [pending, setPending] = useState<File[]>([]);
@@ -124,8 +128,21 @@ export function Composer({
     setPending([]);
     try {
       if (body) {
-        send.mutate({ body: serialize(body), clientTempId: crypto.randomUUID() });
+        send.mutate({
+          body: serialize(body),
+          clientTempId: crypto.randomUUID(),
+          replyToId: replyTarget?.id,
+          replyTo: replyTarget
+            ? {
+                id: replyTarget.id,
+                body: replyTarget.body,
+                deletedAt: replyTarget.deletedAt,
+                author: replyTarget.author,
+              }
+            : null,
+        });
         picked.current = [];
+        onCancelReply?.();
       }
       // attachments upload as their own messages (backend emits chat:message:new)
       for (const file of files) {
@@ -189,6 +206,25 @@ export function Composer({
               </button>
             </div>
           ))}
+        </div>
+      )}
+      {replyTarget && (
+        <div className="mb-2 flex items-center gap-2 rounded-lg border-l-2 border-primary/50 bg-muted px-3 py-1.5 text-xs">
+          <span className="shrink-0 text-muted-foreground">Replying to</span>
+          <span className="shrink-0 font-semibold text-primary">
+            {replyTarget.author?.name ?? replyTarget.author?.username ?? 'User'}
+          </span>
+          <span className="flex-1 truncate text-muted-foreground">
+            {replyTarget.body.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')}
+          </span>
+          <button
+            type="button"
+            onClick={() => onCancelReply?.()}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            aria-label="Cancel reply"
+          >
+            <X className="size-3.5" />
+          </button>
         </div>
       )}
       <div
@@ -259,6 +295,11 @@ export function Composer({
                 setMention(null);
                 return;
               }
+            }
+            if (e.key === 'Escape' && replyTarget) {
+              e.preventDefault();
+              onCancelReply?.();
+              return;
             }
             if (
               e.key === 'Enter' &&

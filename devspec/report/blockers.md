@@ -140,3 +140,19 @@ _logged: 2026-09-22 by worker-cc_
 2. Start api + web; run `/devspec-verify delete-project` (owner sees styled Danger Zone card + working confirm; deletes + redirects; project gone from list).
 3. Log in as a non-owner member, confirm no Danger Zone card on General tab, tick §6.1 `[x]`.
 4. Reset board `status: blocked → pending` and re-run, or mark `done` if all verifies pass.
+
+## add-chat-reply — live DB apply + browser verify (env-gated)
+_logged: 2026-09-23 by worker-cc_
+
+**All code complete and unit-proven.** API: `nest` types + `chat.service` 140 tests green (+6 new: reply persist, cross-convo 400, missing-target 400, replyTo preview, deleted-parent blank). Web: build clean (tsc+vite), Composer/useChat unit tests pass. Migration file written (`apps/api/prisma/migrations/20260923010000_add_chat_reply/migration.sql`, additive) + Prisma client regenerated.
+
+**Blocked on (all need the app running against a DB that has `Message.replyToId`):**
+- §1 verify — migration apply/diff not runnable: shared dev DB (10.0.0.85:5439) is off-limits + diverged from the local migrations dir (`migrate dev` demands a destructive reset — refused), no scratch DB, and the rtk migrate engine is absent (`prisma migrate diff` → "rtk: No such file"). Same env limit `add-project-soft-delete` hit.
+- §5/§6/§7 verify (`/devspec-verify add-chat-reply`) — browser check needs the app up with the column present; column absent until the migration is applied.
+- §8.1 MANUAL — BA screenshot sign-off vs `mockups/chat-reply.html`; needs the running app + §5-7 verify output.
+
+**To resume (human):**
+1. Apply `20260923010000_add_chat_reply` to the app DB (`pnpm migrate:deploy`, or apply the SQL).
+2. Start the app (`pnpm dev:api` + `pnpm dev:web`); log in as `anle` / `acbd@`.
+3. Run `/devspec-verify add-chat-reply`; work any `verify/fixes.md`.
+4. Tick §8.1 `[x]` after BA approves the screenshot, then reset board `status: blocked → pending` and re-run the worker.

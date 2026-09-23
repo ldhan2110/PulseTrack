@@ -55,7 +55,13 @@ export class ChatController {
     @Param('id') id: string,
     @Body() dto: SendMessageDto,
   ) {
-    return this.chatService.sendMessage(id, req.user.id, dto.body, dto.clientTempId);
+    return this.chatService.sendMessage(
+      id,
+      req.user.id,
+      dto.body,
+      dto.replyToId,
+      dto.clientTempId,
+    );
   }
 
   @Get('conversations/:id/messages')

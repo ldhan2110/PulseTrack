@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>add-chat-reply — spec review</title>
+<style>
+  :root{--bg:#fff;--fg:#0a0a0a;--mut:#737373;--bd:#e5e5e5;--acc:#2563eb;
+    --ok:#16a34a;--okbg:#f0fdf4;--warn:#ef4444;--code:#f5f5f5;--card:#fafafa}
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    color:var(--fg);background:#fff}
+  .wrap{display:grid;grid-template-columns:200px 1fr;max-width:1100px;margin:0 auto}
+  nav{position:sticky;top:0;align-self:start;height:100vh;padding:20px 12px;border-right:1px solid var(--bd);
+    font-size:13px;overflow:auto}
+  nav a{display:block;color:var(--mut);text-decoration:none;padding:4px 8px;border-radius:6px}
+  nav a:hover{background:var(--code);color:var(--fg)}
+  main{padding:24px 32px;min-width:0}
+  h1{font-size:24px;margin:0 0 4px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);
+    border-bottom:1px solid var(--bd);padding-bottom:5px;margin:34px 0 12px}
+  h3{font-size:15px;margin:16px 0 6px}
+  h4{font-size:13px;margin:10px 0 4px;color:#3f3f46}
+  code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:12.5px}
+  pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow:auto;font-size:12.5px;line-height:1.5}
+  table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+  th,td{border:1px solid var(--bd);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:var(--card);font-weight:600}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.status{background:#fef3c7;color:#92400e}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase}
+  .db{background:#ede9fe;color:#5b21b6}.backend{background:#dbeafe;color:#1e40af}
+  .service{background:#cffafe;color:#155e75}.frontend{background:#dcfce7;color:#166534}
+  .test{background:#fee2e2;color:#991b1b}.manual{background:#fef3c7;color:#92400e}
+  .banner{padding:10px 14px;border-radius:8px;margin:12px 0;font-weight:600}
+  .banner.ok{background:var(--okbg);color:var(--ok);border:1px solid #bbf7d0}
+  ul{margin:6px 0;padding-left:22px}li{margin:2px 0}
+  .chk{list-style:none;padding-left:4px}.chk li{margin:3px 0}
+  .verify{color:var(--acc);font-size:12.5px;margin:6px 0 2px;font-family:ui-monospace,monospace}
+  iframe{width:100%;height:640px;border:1px solid var(--bd);border-radius:8px;background:#fafafa}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px 16px;margin:8px 0}
+  .muted{color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <strong>add-chat-reply</strong>
+  <a href="#ctx">Context</a>
+  <a href="#prop">Proposal</a>
+  <a href="#arch">Architecture</a>
+  <a href="#impact">Impact Area</a>
+  <a href="#backend">Backend</a>
+  <a href="#frontend">Frontend</a>
+  <a href="#tasks">Tasks</a>
+  <a href="#cov">Coverage</a>
+  <a href="#board">Board</a>
+</nav>
+<main>
+  <h1>add-chat-reply</h1>
+  <div class="muted">Reply to a chat message; show which message was replied to.</div>
+
+  <h2 id="ctx">Context</h2>
+  <table>
+    <tr><th>Change id</th><td>add-chat-reply</td></tr>
+    <tr><th>Status</th><td><span class="pill status">not yet on board (pending /devspec-plan)</span></td></tr>
+    <tr><th>depends_on</th><td><code>[]</code> — mentions change code already merged; no build dep</td></tr>
+    <tr><th>Touches</th><td>DB (Prisma migration) · API chat module · web chat components</td></tr>
+  </table>
+
+  <h2 id="prop">Proposal</h2>
+  <h3>Why</h3>
+  <p>Chat supports send/edit/delete/reactions/attachments/@mentions but no <strong>reply to a specific message</strong>. Replies read as floating statements with no anchor. Users want to reply and have the UI show which message they replied to.</p>
+  <h3>Delivers</h3>
+  <ul>
+    <li><strong>Reply from any message</strong> — action in the hover toolbar (own + others, DM + channel).</li>
+    <li><strong>Quoted parent</strong> — compact preview above the reply body (author + one-line snippet).</li>
+    <li><strong>Composer reply banner</strong> — "Replying to &lt;name&gt;: &lt;preview&gt;", cancel via ✕/Escape.</li>
+    <li><strong>Jump to original</strong> — click the quote → scroll + highlight flash.</li>
+    <li><strong>Durable</strong> — real self-FK on <code>Message</code>; survives reload, rides the broadcast.</li>
+  </ul>
+  <h3>Scope — out</h3>
+  <ul>
+    <li>Threaded/nested sub-thread view (v1 = flat inline quote).</li>
+    <li>Deep-history jump when the parent is in an unloaded page (no-op instead).</li>
+    <li>Reply notifications (mentions cover call-outs).</li>
+    <li><code>@@index([replyToId])</code> — no reply-thread query in v1.</li>
+  </ul>
+
+  <h2 id="arch">Architecture</h2>
+  <p class="muted">ASCII fallback (archify not invoked).</p>
+  <pre>MessageRow [↩ Reply] ──setReplyTarget──▶ MessageThread (replyTarget state)
+                                              │
+                                              ▼
+                                        Composer (reply banner)
+                                              │ send.mutate({ body, replyToId, clientTempId })
+                                              ▼
+POST /chat/conversations/:id/messages ─▶ ChatController.send ─▶ ChatService.sendMessage
+                                              │  validate replyToId ∈ conversation
+                                              │  create Message{ replyToId }
+                                              │  include replyTo{ id, body, deletedAt, author }
+                                              ▼
+                                        emitToConvo('chat:message', payload)
+                                              │
+        MessageThread ◀── socket / react-query ── payload.replyTo ──▶ MessageRow quoted parent
+                                              │ click quoted ──▶ scrollIntoView(data-msg-id) + flash</pre>
+
+  <h2 id="impact">Impact Area</h2>
+  <h3>Decision Defaults</h3>
+  <table>
+    <tr><th>Gray area</th><th>Default</th><th>Why</th></tr>
+    <tr><td>Preview freshness</td><td>live include, no snapshot</td><td>edited parent stays accurate; one join</td></tr>
+    <tr><td>On-delete</td><td>FK SetNull; soft-deleted → "message deleted"</td><td>chat soft-deletes; SetNull is the hard-delete safety net</td></tr>
+    <tr><td>Deleted parent body</td><td>blank → "message deleted" italic</td><td>never leak stale/soft-deleted text</td></tr>
+    <tr><td>Cross-conversation reply</td><td>reject (400) in sendMessage</td><td>a reply anchors within its own channel</td></tr>
+    <tr><td>Parent not in loaded page</td><td>no-op / small toast; no deep fetch</td><td>edge case; deferred</td></tr>
+    <tr><td>Reply own vs others / DM vs channel</td><td>all four</td><td>reply is universal (unlike channel-only mentions)</td></tr>
+    <tr><td>Optimistic send preview</td><td>client builds replyTo from held target</td><td>banner already has name+body; no refetch</td></tr>
+    <tr><td>Index on replyToId</td><td>none in v1</td><td>no reply-thread query yet</td></tr>
+  </table>
+  <h3>Blast Radius</h3>
+  <ul>
+    <li><code>schema.prisma:1263</code> Message — add column + self-relation (migration)</li>
+    <li><code>send-message.dto.ts</code> — optional replyToId</li>
+    <li><code>chat.service.ts</code> — sendMessage (:266) persist+validate; replyTo include @ :277/:322/:351; deleted guard @ :330</li>
+    <li><code>chat.controller.ts:53</code> / <code>chat.gateway.ts:130</code> — thread replyToId</li>
+    <li><code>types.ts:1592</code> Message — replyToId + replyTo</li>
+    <li><code>MessageRow.tsx</code> / <code>Composer.tsx</code> / <code>MessageThread.tsx</code> / <code>useChat.ts</code></li>
+  </ul>
+  <h3>Risk</h3>
+  <p><strong>reversibility</strong>: high (additive column, revert = drop). <strong>risk</strong>: low-medium (hot send path + 3 include sites; no-regression verify covers it). <strong>shared-state</strong>: Message is chat-only; file overlap with done <code>chat-members-mentions</code>, no req conflict.</p>
+
+  <h2 id="backend">Backend</h2>
+  <div class="card">
+    <h4>DB — Message.replyToId (self-FK, additive)</h4>
+    <pre>replyToId String?
+replyTo   Message?  @relation("MessageReplyTo", fields:[replyToId], references:[id], onDelete: SetNull)
+replies   Message[] @relation("MessageReplyTo")</pre>
+    <p class="muted">Migration: <code>ALTER TABLE "Message" ADD COLUMN "replyToId" TEXT</code> + FK. No backfill, no index. Source: file-derived (no live DB MCP). Full grid in <code>db.md</code>.</p>
+    <h4>DTO</h4>
+    <p><code>SendMessageDto.replyToId?: string</code> (<code>@IsOptional @IsString</code>).</p>
+    <h4>Service — sendMessage</h4>
+    <p>Validate parent in same conversation (<code>findUnique select conversationId</code>, else 400), create with replyToId, include preview at all 3 read sites:</p>
+    <pre>replyTo: { select: { id:true, body:true, deletedAt:true, author: memberUserSelect } }</pre>
+    <p>Deleted parent (<code>deletedAt != null</code>) → body blanked to "message deleted" (mirrors existing deleted-map @ chat.service.ts:330).</p>
+  </div>
+
+  <h2 id="frontend">Frontend</h2>
+  <p class="muted">Approved mockup — <a href="mockups/chat-reply.html" target="_blank">open standalone</a>. Style: shadcn tokens matched to real chat; mention blue mirrors existing render.</p>
+  <iframe src="mockups/chat-reply.html" title="chat-reply mockup"></iframe>
+  <ul>
+    <li><strong>MessageRow</strong> — reply btn in hover toolbar (own + others); quoted-parent block above bubble; deleted-aware.</li>
+    <li><strong>Composer</strong> — reply banner (✕/Escape cancel); replyToId in send payload.</li>
+    <li><strong>MessageThread</strong> — owns replyTarget state, per-message scroll anchor, scroll-to + flash.</li>
+    <li><strong>useChat</strong> — send passes replyToId; optimistic message carries local replyTo preview.</li>
+  </ul>
+
+  <h2 id="tasks">Tasks</h2>
+
+  <h3>§1 Schema + migration <span class="muted">[req-1]</span></h3>
+  <ul class="chk">
+    <li><span class="tag db">db</span>1.1 Add <code>replyToId</code> + self-relation to Message (schema.prisma:1263), no index</li>
+    <li><span class="tag db">db</span>1.2 Prisma migration <code>&lt;ts&gt;_add_chat_reply</code> (additive, no backfill)</li>
+    <li><span class="tag backend">backend</span>1.3 <code>pnpm generate</code></li>
+  </ul>
+  <div class="verify">Verify: migrate diff clean; applies on scratch DB; replyToId nullable text FK SetNull</div>
+
+  <h3>§2 Send DTO + persist + guard <span class="muted">[req-1, req-2]</span></h3>
+  <ul class="chk">
+    <li><span class="tag backend">backend</span>2.1 <code>replyToId?</code> on SendMessageDto</li>
+    <li><span class="tag backend">backend</span>2.2 Thread through controller:53 + gateway:130 → service</li>
+    <li><span class="tag service">service</span>2.3 Validate parent conversation match (else BadRequest); create with replyToId</li>
+    <li><span class="tag test">test</span>2.4 same-convo persists · cross-convo 400 · none → null</li>
+  </ul>
+  <div class="verify">Verify: pnpm --filter @pm/api test -- chat.service</div>
+
+  <h3>§3 Reply preview include + deleted guard <span class="muted">[req-3, req-4]</span></h3>
+  <ul class="chk">
+    <li><span class="tag service">service</span>3.1 Add replyTo include at :277 / :322 / :351</li>
+    <li><span class="tag service">service</span>3.2 Blank deleted parent body (reuse map @ :330)</li>
+    <li><span class="tag test">test</span>3.3 reply carries replyTo; deleted parent → body ''</li>
+  </ul>
+  <div class="verify">Verify: pnpm --filter @pm/api test -- chat.service</div>
+
+  <h3>§4 Web types <span class="muted">[req-3]</span></h3>
+  <ul class="chk">
+    <li><span class="tag frontend">frontend</span>4.1 Message.replyToId + replyTo on types.ts:1592</li>
+  </ul>
+  <div class="verify">Verify: pnpm --filter @pm/web build (tsc)</div>
+
+  <h3>§5 Composer reply banner + send payload <span class="muted">[req-5]</span></h3>
+  <ul class="chk">
+    <li><span class="tag frontend">frontend</span>5.1 MessageThread owns replyTarget; pass to Composer + MessageRow</li>
+    <li><span class="tag frontend">frontend</span>5.2 Composer reply banner (per mockup); ✕/Escape cancel</li>
+    <li><span class="tag frontend">frontend</span>5.3 send.mutate includes replyToId; clear after send</li>
+    <li><span class="tag frontend">frontend</span>5.4 useChat send accepts replyToId; optimistic replyTo preview from target</li>
+  </ul>
+  <div class="verify">Verify: /devspec-verify add-chat-reply</div>
+
+  <h3>§6 Reply action + quoted parent <span class="muted">[req-5, req-6]</span></h3>
+  <ul class="chk">
+    <li><span class="tag frontend">frontend</span>6.1 Reply btn in toolbar (own + others) → onSetReply</li>
+    <li><span class="tag frontend">frontend</span>6.2 Quoted-parent block above bubble; reuse mention strip</li>
+    <li><span class="tag frontend">frontend</span>6.3 Deleted parent → "message deleted", click disabled</li>
+  </ul>
+  <div class="verify">Verify: /devspec-verify add-chat-reply</div>
+
+  <h3>§7 Jump to original + scroll anchor <span class="muted">[req-7]</span></h3>
+  <ul class="chk">
+    <li><span class="tag frontend">frontend</span>7.1 data-msg-id anchor per message row</li>
+    <li><span class="tag frontend">frontend</span>7.2 onQuoteClick → scrollIntoView + flash; not-found → no-op/toast</li>
+    <li><span class="tag frontend">frontend</span>7.3 Wire quoted-block click → onQuoteClick(replyTo.id)</li>
+  </ul>
+  <div class="verify">Verify: /devspec-verify add-chat-reply</div>
+
+  <h3>§8 Visual sign-off <span class="muted">[req-5, req-6, req-7]</span></h3>
+  <ul class="chk">
+    <li><span class="tag manual">manual</span>8.1 BA approves screenshot vs mockup (banner, quote both sides, deleted, flash)</li>
+  </ul>
+  <div class="verify">Verify: MANUAL: BA approves the reply UI screenshot</div>
+
+  <h2 id="cov">Coverage</h2>
+  <div class="banner ok">✓ Every requirement is covered — req-1…req-7 each map to ≥1 task section; no orphan sections.</div>
+  <table>
+    <tr><th>Req</th><th>Sections</th></tr>
+    <tr><td>req-1 reply persistence</td><td>§1, §2</td></tr>
+    <tr><td>req-2 same-conversation guard</td><td>§2</td></tr>
+    <tr><td>req-3 preview on read</td><td>§3, §4</td></tr>
+    <tr><td>req-4 deleted parent</td><td>§3</td></tr>
+    <tr><td>req-5 reply action</td><td>§5, §6, §8</td></tr>
+    <tr><td>req-6 quoted render</td><td>§6, §8</td></tr>
+    <tr><td>req-7 jump to original</td><td>§7, §8</td></tr>
+  </table>
+
+  <h2 id="board">Board</h2>
+  <p>Not yet registered. <code>/devspec-plan</code> adds the row: <code>add-chat-reply</code> · status pending · <code>depends_on: []</code> · skills <code>[frontend-design]</code>.</p>
+  <p class="muted">Sibling: <code>chat-members-mentions</code> (blocked on BA sign-off, code done) — shares MessageRow/Composer files, no req/schema conflict → parallel-safe.</p>
+</main>
+</div>
+</body>
+</html>

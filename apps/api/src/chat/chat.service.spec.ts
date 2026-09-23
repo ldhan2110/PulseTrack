@@ -170,6 +170,40 @@ describe('ChatService.sendMessage', () => {
     );
     expect(prisma.message.create).not.toHaveBeenCalled();
   });
+
+  it('a normal message stores replyToId as undefined (not a reply)', async () => {
+    prisma.message.create.mockResolvedValue({ id: 'm1' });
+    await service.sendMessage('c1', 'u1', 'hi');
+    expect(prisma.message.create.mock.calls[0][0].data.replyToId).toBeUndefined();
+  });
+
+  it('a reply to a message in the same conversation persists replyToId', async () => {
+    prisma.message.findUnique.mockResolvedValue({ conversationId: 'c1' });
+    prisma.message.create.mockResolvedValue({ id: 'm2', replyTo: null });
+    await service.sendMessage('c1', 'u1', 'reply', 'r1');
+
+    expect(prisma.message.findUnique).toHaveBeenCalledWith({
+      where: { id: 'r1' },
+      select: { conversationId: true },
+    });
+    expect(prisma.message.create.mock.calls[0][0].data.replyToId).toBe('r1');
+  });
+
+  it('rejects a reply whose target is in another conversation with 400', async () => {
+    prisma.message.findUnique.mockResolvedValue({ conversationId: 'other' });
+    await expect(
+      service.sendMessage('c1', 'u1', 'reply', 'r1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.message.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a reply whose target does not exist with 400', async () => {
+    prisma.message.findUnique.mockResolvedValue(null);
+    await expect(
+      service.sendMessage('c1', 'u1', 'reply', 'gone'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.message.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('ChatService.getMessages', () => {
@@ -219,6 +253,35 @@ describe('ChatService.getMessages', () => {
 
     const { items } = await service.getMessages('c1', 'u1');
     expect(items[0].body).toBe('');
+  });
+
+  it('a reply carries its parent preview via replyTo include', async () => {
+    prisma.message.findMany.mockResolvedValue([
+      {
+        id: 'm1',
+        deletedAt: null,
+        body: 'reply',
+        replyTo: { id: 'p1', body: 'parent', deletedAt: null, author: { id: 'u2' } },
+      },
+    ]);
+
+    const { items } = await service.getMessages('c1', 'u1');
+    expect(prisma.message.findMany.mock.calls[0][0].include.replyTo).toBeDefined();
+    expect(items[0].replyTo).toMatchObject({ id: 'p1', body: 'parent' });
+  });
+
+  it('blanks the preview body when the parent is soft-deleted', async () => {
+    prisma.message.findMany.mockResolvedValue([
+      {
+        id: 'm1',
+        deletedAt: null,
+        body: 'reply',
+        replyTo: { id: 'p1', body: 'gone', deletedAt: new Date(), author: { id: 'u2' } },
+      },
+    ]);
+
+    const { items } = await service.getMessages('c1', 'u1');
+    expect(items[0].replyTo.body).toBe('');
   });
 });
 

@@ -1600,6 +1600,13 @@ export interface Message {
   author: ChatUser;
   attachments?: MessageAttachment[];
   reactions?: MessageReaction[];
+  replyToId?: string | null;
+  replyTo?: {
+    id: string;
+    body: string;
+    deletedAt: string | null;
+    author: ChatUser;
+  } | null;
   // client-only: optimistic send bookkeeping (never sent by the server)
   clientTempId?: string;
   status?: 'sending' | 'failed' | 'sent';

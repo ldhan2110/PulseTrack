@@ -15,6 +15,8 @@ export interface GroupProps {
   onCommitEdit: (id: string, body: string) => void;
   onRequestDelete: (id: string) => void;
   onRetry?: (m: Message) => void;
+  onSetReply?: (m: Message) => void;
+  onQuoteClick?: (parentId: string) => void;
 }
 
 /** One author-run: day divider + avatar + header + its rows. Memoized. */
@@ -28,6 +30,8 @@ export const MessageGroup = memo(function MessageGroup({
   onCommitEdit,
   onRequestDelete,
   onRetry,
+  onSetReply,
+  onQuoteClick,
 }: GroupProps) {
   const first = group[0];
   const own = first.authorId === myId;
@@ -73,6 +77,8 @@ export const MessageGroup = memo(function MessageGroup({
               onCommitEdit={onCommitEdit}
               onRequestDelete={onRequestDelete}
               onRetry={onRetry}
+              onSetReply={onSetReply}
+              onQuoteClick={onQuoteClick}
             />
           ))}
         </div>

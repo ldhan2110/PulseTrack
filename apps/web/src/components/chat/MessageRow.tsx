@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { Pencil, Trash2, RotateCw } from 'lucide-react';
+import { Pencil, Trash2, RotateCw, Reply } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { Message } from '@/lib/types';
 import { MessageAttachment } from './MessageAttachment';
@@ -42,6 +42,13 @@ export interface RowProps {
   onCommitEdit: (id: string, body: string) => void;
   onRequestDelete: (id: string) => void;
   onRetry?: (m: Message) => void;
+  onSetReply?: (m: Message) => void;
+  onQuoteClick?: (parentId: string) => void;
+}
+
+/** Strip @[Name](id) mention tokens to plain "@Name" for a compact quote preview. */
+function plainPreview(body: string): string {
+  return body.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1');
 }
 
 /** One message bubble. Memoized so only the changed row re-renders. */
@@ -55,6 +62,8 @@ export const MessageRow = memo(function MessageRow({
   onCommitEdit,
   onRequestDelete,
   onRetry,
+  onSetReply,
+  onQuoteClick,
 }: RowProps) {
   // draft lives here → typing in the edit box no longer re-renders the thread
   const [draft, setDraft] = useState(m.body);
@@ -65,6 +74,7 @@ export const MessageRow = memo(function MessageRow({
   if (m.deletedAt) {
     return (
       <div
+        data-msg-id={m.id}
         className="rounded-xl bg-muted/50 px-3 py-2 text-sm italic text-muted-foreground"
         data-testid="deleted-placeholder"
       >
@@ -73,24 +83,44 @@ export const MessageRow = memo(function MessageRow({
     );
   }
 
+  const parent = m.replyTo;
+  const parentName = parent
+    ? parent.author?.id === myId
+      ? 'You'
+      : parent.author?.name ?? parent.author?.username ?? 'User'
+    : '';
+
   return (
-    <div className="group/msg relative flex items-center gap-1">
-      {own && !isEditing && (
+    <div data-msg-id={m.id} className="group/msg relative flex items-center gap-1">
+      {!isEditing && (
         <div className="absolute -top-3 right-2 z-10 hidden rounded-md border bg-background shadow-sm group-hover/msg:flex">
           <button
-            aria-label="Edit"
-            className="rounded-l-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            onClick={() => onStartEdit(m.id)}
+            aria-label="Reply"
+            className={`p-1 text-muted-foreground hover:bg-accent hover:text-foreground ${
+              own ? 'rounded-l-md' : 'rounded-md'
+            }`}
+            onClick={() => onSetReply?.(m)}
           >
-            <Pencil className="size-3.5" />
+            <Reply className="size-3.5" />
           </button>
-          <button
-            aria-label="Delete"
-            className="rounded-r-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
-            onClick={() => onRequestDelete(m.id)}
-          >
-            <Trash2 className="size-3.5" />
-          </button>
+          {own && (
+            <button
+              aria-label="Edit"
+              className="p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={() => onStartEdit(m.id)}
+            >
+              <Pencil className="size-3.5" />
+            </button>
+          )}
+          {own && (
+            <button
+              aria-label="Delete"
+              className="rounded-r-md p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
+              onClick={() => onRequestDelete(m.id)}
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          )}
         </div>
       )}
       {isEditing ? (
@@ -109,7 +139,28 @@ export const MessageRow = memo(function MessageRow({
           className="h-8 w-64"
         />
       ) : (
-        <div className="flex flex-col gap-1">
+        <div className={`flex flex-col gap-1 ${own ? 'items-end' : 'items-start'}`}>
+          {parent && (
+            <button
+              type="button"
+              disabled={!!parent.deletedAt}
+              onClick={() => !parent.deletedAt && onQuoteClick?.(parent.id)}
+              className={`flex max-w-full items-center gap-1.5 rounded-lg rounded-b-sm border-l-2 px-2 py-1 text-left text-xs ${
+                own ? 'border-primary/40 bg-muted' : 'border-border bg-muted'
+              } ${parent.deletedAt ? 'cursor-default' : 'cursor-pointer hover:bg-accent'}`}
+            >
+              <span className="shrink-0 font-semibold text-primary">
+                {parentName}
+              </span>
+              <span
+                className={`truncate text-muted-foreground ${
+                  parent.deletedAt ? 'italic' : ''
+                }`}
+              >
+                {parent.deletedAt ? 'message deleted' : plainPreview(parent.body)}
+              </span>
+            </button>
+          )}
           <div
             className={`rounded-xl px-3 py-2 text-sm ${
               own

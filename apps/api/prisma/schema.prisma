@@ -1267,6 +1267,7 @@ model Message {
   body           String
   editedAt       DateTime? // null = never edited
   deletedAt      DateTime? // soft-delete (intentional exception to hard-delete norm)
+  replyToId      String? // null = not a reply; self-FK → Message.id
   createdBy      String? // audit
   createdAt      DateTime  @default(now())
   updatedBy      String? // audit — who last edited
@@ -1274,6 +1275,8 @@ model Message {
 
   conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   author       User                @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  replyTo      Message?            @relation("MessageReplyTo", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      Message[]           @relation("MessageReplyTo")
   attachments  MessageAttachment[]
   reactions    MessageReaction[]
 

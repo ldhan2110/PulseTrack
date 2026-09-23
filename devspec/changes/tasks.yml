@@ -147,3 +147,11 @@ changes:
     owner: "worker-cc"
     archived: archive/responsive-task-cards
     notes: "All 5 sections pass. 11 vitest green (TaskCard/KanbanBoard/TasksTable/MyTasksTable mobile), build clean, live visual gate @390px PASS on all 3 surfaces (my-tasks, backlog table, board stream + move dropdown)."
+  add-chat-reply:
+    title: Chat reply — reply to a message, show quoted parent (author + snippet), composer reply banner, jump-to-original + flash; durable self-FK Message.replyToId
+    tasks_md: changes/add-chat-reply/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "All code done + unit-proven (API chat.service 140 green incl. 6 new; web build clean + Composer/useChat tests pass; migration file + client generated). BLOCKED on live DB apply + /devspec-verify + §8.1 MANUAL — all need the app running against a DB with Message.replyToId (shared DB off-limits/diverged, no scratch, rtk engine absent). Human applies migration → verify → tick §8.1 → reset blocked→pending. See report/blockers.md."

@@ -1265,10 +1265,15 @@ export const api = {
     const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
     return request<MessagePage>(`/chat/conversations/${conversationId}/messages${qs}`);
   },
-  sendChatMessage: (conversationId: string, body: string, clientTempId?: string) =>
+  sendChatMessage: (
+    conversationId: string,
+    body: string,
+    clientTempId?: string,
+    replyToId?: string,
+  ) =>
     request<Message>(`/chat/conversations/${conversationId}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ body, clientTempId }),
+      body: JSON.stringify({ body, clientTempId, replyToId }),
     }),
   editChatMessage: (id: string, body: string) =>
     request<Message>(`/chat/messages/${id}`, {

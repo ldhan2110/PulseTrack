@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>add-chat-reply — mockup</title>
+<style>
+  /* Values approximate shadcn default light tokens used by the real chat
+     (bg-primary, bg-muted, text-muted-foreground, rounded-xl, border…).
+     Real build pulls from the project's CSS vars — see ui.md style source. */
+  :root{
+    --background:#ffffff; --foreground:#0a0a0a;
+    --primary:#171717; --primary-foreground:#fafafa;
+    --muted:#f5f5f5; --muted-foreground:#737373;
+    --accent:#f4f4f5; --border:#e5e5e5; --destructive:#ef4444;
+    --ring:#a1a1aa;
+    --mention:#2563eb;
+    --highlight:#fef9c3; /* scroll-to flash */
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#fafafa;color:var(--foreground);
+    font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-foreground);
+    margin:28px 0 10px;border-bottom:1px solid var(--border);padding-bottom:4px}
+  .note{font-size:12px;color:var(--muted-foreground);margin:2px 0 12px}
+  .thread{max-width:520px;background:var(--background);border:1px solid var(--border);
+    border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .row{position:relative;display:flex;flex-direction:column;gap:4px}
+  .row.mine{align-items:flex-end}
+  .row.theirs{align-items:flex-start}
+  .name{font-size:11px;color:var(--muted-foreground);margin:0 4px}
+
+  /* quoted parent preview — sits ABOVE the bubble body */
+  .quoted{display:flex;gap:6px;max-width:78%;cursor:pointer;
+    border-left:3px solid var(--ring);background:var(--muted);
+    border-radius:8px 8px 4px 4px;padding:4px 8px;font-size:12px}
+  .mine .quoted{background:#26262b;border-left-color:#71717a}
+  .quoted .q-name{font-weight:600;color:var(--mention)}
+  .mine .quoted .q-name{color:#93c5fd}
+  .quoted .q-body{color:var(--muted-foreground);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;max-width:280px}
+  .mine .quoted .q-body{color:#a1a1aa}
+  .quoted.deleted .q-body{font-style:italic}
+
+  .bubble{max-width:78%;border-radius:12px;padding:8px 12px;font-size:14px;white-space:pre-wrap}
+  .mine .bubble{background:var(--primary);color:var(--primary-foreground);border-bottom-right-radius:4px}
+  .theirs .bubble{background:var(--muted);border-bottom-left-radius:4px}
+  .mention{font-weight:600;color:var(--mention)}
+  .mine .mention{color:#93c5fd}
+  .meta{margin-top:2px;text-align:right;font-size:10px;opacity:.7}
+
+  /* hover action toolbar — real code: absolute, hidden, group-hover:flex.
+     Reply button ADDED here; shown always in mockup so reviewer sees it. */
+  .toolbar{position:absolute;top:-12px;display:inline-flex;border:1px solid var(--border);
+    background:var(--background);border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.08);z-index:10}
+  .mine .toolbar{right:8px}
+  .theirs .toolbar{left:8px}
+  .toolbar button{border:0;background:none;padding:4px 6px;cursor:pointer;
+    color:var(--muted-foreground);font-size:12px;line-height:1}
+  .toolbar button:hover{background:var(--accent);color:var(--foreground)}
+
+  /* flash after scroll-to-original */
+  .row.flash .bubble{animation:flash 1.4s ease-out}
+  @keyframes flash{0%,40%{background:var(--highlight)}100%{}}
+  .row.flash.theirs .bubble{background:var(--muted)}
+
+  /* composer with reply banner */
+  .composer{max-width:520px;margin-top:10px;border:1px solid var(--border);border-radius:12px;
+    background:var(--background);overflow:hidden}
+  .reply-banner{display:flex;align-items:center;gap:8px;padding:6px 10px;
+    background:var(--muted);border-left:3px solid var(--ring);font-size:12px}
+  .reply-banner .rb-label{color:var(--muted-foreground)}
+  .reply-banner .rb-name{font-weight:600;color:var(--mention)}
+  .reply-banner .rb-body{color:var(--muted-foreground);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;flex:1}
+  .reply-banner .rb-x{margin-left:auto;border:0;background:none;cursor:pointer;
+    color:var(--muted-foreground);font-size:15px;line-height:1;padding:0 2px}
+  .composer .input{display:flex;align-items:center;gap:8px;padding:8px 10px}
+  .composer input{flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:inherit}
+  .composer .send{background:var(--primary);color:var(--primary-foreground);border:0;
+    border-radius:8px;padding:8px 14px;cursor:pointer}
+</style>
+</head>
+<body>
+
+  <p class="note"><strong>add-chat-reply</strong> — reply feature over existing chat thread. States stacked; hover toolbars shown always so the reply action is visible.</p>
+
+  <!-- ============================================= -->
+  <h2>1 · Reply action on hover (own + others)</h2>
+  <p class="note">New <em>Reply</em> button joins the hover toolbar. Others' messages get a toolbar too (today they have none) — reply is available on every message, mine and theirs.</p>
+  <div class="thread">
+    <div class="row theirs">
+      <div class="name">Anna</div>
+      <div class="toolbar"><button>↩ Reply</button><button>😊 React</button></div>
+      <div class="bubble">Can you check the deploy logs?</div>
+    </div>
+    <div class="row mine">
+      <div class="toolbar"><button>↩ Reply</button><button>✎ Edit</button><button>🗑 Delete</button></div>
+      <div class="bubble">On it — looking now.<div class="meta">sent</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================= -->
+  <h2>2 · Quoted parent above a reply (both sides)</h2>
+  <p class="note">A reply renders a compact quoted preview above its body: author name + one-line truncated body, accent left-border, clickable (→ scroll to original). Live-included, so edits to the parent show through.</p>
+  <div class="thread">
+    <div class="row theirs">
+      <div class="name">Anna</div>
+      <div class="bubble">Can you check the deploy logs?</div>
+    </div>
+    <div class="row mine">
+      <div class="quoted"><span class="q-name">Anna</span><span class="q-body">Can you check the deploy logs?</span></div>
+      <div class="bubble">Found it — <span class="mention">@Anna</span> the worker OOM'd at 3am. Restarting.<div class="meta">sent</div></div>
+    </div>
+    <div class="row theirs">
+      <div class="name">Anna</div>
+      <div class="quoted"><span class="q-name">You</span><span class="q-body">Found it — @Anna the worker OOM'd at 3am. Restarting.</span></div>
+      <div class="bubble">Thanks 🙏</div>
+    </div>
+  </div>
+
+  <!-- ============================================= -->
+  <h2>3 · Reply to a DELETED message</h2>
+  <p class="note">Parent soft-deleted after the reply was sent → preview reads <code>deletedAt</code> and shows "message deleted" (italic), never stale body. Click does nothing (no target).</p>
+  <div class="thread">
+    <div class="row mine">
+      <div class="quoted deleted"><span class="q-name">Anna</span><span class="q-body">message deleted</span></div>
+      <div class="bubble">Too late, already saw it 😅<div class="meta">sent</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================= -->
+  <h2>4 · Scroll-to-original + highlight flash</h2>
+  <p class="note">Clicking a quoted preview scrolls to the original and flashes it (yellow → fade). If the parent isn't in the loaded page (older history), v1 = no-op (or a small "not loaded" toast); deep-history jump deferred.</p>
+  <div class="thread">
+    <div class="row theirs flash">
+      <div class="name">Anna</div>
+      <div class="bubble">Can you check the deploy logs?</div>
+    </div>
+    <div class="row mine">
+      <div class="quoted"><span class="q-name">Anna</span><span class="q-body">Can you check the deploy logs?</span></div>
+      <div class="bubble">Found it — restarting.<div class="meta">sent</div></div>
+    </div>
+  </div>
+
+  <!-- ============================================= -->
+  <h2>5 · Composer — reply banner active</h2>
+  <p class="note">Picking Reply pins a banner above the input: "Replying to <name>: <preview>" + ✕ to cancel. Sending clears it. Escape also cancels.</p>
+  <div class="composer">
+    <div class="reply-banner">
+      <span class="rb-label">Replying to</span>
+      <span class="rb-name">Anna</span>
+      <span class="rb-body">Can you check the deploy logs?</span>
+      <button class="rb-x" title="Cancel reply">✕</button>
+    </div>
+    <div class="input">
+      <input placeholder="Message #general…" value="Found it — restarting." />
+      <button class="send">Send</button>
+    </div>
+  </div>
+
+  <h2>6 · Composer — no reply (default)</h2>
+  <div class="composer">
+    <div class="input">
+      <input placeholder="Message #general…" />
+      <button class="send">Send</button>
+    </div>
+  </div>
+
+</body>
+</html>

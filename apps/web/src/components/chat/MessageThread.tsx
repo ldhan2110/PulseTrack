@@ -52,6 +52,8 @@ interface ViewProps {
   onEdit?: (id: string, body: string) => void;
   onDelete?: (id: string) => void;
   onRetry?: (m: Message) => void;
+  onSetReply?: (m: Message) => void;
+  onQuoteClick?: (parentId: string) => void;
 }
 
 /** Presentational thread body — grouped bubbles. Exported for unit tests. */
@@ -61,6 +63,8 @@ export function MessageThreadView({
   onEdit,
   onDelete,
   onRetry,
+  onSetReply,
+  onQuoteClick,
 }: ViewProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -97,6 +101,8 @@ export function MessageThreadView({
             onCommitEdit={onCommitEdit}
             onRequestDelete={onRequestDelete}
             onRetry={onRetry}
+            onSetReply={onSetReply}
+            onQuoteClick={onQuoteClick}
           />
         );
       })}
@@ -161,6 +167,20 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const [replyTarget, setReplyTarget] = useState<Message | null>(null);
+  const onSetReply = useCallback((m: Message) => setReplyTarget(m), []);
+  const onCancelReply = useCallback(() => setReplyTarget(null), []);
+  // Scroll to the original message and flash it; no-op if it isn't loaded (older page).
+  const onQuoteClick = useCallback((parentId: string) => {
+    const el = scrollRef.current?.querySelector<HTMLElement>(
+      `[data-msg-id="${parentId}"]`,
+    );
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('chat-reply-flash');
+    setTimeout(() => el.classList.remove('chat-reply-flash'), 1400);
+  }, []);
 
   // Join the conversation room so its live events reach this socket.
   // Re-join on reconnect (socket.io drops room membership on disconnect).
@@ -319,6 +339,8 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
             myId={myId}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onSetReply={onSetReply}
+            onQuoteClick={onQuoteClick}
           />
         )}
         {typing && typing.userId !== myId && (
@@ -334,6 +356,8 @@ export function MessageThread({ conversation }: { conversation: Conversation }) 
         conversationId={convId}
         unread={conversation.unreadCount ?? 0}
         members={isChannel ? conversation.members : []}
+        replyTarget={replyTarget}
+        onCancelReply={onCancelReply}
       />
     </div>
   );

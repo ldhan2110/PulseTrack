@@ -159,8 +159,18 @@ export function useSendMessage(conversationId: string) {
   const key = chatKeys.messages(conversationId);
 
   return useMutation({
-    mutationFn: (vars: { body: string; clientTempId: string }) =>
-      api.sendChatMessage(conversationId, vars.body, vars.clientTempId),
+    mutationFn: (vars: {
+      body: string;
+      clientTempId: string;
+      replyToId?: string;
+      replyTo?: Message['replyTo'];
+    }) =>
+      api.sendChatMessage(
+        conversationId,
+        vars.body,
+        vars.clientTempId,
+        vars.replyToId,
+      ),
     onMutate: async (vars) => {
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<InfiniteData<MessagePage>>(key);
@@ -177,6 +187,8 @@ export function useSendMessage(conversationId: string) {
           deletedAt: null,
           createdAt: new Date().toISOString(),
           attachments: [],
+          replyToId: vars.replyToId ?? null,
+          replyTo: vars.replyTo ?? null,
         };
         qc.setQueryData<Infinite>(key, (d) => applyOptimistic(d, temp));
       }

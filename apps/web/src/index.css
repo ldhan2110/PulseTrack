@@ -156,6 +156,18 @@
   }
 }
 
+/* Chat reply — flash the original message when jumping to it from a quote */
+.chat-reply-flash {
+  animation: chat-reply-flash 1.4s ease-out;
+  border-radius: 0.75rem;
+}
+@keyframes chat-reply-flash {
+  0%,
+  40% {
+    box-shadow: 0 0 0 2px oklch(0.85 0.15 95);
+  }
+}
+
 /* Gantt chart calendar header overrides */
 .gantt-wrapper ._35nLX {
   fill: oklch(0.97 0 0);
