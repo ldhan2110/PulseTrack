@@ -318,7 +318,7 @@ export class DashboardService {
         where: { projectId },
         select: {
           userId: true,
-          user: { select: { id: true, name: true, imageUrl: true } },
+          user: { select: { id: true, name: true, username: true, imageUrl: true } },
         },
       }),
       this.prisma.workflowStatus.findMany({
@@ -379,7 +379,7 @@ export class DashboardService {
 
       return {
         userId: member.userId,
-        name: member.user.name ?? member.user.id,
+        name: member.user.name ?? member.user.username,
         imageUrl: member.user.imageUrl,
         tasks: { ...tasks, total: tasks.completed + tasks.inProgress + tasks.todo },
         hoursLogged,
