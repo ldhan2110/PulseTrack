@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, TriangleAlert } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogBody,
@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUpdateProject } from '@/hooks/useProjects';
 import { FIELD_DEFS, isFieldVisible, type FieldConfig, type FieldKey } from '@/lib/fieldConfig';
 import { toast } from 'sonner';
@@ -45,13 +44,20 @@ export function ConfigureFieldsDialog({
     if (open) setVisible(seed);
   }, [open, seed]);
 
-  const requiredHidden = FIELD_DEFS.some((d) => d.required && !visible[d.key]);
+  // required fields ignored — they can't be hidden
+  const allOn = FIELD_DEFS.every((d) => d.required || visible[d.key]);
+
+  const toggleAll = () => {
+    const next = {} as Record<FieldKey, boolean>;
+    for (const def of FIELD_DEFS) next[def.key] = def.required ? true : !allOn;
+    setVisible(next);
+  };
 
   const handleSave = () => {
     // store only hidden keys (default is visible) — keeps the blob small
     const next: FieldConfig = {};
     for (const def of FIELD_DEFS) {
-      if (!visible[def.key]) next[def.key] = false;
+      if (!def.required && !visible[def.key]) next[def.key] = false;
     }
     update.mutate(
       { fieldConfig: next },
@@ -73,6 +79,11 @@ export function ConfigureFieldsDialog({
         </DialogHeader>
 
         <DialogBody className="py-1">
+          <div className="flex justify-end pb-1">
+            <Button variant="ghost" size="sm" onClick={toggleAll}>
+              {allOn ? 'Hide all' : 'Show all'}
+            </Button>
+          </div>
           <div className="divide-y">
             {FIELD_DEFS.map((def) => (
               <div key={def.key} className="flex items-center justify-between py-2.5">
@@ -82,22 +93,13 @@ export function ConfigureFieldsDialog({
                 </Label>
                 <Switch
                   id={`field-${def.key}`}
-                  checked={visible[def.key]}
+                  checked={def.required || visible[def.key]}
+                  disabled={def.required}
                   onCheckedChange={(v) => setVisible((prev) => ({ ...prev, [def.key]: v }))}
                 />
               </div>
             ))}
           </div>
-
-          {requiredHidden && (
-            <Alert variant="destructive" className="mt-3">
-              <TriangleAlert />
-              <AlertDescription>
-                Ticket type is normally required. Hiding it means new tasks are created without a
-                ticket type (saved empty).
-              </AlertDescription>
-            </Alert>
-          )}
         </DialogBody>
 
         <DialogFooter>
