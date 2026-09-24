@@ -231,10 +231,10 @@ export function BacklogPage() {
   if (taskList.length === 0 && !tasksLoading) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
           {canEdit && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" onClick={() => setExportOpen(true)}>
                 Export Excel
               </Button>
@@ -323,11 +323,11 @@ export function BacklogPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full min-h-0 min-w-0 w-full overflow-hidden">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 min-h-0 min-w-0 w-full md:h-full md:overflow-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Backlog</h1>
         {canEdit && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => setExportOpen(true)}>
               Export Excel
             </Button>

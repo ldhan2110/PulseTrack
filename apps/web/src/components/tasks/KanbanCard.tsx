@@ -3,15 +3,17 @@ import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { TaskCard } from './TaskCard';
+import type { FieldConfig } from '@/lib/fieldConfig';
 import type { Task } from '@/lib/types';
 
 interface KanbanCardProps {
   task: Task;
   projectId: string;
   projectPrefix: string;
+  fieldConfig?: FieldConfig | null;
 }
 
-export function KanbanCard({ task, projectId: _projectId, projectPrefix }: KanbanCardProps) {
+export function KanbanCard({ task, projectId: _projectId, projectPrefix, fieldConfig }: KanbanCardProps) {
   const navigate = useNavigate();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -42,6 +44,7 @@ export function KanbanCard({ task, projectId: _projectId, projectPrefix }: Kanba
     >
       <TaskCard
         task={task}
+        fieldConfig={fieldConfig}
         className={cn(isDragging && '-translate-y-1 scale-105 shadow-lg')}
       />
     </div>

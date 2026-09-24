@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { KanbanCard } from './KanbanCard';
+import type { FieldConfig } from '@/lib/fieldConfig';
 import type { Task, WorkflowStatus } from '@/lib/types';
 
 interface KanbanColumnProps {
@@ -10,9 +11,10 @@ interface KanbanColumnProps {
   tasks: Task[];
   projectId: string;
   projectPrefix: string;
+  fieldConfig?: FieldConfig | null;
 }
 
-export function KanbanColumn({ status, tasks, projectId, projectPrefix }: KanbanColumnProps) {
+export function KanbanColumn({ status, tasks, projectId, projectPrefix, fieldConfig }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status.id });
 
   return (
@@ -34,7 +36,7 @@ export function KanbanColumn({ status, tasks, projectId, projectPrefix }: Kanban
         <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-2 py-0.5 px-0.5 pr-2">
             {tasks.map((task) => (
-              <KanbanCard key={task.id} task={task} projectId={projectId} projectPrefix={projectPrefix} />
+              <KanbanCard key={task.id} task={task} projectId={projectId} projectPrefix={projectPrefix} fieldConfig={fieldConfig} />
             ))}
           </div>
         </ScrollArea>

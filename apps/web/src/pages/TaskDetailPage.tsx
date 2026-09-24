@@ -237,6 +237,11 @@ export function TaskDetailPage() {
     queryFn: () => api.getTaskTypes(projectId),
     enabled: !!projectId,
   });
+  const { data: taskCategories = [] } = useQuery({
+    queryKey: ['task-categories', projectId],
+    queryFn: () => api.getTaskCategories(projectId),
+    enabled: !!projectId,
+  });
   const { can } = usePermissions(projectId);
   const canEdit = can('tasks', 'update');
   const canManage = can('tasks', 'delete');
@@ -998,6 +1003,37 @@ export function TaskDetailPage() {
                     {taskTypes.filter((t) => t.isActive).map((t) => (
                       <SelectItem key={t.id} value={t.id}>
                         <span className="text-xs">{t.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              )}
+
+              {/* Task Type */}
+              {isFieldVisible(cfg, 'taskCategory') && (
+              <div className="flex flex-col gap-1.5">
+                <SidebarLabel>Task Type</SidebarLabel>
+                <Select
+                  value={task.taskCategoryId ?? ''}
+                  onValueChange={(taskCategoryId) =>
+                    optimisticMutate({ taskCategoryId }, { taskId, data: { taskCategoryId } })
+                  }
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Keep current category visible even if it was deactivated */}
+                    {task.taskCategory && !taskCategories.some((c) => c.id === task.taskCategoryId && c.isActive) && (
+                      <SelectItem value={task.taskCategory.id}>
+                        <span className="text-xs">{task.taskCategory.name}</span>
+                      </SelectItem>
+                    )}
+                    {taskCategories.filter((c) => c.isActive).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        <span className="text-xs">{c.name}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>

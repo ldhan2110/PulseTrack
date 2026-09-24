@@ -91,6 +91,7 @@ interface FormErrors {
   title?: string;
   storyPoints?: string;
   taskTypeId?: string;
+  taskCategoryId?: string;
 }
 
 export function CreateTaskDialog({
@@ -112,6 +113,7 @@ export function CreateTaskDialog({
   const [sprintId, setSprintId] = useState<string>('');
   const [priority, setPriority] = useState<Priority | ''>('');
   const [taskTypeId, setTaskTypeId] = useState<string>('');
+  const [taskCategoryId, setTaskCategoryId] = useState<string>('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [assigneeOpen, setAssigneeOpen] = useState(false);
 
@@ -121,6 +123,16 @@ export function CreateTaskDialog({
     enabled: !!projectId && open,
   });
   const activeTaskTypes = useMemo(() => taskTypes.filter((t) => t.isActive), [taskTypes]);
+
+  const { data: taskCategories = [] } = useQuery({
+    queryKey: ['task-categories', projectId],
+    queryFn: () => api.getTaskCategories(projectId),
+    enabled: !!projectId && open,
+  });
+  const activeTaskCategories = useMemo(
+    () => taskCategories.filter((c) => c.isActive),
+    [taskCategories],
+  );
 
   const selectedMember = useMemo(() => {
     if (!assigneeId || assigneeId === 'unassigned') return null;
@@ -138,6 +150,7 @@ export function CreateTaskDialog({
     setSprintId('');
     setPriority('');
     setTaskTypeId('');
+    setTaskCategoryId('');
     setErrors({});
   };
 
@@ -162,6 +175,9 @@ export function CreateTaskDialog({
     if (isFieldVisible(cfg, 'taskType') && !taskTypeId) {
       newErrors.taskTypeId = 'Ticket type is required';
     }
+    if (isFieldVisible(cfg, 'taskCategory') && !taskCategoryId) {
+      newErrors.taskCategoryId = 'Task type is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -179,6 +195,7 @@ export function CreateTaskDialog({
         sprintId: sprintId && sprintId !== 'none' ? sprintId : undefined,
         priority: priority || undefined,
         taskTypeId: taskTypeId || undefined,
+        taskCategoryId: taskCategoryId || undefined,
       },
       {
         onSuccess: () => {
@@ -264,6 +281,27 @@ export function CreateTaskDialog({
                 </Select>
                 {errors.taskTypeId && (
                   <p className="text-xs text-destructive">{errors.taskTypeId}</p>
+                )}
+              </Field>
+              )}
+
+              {isFieldVisible(cfg, 'taskCategory') && (
+              <Field>
+                <FieldLabel>Task Type <span className="text-destructive">*</span></FieldLabel>
+                <Select value={taskCategoryId} onValueChange={setTaskCategoryId}>
+                  <SelectTrigger className="h-8 w-full" aria-invalid={!!errors.taskCategoryId}>
+                    <SelectValue placeholder="Select a task type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeTaskCategories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.taskCategoryId && (
+                  <p className="text-xs text-destructive">{errors.taskCategoryId}</p>
                 )}
               </Field>
               )}

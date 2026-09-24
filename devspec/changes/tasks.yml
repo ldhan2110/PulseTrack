@@ -163,3 +163,11 @@ changes:
     status: blocked
     owner: "worker-cc"
     notes: "§1-3,§6 done + verified (API build clean, projects.service 2 new tests green, web build clean, fieldConfig 4 + CreateTaskDialog 4 tests green). BLOCKED §4/§5 /devspec-verify + §7 MANUAL — running app on shared pm_x (off-limits); Project.fieldConfig migration not applied there, no scratch DB, rtk absent, live DDL forbidden. Human: apply migration → verify → tick §7.1 → reset blocked→pending. See report/blockers.md."
+  task-type-field:
+    title: new required "Task type" field + merged Configure Fields modal
+    tasks_md: changes/task-type-field/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "§1–§5 done + verified; §6 code + unit-verified (all subtasks [x]). API build clean + projects.service 5 new tests green; web build clean + fieldConfig/CreateTaskDialog/ConfigureFieldsDialog tests green. Migration 20260924010000_add_project_task_category applied clean on local scratch DB (ProjectTaskType/Task.taskTypeId unchanged); ProjectTaskCategory got audit quad per improve/conventions (deviation from spec's mirror-only cols — additive, noted). Also plumbed taskCategoryId through tasks create/update DTO+service (req-4 persistence; strict whitelist). BLOCKED on §6 /devspec-verify only: running app is on shared pm_x (off-limits, migration not applied there, live DDL forbidden). Human: apply migration to app DB → run /devspec-verify → set blocked→done. See report/blockers.md. Overlap with project-field-config was code-level only (rebased on current)."

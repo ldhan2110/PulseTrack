@@ -21,6 +21,7 @@ const mutate = vi.fn();
 const toastError = vi.fn();
 vi.mock('sonner', () => ({ toast: { error: (m: string) => toastError(m) } }));
 vi.mock('@/hooks/useTasks', () => ({ useUpdateTask: () => ({ mutate }) }));
+vi.mock('@/hooks/useProjects', () => ({ useProject: () => ({ data: { fieldConfig: null } }) }));
 vi.mock('@/hooks/usePermissions', () => ({ usePermissions: () => ({ can: () => true }) }));
 vi.mock('@/hooks/useWorkflow', () => ({
   useWorkflow: () => ({

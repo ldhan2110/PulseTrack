@@ -20,7 +20,6 @@ import { ReportSettingsCard } from '@/components/settings/ReportSettingsCard';
 import { RolesPermissionsTab } from '@/components/settings/RolesPermissionsTab';
 import { WikiConfigCard } from '@/components/settings/WikiConfigCard';
 import { DefaultWatchersCard } from '@/components/settings/DefaultWatchersCard';
-import { TaskTypesCard } from '@/components/settings/TaskTypesCard';
 import { DangerZoneCard } from '@/components/settings/DangerZoneCard';
 import { ConfigureFieldsDialog } from '@/components/settings/ConfigureFieldsDialog';
 
@@ -196,7 +195,6 @@ export function ProjectSettingsPage() {
                 </div>
                 {prefixError && <p className="text-xs text-destructive">{prefixError}</p>}
               </div>
-              <TaskTypesCard projectId={project.id} canManage={canManage} />
             </CardContent>
           </Card>
 
@@ -222,6 +220,7 @@ export function ProjectSettingsPage() {
             onOpenChange={setFieldsDialogOpen}
             projectId={project.id}
             fieldConfig={project.fieldConfig}
+            canManage={canManage}
           />
 
           {canManage && (

@@ -171,3 +171,17 @@ _logged: 2026-09-24 by worker-cc_
 2. Start the app; log in as `anle` / `acbd@`.
 3. Run `/devspec-verify project-field-config`; work any `verify/fixes.md` (dialog opens from General tab, 9 rows + switches, required-off warning, Save persists + reopen reflects, hidden fields drop from create/detail forms).
 4. Tick §7.1 `[x]` after BA approves, then reset board `status: blocked → pending` and re-run the worker.
+
+## task-type-field — live /devspec-verify (env-gated); §6 visual gate only
+_logged: 2026-09-24 by worker-cc_
+
+**All code complete + unit-proven; §1–§5 fully verified, §6 unit-verified.** API `nest build` clean; `projects.service` suite green incl. 5 new (create seeds 11 categories, lazy-seed on empty, returns existing without seeding, setTaskCategories add/rename/reorder/soft-delete, empty-active rejected). Web build clean (tsc+vite); `fieldConfig` (5 incl. taskCategory), `CreateTaskDialog` (6, both selects), `ConfigureFieldsDialog` (4: required switch locked+disabled, expand reveals editor, empty-active disables section Save, Save-visibility blocked while dirty) all green. Migration `20260924010000_add_project_task_category` (additive: new `ProjectTaskCategory` table + audit quad per improve/conventions, `Task.taskCategoryId` nullable FK `onDelete SetNull`) **applied clean on a local scratch DB** (`prisma migrate deploy` full replay) — `ProjectTaskType`/`Task.taskTypeId` confirmed unchanged.
+
+**Blocked on:**
+- §6 verify part 2 (`/devspec-verify task-type-field`) — the running app points at shared `pm_x` (10.0.0.85:5439, off-limits per board); `ProjectTaskCategory`/`Task.taskCategoryId` are absent there and applying the migration to the shared/live DB is forbidden (rules.md: no direct DDL on live DB). Local postgres exists but the app isn't wired to it (and has no `anle` project membership), so the merged Configure Fields modal + Task Type select can't be exercised end-to-end. Same env wall as `project-field-config` / `add-chat-reply`. §6 unit verify (`ConfigureFields`) passed.
+
+**To resume (human):**
+1. Apply `20260924010000_add_project_task_category` to the app DB (`pnpm migrate:deploy`, or apply the SQL) — additive, no backfill; existing projects lazy-seed the 11 defaults on first `GET /task-categories`.
+2. Start the app; log in as `anle` / `acbd@`.
+3. Run `/devspec-verify task-type-field`; work any `verify/fixes.md` (merged modal: both value editors + toggles, required switches locked, per-section save, Task Type select required on create form + present on detail).
+4. On PASS, set board `status: blocked → done`; there is no MANUAL subtask for this change.

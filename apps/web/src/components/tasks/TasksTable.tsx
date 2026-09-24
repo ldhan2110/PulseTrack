@@ -36,11 +36,22 @@ import { TaskProgressBar } from './TaskProgressBar';
 import { getParentProgress } from './task-progress-utils';
 import { TaskFilters, statusFilterFn, assigneeFilterFn, sprintFilterFn, progressFilterFn, matchesFilters } from './TaskFilters';
 import { useUpdateTaskStatus } from '@/hooks/useTasks';
+import { useProject } from '@/hooks/useProjects';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { formatMinutes } from '@/lib/time-utils';
+import { isFieldVisible, type FieldKey } from '@/lib/fieldConfig';
 import { format } from 'date-fns';
 import type { Task, Member, Sprint, Priority, WorkflowStatus } from '@/lib/types';
+
+// Table columns keyed by a configurable field; anything else always shows.
+const COLUMN_FIELD: Record<string, FieldKey> = {
+  priority: 'priority',
+  assigneeId: 'assignee',
+  storyPoints: 'storyPoints',
+  sprintId: 'sprint',
+  plannedEndDate: 'plannedEndDate',
+};
 
 type ProcessedTask = Task & { _promotedFromParent?: Task };
 
@@ -119,6 +130,8 @@ export function TasksTable({
   onFiltersChange,
 }: TasksTableProps) {
   const updateTaskStatus = useUpdateTaskStatus(projectId);
+  const { data: project } = useProject(projectId);
+  const fieldConfig = project?.fieldConfig;
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -445,9 +458,19 @@ export function TasksTable({
     [sprintMap, updateTaskStatus, expandedRows],
   );
 
+  // Drop columns whose backing field is hidden in this project's config.
+  const visibleColumns = useMemo(
+    () =>
+      columns.filter((col) => {
+        const key = COLUMN_FIELD[(col as { accessorKey?: string }).accessorKey ?? ''];
+        return !key || isFieldVisible(fieldConfig, key);
+      }),
+    [columns, fieldConfig],
+  );
+
   const table = useReactTable({
     data: processedTasks,
-    columns,
+    columns: visibleColumns,
     state: {
       sorting,
       columnFilters,
@@ -487,7 +510,8 @@ export function TasksTable({
       return <p className="text-sm text-muted-foreground text-center py-8">No tasks</p>;
     }
     return (
-      <div className="flex flex-col gap-2">
+      // Mobile scrolls with the page's <main> (overflow-auto); px-0.5 keeps card borders off the edge.
+      <div className="flex flex-col gap-2 px-0.5 pb-2">
         {tasks.map((task) => (
           <div
             key={task.id}

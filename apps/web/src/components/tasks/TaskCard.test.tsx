@@ -58,4 +58,19 @@ describe('TaskCard', () => {
     );
     expect(container.querySelector('.border-t-red-500')).toBeNull();
   });
+
+  it('hides fields turned off in fieldConfig', () => {
+    render(
+      <TaskCard
+        task={makeTask()}
+        showPoints
+        fieldConfig={{ taskType: false, assignee: false, priority: false, plannedEndDate: false, storyPoints: false }}
+      />,
+    );
+    expect(screen.getByText('CARIS-142')).toBeTruthy(); // key always shows
+    expect(screen.queryByText('Bug')).toBeNull(); // taskType hidden
+    expect(screen.queryByText('AL')).toBeNull(); // assignee hidden
+    expect(screen.queryByTitle('High')).toBeNull(); // priority hidden
+    expect(screen.queryByText('5')).toBeNull(); // story points hidden
+  });
 });

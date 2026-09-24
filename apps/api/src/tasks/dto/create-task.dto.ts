@@ -80,4 +80,8 @@ export class CreateTaskDto {
 
   @IsString()
   taskTypeId: string;
+
+  @IsOptional()
+  @IsString()
+  taskCategoryId?: string;
 }
