@@ -155,3 +155,11 @@ changes:
     status: blocked
     owner: "worker-cc"
     notes: "All code done + unit-proven (API chat.service 140 green incl. 6 new; web build clean + Composer/useChat tests pass; migration file + client generated). BLOCKED on live DB apply + /devspec-verify + §8.1 MANUAL — all need the app running against a DB with Message.replyToId (shared DB off-limits/diverged, no scratch, rtk engine absent). Human applies migration → verify → tick §8.1 → reset blocked→pending. See report/blockers.md."
+  project-field-config:
+    title: per-project task field visibility config dialog
+    tasks_md: changes/project-field-config/tasks.md
+    depends_on: []
+    skills: [frontend-design]
+    status: blocked
+    owner: "worker-cc"
+    notes: "§1-3,§6 done + verified (API build clean, projects.service 2 new tests green, web build clean, fieldConfig 4 + CreateTaskDialog 4 tests green). BLOCKED §4/§5 /devspec-verify + §7 MANUAL — running app on shared pm_x (off-limits); Project.fieldConfig migration not applied there, no scratch DB, rtk absent, live DDL forbidden. Human: apply migration → verify → tick §7.1 → reset blocked→pending. See report/blockers.md."

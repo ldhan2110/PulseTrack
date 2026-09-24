@@ -66,6 +66,29 @@ describe('ProjectsService — soft delete', () => {
     });
   });
 
+  describe('update fieldConfig', () => {
+    it('persists fieldConfig when provided', async () => {
+      const cfg = { storyPoints: false, taskType: false };
+      prisma.project.update.mockResolvedValue({ id: 'p1', fieldConfig: cfg });
+
+      const res = await service.update('p1', { fieldConfig: cfg } as any);
+
+      const arg = prisma.project.update.mock.calls[0][0];
+      expect(arg.where).toEqual({ id: 'p1' });
+      expect(arg.data.fieldConfig).toEqual(cfg);
+      expect(res.fieldConfig).toEqual(cfg);
+    });
+
+    it('omits fieldConfig from data when not provided', async () => {
+      prisma.project.update.mockResolvedValue({ id: 'p1' });
+
+      await service.update('p1', { name: 'X' } as any);
+
+      const arg = prisma.project.update.mock.calls[0][0];
+      expect('fieldConfig' in arg.data).toBe(false);
+    });
+  });
+
   describe('findAllForUser excludes soft-deleted', () => {
     const membership = (over: Record<string, unknown>) => ({
       customRole: { name: 'admin' },

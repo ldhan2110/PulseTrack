@@ -166,6 +166,7 @@ export class ProjectsService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.prefix !== undefined && { prefix: dto.prefix }),
+        ...(dto.fieldConfig !== undefined && { fieldConfig: dto.fieldConfig }),
       },
     });
   }

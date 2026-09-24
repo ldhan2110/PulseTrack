@@ -22,6 +22,7 @@ import { WikiConfigCard } from '@/components/settings/WikiConfigCard';
 import { DefaultWatchersCard } from '@/components/settings/DefaultWatchersCard';
 import { TaskTypesCard } from '@/components/settings/TaskTypesCard';
 import { DangerZoneCard } from '@/components/settings/DangerZoneCard';
+import { ConfigureFieldsDialog } from '@/components/settings/ConfigureFieldsDialog';
 
 export function ProjectSettingsPage() {
   const projectId = useUiStore((s) => s.activeProjectId) ?? '';
@@ -40,6 +41,7 @@ export function ProjectSettingsPage() {
   const [prefix, setPrefix] = useState('');
   const [prefixError, setPrefixError] = useState('');
   const [initialized, setInitialized] = useState(false);
+  const [fieldsDialogOpen, setFieldsDialogOpen] = useState(false);
 
   if (project && !initialized) {
     setName(project.name);
@@ -197,6 +199,30 @@ export function ProjectSettingsPage() {
               <TaskTypesCard projectId={project.id} canManage={canManage} />
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Task fields</CardTitle>
+              <CardDescription>
+                Choose which fields appear on task create &amp; detail forms for this project.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                disabled={!canManage}
+                onClick={() => setFieldsDialogOpen(true)}
+              >
+                Configure Fields
+              </Button>
+            </CardContent>
+          </Card>
+          <ConfigureFieldsDialog
+            open={fieldsDialogOpen}
+            onOpenChange={setFieldsDialogOpen}
+            projectId={project.id}
+            fieldConfig={project.fieldConfig}
+          />
 
           {canManage && (
             <Button

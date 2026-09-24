@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Spec — project-field-config</title>
+<style>
+  :root{--bg:#f7f7f8;--card:#fff;--fg:#18181b;--muted:#6b7280;--border:#e4e4e7;
+    --primary:#18181b;--accent:#2563eb;--ok:#16a34a;--okbg:#dcfce7;--warn:#b91c1c;--warnbg:#fee2e2;--radius:10px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .wrap{display:grid;grid-template-columns:210px 1fr;max-width:1100px;margin:0 auto}
+  nav{position:sticky;top:0;align-self:start;height:100vh;padding:24px 16px;border-right:1px solid var(--border);font-size:13px}
+  nav a{display:block;color:var(--muted);text-decoration:none;padding:5px 0}
+  nav a:hover{color:var(--fg)}
+  main{padding:32px 40px;min-width:0}
+  h1{font-size:24px;margin:0 0 4px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:34px 0 12px;border-bottom:1px solid var(--border);padding-bottom:6px}
+  h3{font-size:16px;margin:18px 0 6px}
+  h4{font-size:14px;margin:10px 0 4px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin:10px 0}
+  code{background:#f1f1f3;padding:1px 5px;border-radius:4px;font-size:13px}
+  pre{background:#0f0f11;color:#e4e4e7;padding:14px;border-radius:var(--radius);overflow:auto;font-size:12.5px;line-height:1.5}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#fafafa}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#eef;color:#334;margin-right:4px}
+  .pill.status{background:#fef9c3;color:#854d0e}
+  .tag{font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;margin-right:6px}
+  .tag.backend{background:#dbeafe;color:#1e40af}
+  .tag.frontend{background:#f3e8ff;color:#6b21a8}
+  .tag.db{background:#fef3c7;color:#92400e}
+  .tag.test{background:#dcfce7;color:#166534}
+  .tag.service{background:#e0e7ff;color:#3730a3}
+  .tag.manual{background:#fee2e2;color:#991b1b}
+  ul.checks{list-style:none;padding-left:0}
+  ul.checks li{padding:3px 0}
+  .verify{font-size:12.5px;color:var(--muted);margin:6px 0 0;padding-left:2px}
+  .banner{border-radius:var(--radius);padding:12px 16px;margin:10px 0;font-weight:500}
+  .banner.ok{background:var(--okbg);color:#166534}
+  .banner.bad{background:var(--warnbg);color:var(--warn)}
+  iframe{width:100%;height:640px;border:1px solid var(--border);border-radius:var(--radius);background:#fff}
+  .muted{color:var(--muted);font-size:13px}
+  .scenario{margin:4px 0 10px;padding-left:12px;border-left:2px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <strong>project-field-config</strong>
+  <a href="#context">Context</a>
+  <a href="#proposal">Proposal</a>
+  <a href="#arch">Architecture</a>
+  <a href="#impact">Impact Area</a>
+  <a href="#backend">Backend</a>
+  <a href="#frontend">Frontend</a>
+  <a href="#tasks">Tasks</a>
+  <a href="#coverage">Coverage</a>
+  <a href="#board">Board</a>
+</nav>
+<main>
+  <h1>Configure task fields per project</h1>
+  <div class="muted">Show/hide task-form fields per project via a settings dialog.</div>
+
+  <h2 id="context">Context</h2>
+  <div class="card">
+    <span class="pill">id: project-field-config</span>
+    <span class="pill status">status: not yet on board</span>
+    <span class="pill">depends_on: none</span>
+    <p class="muted">Adds <code>Project.fieldConfig</code> (independent of pending <code>delete-project</code> which adds <code>Project.deletedAt</code> — no conflict). Skills expected: backend, frontend, db, test, verify.</p>
+  </div>
+
+  <h2 id="proposal">Proposal</h2>
+  <div class="card">
+    <p><strong>Why.</strong> Every task form shows all fields; teams that don't use sprints, story points, or planned/actual dates see permanent noise. No per-project tailoring today.</p>
+    <p><strong>Delivers.</strong> A per-project field-visibility config: an admin opens a "Configure Fields" dialog from Project Settings → General and toggles which task fields appear on the create and detail forms. Stored on the project, applied where those forms render.</p>
+    <h4>In (v1)</h4>
+    <ul>
+      <li>Nullable <code>Project.fieldConfig</code> JSON map <code>{ fieldKey: boolean }</code> (missing key = visible).</li>
+      <li><code>PATCH /projects/:projectId</code> accepts <code>fieldConfig</code>; <code>GET</code> already returns it.</li>
+      <li>Dialog (shadcn Dialog + Switch) from a General-tab card, editable only by <code>canManage</code>.</li>
+      <li>9 fields: Ticket type (required-by-default), Assignee, Priority, Sprint, Story points, Planned start, Planned end, Actual start, Actual end.</li>
+      <li>Hiding Ticket type allowed + warned; frontend drops its required check for hidden fields.</li>
+      <li>Hidden fields omitted from <code>CreateTaskDialog</code> + <code>TaskDetailPage</code>.</li>
+    </ul>
+    <h4>Out (v1)</h4>
+    <ul>
+      <li>Board/list columns + saved filters (still show all).</li>
+      <li>Bug forms, WBS task dialog (task only).</li>
+      <li>Custom fields; per-field defaults / fallback ticket type; backend enforcement.</li>
+    </ul>
+  </div>
+
+  <h2 id="arch">Architecture <span class="muted">(ASCII fallback — archify not invoked)</span></h2>
+  <pre>Project Settings (General tab)
+  └─ [Configure Fields] (canManage) ─► ConfigureFieldsDialog
+                                          │ local toggles ─► Save
+                                          ▼
+                       PATCH /projects/:projectId { fieldConfig }
+                         RequirePermission(projectSettings, update)
+                                          ▼
+                       projects.service.update ─► Project.fieldConfig (JSONB)
+
+Task forms read the same project object:
+  useProject(projectId).fieldConfig
+      ├─► CreateTaskDialog  ─ isFieldVisible(cfg,key) ? render (+required check) : skip
+      └─► TaskDetailPage    ─ isFieldVisible(cfg,key) ? render : skip</pre>
+
+  <h2 id="impact">Impact Area</h2>
+  <h4>Decision Defaults</h4>
+  <table>
+    <tr><th>Gray area</th><th>Default</th><th>Why</th></tr>
+    <tr><td>Absent config / key</td><td>Visible</td><td>No backfill; safe for existing + future fields</td></tr>
+    <tr><td>Hidden required field value</td><td>Save null (no fallback)</td><td>Column nullable; default-picker out of scope</td></tr>
+    <tr><td>Backend enforcement</td><td>None — API accepts all</td><td>UI-only; avoids coupling validation to config</td></tr>
+    <tr><td>Who edits</td><td><code>projectSettings:update</code></td><td>Reuse endpoint's existing guard</td></tr>
+    <tr><td>Where hiding applies</td><td>Create + Detail forms only</td><td>Board/filters out of scope v1</td></tr>
+    <tr><td>Hide field holding data</td><td>Data kept, just not shown</td><td>Non-destructive; re-show restores</td></tr>
+  </table>
+  <h4>Blast Radius</h4>
+  <ul>
+    <li><code>prisma/schema.prisma</code> — <code>Project.fieldConfig Json?</code> + migration</li>
+    <li><code>projects/dto/update-project.dto.ts</code> — optional <code>fieldConfig</code></li>
+    <li><code>projects.service.ts:162</code> <code>update()</code> — persist it</li>
+    <li><code>web/lib/api.ts</code> — <code>Project</code> type + payload</li>
+    <li><code>ProjectSettingsPage.tsx</code> — General-tab card + dialog mount</li>
+    <li><strong>new</strong> <code>components/settings/ConfigureFieldsDialog.tsx</code></li>
+    <li><strong>new</strong> <code>lib/fieldConfig.ts</code> — <code>FIELD_DEFS</code> + <code>isFieldVisible</code></li>
+    <li><code>CreateTaskDialog.tsx</code>, <code>TaskDetailPage.tsx</code> — gate renders + required check</li>
+  </ul>
+  <h4>Risk</h4>
+  <p class="muted">Reversibility high (additive, UI-gated). Key risk: <code>CreateTaskDialog</code> currently hard-requires <code>taskTypeId</code> — must become conditional or hidden-config tasks can't be created. Low data risk (no existing-row writes, no destructive ops).</p>
+
+  <h2 id="backend">Backend</h2>
+  <div class="card">
+    <p><strong>DB.</strong> <code>ALTER TABLE "Project" ADD COLUMN "fieldConfig" JSONB;</code> (mirrors <code>workflowLayout Json?</code>). Additive, nullable, no backfill.</p>
+    <p><strong>DTO.</strong> <code>UpdateProjectDto.fieldConfig?</code> — <code>@IsOptional() @IsObject()</code>.</p>
+    <p><strong>Service.</strong> <code>update()</code> spreads <code>fieldConfig</code> when provided. <code>findOne</code> uses <code>include</code> → returns it, no read change.</p>
+    <p><strong>Auth.</strong> Existing <code>@RequirePermission('projectSettings','update')</code> on <code>PATCH :projectId</code>. No new permission.</p>
+    <pre>type FieldConfig = Partial&lt;Record&lt;FieldKey, boolean&gt;&gt;  // missing =&gt; visible</pre>
+  </div>
+
+  <h2 id="frontend">Frontend</h2>
+  <p class="muted">Mockup — all states stacked (entry card, default, required-off warning, saving, error). Styled from <code>index.css</code> tokens + shadcn Dialog/Switch/Button.</p>
+  <iframe src="mockups/configure-fields-dialog.html" title="Configure Fields dialog mockup"></iframe>
+  <p><a href="mockups/configure-fields-dialog.html" target="_blank">open mockup standalone ↗</a></p>
+  <div class="card">
+    <p><strong>Reused components</strong> (real <code>path:symbol</code>): <code>Dialog</code> (<code>ui/dialog.tsx</code>), <code>Switch</code> (<code>ui/switch.tsx</code>), <code>Button</code> (<code>ui/button.tsx</code>), <code>Badge</code> (<code>ui/badge.tsx</code>), <code>Alert variant=destructive</code> (<code>ui/alert.tsx</code>), <code>Card</code> (<code>ui/card.tsx</code>).</p>
+    <p><strong>States:</strong> default (reflect saved) · required-off (inline warning, Save enabled) · saving (buttons disabled + spinner) · error (destructive banner, Save retry).</p>
+  </div>
+
+  <h2 id="tasks">Tasks</h2>
+
+  <h3>1. DB: fieldConfig column <span class="muted">[req-1]</span></h3>
+  <ul class="checks">
+    <li>☐ 1.1 <span class="tag db">db</span>Add <code>fieldConfig Json?</code> to <code>Project</code> (after <code>workflowLayout</code>)</li>
+    <li>☐ 1.2 <span class="tag db">db</span>Migration <code>20260924000000_add_project_field_config/migration.sql</code></li>
+    <li>☐ 1.3 <span class="tag db">db</span>Regenerate Prisma client</li>
+  </ul>
+  <p class="verify">Verify: <code>pnpm --filter @pm/api build</code></p>
+
+  <h3>2. API: accept + return fieldConfig <span class="muted">[req-1, req-2]</span></h3>
+  <ul class="checks">
+    <li>☐ 2.1 <span class="tag backend">backend</span>Optional <code>fieldConfig</code> in <code>UpdateProjectDto</code></li>
+    <li>☐ 2.2 <span class="tag backend">backend</span>Persist in <code>projects.service.ts:162</code> <code>update()</code></li>
+    <li>☐ 2.3 <span class="tag backend">backend</span>Confirm <code>findOne</code> returns it (include — no change)</li>
+    <li>☐ 2.4 <span class="tag test">test</span><code>projects.service.spec.ts</code>: persist + return; permission via existing guard</li>
+  </ul>
+  <p class="verify">Verify: <code>pnpm --filter @pm/api test -- projects.service</code></p>
+
+  <h3>3. Web: shared field defs + helper <span class="muted">[req-5]</span></h3>
+  <ul class="checks">
+    <li>☐ 3.1 <span class="tag frontend">frontend</span>New <code>lib/fieldConfig.ts</code>: <code>FIELD_DEFS</code>, <code>FieldConfig</code>, <code>isFieldVisible</code></li>
+    <li>☐ 3.2 <span class="tag frontend">frontend</span><code>fieldConfig</code> on <code>Project</code> type + <code>updateProject</code> payload (<code>lib/api.ts</code>)</li>
+    <li>☐ 3.3 <span class="tag test">test</span><code>fieldConfig.test.ts</code>: unset⇒true, false⇒false, true⇒true</li>
+  </ul>
+  <p class="verify">Verify: <code>pnpm --filter @pm/web test -- fieldConfig</code></p>
+
+  <h3>4. Web: Configure Fields dialog <span class="muted">[req-3, req-4]</span></h3>
+  <ul class="checks">
+    <li>☐ 4.1 <span class="tag frontend">frontend</span>New <code>ConfigureFieldsDialog.tsx</code> — reuse shadcn Dialog/Switch/Button/Badge/Alert; rows from <code>FIELD_DEFS</code></li>
+    <li>☐ 4.2 <span class="tag frontend">frontend</span>Required badge + inline warning on required-off; Save enabled</li>
+    <li>☐ 4.3 <span class="tag frontend">frontend</span>Save → <code>updateProject</code>; saving/error states; success closes + invalidates query</li>
+    <li>☐ 4.4 <span class="tag frontend">frontend</span>Cancel discards (no PATCH)</li>
+  </ul>
+  <p class="verify">Verify: <code>/devspec-verify project-field-config</code></p>
+
+  <h3>5. Web: General-tab entry point <span class="muted">[req-2, req-3]</span></h3>
+  <ul class="checks">
+    <li>☐ 5.1 <span class="tag frontend">frontend</span>"Task fields" <code>Card</code> + "Configure Fields" <code>Button variant=outline</code> <code>disabled={!canManage}</code> mounting the dialog</li>
+  </ul>
+  <p class="verify">Verify: <code>/devspec-verify project-field-config</code></p>
+
+  <h3>6. Web: apply visibility in task forms <span class="muted">[req-5]</span></h3>
+  <ul class="checks">
+    <li>☐ 6.1 <span class="tag frontend">frontend</span><code>CreateTaskDialog.tsx</code>: gate each field on <code>isFieldVisible</code>; skip hidden field's required check (esp. <code>taskTypeId</code>)</li>
+    <li>☐ 6.2 <span class="tag frontend">frontend</span><code>TaskDetailPage.tsx</code>: gate each field render</li>
+    <li>☐ 6.3 <span class="tag test">test</span><code>CreateTaskDialog.test.tsx</code>: hidden sprint absent; hidden taskType ⇒ submit ok; unset ⇒ all render</li>
+  </ul>
+  <p class="verify">Verify: <code>pnpm --filter @pm/web test -- CreateTaskDialog</code></p>
+
+  <h3>7. Visual sign-off <span class="muted">[req-3, req-4, req-5]</span></h3>
+  <ul class="checks">
+    <li>☐ 7.1 <span class="tag manual">manual</span>BA approves screenshots — dialog states + create form with fields hidden, vs mockup</li>
+  </ul>
+  <p class="verify">Verify: MANUAL: BA approves the devspec-verify screenshots</p>
+
+  <h2 id="coverage">Coverage</h2>
+  <div class="banner ok">✓ Every requirement is covered. req-1 → §1,§2 · req-2 → §2,§5 · req-3 → §4,§5,§7 · req-4 → §4,§7 · req-5 → §3,§6,§7. No orphan tasks.</div>
+
+  <h2 id="board">Board</h2>
+  <div class="card muted">
+    Not yet registered on <code>devspec/changes/tasks.yml</code>. On approval, <code>/devspec-plan</code> adds one row: <code>project-field-config</code>, <code>depends_on: []</code> (independent of <code>delete-project</code>; both touch <code>Project</code> but different columns → parallel-safe).
+  </div>
+</main>
+</div>
+</body>
+</html>

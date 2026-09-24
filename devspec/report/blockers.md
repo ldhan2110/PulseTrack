@@ -156,3 +156,18 @@ _logged: 2026-09-23 by worker-cc_
 2. Start the app (`pnpm dev:api` + `pnpm dev:web`); log in as `anle` / `acbd@`.
 3. Run `/devspec-verify add-chat-reply`; work any `verify/fixes.md`.
 4. Tick §8.1 `[x]` after BA approves the screenshot, then reset board `status: blocked → pending` and re-run the worker.
+
+## project-field-config — live DB apply + browser verify (env-gated)
+_logged: 2026-09-24 by worker-cc_
+
+**All code complete and unit-proven.** API: `nest build` clean; `projects.service` suite green incl. 2 new (`update` persists `fieldConfig`; omits it when absent). Migration file written (`apps/api/prisma/migrations/20260924000000_add_project_field_config/migration.sql`, additive `ADD COLUMN "fieldConfig" JSONB`) + Prisma client regenerated. Web: build clean (tsc+vite); `fieldConfig` helper (4 tests) + `CreateTaskDialog` visibility (4 tests) green. New: `lib/fieldConfig.ts`, `components/settings/ConfigureFieldsDialog.tsx`, General-tab entry card; gated fields in `CreateTaskDialog` (5 present) + `TaskDetailPage` (all 9).
+
+**Blocked on (all need the app running against a DB that has `Project.fieldConfig`):**
+- §4/§5 verify (`/devspec-verify project-field-config`) — the running app points at the shared DB `pm_x` (10.0.0.85:5439, off-limits per board); the column is absent there and applying the migration to a shared/live DB is forbidden (rules.md: no direct DDL on live DB), with no scratch DB and rtk migrate engine absent. The dialog Save→PATCH persistence path (and "reopen reflects") can't be exercised until the column exists. Same env wall as `add-project-soft-delete` / `add-chat-reply`.
+- §7 MANUAL — BA screenshot sign-off vs `mockups/configure-fields-dialog.html`; needs the running app + §4/§5 verify output.
+
+**To resume (human):**
+1. Apply `20260924000000_add_project_field_config` to the app DB (`pnpm migrate:deploy`, or apply the SQL) — additive, no backfill.
+2. Start the app; log in as `anle` / `acbd@`.
+3. Run `/devspec-verify project-field-config`; work any `verify/fixes.md` (dialog opens from General tab, 9 rows + switches, required-off warning, Save persists + reopen reflects, hidden fields drop from create/detail forms).
+4. Tick §7.1 `[x]` after BA approves, then reset board `status: blocked → pending` and re-run the worker.

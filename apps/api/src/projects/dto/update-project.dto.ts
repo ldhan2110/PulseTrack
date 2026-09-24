@@ -1,4 +1,5 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import type { Prisma } from '@prisma/client';
 
 export class UpdateProjectDto {
   @IsOptional()
@@ -17,4 +18,9 @@ export class UpdateProjectDto {
   @MinLength(2)
   @MaxLength(10)
   prefix?: string;
+
+  // task-form field visibility map: { <fieldKey>: boolean }
+  @IsOptional()
+  @IsObject()
+  fieldConfig?: Prisma.InputJsonValue;
 }

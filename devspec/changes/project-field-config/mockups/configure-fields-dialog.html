@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Configure Fields — mockup</title>
+<style>
+  /* tokens copied from apps/web/src/index.css :root (shadcn neutral, oklch) */
+  :root{
+    --background:oklch(1 0 0);--foreground:oklch(0.145 0 0);
+    --card:oklch(1 0 0);--card-foreground:oklch(0.145 0 0);
+    --primary:oklch(0.205 0 0);--primary-foreground:oklch(0.985 0 0);
+    --secondary:oklch(0.97 0 0);--secondary-foreground:oklch(0.205 0 0);
+    --muted:oklch(0.97 0 0);--muted-foreground:oklch(0.556 0 0);
+    --accent:oklch(0.97 0 0);--accent-foreground:oklch(0.205 0 0);
+    --destructive:oklch(0.577 0.245 27.325);
+    --border:oklch(0.922 0 0);--input:oklch(0.922 0 0);--ring:oklch(0.708 0 0);
+    --radius:0.625rem;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:oklch(0.97 0 0);color:var(--foreground);
+    font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;padding:32px}
+  h2.page{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-foreground);margin:32px 0 12px}
+  /* ---- entry point: General tab button ---- */
+  .settings-card{max-width:640px;margin:0 auto 8px;background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px}
+  .settings-card .row{display:flex;justify-content:space-between;align-items:center}
+  .settings-card .row .desc{color:var(--muted-foreground);font-size:13px;margin-top:2px}
+  /* ---- button ---- */
+  .btn{height:36px;padding:0 14px;border-radius:calc(var(--radius) - 2px);border:1px solid transparent;
+    font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:var(--primary);color:var(--primary-foreground)}
+  .btn-outline{background:transparent;border-color:var(--border);color:var(--foreground)}
+  .btn-ghost{background:transparent;color:var(--foreground)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  /* ---- dialog ---- */
+  .stage{max-width:640px;margin:0 auto}
+  .overlay{background:oklch(0 0 0 / .5);border-radius:12px;padding:40px 16px;display:flex;justify-content:center}
+  .dialog{width:100%;max-width:460px;background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);box-shadow:0 10px 30px oklch(0 0 0 /.15);overflow:hidden}
+  .dialog header{padding:20px 22px 8px}
+  .dialog header h3{margin:0;font-size:17px;font-weight:600}
+  .dialog header p{margin:6px 0 0;color:var(--muted-foreground);font-size:13px}
+  .fields{padding:8px 22px 4px}
+  .field{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+  .field:last-child{border-bottom:none}
+  .field .label{display:flex;align-items:center;gap:8px}
+  .badge{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--secondary);color:var(--secondary-foreground)}
+  .badge.req{background:oklch(0.205 0 0);color:var(--primary-foreground)}
+  /* switch */
+  .sw{width:36px;height:20px;border-radius:999px;background:var(--input);position:relative;flex:0 0 auto;transition:.15s}
+  .sw.on{background:var(--primary)}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+    background:var(--background);transition:.15s}
+  .sw.on::after{left:18px}
+  .warn{margin:6px 22px 0;padding:9px 12px;border-radius:calc(var(--radius) - 2px);
+    background:oklch(0.577 0.245 27.325 / .08);color:var(--destructive);font-size:12.5px;display:flex;gap:7px}
+  .footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 22px 20px}
+  .err{margin:0 22px;padding:9px 12px;border-radius:calc(var(--radius) - 2px);
+    background:oklch(0.577 0.245 27.325 / .1);color:var(--destructive);font-size:13px}
+  .spinner{width:14px;height:14px;border:2px solid var(--primary-foreground);border-right-color:transparent;
+    border-radius:50%;display:inline-block}
+  .state-label{max-width:640px;margin:28px auto 8px;font-weight:600;font-size:13px;color:var(--muted-foreground)}
+</style>
+</head>
+<body>
+
+  <h2 class="page">project-field-config — Configure Fields dialog (all states)</h2>
+
+  <!-- entry point -->
+  <div class="state-label">A · Entry point — Project Settings → General (canManage only)</div>
+  <div class="settings-card">
+    <div class="row">
+      <div>
+        <div style="font-weight:600">Task fields</div>
+        <div class="desc">Choose which fields appear on task create &amp; detail forms for this project.</div>
+      </div>
+      <button class="btn btn-outline">Configure Fields</button>
+    </div>
+  </div>
+
+  <!-- state: default filled -->
+  <div class="state-label">B · Default (filled) — toggles reflect saved config</div>
+  <div class="stage"><div class="overlay">
+    <div class="dialog">
+      <header>
+        <h3>Configure Fields</h3>
+        <p>Hidden fields won't show on task create &amp; detail forms. Existing task data is kept.</p>
+      </header>
+      <div class="fields">
+        <div class="field"><div class="label">Ticket type <span class="badge req">Required</span></div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Assignee</div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Priority</div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Sprint</div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Story points</div><div class="sw"></div></div>
+        <div class="field"><div class="label">Planned start date</div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Planned end date</div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Actual start date</div><div class="sw"></div></div>
+        <div class="field"><div class="label">Actual end date</div><div class="sw"></div></div>
+      </div>
+      <div class="footer">
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- state: required toggled off -->
+  <div class="state-label">C · Required field (Ticket type) toggled OFF — inline warning</div>
+  <div class="stage"><div class="overlay">
+    <div class="dialog">
+      <header>
+        <h3>Configure Fields</h3>
+        <p>Hidden fields won't show on task create &amp; detail forms. Existing task data is kept.</p>
+      </header>
+      <div class="fields">
+        <div class="field"><div class="label">Ticket type <span class="badge req">Required</span></div><div class="sw"></div></div>
+        <div class="field"><div class="label">Assignee</div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Priority</div><div class="sw on"></div></div>
+      </div>
+      <div class="warn">⚠ Ticket type is normally required. Hiding it means new tasks are created without a ticket type (saved empty).</div>
+      <div class="footer">
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- state: saving -->
+  <div class="state-label">D · Saving — Save disabled + spinner</div>
+  <div class="stage"><div class="overlay">
+    <div class="dialog">
+      <header><h3>Configure Fields</h3><p>Hidden fields won't show on task create &amp; detail forms. Existing task data is kept.</p></header>
+      <div class="fields">
+        <div class="field"><div class="label">Ticket type <span class="badge req">Required</span></div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Assignee</div><div class="sw on"></div></div>
+      </div>
+      <div class="footer">
+        <button class="btn btn-ghost" disabled>Cancel</button>
+        <button class="btn btn-primary" disabled><span class="spinner"></span> Saving…</button>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- state: error -->
+  <div class="state-label">E · Error — save failed</div>
+  <div class="stage"><div class="overlay">
+    <div class="dialog">
+      <header><h3>Configure Fields</h3><p>Hidden fields won't show on task create &amp; detail forms. Existing task data is kept.</p></header>
+      <div class="fields">
+        <div class="field"><div class="label">Ticket type <span class="badge req">Required</span></div><div class="sw on"></div></div>
+        <div class="field"><div class="label">Assignee</div><div class="sw on"></div></div>
+      </div>
+      <div class="err">Couldn't save field configuration. Try again.</div>
+      <div class="footer">
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div></div>
+
+</body>
+</html>

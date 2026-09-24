@@ -1,3 +1,5 @@
+import type { FieldConfig } from './fieldConfig';
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export type AutoDateField = 'actualStartDate' | 'actualEndDate' | 'plannedStartDate' | 'plannedEndDate';
@@ -133,6 +135,7 @@ export interface Project {
   archived: boolean;
   ownerId: string | null;
   emailNotificationsEnabled?: boolean;
+  fieldConfig?: FieldConfig | null;
   createdAt: string;
   updatedAt: string;
   members?: Member[];
@@ -164,6 +167,7 @@ export interface CreateProjectPayload {
 export interface UpdateProjectPayload {
   name?: string;
   description?: string;
+  fieldConfig?: FieldConfig;
 }
 
 export interface UpdateSettingsPayload {

@@ -32,6 +32,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateTask } from '@/hooks/useTasks';
+import { useProject } from '@/hooks/useProjects';
+import { isFieldVisible } from '@/lib/fieldConfig';
 import type { Member, Sprint, Priority } from '@/lib/types';
 
 // FieldGroup + Field composition per shadcn skill rules
@@ -99,6 +101,8 @@ export function CreateTaskDialog({
   sprints,
 }: CreateTaskDialogProps) {
   const createTask = useCreateTask(projectId);
+  const { data: project } = useProject(projectId);
+  const cfg = project?.fieldConfig;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -155,7 +159,7 @@ export function CreateTaskDialog({
         newErrors.storyPoints = 'Story points must be between 1 and 100';
       }
     }
-    if (!taskTypeId) {
+    if (isFieldVisible(cfg, 'taskType') && !taskTypeId) {
       newErrors.taskTypeId = 'Ticket type is required';
     }
     setErrors(newErrors);
@@ -174,7 +178,7 @@ export function CreateTaskDialog({
         storyPoints: storyPoints !== '' ? Number(storyPoints) : undefined,
         sprintId: sprintId && sprintId !== 'none' ? sprintId : undefined,
         priority: priority || undefined,
-        taskTypeId,
+        taskTypeId: taskTypeId || undefined,
       },
       {
         onSuccess: () => {
@@ -223,6 +227,7 @@ export function CreateTaskDialog({
             </Field>
 
             <div className="grid grid-cols-3 gap-4">
+              {isFieldVisible(cfg, 'storyPoints') && (
               <Field>
                 <FieldLabel htmlFor="task-points">Story Points</FieldLabel>
                 <Input
@@ -240,7 +245,9 @@ export function CreateTaskDialog({
                   <p className="text-xs text-destructive">{errors.storyPoints}</p>
                 )}
               </Field>
+              )}
 
+              {isFieldVisible(cfg, 'taskType') && (
               <Field>
                 <FieldLabel>Ticket Type <span className="text-destructive">*</span></FieldLabel>
                 <Select value={taskTypeId} onValueChange={setTaskTypeId}>
@@ -259,7 +266,9 @@ export function CreateTaskDialog({
                   <p className="text-xs text-destructive">{errors.taskTypeId}</p>
                 )}
               </Field>
+              )}
 
+              {isFieldVisible(cfg, 'priority') && (
               <Field>
                 <FieldLabel>Priority</FieldLabel>
                 <Select value={priority || 'none'} onValueChange={(val) => setPriority(val === 'none' ? '' : val as Priority)}>
@@ -284,9 +293,11 @@ export function CreateTaskDialog({
                   </SelectContent>
                 </Select>
               </Field>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+              {isFieldVisible(cfg, 'assignee') && (
               <Field>
                 <FieldLabel>Assignee</FieldLabel>
                 <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
@@ -362,7 +373,9 @@ export function CreateTaskDialog({
                   </PopoverContent>
                 </Popover>
               </Field>
+              )}
 
+              {isFieldVisible(cfg, 'sprint') && (
               <Field>
                 <FieldLabel>Sprint</FieldLabel>
                 <Select value={sprintId || 'none'} onValueChange={setSprintId}>
@@ -379,6 +392,7 @@ export function CreateTaskDialog({
                   </SelectContent>
                 </Select>
               </Field>
+              )}
             </div>
           </FieldGroup>
           </DialogBody>

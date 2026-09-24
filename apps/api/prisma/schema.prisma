@@ -276,6 +276,7 @@ model Project {
   reports        Report[]
   blueprintSyncs BlueprintSync[]
   workflowLayout      Json?
+  fieldConfig         Json?   // { <fieldKey>: boolean } — task-form field visibility; missing key = visible
   workflowStatuses    WorkflowStatus[]
   workflowTransitions WorkflowTransition[]
   repositories        Repository[]

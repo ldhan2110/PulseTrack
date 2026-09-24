@@ -41,6 +41,7 @@ import { useSprints } from '@/hooks/useSprints';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProject } from '@/hooks/useProjects';
+import { isFieldVisible } from '@/lib/fieldConfig';
 import { useAuth } from '@/auth/useAuth';
 import { useWorkflow, useValidTransitions, useAllowedAssignees } from '@/hooks/useWorkflow';
 import { format, parseISO } from 'date-fns';
@@ -240,6 +241,7 @@ export function TaskDetailPage() {
   const canEdit = can('tasks', 'update');
   const canManage = can('tasks', 'delete');
   const { data: project } = useProject(projectId);
+  const cfg = project?.fieldConfig;
   const updateTask = useUpdateTask(projectId);
   const descriptionUpdate = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
@@ -801,6 +803,7 @@ export function TaskDetailPage() {
               </div>
 
               {/* Assignee */}
+              {isFieldVisible(cfg, 'assignee') && (
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Assignee</SidebarLabel>
                 {(() => {
@@ -881,8 +884,10 @@ export function TaskDetailPage() {
                   );
                 })()}
               </div>
+              )}
 
               {/* Sprint */}
+              {isFieldVisible(cfg, 'sprint') && (
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Sprint</SidebarLabel>
                 <Select
@@ -908,8 +913,10 @@ export function TaskDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
               {/* Story Points */}
+              {isFieldVisible(cfg, 'storyPoints') && (
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Story Points</SidebarLabel>
                 <Input
@@ -930,8 +937,10 @@ export function TaskDetailPage() {
                   }}
                 />
               </div>
+              )}
 
               {/* Priority */}
+              {isFieldVisible(cfg, 'priority') && (
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Priority</SidebarLabel>
                 <Select
@@ -963,8 +972,10 @@ export function TaskDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
               {/* Ticket Type */}
+              {isFieldVisible(cfg, 'taskType') && (
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Ticket Type</SidebarLabel>
                 <Select
@@ -992,6 +1003,7 @@ export function TaskDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
               {/* Task Progress */}
               <div className="border border-border rounded-lg p-3 space-y-2">
@@ -1050,38 +1062,50 @@ export function TaskDetailPage() {
               </div>
 
               {/* Planned dates */}
+              {(isFieldVisible(cfg, 'plannedStartDate') || isFieldVisible(cfg, 'plannedEndDate')) && (
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Planned</SidebarLabel>
+                {isFieldVisible(cfg, 'plannedStartDate') && (
                 <DatePickerField
                   label="Start"
                   value={task.plannedStartDate}
                   onChange={(iso) => optimisticMutate({ plannedStartDate: iso }, { taskId, data: { plannedStartDate: iso } })}
                   disabled={!canEdit}
                 />
+                )}
+                {isFieldVisible(cfg, 'plannedEndDate') && (
                 <DatePickerField
                   label="End"
                   value={task.plannedEndDate}
                   onChange={(iso) => optimisticMutate({ plannedEndDate: iso }, { taskId, data: { plannedEndDate: iso } })}
                   disabled={!canEdit}
                 />
+                )}
               </div>
+              )}
 
               {/* Actual dates */}
+              {(isFieldVisible(cfg, 'actualStartDate') || isFieldVisible(cfg, 'actualEndDate')) && (
               <div className="flex flex-col gap-1.5">
                 <SidebarLabel>Actual</SidebarLabel>
+                {isFieldVisible(cfg, 'actualStartDate') && (
                 <DatePickerField
                   label="Start"
                   value={task.actualStartDate}
                   onChange={(iso) => optimisticMutate({ actualStartDate: iso }, { taskId, data: { actualStartDate: iso } })}
                   disabled={!canEdit}
                 />
+                )}
+                {isFieldVisible(cfg, 'actualEndDate') && (
                 <DatePickerField
                   label="End"
                   value={task.actualEndDate}
                   onChange={(iso) => optimisticMutate({ actualEndDate: iso }, { taskId, data: { actualEndDate: iso } })}
                   disabled={!canEdit}
                 />
+                )}
               </div>
+              )}
 
               <Separator />
 
