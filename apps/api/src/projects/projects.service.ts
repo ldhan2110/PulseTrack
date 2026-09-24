@@ -363,13 +363,16 @@ export class ProjectsService {
       orderBy: { position: 'asc' },
     });
     if (rows.length === 0) {
-      // lazy-seed the 11 defaults for projects created before this feature
+      // lazy-seed the 11 defaults for projects created before this feature.
+      // skipDuplicates makes it race-safe: two concurrent first-reads (modal +
+      // detail page) would otherwise collide on @@unique([projectId,name]).
       await this.prisma.projectTaskCategory.createMany({
         data: DEFAULT_TASK_CATEGORIES.map((name, position) => ({
           projectId,
           name,
           position,
         })),
+        skipDuplicates: true,
       });
       return this.prisma.projectTaskCategory.findMany({
         where: { projectId },

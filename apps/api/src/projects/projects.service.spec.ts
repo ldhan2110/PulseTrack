@@ -168,7 +168,9 @@ describe('ProjectsService — task categories', () => {
       const res = await service.getTaskCategories('p1');
 
       expect(prisma.projectTaskCategory.createMany).toHaveBeenCalledTimes(1);
-      expect(prisma.projectTaskCategory.createMany.mock.calls[0][0].data).toHaveLength(N_DEFAULTS);
+      const seedArg = prisma.projectTaskCategory.createMany.mock.calls[0][0];
+      expect(seedArg.data).toHaveLength(N_DEFAULTS);
+      expect(seedArg.skipDuplicates).toBe(true); // race-safe for concurrent first reads
       expect(res).toHaveLength(N_DEFAULTS);
     });
 
