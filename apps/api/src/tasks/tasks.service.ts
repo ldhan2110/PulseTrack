@@ -68,6 +68,16 @@ export class TasksService {
         }
       }
 
+      if (dto.taskCategoryId) {
+        const taskCategory = await tx.projectTaskCategory.findFirst({
+          where: { id: dto.taskCategoryId, projectId, isActive: true },
+          select: { id: true },
+        });
+        if (!taskCategory) {
+          throw new BadRequestException('Invalid task type for this project');
+        }
+      }
+
       const created = await tx.task.create({
         data: {
           projectId,
@@ -77,6 +87,7 @@ export class TasksService {
           description: dto.description,
           workflowStatusId: defaultStatus?.id ?? null,
           taskTypeId: dto.taskTypeId ?? null,
+          taskCategoryId: dto.taskCategoryId ?? null,
           assigneeId: dto.assigneeId,
           storyPoints: dto.storyPoints,
           sprintId: dto.sprintId,
@@ -203,6 +214,7 @@ export class TasksService {
         creator: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
         workflowStatus: true,
         taskType: true,
+        taskCategory: true,
         parent: { select: { id: true, taskKey: true, title: true } },
         children: {
           include: {
@@ -314,6 +326,17 @@ export class TasksService {
       });
       if (!taskType) {
         throw new BadRequestException('Invalid ticket type for this project');
+      }
+    }
+
+    // Validate taskCategoryId — must belong to project and be active
+    if (dto.taskCategoryId !== undefined && dto.taskCategoryId !== null) {
+      const taskCategory = await this.prisma.projectTaskCategory.findFirst({
+        where: { id: dto.taskCategoryId, projectId: current.projectId, isActive: true },
+        select: { id: true },
+      });
+      if (!taskCategory) {
+        throw new BadRequestException('Invalid task type for this project');
       }
     }
 
@@ -442,6 +465,7 @@ export class TasksService {
           ...(dto.description !== undefined && { description: dto.description }),
           ...(dto.workflowStatusId !== undefined && { workflowStatusId: dto.workflowStatusId }),
           ...(dto.taskTypeId !== undefined && { taskTypeId: dto.taskTypeId }),
+          ...(dto.taskCategoryId !== undefined && { taskCategoryId: dto.taskCategoryId }),
           ...(dto.assigneeId !== undefined && { assigneeId: dto.assigneeId }),
           ...(dto.storyPoints !== undefined && { storyPoints: dto.storyPoints }),
           ...(dto.sprintId !== undefined && { sprintId: dto.sprintId }),

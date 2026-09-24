@@ -229,6 +229,8 @@ export interface Task {
   workflowStatus?: WorkflowStatus | null;
   taskTypeId?: string | null;
   taskType?: TaskType | null;
+  taskCategoryId?: string | null;
+  taskCategory?: TaskCategory | null;
   storyPoints: number | null;
   assigneeId: string | null;
   sprintId: string | null;
@@ -280,6 +282,7 @@ export interface CreateTaskPayload {
   parentId?: string;
   estimatedMinutes?: number;
   taskTypeId?: string;
+  taskCategoryId?: string;
 }
 
 export interface UpdateTaskPayload {
@@ -287,6 +290,7 @@ export interface UpdateTaskPayload {
   description?: string;
   workflowStatusId?: string;
   taskTypeId?: string;
+  taskCategoryId?: string | null;
   storyPoints?: number;
   assigneeId?: string | null;
   sprintId?: string | null;
@@ -1481,6 +1485,15 @@ export interface ProjectVariable {
 }
 
 export interface TaskType {
+  id: string;
+  projectId: string;
+  name: string;
+  position: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface TaskCategory {
   id: string;
   projectId: string;
   name: string;

@@ -52,6 +52,7 @@ import type {
   NotificationPage,
   TicketWatcher,
   TaskType,
+  TaskCategory,
   Group,
   TestModule,
   TestCase,
@@ -719,6 +720,13 @@ export const api = {
   setTaskTypes: (projectId: string, types: { id?: string; name: string; isActive: boolean }[]) =>
     request<TaskType[]>(`/projects/${projectId}/task-types`, {
       method: 'PUT', body: JSON.stringify({ types }),
+    }),
+
+  getTaskCategories: (projectId: string) =>
+    request<TaskCategory[]>(`/projects/${projectId}/task-categories`),
+  setTaskCategories: (projectId: string, categories: { id?: string; name: string; isActive: boolean }[]) =>
+    request<TaskCategory[]>(`/projects/${projectId}/task-categories`, {
+      method: 'PUT', body: JSON.stringify({ categories }),
     }),
 
   getGroups: (projectId: string) =>

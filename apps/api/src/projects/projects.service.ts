@@ -13,6 +13,20 @@ const DEFAULT_TASK_TYPES = [
   'Support',
 ];
 
+const DEFAULT_TASK_CATEGORIES = [
+  'Analysis & Consulting',
+  'Design',
+  'Development',
+  'UI/UX Design',
+  'Testing & QC',
+  'Bug Fix',
+  'Project Management',
+  'Meeting & Communication',
+  'Support & Maintenance',
+  'Documentation',
+  'Internal',
+];
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -70,6 +84,15 @@ export class ProjectsService {
           projectId: p.id,
           name,
           position,
+        })),
+      });
+
+      await tx.projectTaskCategory.createMany({
+        data: DEFAULT_TASK_CATEGORIES.map((name, position) => ({
+          projectId: p.id,
+          name,
+          position,
+          createdBy: userId,
         })),
       });
 
@@ -332,5 +355,75 @@ export class ProjectsService {
       ),
     ]);
     return this.getTaskTypes(projectId);
+  }
+
+  async getTaskCategories(projectId: string) {
+    const rows = await this.prisma.projectTaskCategory.findMany({
+      where: { projectId },
+      orderBy: { position: 'asc' },
+    });
+    if (rows.length === 0) {
+      // lazy-seed the 11 defaults for projects created before this feature
+      await this.prisma.projectTaskCategory.createMany({
+        data: DEFAULT_TASK_CATEGORIES.map((name, position) => ({
+          projectId,
+          name,
+          position,
+        })),
+      });
+      return this.prisma.projectTaskCategory.findMany({
+        where: { projectId },
+        orderBy: { position: 'asc' },
+      });
+    }
+    return rows;
+  }
+
+  async setTaskCategories(
+    projectId: string,
+    categories: { id?: string; name: string; isActive: boolean }[],
+  ) {
+    const cleaned = categories.map((c) => ({ ...c, name: c.name?.trim() }));
+
+    if (cleaned.some((c) => !c.name)) {
+      throw new BadRequestException('Task type name cannot be empty');
+    }
+    const activeNames = cleaned.filter((c) => c.isActive).map((c) => c.name);
+    if (new Set(activeNames).size !== activeNames.length) {
+      throw new BadRequestException('Duplicate active task type name');
+    }
+    if (activeNames.length === 0) {
+      throw new BadRequestException('At least one active task type is required');
+    }
+
+    const existing = await this.prisma.projectTaskCategory.findMany({
+      where: { projectId },
+      select: { id: true },
+    });
+    const keptIds = new Set(cleaned.filter((c) => c.id).map((c) => c.id!));
+    const droppedIds = existing.filter((e) => !keptIds.has(e.id)).map((e) => e.id);
+
+    await this.prisma.$transaction([
+      // omitted categories are deactivated, never deleted (existing tasks keep the FK)
+      ...(droppedIds.length
+        ? [
+            this.prisma.projectTaskCategory.updateMany({
+              where: { id: { in: droppedIds } },
+              data: { isActive: false },
+            }),
+          ]
+        : []),
+      ...cleaned.map((c, position) =>
+        c.id
+          ? this.prisma.projectTaskCategory.update({
+              where: { id: c.id },
+              data: { name: c.name, isActive: c.isActive, position },
+            })
+          : this.prisma.projectTaskCategory.create({
+              data: { projectId, name: c.name, isActive: c.isActive, position },
+            }),
+      ),
+    ]);
+    return this.getTaskCategories(projectId);
   }
 }

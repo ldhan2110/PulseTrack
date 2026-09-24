@@ -3,6 +3,7 @@
 
 export type FieldKey =
   | 'taskType'
+  | 'taskCategory'
   | 'assignee'
   | 'priority'
   | 'sprint'
@@ -24,6 +25,7 @@ export interface FieldDef {
 // and gated in the task forms.
 export const FIELD_DEFS: FieldDef[] = [
   { key: 'taskType', label: 'Ticket type', required: true },
+  { key: 'taskCategory', label: 'Task type', required: true },
   { key: 'assignee', label: 'Assignee' },
   { key: 'priority', label: 'Priority' },
   { key: 'sprint', label: 'Sprint' },

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 
 function makePrisma() {
@@ -118,6 +118,124 @@ describe('ProjectsService — soft delete', () => {
       const res = await service.findAllForUser('u1');
 
       expect(res.map((p) => p.id)).toEqual(['live']);
+    });
+  });
+});
+
+describe('ProjectsService — task categories', () => {
+  const N_DEFAULTS = 11;
+
+  describe('create seeds defaults', () => {
+    it('creates 11 task categories in the project tx', async () => {
+      const tx = {
+        project: { create: vi.fn().mockResolvedValue({ id: 'p1' }) },
+        customRole: { create: vi.fn().mockResolvedValue({ id: 'r1' }) },
+        projectMember: { create: vi.fn() },
+        projectTaskType: { createMany: vi.fn() },
+        projectTaskCategory: { createMany: vi.fn() },
+      };
+      const prisma = {
+        project: { findUnique: vi.fn().mockResolvedValue(null) },
+        $transaction: vi.fn(async (cb: any) => cb(tx)),
+      };
+      const workflow = {
+        seedDefaultWorkflow: vi.fn(),
+        seedDefaultBugWorkflow: vi.fn(),
+      };
+      const service = new ProjectsService(prisma as any, workflow as any);
+
+      await service.create('u1', { name: 'P', prefix: 'PM' } as any);
+
+      expect(tx.projectTaskCategory.createMany).toHaveBeenCalledTimes(1);
+      const rows = tx.projectTaskCategory.createMany.mock.calls[0][0].data;
+      expect(rows).toHaveLength(N_DEFAULTS);
+      expect(rows[0]).toMatchObject({ projectId: 'p1', name: 'Analysis & Consulting', position: 0, createdBy: 'u1' });
+      expect(rows[N_DEFAULTS - 1]).toMatchObject({ name: 'Internal', position: N_DEFAULTS - 1 });
+    });
+  });
+
+  describe('getTaskCategories lazy-seed', () => {
+    it('seeds 11 then returns them when the project has none', async () => {
+      const seeded = Array.from({ length: N_DEFAULTS }, (_, i) => ({ id: `c${i}`, position: i }));
+      const prisma = {
+        projectTaskCategory: {
+          findMany: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce(seeded),
+          createMany: vi.fn(),
+        },
+      };
+      const service = new ProjectsService(prisma as any, {} as any);
+
+      const res = await service.getTaskCategories('p1');
+
+      expect(prisma.projectTaskCategory.createMany).toHaveBeenCalledTimes(1);
+      expect(prisma.projectTaskCategory.createMany.mock.calls[0][0].data).toHaveLength(N_DEFAULTS);
+      expect(res).toHaveLength(N_DEFAULTS);
+    });
+
+    it('returns existing rows without seeding', async () => {
+      const existing = [{ id: 'c1', position: 0 }];
+      const prisma = {
+        projectTaskCategory: { findMany: vi.fn().mockResolvedValue(existing), createMany: vi.fn() },
+      };
+      const service = new ProjectsService(prisma as any, {} as any);
+
+      const res = await service.getTaskCategories('p1');
+
+      expect(prisma.projectTaskCategory.createMany).not.toHaveBeenCalled();
+      expect(res).toBe(existing);
+    });
+  });
+
+  describe('setTaskCategories', () => {
+    function makePrisma(existingIds: string[]) {
+      return {
+        projectTaskCategory: {
+          findMany: vi
+            .fn()
+            .mockResolvedValueOnce(existingIds.map((id) => ({ id }))) // existing lookup
+            .mockResolvedValue([{ id: 'x', position: 0 }]), // final getTaskCategories read (non-empty → no lazy-seed)
+          update: vi.fn(),
+          create: vi.fn(),
+          updateMany: vi.fn(),
+          createMany: vi.fn(),
+        },
+        $transaction: vi.fn(async (ops: any) => Promise.all(ops)),
+      };
+    }
+
+    it('adds new, renames/reorders kept, soft-deletes omitted', async () => {
+      const prisma = makePrisma(['keep', 'drop']);
+      const service = new ProjectsService(prisma as any, {} as any);
+
+      await service.setTaskCategories('p1', [
+        { id: 'keep', name: 'Renamed', isActive: true },
+        { name: 'Brand New', isActive: true },
+      ]);
+
+      // omitted 'drop' deactivated
+      expect(prisma.projectTaskCategory.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['drop'] } },
+        data: { isActive: false },
+      });
+      // kept row updated with new name + position 0
+      expect(prisma.projectTaskCategory.update).toHaveBeenCalledWith({
+        where: { id: 'keep' },
+        data: { name: 'Renamed', isActive: true, position: 0 },
+      });
+      // new row created at position 1
+      expect(prisma.projectTaskCategory.create).toHaveBeenCalledWith({
+        data: { projectId: 'p1', name: 'Brand New', isActive: true, position: 1 },
+      });
+    });
+
+    it('rejects a payload with no active non-empty category', async () => {
+      const prisma = makePrisma([]);
+      const service = new ProjectsService(prisma as any, {} as any);
+
+      await expect(
+        service.setTaskCategories('p1', [{ name: 'X', isActive: false }]),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 });
