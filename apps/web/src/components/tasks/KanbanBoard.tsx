@@ -21,8 +21,10 @@ import {
 import { useUpdateTask } from '@/hooks/useTasks';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useProject } from '@/hooks/useProjects';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { type FieldConfig } from '@/lib/fieldConfig';
 import type { Task, WorkflowStatus } from '@/lib/types';
 
 interface KanbanBoardProps {
@@ -35,6 +37,8 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
   const updateTask = useUpdateTask(projectId);
   const { data: workflow } = useWorkflow(projectId);
   const { can } = usePermissions(projectId);
+  const { data: project } = useProject(projectId);
+  const fieldConfig: FieldConfig | null | undefined = project?.fieldConfig;
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -141,7 +145,8 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
       navigate(`/projects/${projectPrefix}/tasks/${task.taskKey ?? task.id}`);
 
     return (
-      <div className="flex flex-col gap-4 pb-4">
+      // Mobile scrolls with the page's <main> (overflow-auto); px-0.5 keeps card borders off the edge.
+      <div className="flex flex-col gap-4 pb-4 px-0.5">
         {sections.map((status) => {
           const list = listFor(status);
           return (
@@ -158,6 +163,7 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
                       <TaskCard
                         task={task}
                         showPoints
+                        fieldConfig={fieldConfig}
                         statusControl={
                           <MobileMoveMenu
                             task={task}
@@ -189,6 +195,7 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
             tasks={tasksByStatus[status.id] ?? []}
             projectId={projectId}
             projectPrefix={projectPrefix}
+            fieldConfig={fieldConfig}
           />
         ))}
         {orphanedTasks.length > 0 && (
@@ -198,6 +205,7 @@ export function KanbanBoard({ tasks, projectId, projectPrefix }: KanbanBoardProp
             tasks={orphanedTasks}
             projectId={projectId}
             projectPrefix={projectPrefix}
+            fieldConfig={fieldConfig}
           />
         )}
       </div>

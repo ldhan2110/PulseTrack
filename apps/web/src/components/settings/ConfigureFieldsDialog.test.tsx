@@ -31,14 +31,16 @@ function renderDialog() {
 beforeEach(() => updateMutate.mockClear());
 
 describe('ConfigureFieldsDialog', () => {
-  it('locks required field switches ON and disabled', () => {
+  it('required fields default ON but can be toggled off (hidable)', () => {
     renderDialog();
     const ticket = document.getElementById('field-taskType') as HTMLButtonElement;
     const task = document.getElementById('field-taskCategory') as HTMLButtonElement;
     expect(ticket).toBeTruthy();
     expect(ticket.getAttribute('data-state')).toBe('checked');
-    expect(ticket).toBeDisabled();
-    expect(task).toBeDisabled();
+    expect(ticket).not.toBeDisabled();
+    expect(task).not.toBeDisabled();
+    fireEvent.click(ticket);
+    expect(ticket.getAttribute('data-state')).toBe('unchecked');
   });
 
   it('expanding Task type reveals its inline value editor', async () => {

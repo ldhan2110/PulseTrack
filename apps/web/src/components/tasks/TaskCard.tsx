@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { isFieldVisible, type FieldConfig } from '@/lib/fieldConfig';
 import type { Task, Priority } from '@/lib/types';
 
 const PRIORITY_CONFIG: Record<Priority, { color: string; glow: string; label: string; icon: LucideIcon }> = {
@@ -77,6 +78,8 @@ interface TaskCardProps {
   showPoints?: boolean;
   /** Control rendered at the top-right of zone 1 — a status chip or a move-status dropdown. */
   statusControl?: ReactNode;
+  /** Per-project field visibility; when set, hidden fields are dropped from the card. */
+  fieldConfig?: FieldConfig | null;
   className?: string;
 }
 
@@ -86,12 +89,18 @@ interface TaskCardProps {
  * KanbanCard wraps it in its draggable + click handler; mobile surfaces wrap it
  * in a click-to-detail div and pass a status chip or move dropdown as statusControl.
  */
-export function TaskCard({ task, showProject, showPoints, statusControl, className }: TaskCardProps) {
+export function TaskCard({ task, showProject, showPoints, statusControl, fieldConfig, className }: TaskCardProps) {
   const overdue = isOverdue(task.plannedEndDate, task.workflowStatus?.isClosed);
   const priority = task.priority ? PRIORITY_CONFIG[task.priority] : null;
   const typeVisual = getTypeVisual(task.taskType?.name);
   const TypeIcon = typeVisual.icon;
   const PriorityIcon = priority?.icon;
+
+  const showType = isFieldVisible(fieldConfig, 'taskType');
+  const showAssignee = isFieldVisible(fieldConfig, 'assignee');
+  const showPriority = isFieldVisible(fieldConfig, 'priority');
+  const showDue = isFieldVisible(fieldConfig, 'plannedEndDate');
+  const showStoryPoints = isFieldVisible(fieldConfig, 'storyPoints');
 
   return (
     <Card
@@ -105,6 +114,7 @@ export function TaskCard({ task, showProject, showPoints, statusControl, classNa
       <CardContent className="px-3 py-2 flex flex-col gap-1.5">
         {/* Zone 1: type icon + key (+ optional project chip / status control) */}
         <div className="flex items-center gap-1.5 min-w-0">
+          {showType && (
           <span
             className="flex items-center justify-center rounded p-1 shrink-0"
             style={{ backgroundColor: `${typeVisual.color}1a` }}
@@ -112,6 +122,7 @@ export function TaskCard({ task, showProject, showPoints, statusControl, classNa
           >
             <TypeIcon className="size-3" style={{ color: typeVisual.color }} />
           </span>
+          )}
           {task.taskKey && (
             <span className="text-xs font-mono text-muted-foreground truncate">{task.taskKey}</span>
           )}
@@ -130,7 +141,7 @@ export function TaskCard({ task, showProject, showPoints, statusControl, classNa
 
         {/* Zone 3: footer — avatar · type label · date · priority icon */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {task.assignee ? (
+          {showAssignee && (task.assignee ? (
             <Avatar className="size-5">
               {task.assignee.imageUrl && (
                 <AvatarImage src={task.assignee.imageUrl} alt={task.assignee.name ?? task.assignee.username} />
@@ -143,8 +154,9 @@ export function TaskCard({ task, showProject, showPoints, statusControl, classNa
             <div className="size-5 rounded-full bg-muted flex items-center justify-center">
               <span className="text-[9px] text-muted-foreground">?</span>
             </div>
-          )}
+          ))}
 
+          {showType && (
           <Badge
             variant="secondary"
             className="gap-1 px-1.5 py-0 text-[11px] font-semibold border-0"
@@ -153,21 +165,22 @@ export function TaskCard({ task, showProject, showPoints, statusControl, classNa
             <span className="inline-block size-1.5 rounded-full" style={{ backgroundColor: typeVisual.color }} />
             {task.taskType?.name ?? 'Task'}
           </Badge>
+          )}
 
-          {showPoints && task.storyPoints != null && (
+          {showPoints && showStoryPoints && task.storyPoints != null && (
             <span className="text-[11px] text-muted-foreground border rounded px-1 leading-tight">
               {task.storyPoints}
             </span>
           )}
 
-          {task.plannedEndDate && (
+          {showDue && task.plannedEndDate && (
             <div className={cn('flex items-center gap-1', overdue ? 'text-destructive' : 'text-muted-foreground')}>
               <Calendar className="size-2.5" />
               <span className="text-[11px]">{formatDate(task.plannedEndDate)}</span>
             </div>
           )}
 
-          {priority && PriorityIcon && (
+          {showPriority && priority && PriorityIcon && (
             <span className="ml-auto shrink-0" title={priority.label}>
               <PriorityIcon className="size-3.5" style={{ color: priority.color }} strokeWidth={2.5} />
             </span>

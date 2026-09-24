@@ -5,6 +5,7 @@ import type { Task } from '../../lib/types';
 
 let mobile = true;
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => mobile }));
+vi.mock('@/hooks/useProjects', () => ({ useProject: () => ({ data: { fieldConfig: null } }) }));
 vi.mock('@/hooks/useTasks', () => ({ useUpdateTaskStatus: () => ({ mutate: vi.fn() }) }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 // TaskFilters is desktop-only chrome with its own deps — stub it out
