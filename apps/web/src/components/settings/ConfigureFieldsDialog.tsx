@@ -104,12 +104,12 @@ export function ConfigureFieldsDialog({
 
   const anyValueDirty = Object.values(dirty).some(Boolean);
 
-  // required fields ignored — they can't be hidden
-  const allOn = FIELD_DEFS.every((d) => d.required || visible[d.key]);
+  // any field — including required ones — may be hidden
+  const allOn = FIELD_DEFS.every((d) => visible[d.key]);
 
   const toggleAll = () => {
     const next = {} as Record<FieldKey, boolean>;
-    for (const def of FIELD_DEFS) next[def.key] = def.required ? true : !allOn;
+    for (const def of FIELD_DEFS) next[def.key] = !allOn;
     setVisible(next);
   };
 
@@ -117,7 +117,7 @@ export function ConfigureFieldsDialog({
     // store only hidden keys (default is visible) — keeps the blob small
     const next: FieldConfig = {};
     for (const def of FIELD_DEFS) {
-      if (!def.required && !visible[def.key]) next[def.key] = false;
+      if (!visible[def.key]) next[def.key] = false;
     }
     update.mutate(
       { fieldConfig: next },
@@ -186,8 +186,7 @@ export function ConfigureFieldsDialog({
                     </div>
                     <Switch
                       id={`field-${def.key}`}
-                      checked={def.required || visible[def.key]}
-                      disabled={def.required}
+                      checked={visible[def.key]}
                       onCheckedChange={(v) => setVisible((prev) => ({ ...prev, [def.key]: v }))}
                     />
                   </div>
