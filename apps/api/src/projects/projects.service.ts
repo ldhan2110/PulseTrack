@@ -48,6 +48,8 @@ export class ProjectsService {
           description: dto.description,
           prefix,
           ownerId: userId,
+          // Hide Story points, Sprint, and Task type by default on new projects.
+          fieldConfig: { storyPoints: false, sprint: false, taskCategory: false },
         },
       });
 
