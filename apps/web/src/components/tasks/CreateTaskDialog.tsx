@@ -243,7 +243,7 @@ export function CreateTaskDialog({
               />
             </Field>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
               {isFieldVisible(cfg, 'storyPoints') && (
               <Field>
                 <FieldLabel htmlFor="task-points">Story Points</FieldLabel>
@@ -332,9 +332,7 @@ export function CreateTaskDialog({
                 </Select>
               </Field>
               )}
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               {isFieldVisible(cfg, 'assignee') && (
               <Field>
                 <FieldLabel>Assignee</FieldLabel>
@@ -417,7 +415,7 @@ export function CreateTaskDialog({
               <Field>
                 <FieldLabel>Sprint</FieldLabel>
                 <Select value={sprintId || 'none'} onValueChange={setSprintId}>
-                  <SelectTrigger className="h-8">
+                  <SelectTrigger className="h-8 w-full">
                     <SelectValue placeholder="None (backlog)" />
                   </SelectTrigger>
                   <SelectContent>
