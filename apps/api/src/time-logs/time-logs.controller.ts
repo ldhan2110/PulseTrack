@@ -33,7 +33,7 @@ export class TimeLogsController {
     @Req() req: any,
     @Body() dto: UpdateTimeLogDto,
   ) {
-    return this.timeLogsService.update(projectId, taskId, timeLogId, req.user.id, req.user.projectRole, dto);
+    return this.timeLogsService.update(projectId, taskId, timeLogId, req.user.id, req.user.permissions, dto);
   }
 
   @Delete(':timeLogId')
@@ -43,6 +43,6 @@ export class TimeLogsController {
     @Param('timeLogId') timeLogId: string,
     @Req() req: any,
   ) {
-    return this.timeLogsService.remove(projectId, taskId, timeLogId, req.user.id, req.user.projectRole);
+    return this.timeLogsService.remove(projectId, taskId, timeLogId, req.user.id, req.user.permissions);
   }
 }
