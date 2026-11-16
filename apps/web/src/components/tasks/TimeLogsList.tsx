@@ -1,4 +1,4 @@
-import { Trash2, Clock } from 'lucide-react';
+import { Trash2, Clock, Pencil } from 'lucide-react';
 import { formatMinutes } from '../../lib/time-utils';
 import type { TimeLog } from '../../lib/types';
 
@@ -7,10 +7,11 @@ interface TimeLogsListProps {
   currentUserId: string;
   canDeleteAny?: boolean;
   onDelete: (timeLogId: string) => void;
+  onEdit?: (timeLog: TimeLog) => void;
   isDeleting?: boolean;
 }
 
-export function TimeLogsList({ timeLogs, currentUserId, canDeleteAny, onDelete, isDeleting }: TimeLogsListProps) {
+export function TimeLogsList({ timeLogs, currentUserId, canDeleteAny, onDelete, onEdit, isDeleting }: TimeLogsListProps) {
   const totalMinutes = timeLogs.reduce((sum, tl) => sum + tl.minutes, 0);
 
   return (
@@ -55,13 +56,25 @@ export function TimeLogsList({ timeLogs, currentUserId, canDeleteAny, onDelete, 
                 )}
               </div>
               {(tl.userId === currentUserId || canDeleteAny) && (
-                <button
-                  onClick={() => onDelete(tl.id)}
-                  disabled={isDeleting}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-opacity p-1"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(tl)}
+                      aria-label="Edit time log"
+                      className="text-muted-foreground hover:text-foreground p-1"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onDelete(tl.id)}
+                    disabled={isDeleting}
+                    aria-label="Delete time log"
+                    className="text-muted-foreground hover:text-red-500 p-1"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               )}
             </div>
           ))}

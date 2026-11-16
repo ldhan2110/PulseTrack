@@ -1,4 +1,5 @@
-import { McpServerService } from './mcp-server.service';
+import { vi } from 'vitest';
+import { McpServerService, toCommentHtml } from './mcp-server.service';
 import type { McpSession } from './mcp-pat.guard';
 
 function session(scopes: string[], allowWrite = true): McpSession {
@@ -19,6 +20,24 @@ function makeServices() {
   const bugs = {
     findAll: async (projectId: string) => [{ id: 'bug1', projectId }],
     findOne: async (id: string) => ({ id, projectId: proj(id), title: 'B' }),
+    findByBugKey: async (bugKey: string) => ({ id: 'bug1', projectId: proj(bugKey), bugKey }),
+    create: vi.fn(async (projectId: string, reporterId: string, dto: any) => ({ id: 'bugnew', projectId, reporterId, ...dto })),
+    update: vi.fn(async (id: string, dto: any, actorId: string) => ({ id, actorId, ...dto })),
+  };
+  // One root comment with one reply; both carry like data that MCP must strip.
+  const commentTree = (owner: string) => [
+    {
+      id: 'c1', content: `on ${owner}`, parentId: null, likes: [{ userId: 'u1' }],
+      replies: [{ id: 'c2', content: 'reply', parentId: 'c1', likes: [], replies: [] }],
+    },
+  ];
+  const comments = {
+    findAll: async (taskId: string) => commentTree(taskId),
+    findAllForBug: async (bugId: string) => commentTree(bugId),
+    create: vi.fn(async (taskId: string, authorId: string, content: string) => ({ id: 'cnew', taskId, authorId, content })),
+    createReply: vi.fn(async (taskId: string, parentId: string, authorId: string, content: string) => ({ id: 'rnew', taskId, parentId, authorId, content })),
+    createForBug: vi.fn(async (bugId: string, authorId: string, content: string) => ({ id: 'cnew', bugId, authorId, content })),
+    createReplyForBug: vi.fn(async (bugId: string, parentId: string, authorId: string, content: string) => ({ id: 'rnew', bugId, parentId, authorId, content })),
   };
   const testCases = {
     findAll: async (projectId: string) => [{ id: 'tc1', projectId }],
@@ -76,16 +95,36 @@ function makeServices() {
         where.projectId === 'p1'
           ? [{ user: { id: 'u1', name: 'Ann', username: 'ann', email: 'ann@x.io' } }]
           : [],
+      // Only u1 is a member of p1.
+      findUnique: async ({ where }: any) =>
+        where.projectId_userId.projectId === 'p1' && where.projectId_userId.userId === 'u1'
+          ? { projectId: 'p1', userId: 'u1' }
+          : null,
+    },
+    // p1 has bug statuses bs-open / bs-closed; 'ts-todo' is a TASK status and
+    // 'bs-p2' belongs to another project.
+    workflowStatus: {
+      findMany: async ({ where }: any) =>
+        where.projectId === 'p1' && where.kind === 'BUG'
+          ? [
+              { id: 'bs-open', name: 'Open', key: 'OPEN', isDefault: true, isClosed: false },
+              { id: 'bs-closed', name: 'Closed', key: 'CLOSED', isDefault: false, isClosed: true },
+            ]
+          : [],
+      findFirst: async ({ where }: any) =>
+        where.projectId === 'p1' && where.kind === 'BUG' && ['bs-open', 'bs-closed'].includes(where.id)
+          ? { id: where.id }
+          : null,
     },
   };
   const svc = new McpServerService(
     tasks as any, bugs as any, testCases as any, timeLogs as any, testModules as any,
-    {} as any, testExecutions as any, {} as any, prisma as any,
+    {} as any, testExecutions as any, {} as any, prisma as any, comments as any,
   );
-  return { svc, tasks, timeLogs, testExecutions };
+  return { svc, tasks, bugs, timeLogs, testExecutions, comments };
 }
 
-const ALL_SCOPES = ['tasks:read', 'bugs:read', 'tasks:write', 'tasks:logtime', 'testcases:read', 'testcases:write', 'testexec:read', 'testexec:write'];
+const ALL_SCOPES = ['tasks:read', 'bugs:read', 'bugs:create', 'bugs:write', 'tasks:write', 'tasks:logtime', 'testcases:read', 'testcases:write', 'testexec:read', 'testexec:write'];
 
 function tool(svc: McpServerService, s: McpSession, name: string) {
   return svc.tools(s).find((t) => t.name === name)!;
@@ -125,15 +164,192 @@ describe('MCP read-only tools', () => {
   });
 });
 
+describe('MCP comment + bug tools', () => {
+  it('get_bug resolves by bugKey and still enforces isolation', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['bugs:read']), 'get_bug').handler({ bugKey: 'AXC-BUG-1' });
+    expect(JSON.parse(res.content[0].text).bugKey).toBe('AXC-BUG-1');
+    await expect(tool(svc, session(['bugs:read']), 'get_bug').handler({ bugKey: 'other' })).rejects.toThrow(/not found/i);
+  });
+
+  it('list_task_comments returns the nested thread without likes', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['tasks:read']), 'list_task_comments').handler({ taskKey: 'AXC-1' });
+    expect(JSON.parse(res.content[0].text)).toEqual([
+      {
+        id: 'c1', content: 'on task1', parentId: null,
+        replies: [{ id: 'c2', content: 'reply', parentId: 'c1', replies: [] }],
+      },
+    ]);
+  });
+
+  it('list_task_comments needs tasks:read and rejects cross-project tasks', async () => {
+    const { svc } = makeServices();
+    await expect(tool(svc, session(['bugs:read']), 'list_task_comments').handler({ id: 'task1' })).rejects.toThrow(/scope: tasks:read/);
+    await expect(tool(svc, session(['tasks:read']), 'list_task_comments').handler({ id: 'other' })).rejects.toThrow(/not found/i);
+    await expect(tool(svc, session(['tasks:read']), 'list_task_comments').handler({})).rejects.toThrow(/Provide id or taskKey/);
+  });
+
+  it('list_bug_comments needs bugs:read and rejects cross-project bugs', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['bugs:read']), 'list_bug_comments').handler({ id: 'bug1' });
+    expect(JSON.parse(res.content[0].text)[0].likes).toBeUndefined();
+    await expect(tool(svc, session(['tasks:read']), 'list_bug_comments').handler({ id: 'bug1' })).rejects.toThrow(/scope: bugs:read/);
+    await expect(tool(svc, session(['bugs:read']), 'list_bug_comments').handler({ id: 'other' })).rejects.toThrow(/not found/i);
+  });
+
+  it('toCommentHtml wraps plain text per line, escapes it, and passes HTML through', () => {
+    expect(toCommentHtml('hello world')).toBe('<p>hello world</p>');
+    expect(toCommentHtml('line 1\r\n\nline 3')).toBe('<p>line 1</p><p></p><p>line 3</p>');
+    expect(toCommentHtml('a < b & c > d')).toBe('<p>a &lt; b &amp; c &gt; d</p>');
+    expect(toCommentHtml('<p>already <b>html</b></p>')).toBe('<p>already <b>html</b></p>');
+    expect(toCommentHtml('<ul><li>x</li></ul>')).toBe('<ul><li>x</li></ul>');
+  });
+
+  it('add_task_comment posts as the token owner, or replies with parentId', async () => {
+    const { svc, comments } = makeServices();
+    const res = await tool(svc, session(['tasks:write']), 'add_task_comment').handler({ taskKey: 'AXC-1', content: 'hello world' });
+    expect(JSON.parse(res.content[0].text)).toEqual({ id: 'cnew', taskId: 'task1', authorId: 'u1', content: '<p>hello world</p>' });
+    await tool(svc, session(['tasks:write']), 'add_task_comment').handler({ id: 'task1', content: 'hi', parentId: 'c1' });
+    expect(comments.createReply).toHaveBeenCalledWith('task1', 'c1', 'u1', '<p>hi</p>');
+  });
+
+  it('add_task_comment needs tasks:write + write consent and rejects cross-project tasks', async () => {
+    const { svc, comments } = makeServices();
+    await expect(tool(svc, session(['tasks:read']), 'add_task_comment').handler({ id: 'task1', content: 'x' })).rejects.toThrow(/scope: tasks:write/);
+    await expect(tool(svc, session(['tasks:write'], false), 'add_task_comment').handler({ id: 'task1', content: 'x' })).rejects.toThrow(/write consent/);
+    await expect(tool(svc, session(['tasks:write']), 'add_task_comment').handler({ id: 'other', content: 'x' })).rejects.toThrow(/not found/i);
+    await expect(tool(svc, session(['tasks:write']), 'add_task_comment').handler({ content: 'x' })).rejects.toThrow(/Provide id or taskKey/);
+    expect(comments.create).not.toHaveBeenCalled();
+  });
+
+  it('add_bug_comment posts as the token owner, or replies with parentId', async () => {
+    const { svc, comments } = makeServices();
+    const res = await tool(svc, session(['bugs:write']), 'add_bug_comment').handler({ bugKey: 'AXC-BUG-1', content: 'hello world' });
+    expect(JSON.parse(res.content[0].text)).toEqual({ id: 'cnew', bugId: 'bug1', authorId: 'u1', content: '<p>hello world</p>' });
+    await tool(svc, session(['bugs:write']), 'add_bug_comment').handler({ id: 'bug1', content: 'hi', parentId: 'c1' });
+    expect(comments.createReplyForBug).toHaveBeenCalledWith('bug1', 'c1', 'u1', '<p>hi</p>');
+  });
+
+  it('add_bug_comment needs bugs:write + write consent and rejects cross-project bugs', async () => {
+    const { svc, comments } = makeServices();
+    await expect(tool(svc, session(['bugs:read']), 'add_bug_comment').handler({ id: 'bug1', content: 'x' })).rejects.toThrow(/scope: bugs:write/);
+    await expect(tool(svc, session(['bugs:write'], false), 'add_bug_comment').handler({ id: 'bug1', content: 'x' })).rejects.toThrow(/write consent/);
+    await expect(tool(svc, session(['bugs:write']), 'add_bug_comment').handler({ id: 'other', content: 'x' })).rejects.toThrow(/not found/i);
+    expect(comments.createForBug).not.toHaveBeenCalled();
+  });
+
+  it('create_bug requires bugs:create, and bugs:read alone is not enough', async () => {
+    const { svc, bugs } = makeServices();
+    await expect(
+      tool(svc, session(['bugs:read']), 'create_bug').handler({ title: 'Broken', severity: 'HIGH' }),
+    ).rejects.toThrow(/scope: bugs:create/);
+    expect(bugs.create).not.toHaveBeenCalled();
+  });
+
+  it('create_bug is blocked without write consent', async () => {
+    const { svc, bugs } = makeServices();
+    await expect(
+      tool(svc, session(['bugs:create'], false), 'create_bug').handler({ title: 'Broken', severity: 'HIGH' }),
+    ).rejects.toThrow(/write consent/);
+    expect(bugs.create).not.toHaveBeenCalled();
+  });
+
+  it('create_bug uses projectId + reporter from the session', async () => {
+    const { svc, bugs } = makeServices();
+    const res = await tool(svc, session(['bugs:create']), 'create_bug').handler({
+      title: 'Broken', severity: 'HIGH', assigneeId: 'u1',
+    });
+    expect(bugs.create).toHaveBeenCalledWith('p1', 'u1', { title: 'Broken', severity: 'HIGH', assigneeId: 'u1' });
+    expect(JSON.parse(res.content[0].text)).toMatchObject({ id: 'bugnew', projectId: 'p1', reporterId: 'u1' });
+  });
+
+  it('create_bug rejects an assignee or owner outside the project', async () => {
+    const { svc, bugs } = makeServices();
+    await expect(
+      tool(svc, session(['bugs:create']), 'create_bug').handler({ title: 'Broken', severity: 'LOW', assigneeId: 'stranger' }),
+    ).rejects.toThrow(/assigneeId is not a member/);
+    await expect(
+      tool(svc, session(['bugs:create']), 'create_bug').handler({ title: 'Broken', severity: 'LOW', ownerId: 'stranger' }),
+    ).rejects.toThrow(/ownerId is not a member/);
+    expect(bugs.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('MCP update_bug / list_bug_statuses', () => {
+  it('list_bug_statuses returns this project bug statuses; needs bugs:read', async () => {
+    const { svc } = makeServices();
+    const res = await tool(svc, session(['bugs:read']), 'list_bug_statuses').handler({});
+    expect(JSON.parse(res.content[0].text).map((s: any) => s.id)).toEqual(['bs-open', 'bs-closed']);
+    await expect(tool(svc, session(['tasks:read']), 'list_bug_statuses').handler({})).rejects.toThrow(/scope: bugs:read/);
+  });
+
+  it('update_bug needs bugs:write — bugs:create alone is not enough', async () => {
+    const { svc, bugs } = makeServices();
+    await expect(
+      tool(svc, session(['bugs:create', 'bugs:read']), 'update_bug').handler({ id: 'bug1', severity: 'LOW' }),
+    ).rejects.toThrow(/scope: bugs:write/);
+    expect(bugs.update).not.toHaveBeenCalled();
+  });
+
+  it('update_bug is blocked without write consent', async () => {
+    const { svc, bugs } = makeServices();
+    await expect(
+      tool(svc, session(['bugs:write'], false), 'update_bug').handler({ id: 'bug1', severity: 'LOW' }),
+    ).rejects.toThrow(/write consent/);
+    expect(bugs.update).not.toHaveBeenCalled();
+  });
+
+  it('update_bug by bugKey passes only the given fields with the session user as actor', async () => {
+    const { svc, bugs } = makeServices();
+    await tool(svc, session(['bugs:write']), 'update_bug').handler({
+      bugKey: 'TM-BUG-1', severity: 'CRITICAL', workflowStatusId: 'bs-closed', assigneeId: null,
+    });
+    expect(bugs.update).toHaveBeenCalledWith(
+      'bug1', { severity: 'CRITICAL', workflowStatusId: 'bs-closed', assigneeId: null }, 'u1',
+    );
+  });
+
+  it('update_bug rejects bugs from another project', async () => {
+    const { svc, bugs } = makeServices();
+    await expect(
+      tool(svc, session(['bugs:write']), 'update_bug').handler({ bugKey: 'other', severity: 'LOW' }),
+    ).rejects.toThrow(/not found/i);
+    expect(bugs.update).not.toHaveBeenCalled();
+  });
+
+  it('update_bug rejects a task status, another project status, or an unknown status', async () => {
+    const { svc, bugs } = makeServices();
+    for (const workflowStatusId of ['ts-todo', 'bs-p2', 'nope']) {
+      await expect(
+        tool(svc, session(['bugs:write']), 'update_bug').handler({ id: 'bug1', workflowStatusId }),
+      ).rejects.toThrow(/not a bug status/);
+    }
+    expect(bugs.update).not.toHaveBeenCalled();
+  });
+
+  it('update_bug rejects assignee/owner outside the project', async () => {
+    const { svc, bugs } = makeServices();
+    await expect(
+      tool(svc, session(['bugs:write']), 'update_bug').handler({ id: 'bug1', assigneeId: 'stranger' }),
+    ).rejects.toThrow(/assigneeId is not a member/);
+    await expect(
+      tool(svc, session(['bugs:write']), 'update_bug').handler({ id: 'bug1', ownerId: 'stranger' }),
+    ).rejects.toThrow(/ownerId is not a member/);
+    expect(bugs.update).not.toHaveBeenCalled();
+  });
+});
+
 describe('MCP write tools', () => {
   it('registers the full read+write surface', () => {
     const { svc } = makeServices();
     const names = svc.tools(session(ALL_SCOPES)).map((t) => t.name).sort();
     expect(names).toEqual([
-      'attach_result_file', 'attach_task_file', 'create_task', 'create_test_case', 'create_test_execution',
+      'add_bug_comment', 'add_task_comment', 'attach_result_file', 'attach_task_file', 'create_bug', 'create_task', 'create_test_case', 'create_test_execution',
       'get_bug', 'get_task', 'get_test_case', 'get_test_execution',
-      'list_bugs', 'list_project_members', 'list_task_types', 'list_tasks', 'list_test_cases', 'list_test_executions', 'list_test_modules',
-      'log_time', 'update_execution_result', 'update_task', 'update_test_case',
+      'list_bug_comments', 'list_bug_statuses', 'list_bugs', 'list_project_members', 'list_task_comments', 'list_task_types', 'list_tasks',
+      'list_test_cases', 'list_test_executions', 'list_test_modules',
+      'log_time', 'update_bug', 'update_execution_result', 'update_task', 'update_test_case',
     ]);
   });
 

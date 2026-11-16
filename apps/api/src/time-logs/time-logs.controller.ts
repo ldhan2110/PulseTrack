@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Delete, Param, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Req, UseGuards } from '@nestjs/common';
 import { TimeLogsService } from './time-logs.service';
 import { CreateTimeLogDto } from './dto/create-time-log.dto';
+import { UpdateTimeLogDto } from './dto/update-time-log.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProjectRolesGuard } from '../auth/project-roles.guard';
 
@@ -24,6 +25,17 @@ export class TimeLogsController {
     return this.timeLogsService.findAll(taskId);
   }
 
+  @Patch(':timeLogId')
+  update(
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Param('timeLogId') timeLogId: string,
+    @Req() req: any,
+    @Body() dto: UpdateTimeLogDto,
+  ) {
+    return this.timeLogsService.update(projectId, taskId, timeLogId, req.user.id, req.user.permissions, dto);
+  }
+
   @Delete(':timeLogId')
   remove(
     @Param('projectId') projectId: string,
@@ -31,6 +43,6 @@ export class TimeLogsController {
     @Param('timeLogId') timeLogId: string,
     @Req() req: any,
   ) {
-    return this.timeLogsService.remove(projectId, taskId, timeLogId, req.user.id, req.user.projectRole);
+    return this.timeLogsService.remove(projectId, taskId, timeLogId, req.user.id, req.user.permissions);
   }
 }

@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, ForbiddenException, NotFoundException 
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTimeLogDto } from './dto/create-time-log.dto';
+import { UpdateTimeLogDto } from './dto/update-time-log.dto';
 import { hasPermission, type RolePermissions } from '../auth/permissions';
 import { format, getISOWeek, getISOWeekYear, startOfISOWeek, endOfISOWeek } from 'date-fns';
 
@@ -132,25 +133,81 @@ export class TimeLogsService {
         : []),
     ]);
 
-    const hours = Math.floor(dto.minutes / 60);
-    const mins = dto.minutes % 60;
-    const formatted = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
-
-    const historyValue = `${formatted}${dto.comment ? ` — ${dto.comment}` : ''}${dto.progress !== undefined ? ` (progress: ${dto.progress}%)` : ''}`;
-
     await this.prisma.taskHistory.create({
       data: {
         taskId,
         actorId: userId,
         field: 'timeLog',
         oldValue: null,
-        newValue: historyValue,
+        newValue: this.describeTimeLog(dto.minutes, dto.comment, dto.progress),
       },
     });
 
     this.notifications.notifyProject(projectId, 'task:updated', { projectId, taskId, task: { id: taskId } });
 
     return timeLog;
+  }
+
+  // Edit a time log's minutes / comment / date. Same authorization rule as remove():
+  // the author, or anyone holding tasks:delete.
+  async update(
+    projectId: string,
+    taskId: string,
+    timeLogId: string,
+    userId: string,
+    permissions: RolePermissions,
+    dto: UpdateTimeLogDto,
+  ) {
+    const existing = await this.prisma.timeLog.findUnique({
+      where: { id: timeLogId },
+      select: {
+        id: true, userId: true, taskId: true, minutes: true, comment: true, loggedAt: true,
+        task: { select: { projectId: true } },
+      },
+    });
+
+    if (!existing || existing.taskId !== taskId || existing.task.projectId !== projectId) {
+      throw new NotFoundException('Time log not found');
+    }
+
+    if (existing.userId !== userId && !hasPermission(permissions, 'tasks', 'delete')) {
+      throw new ForbiddenException('Only the author or a PM can edit time logs');
+    }
+
+    const timeLog = await this.prisma.timeLog.update({
+      where: { id: timeLogId },
+      data: {
+        ...(dto.minutes !== undefined ? { minutes: dto.minutes } : {}),
+        ...(dto.comment !== undefined ? { comment: dto.comment.trim() || null } : {}),
+        ...(dto.loggedAt !== undefined ? { loggedAt: new Date(dto.loggedAt) } : {}),
+      },
+      include: {
+        user: { select: { id: true, username: true, email: true, name: true, imageUrl: true } },
+      },
+    });
+
+    const day = (d: Date) => d.toISOString().slice(0, 10);
+    await this.prisma.taskHistory.create({
+      data: {
+        taskId,
+        actorId: userId,
+        field: 'timeLog',
+        oldValue: `${this.describeTimeLog(existing.minutes, existing.comment)} on ${day(existing.loggedAt)}`,
+        newValue: `${this.describeTimeLog(timeLog.minutes, timeLog.comment)} on ${day(timeLog.loggedAt)}`,
+      },
+    });
+
+    this.notifications.notifyProject(projectId, 'task:updated', { projectId, taskId, task: { id: taskId } });
+
+    return timeLog;
+  }
+
+  // "1h 30m — comment (progress: 40%)" — shared by create/update history rows.
+  private describeTimeLog(minutes: number, comment?: string | null, progress?: number) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const formatted = hours > 0 ? (mins > 0 ? `${hours}h ${mins}m` : `${hours}h`) : `${mins}m`;
+    return `${formatted}${comment ? ` — ${comment}` : ''}${progress !== undefined ? ` (progress: ${progress}%)` : ''}`;
   }
 
   async findAll(taskId: string) {

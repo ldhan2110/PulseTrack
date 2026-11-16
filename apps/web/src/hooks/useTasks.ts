@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
-import type { Task, CreateTaskPayload, UpdateTaskPayload, CreateTimeLogPayload } from '../lib/types';
+import type { Task, CreateTaskPayload, UpdateTaskPayload, CreateTimeLogPayload, UpdateTimeLogPayload } from '../lib/types';
 
 export function useTasks(projectId: string) {
   return useQuery({
@@ -159,6 +159,24 @@ export function useCreateTimeLog(projectId: string) {
       void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
       toast.success('Time logged');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useUpdateTimeLog(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, timeLogId, data }: { taskId: string; timeLogId: string; data: UpdateTimeLogPayload }) =>
+      api.updateTimeLog(projectId, taskId, timeLogId, data),
+    onSuccess: (_data, { taskId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['time-logs', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-by-key', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['task-history', projectId, taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['report-timesheet', projectId] });
+      toast.success('Time log updated');
     },
     onError: (err: Error) => toast.error(err.message),
   });

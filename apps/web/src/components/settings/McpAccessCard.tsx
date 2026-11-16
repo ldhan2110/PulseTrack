@@ -21,6 +21,8 @@ import type { McpToken } from '@/lib/types';
 const SCOPES = [
   'tasks:read',
   'bugs:read',
+  'bugs:create',
+  'bugs:write',
   'tasks:write',
   'tasks:logtime',
   'tasks:attach',
@@ -31,7 +33,7 @@ const SCOPES = [
 ] as const;
 
 // Scopes gated behind write consent — mirrors WRITE_SCOPES in the API's mcp-server.service.ts.
-const WRITE_SCOPES = ['tasks:write', 'tasks:logtime', 'tasks:attach', 'testcases:write', 'testexec:write'];
+const WRITE_SCOPES = ['tasks:write', 'tasks:logtime', 'tasks:attach', 'bugs:create', 'bugs:write', 'testcases:write', 'testexec:write'];
 
 interface McpAccessCardProps {
   projectId: string;
