@@ -19,6 +19,7 @@ import type {
   UpdateTaskPayload,
   TimeLog,
   CreateTimeLogPayload,
+  UpdateTimeLogPayload,
   Sprint,
   CreateSprintPayload,
   UpdateSprintPayload,
@@ -350,6 +351,12 @@ export const api = {
   createTimeLog: (projectId: string, taskId: string, data: CreateTimeLogPayload) =>
     request<TimeLog>(`/projects/${projectId}/tasks/${taskId}/time-logs`, {
       method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateTimeLog: (projectId: string, taskId: string, timeLogId: string, data: UpdateTimeLogPayload) =>
+    request<TimeLog>(`/projects/${projectId}/tasks/${taskId}/time-logs/${timeLogId}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     }),
 

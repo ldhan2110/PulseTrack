@@ -33,7 +33,7 @@ import { RichTextEditor } from '@/components/tasks/RichTextEditor';
 import { CommentThread } from '@/components/tasks/CommentThread';
 import { AttachmentList } from '@/components/tasks/AttachmentList';
 import { ActivityLog } from '@/components/tasks/ActivityLog';
-import { useTaskByKey, useUpdateTask, useDeleteTask, useCreateTask, useCreateTimeLog, useDeleteTimeLog } from '@/hooks/useTasks';
+import { useTaskByKey, useUpdateTask, useDeleteTask, useCreateTask, useCreateTimeLog, useDeleteTimeLog, useUpdateTimeLog } from '@/hooks/useTasks';
 import { useUiStore } from '@/store/uiStore';
 import { useTaskBugs } from '@/hooks/useBugs';
 import { useMembers } from '@/hooks/useMembers';
@@ -50,10 +50,11 @@ import { BranchCard } from '@/components/tasks/BranchCard';
 import { TaskProgressBar } from '@/components/tasks/TaskProgressBar';
 import { getParentProgress } from '@/components/tasks/task-progress-utils';
 import { TimeLogsList } from '@/components/tasks/TimeLogsList';
+import { LogTimeModal } from '@/components/tasks/LogTimeModal';
 import { SubTaskCard } from '@/components/tasks/SubTaskCard';
 import { AddSubTaskModal } from '@/components/tasks/AddSubTaskModal';
 import { BugCard } from '@/components/bugs/BugCard';
-import type { AcceptanceCriteria, Priority } from '@/lib/types';
+import type { AcceptanceCriteria, Priority, TimeLog, UpdateTimeLogPayload } from '@/lib/types';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -253,6 +254,8 @@ export function TaskDetailPage() {
   const createTask = useCreateTask(projectId);
   const createTimeLog = useCreateTimeLog(projectId);
   const deleteTimeLog = useDeleteTimeLog(projectId);
+  const updateTimeLog = useUpdateTimeLog(projectId);
+  const [editingLog, setEditingLog] = useState<TimeLog | null>(null);
 
   const { data: workflow } = useWorkflow(projectId);
   const validNextStatuses = useValidTransitions(workflow, task?.workflowStatusId ?? null);
@@ -716,7 +719,25 @@ export function TaskDetailPage() {
                   currentUserId={currentUserId}
                   canDeleteAny={can('tasks', 'delete')}
                   onDelete={(timeLogId) => deleteTimeLog.mutate({ taskId: task.id, timeLogId })}
+                  onEdit={setEditingLog}
                   isDeleting={deleteTimeLog.isPending}
+                />
+                <LogTimeModal
+                  mode="edit"
+                  open={!!editingLog}
+                  onOpenChange={(open) => !open && setEditingLog(null)}
+                  initialValues={editingLog ?? undefined}
+                  isLoading={updateTimeLog.isPending}
+                  onSubmit={({ minutes, comment, loggedAt }) => {
+                    if (!editingLog) return;
+                    // Send only what changed, so an untouched date keeps its time of day.
+                    const data: UpdateTimeLogPayload = {};
+                    if (minutes !== editingLog.minutes) data.minutes = minutes;
+                    if ((comment ?? '') !== (editingLog.comment ?? '')) data.comment = comment ?? '';
+                    if (loggedAt && loggedAt !== editingLog.loggedAt.split('T')[0]) data.loggedAt = loggedAt;
+                    if (Object.keys(data).length === 0) return;
+                    updateTimeLog.mutate({ taskId: task.id, timeLogId: editingLog.id, data });
+                  }}
                 />
               </TabsContent>
               <TabsContent value="activity" className="max-h-[500px] overflow-y-auto">

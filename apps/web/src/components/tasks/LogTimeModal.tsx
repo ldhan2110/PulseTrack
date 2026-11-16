@@ -15,6 +15,9 @@ interface LogTimeModalProps {
   onSubmit: (data: { minutes: number; comment?: string; loggedAt?: string; progress?: number }) => void;
   isLoading?: boolean;
   currentProgress?: number;
+  /** 'edit' pre-fills from initialValues and hides the progress control. */
+  mode?: 'create' | 'edit';
+  initialValues?: { minutes: number; comment?: string | null; loggedAt: string };
 }
 
 export function LogTimeModal({
@@ -23,7 +26,10 @@ export function LogTimeModal({
   onSubmit,
   isLoading,
   currentProgress,
+  mode = 'create',
+  initialValues,
 }: LogTimeModalProps) {
+  const isEdit = mode === 'edit';
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
   const [comment, setComment] = useState('');
@@ -34,14 +40,23 @@ export function LogTimeModal({
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setHours('');
-      setMinutes('');
-      setComment('');
-      setLoggedAt(new Date().toISOString().split('T')[0]);
+      if (isEdit && initialValues) {
+        const h = Math.floor(initialValues.minutes / 60);
+        const m = initialValues.minutes % 60;
+        setHours(h > 0 ? String(h) : '');
+        setMinutes(m > 0 ? String(m) : '');
+        setComment(initialValues.comment ?? '');
+        setLoggedAt(initialValues.loggedAt.split('T')[0]);
+      } else {
+        setHours('');
+        setMinutes('');
+        setComment('');
+        setLoggedAt(new Date().toISOString().split('T')[0]);
+      }
       setProgress(currentProgress ?? 0);
       setProgressTouched(false);
     }
-  }, [open, currentProgress]);
+  }, [open, currentProgress, isEdit, initialValues]);
 
   const totalMinutes = (parseInt(hours) || 0) * 60 + (parseInt(minutes) || 0);
 
@@ -62,7 +77,7 @@ export function LogTimeModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>Log Time</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Time Log' : 'Log Time'}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div className="space-y-4">
@@ -112,6 +127,7 @@ export function LogTimeModal({
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
               />
             </div>
+            {!isEdit && (
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs text-muted-foreground">Progress</label>
@@ -143,6 +159,7 @@ export function LogTimeModal({
                 />
               </div>
             </div>
+            )}
           </div>
         </DialogBody>
         <DialogFooter>
@@ -150,7 +167,7 @@ export function LogTimeModal({
             Cancel
           </Button>
           <Button size="sm" onClick={handleSubmit} disabled={isLoading || totalMinutes <= 0}>
-            {isLoading ? 'Logging...' : 'Submit'}
+            {isLoading ? (isEdit ? 'Saving...' : 'Logging...') : isEdit ? 'Save' : 'Submit'}
           </Button>
         </DialogFooter>
       </DialogContent>

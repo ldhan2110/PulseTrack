@@ -313,6 +313,13 @@ export interface CreateTimeLogPayload {
   progress?: number;
 }
 
+// Progress is a logging-time snapshot and is not editable.
+export interface UpdateTimeLogPayload {
+  minutes?: number;
+  comment?: string;
+  loggedAt?: string;
+}
+
 // ─── Sprint ───────────────────────────────────────────────────────────────────
 
 export interface Sprint {
