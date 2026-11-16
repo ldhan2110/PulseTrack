@@ -12,9 +12,10 @@ import { TestModulesModule } from '../test-modules/test-modules.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { TestExecutionsModule } from '../test-executions/test-executions.module';
 import { AttachmentsModule } from '../attachments/attachments.module';
+import { CommentsModule } from '../comments/comments.module';
 
 @Module({
-  imports: [TasksModule, BugsModule, TestCasesModule, TimeLogsModule, TestModulesModule, ProjectsModule, TestExecutionsModule, AttachmentsModule],
+  imports: [TasksModule, BugsModule, TestCasesModule, TimeLogsModule, TestModulesModule, ProjectsModule, TestExecutionsModule, AttachmentsModule, CommentsModule],
   controllers: [McpTokenController, McpController],
   providers: [McpTokenService, McpPatGuard, McpServerService],
   exports: [McpTokenService],

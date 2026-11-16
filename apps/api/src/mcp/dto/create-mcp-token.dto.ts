@@ -3,6 +3,8 @@ import { IsArray, IsBoolean, IsIn, IsOptional, IsString, IsNotEmpty, ArrayNotEmp
 export const MCP_SCOPES = [
   'tasks:read',
   'bugs:read',
+  'bugs:create',
+  'bugs:write',
   'tasks:write',
   'tasks:logtime',
   'tasks:attach',

@@ -9,6 +9,7 @@ import { TestModulesService } from '../test-modules/test-modules.service';
 import { ProjectsService } from '../projects/projects.service';
 import { TestExecutionsService } from '../test-executions/test-executions.service';
 import { AttachmentsService } from '../attachments/attachments.service';
+import { CommentsService } from '../comments/comments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -20,15 +21,18 @@ const TASKS_WRITE = 'tasks:write';
 const TASKS_LOGTIME = 'tasks:logtime';
 const TASKS_ATTACH = 'tasks:attach';
 const BUGS_READ = 'bugs:read';
+const BUGS_CREATE = 'bugs:create';
+const BUGS_WRITE = 'bugs:write';
 const TESTCASES_READ = 'testcases:read';
 const TESTCASES_WRITE = 'testcases:write';
 const EXEC_READ = 'testexec:read';
 const EXEC_WRITE = 'testexec:write';
 
 // Scopes that mutate data as the token owner — gated behind per-token write consent.
-const WRITE_SCOPES = new Set([TASKS_WRITE, TASKS_LOGTIME, TASKS_ATTACH, TESTCASES_WRITE, EXEC_WRITE]);
+const WRITE_SCOPES = new Set([TASKS_WRITE, TASKS_LOGTIME, TASKS_ATTACH, BUGS_CREATE, BUGS_WRITE, TESTCASES_WRITE, EXEC_WRITE]);
 
 const PRIORITY = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'BLOCKER']);
+const BUG_SEVERITY = z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']);
 const TESTCASE_STATUS = z.enum(['DRAFT', 'ACTIVE', 'DEPRECATED']);
 const RESULT_STATUS = z.enum(['NOT_RUN', 'IN_PROGRESS', 'PASS', 'FAIL', 'BLOCKED', 'SKIP']);
 
@@ -58,6 +62,28 @@ function json(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data) }] };
 }
 
+// Drops UI-only like data from a comment tree before handing it to an agent.
+function stripLikes(comments: any[]): any[] {
+  return comments.map(({ likes: _likes, replies, ...c }) => ({
+    ...c,
+    replies: stripLikes(replies ?? []),
+  }));
+}
+
+// The web editor stores comments as HTML (<p> per paragraph). Agents usually send
+// plain text, so wrap each line in <p> (escaped) to match. Content that already
+// starts with a block-level tag is treated as HTML and passed through unchanged.
+const HTML_BLOCK_START = /^\s*<(p|ul|ol|h[1-6]|blockquote|pre|div)[\s>]/i;
+export function toCommentHtml(content: string): string {
+  if (HTML_BLOCK_START.test(content)) return content;
+  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return content
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => `<p>${escape(line)}</p>`)
+    .join('');
+}
+
 // Builds a per-session MCP server. Every tool closes over the session so
 // projectId comes from the token — never a tool arg — and asserts its resource
 // scope before touching a service. Write tools accept a human key (taskKey /
@@ -75,6 +101,7 @@ export class McpServerService {
     private readonly testExecutions: TestExecutionsService,
     private readonly attachments: AttachmentsService,
     private readonly prisma: PrismaService,
+    private readonly comments: CommentsService,
   ) {}
 
   build(session: McpSession): McpServer {
@@ -101,6 +128,26 @@ export class McpServerService {
       throw new Error('Task not found');
     }
     return task;
+  }
+
+  // Resolve a bug by id or bugKey and enforce project isolation.
+  private async resolveBug(session: McpSession, id?: string, bugKey?: string) {
+    if (!id && !bugKey) throw new Error('Provide id or bugKey');
+    const bug = bugKey
+      ? await this.bugs.findByBugKey(bugKey)
+      : await this.bugs.findOne(id as string);
+    if (!bug || bug.projectId !== session.projectId) {
+      throw new Error('Bug not found');
+    }
+    return bug;
+  }
+
+  // Throws unless userId is a member of the token's project.
+  private async assertMember(session: McpSession, userId: string, field: string) {
+    const member = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: session.projectId, userId } },
+    });
+    if (!member) throw new Error(`${field} is not a member of this project`);
   }
 
   // Resolve a test case by id or testCaseKey and enforce project isolation.
@@ -180,6 +227,17 @@ export class McpServerService {
         },
       },
       {
+        name: 'list_task_comments',
+        description: 'List the comment thread (with nested replies) on a task, by id or taskKey (e.g. AXC-1).',
+        inputSchema: { id: z.string().optional(), taskKey: z.string().optional() },
+        handler: async ({ id, taskKey }) => {
+          requireScope(session, TASKS_READ);
+          if (!id && !taskKey) throw new Error('Provide id or taskKey');
+          const task = await this.resolveTask(session, id, taskKey);
+          return json(stripLikes(await this.comments.findAll(task.id)));
+        },
+      },
+      {
         name: 'list_task_types',
         description: "List this project's task types. Use a type's id as taskTypeId when creating a task.",
         inputSchema: {},
@@ -213,15 +271,125 @@ export class McpServerService {
       },
       {
         name: 'get_bug',
-        description: 'Get one bug by id.',
-        inputSchema: { id: z.string() },
-        handler: async ({ id }) => {
+        description: 'Get one bug by id or bugKey (e.g. AXC-BUG-1). Provide exactly one.',
+        inputSchema: { id: z.string().optional(), bugKey: z.string().optional() },
+        handler: async ({ id, bugKey }) => {
           requireScope(session, BUGS_READ);
-          const bug = await this.bugs.findOne(id);
-          if (!bug || bug.projectId !== session.projectId) {
-            throw new Error('Bug not found');
+          return json(await this.resolveBug(session, id, bugKey));
+        },
+      },
+      {
+        name: 'list_bug_statuses',
+        description: "List this project's bug workflow statuses. Use a status's id as workflowStatusId in update_bug.",
+        inputSchema: {},
+        handler: async () => {
+          requireScope(session, BUGS_READ);
+          return json(
+            await this.prisma.workflowStatus.findMany({
+              where: { projectId: session.projectId, kind: 'BUG' },
+              select: { id: true, name: true, key: true, isDefault: true, isClosed: true },
+              orderBy: { position: 'asc' },
+            }),
+          );
+        },
+      },
+      {
+        name: 'list_bug_comments',
+        description: 'List the comment thread (with nested replies) on a bug, by id or bugKey.',
+        inputSchema: { id: z.string().optional(), bugKey: z.string().optional() },
+        handler: async ({ id, bugKey }) => {
+          requireScope(session, BUGS_READ);
+          const bug = await this.resolveBug(session, id, bugKey);
+          return json(stripLikes(await this.comments.findAllForBug(bug.id)));
+        },
+      },
+      // ---- bugs: create ----
+      {
+        name: 'create_bug',
+        description:
+          'Report a bug in this project. assigneeId/ownerId must be project members (see list_project_members).',
+        inputSchema: {
+          title: z.string().min(3).max(200),
+          severity: BUG_SEVERITY,
+          description: z.string().max(5000).optional(),
+          preconditions: z.string().max(5000).optional(),
+          environment: z.string().max(1000).optional(),
+          expectedResult: z.string().optional(),
+          actualResult: z.string().optional(),
+          assigneeId: z.string().optional(),
+          ownerId: z.string().optional(),
+          reproSteps: z
+            .array(z.object({ position: z.number().int().min(0), content: z.string().max(2000) }))
+            .optional(),
+        },
+        handler: async (dto) => {
+          requireScope(session, BUGS_CREATE);
+          if (dto.assigneeId) await this.assertMember(session, dto.assigneeId, 'assigneeId');
+          if (dto.ownerId) await this.assertMember(session, dto.ownerId, 'ownerId');
+          return json(await this.bugs.create(session.projectId, session.userId, dto));
+        },
+      },
+      // ---- bugs: write ----
+      {
+        name: 'update_bug',
+        description:
+          'Update a bug by id or bugKey (provide exactly one). Only the fields you pass change. ' +
+          'workflowStatusId must come from list_bug_statuses; assigneeId/ownerId must be project members (null unassigns). ' +
+          'reproSteps, when given, replaces the whole step list.',
+        inputSchema: {
+          id: z.string().optional(),
+          bugKey: z.string().optional(),
+          title: z.string().min(3).max(200).optional(),
+          severity: BUG_SEVERITY.optional(),
+          workflowStatusId: z.string().optional(),
+          description: z.string().max(5000).optional(),
+          preconditions: z.string().max(5000).optional(),
+          environment: z.string().max(1000).optional(),
+          expectedResult: z.string().optional(),
+          actualResult: z.string().optional(),
+          assigneeId: z.string().nullable().optional(),
+          ownerId: z.string().nullable().optional(),
+          reproSteps: z
+            .array(z.object({ position: z.number().int().min(0), content: z.string().max(2000) }))
+            .optional(),
+        },
+        handler: async ({ id, bugKey, ...dto }) => {
+          requireScope(session, BUGS_WRITE);
+          const bug = await this.resolveBug(session, id, bugKey);
+          if (dto.assigneeId) await this.assertMember(session, dto.assigneeId, 'assigneeId');
+          if (dto.ownerId) await this.assertMember(session, dto.ownerId, 'ownerId');
+          if (dto.workflowStatusId !== undefined) {
+            // BugsService.update accepts any existing status id, so pin it to this
+            // project's BUG workflow here.
+            const status = await this.prisma.workflowStatus.findFirst({
+              where: { id: dto.workflowStatusId, projectId: session.projectId, kind: 'BUG' },
+              select: { id: true },
+            });
+            if (!status) throw new Error('workflowStatusId is not a bug status of this project (see list_bug_statuses)');
           }
-          return json(bug);
+          return json(await this.bugs.update(bug.id, dto, session.userId));
+        },
+      },
+      {
+        name: 'add_bug_comment',
+        description:
+          'Add a comment to a bug, by id or bugKey (provide exactly one), as the token owner. ' +
+          'Pass parentId (a comment id from list_bug_comments) to reply instead. ' +
+          'Plain text is converted to HTML (one <p> per line); content starting with a block tag (<p>, <ul>, ...) is stored as-is.',
+        inputSchema: {
+          id: z.string().optional(),
+          bugKey: z.string().optional(),
+          content: z.string().trim().min(1).max(5000),
+          parentId: z.string().optional(),
+        },
+        handler: async ({ id, bugKey, content, parentId }) => {
+          requireScope(session, BUGS_WRITE);
+          const bug = await this.resolveBug(session, id, bugKey);
+          const html = toCommentHtml(content);
+          const comment = parentId
+            ? await this.comments.createReplyForBug(bug.id, parentId, session.userId, html)
+            : await this.comments.createForBug(bug.id, session.userId, html);
+          return json(comment);
         },
       },
       // ---- tasks: write ----
@@ -273,6 +441,29 @@ export class McpServerService {
           requireScope(session, TASKS_WRITE);
           const task = await this.resolveTask(session, id, taskKey);
           return json(await this.tasks.update(task.id, dto, session.userId));
+        },
+      },
+      {
+        name: 'add_task_comment',
+        description:
+          'Add a comment to a task, by id or taskKey (e.g. AXC-1; provide exactly one), as the token owner. ' +
+          'Pass parentId (a comment id from list_task_comments) to reply instead. ' +
+          'Plain text is converted to HTML (one <p> per line); content starting with a block tag (<p>, <ul>, ...) is stored as-is.',
+        inputSchema: {
+          id: z.string().optional(),
+          taskKey: z.string().optional(),
+          content: z.string().trim().min(1).max(5000),
+          parentId: z.string().optional(),
+        },
+        handler: async ({ id, taskKey, content, parentId }) => {
+          requireScope(session, TASKS_WRITE);
+          if (!id && !taskKey) throw new Error('Provide id or taskKey');
+          const task = await this.resolveTask(session, id, taskKey);
+          const html = toCommentHtml(content);
+          const comment = parentId
+            ? await this.comments.createReply(task.id, parentId, session.userId, html)
+            : await this.comments.create(task.id, session.userId, html);
+          return json(comment);
         },
       },
       // ---- tasks: log time ----
